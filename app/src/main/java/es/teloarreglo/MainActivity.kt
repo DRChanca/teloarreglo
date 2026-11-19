@@ -9,8 +9,6 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
-    private var firstStart = true
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -25,7 +23,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        if (firstStart) firstStart = false
-        else lifecycleScope.launch { (application as TeloarregloApplication).identity.restore() }
+        lifecycleScope.launch { (application as TeloarregloApplication).identity.restore() }
     }
 }

@@ -8,7 +8,7 @@ import es.teloarreglo.identity.Identity
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class TestIdentity : Identity {
-    override val state = MutableStateFlow(AccessState())
+    override val state = MutableStateFlow(AccessState(AccessStage.SIGNED_OUT))
     var savedAccount: Account? = null
     var failure: AccessError? = AccessError.CREDENTIALS
     override suspend fun restore() {

@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="es">
     <string name="app_name">Teloarreglo</string>
     <string name="welcome">Lo que necesitas arreglar,\na un paso de solucionarlo.</string>
     <string name="intro">Conecta con profesionales de tu zona.</string>

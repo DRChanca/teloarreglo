@@ -76,7 +76,6 @@ fun AccessScreen(identity: Identity, onLanguageChange: (String) -> Unit) {
     // A password is never saved into the instance state or preferences.
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
-    LaunchedEffect(identity) { identity.restore() }
 
     MaterialTheme(colorScheme = lightColorScheme(primary = Green, background = Canvas)) {
         Surface(Modifier.fillMaxSize(), color = Canvas) {

@@ -5,6 +5,7 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
+import io.github.jan.supabase.auth.status.RefreshFailureCause
 import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.postgrest
 import java.io.IOException
@@ -27,10 +28,18 @@ class SupabaseIdentity(private val client: SupabaseClient, scope: CoroutineScope
         scope.launch {
             client.auth.sessionStatus.collect { status ->
                 mutex.withLock {
-                    if (mutableState.value.stage == AccessStage.CONNECTED) {
+                    // An SDK event may have waited behind a successful sign-in/restore.
+                    if (client.auth.sessionStatus.value == status &&
+                        mutableState.value.stage == AccessStage.CONNECTED
+                    ) {
                         when (status) {
-                            is SessionStatus.RefreshFailure ->
-                                mutableState.value = AccessState(AccessStage.UNAVAILABLE, error = AccessError.NETWORK)
+                            is SessionStatus.RefreshFailure -> {
+                                val reason = when (status.cause) {
+                                    is RefreshFailureCause.NetworkError -> AccessError.NETWORK
+                                    is RefreshFailureCause.InternalServerError -> AccessError.SERVICE
+                                }
+                                mutableState.value = AccessState(AccessStage.UNAVAILABLE, error = reason)
+                            }
                             is SessionStatus.NotAuthenticated ->
                                 mutableState.value = AccessState(AccessStage.SIGNED_OUT, error = AccessError.EXPIRED)
                             else -> Unit

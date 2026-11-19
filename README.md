@@ -60,8 +60,8 @@ python3 scripts/android.py build --environment pruebas
 python3 scripts/android.py build --environment presentacion
 ```
 
-El script lee `.env` **sin ejecutarlo**. Solo pasa a Gradle las cuatro variables
-públicas, nunca las contraseñas. También admite esas cuatro variables de entorno
+El script lee `.env` **sin ejecutarlo**. De ese archivo solo pasa a Gradle las
+cuatro variables públicas, nunca las contraseñas. También admite esas cuatro variables de entorno
 o propiedades en `local.properties`. Son APKs debug para distribución directa,
 con identificadores separados `es.teloarreglo.pruebas` y
 `es.teloarreglo.presentacion`; no una firma de publicación comercial.
@@ -104,6 +104,12 @@ python3 scripts/contract_identity.py --local
 python3 scripts/android.py check
 python3 scripts/android.py ui-test --serial emulator-5556
 ```
+
+**Las pruebas instrumentadas se ejecutan solo en emuladores desechables, antes
+de preparar las sesiones de presentación.** Gradle puede instalar/desinstalar
+la app probada y perder sus datos locales. No ejecutarlas sobre un dispositivo
+con una sesión o datos locales que deban conservarse. Después de probar, instalar
+de nuevo la APK con el comando `install`.
 
 - SQL/pgTAP: identidad de sesión, acceso anónimo y elevación de permisos.
 - Contrato HTTP **real**: credenciales incorrectas, acceso protegido, recuperación

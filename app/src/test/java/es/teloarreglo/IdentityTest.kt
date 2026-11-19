@@ -18,12 +18,104 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import java.io.IOException
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /** Identity's public operations with only the external HTTP service replaced. */
 class IdentityTest {
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Test fun anAutomaticRefreshServerFailureIsNotReportedAsLostConnectivity() = runTest {
+        val client = createSupabaseClient("https://identity.example.org", "public-test-key") {
+            defaultLogLevel = LogLevel.NONE
+            httpEngine = MockEngine { request ->
+                if (request.url.parameters["grant_type"] == "refresh_token") {
+                    respond(
+                        """{"msg":"Server unavailable"}""", HttpStatusCode.ServiceUnavailable,
+                        headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                } else {
+                    val body = if (request.url.encodedPath == "/auth/v1/token") {
+                        """{"access_token":"access","refresh_token":"refresh","expires_in":3600,"token_type":"bearer",
+                           "user":{"aud":"authenticated","id":"account-12","email":"cliente@example.org"}}"""
+                    } else {
+                        """{"user_id":"account-12","email":"cliente@example.org","is_administrator":false}"""
+                    }
+                    respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                }
+            }
+            install(Auth) {
+                minimalSettings(autoSaveToStorage = true, sessionManager = MemorySessionManager())
+                coroutineDispatcher = StandardTestDispatcher(testScheduler)
+            }
+            install(Postgrest)
+        }
+        try {
+            val identity = SupabaseIdentity(client, backgroundScope)
+            identity.restore()
+            identity.signIn("cliente@example.org", "correct")
+            backgroundScope.launch {
+                client.auth.importSession(
+                    UserSession("expired", "refresh", expiresIn = -1, tokenType = "bearer",
+                        user = UserInfo(aud = "authenticated", id = "account-12")),
+                    autoRefresh = true,
+                )
+            }
+            val failure = identity.state.first { it.stage == AccessStage.UNAVAILABLE }
+            assertEquals(AccessError.SERVICE, failure.error)
+        } finally { client.close() }
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Test fun anOldSignOutEventCannotOverwriteASubsequentlyVerifiedSession() = runTest {
+        val refreshStarted = CompletableDeferred<Unit>()
+        val finishRefresh = CompletableDeferred<Unit>()
+        val client = createSupabaseClient("https://identity.example.org", "public-test-key") {
+            defaultLogLevel = LogLevel.NONE
+            httpEngine = MockEngine { request ->
+                val refreshing = request.url.parameters["grant_type"] == "refresh_token"
+                if (refreshing) {
+                    refreshStarted.complete(Unit)
+                    finishRefresh.await()
+                }
+                val body = if (request.url.encodedPath == "/auth/v1/token") {
+                    """{"access_token":"new-access","refresh_token":"new-refresh","expires_in":3600,"token_type":"bearer",
+                       "user":{"aud":"authenticated","id":"account-12","email":"cliente@example.org"}}"""
+                } else {
+                    """{"user_id":"account-12","email":"cliente@example.org","is_administrator":false}"""
+                }
+                respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            }
+            install(Auth) {
+                minimalSettings(autoSaveToStorage = true, sessionManager = MemorySessionManager())
+                coroutineDispatcher = StandardTestDispatcher(testScheduler)
+            }
+            install(Postgrest)
+        }
+        try {
+            val identity = SupabaseIdentity(client, backgroundScope)
+            identity.restore()
+            identity.signIn("cliente@example.org", "correct")
+            val previous = client.auth.currentSessionOrNull()!!
+            val restoring = async { identity.restore() }
+            refreshStarted.await()
+            // Another Auth consumer invalidates the previous session while renewal is in flight.
+            client.auth.clearSession()
+            runCurrent() // Let the event observer reach the locked restoration.
+            client.auth.importSession(previous, autoRefresh = false)
+            finishRefresh.complete(Unit)
+            restoring.await()
+            runCurrent()
+            assertEquals(AccessStage.CONNECTED, identity.state.value.stage)
+        } finally { client.close() }
+    }
+
     @Test fun connectionFailureDoesNotInventSuccessOrForgetTheSavedSession() = runTest {
         val saved = MemorySessionManager(
             UserSession("old-access", "valid-refresh", expiresIn = 3600, tokenType = "bearer",
