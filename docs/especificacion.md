@@ -48,13 +48,61 @@ Las reglas de este apartado sustituyen las propuestas anteriores incompatibles s
 - El profesional marca el servicio como realizado; el cliente confirma para liberar el pago simulado.
 - Si el cliente no responde, se libera a las 48 horas desde esa marca, con recordatorios. Sustituye el plazo anterior de siete días para ese flujo.
 - Si el cliente comunica una incidencia antes de la liberación, el pago queda pendiente de revisión; no se entrega ni se devuelve automáticamente.
-- Cancelar antes de comenzar el servicio da lugar a devolución total simulada, sin penalizaciones. El tratamiento tras comenzar sigue pendiente.
+- Cancelar antes de comenzar el servicio da lugar a devolución total simulada, sin penalizaciones. Tras comenzar se comunica una incidencia, sin devolución ni entrega automática.
 - Las propuestas pendientes no reservan definitivamente el horario. Antes del pago se comprueba disponibilidad; no deben confirmarse citas solapadas. El mecanismo de concurrencia y su futura coordinación con el proveedor queda pendiente.
 - Objetivo de integración del recorrido: 26 de noviembre; 27 y 28 reservados para pruebas, correcciones y grabación.
 - El alcance del panel de administración no está aprobado: requiere una decisión específica y no se presume aceptada la propuesta de panel mínimo.
 - Vídeo de un máximo de diez minutos según el usuario; objetivo acordado de siete a ocho minutos narrados.
 - En el vídeo, el cliente confirma manualmente que el servicio se realizó y se muestra la liberación del pago simulado.
-- Se explicará la liberación automática tras 48 horas sin respuesta ni incidencia; no se esperarán esas horas ni habrá un botón para adelantar el reloj. Esta explicación no demuestra que la automatización esté implementada: su alcance técnico queda pendiente.
+- La decisión posterior sobre citas, reseñas y privacidad exige que la liberación automática tras 48 horas sin respuesta ni incidencia funcione realmente en la demo, aunque ambas aplicaciones estén cerradas. Sustituye el alcance anterior de solo explicarla. En el vídeo se conserva la confirmación manual, sin esperar esas horas ni añadir un botón para adelantar el reloj.
+
+#### Reglas aprobadas de citas, reseñas y privacidad
+
+Fuente: [Precisar citas, reseñas y privacidad para una demo coherente](https://github.com/DRChanca/teloarreglo/issues/7).
+Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las cuestiones que más abajo se conservaban como pendientes.
+
+**Solicitudes, propuestas y cambios**
+
+- Puede haber varias solicitudes pendientes para un mismo intervalo. Ninguna lo reserva definitivamente.
+- Para confirmar se comprueba la disponibilidad de todo el intervalo. No se confirman solapamientos ni se simula un cobro si existe conflicto.
+- Las otras solicitudes no se cancelan automáticamente: se informa del conflicto y se propone otra hora.
+- Cambiar precio, fecha, hora, duración, alcance o dirección requiere aceptación expresa de la otra parte. Se muestran condiciones anteriores y nuevas; mientras se decide siguen vigentes las anteriores.
+- Una cita confirmada conserva su reserva mientras un cambio esté pendiente. Al aceptar otro horario se comprueba de nuevo su disponibilidad y solo entonces se sustituye la reserva anterior. Si hay conflicto, se mantiene la cita original sin cobrar diferencias.
+- Rechazar una propuesta conserva chat e historial y permite enviar otra. Rechazar un cambio mantiene la cita original; rechazar la primera propuesta deja la cita sin confirmar ni reservar.
+- El cambio de dirección debe respetar la cobertura profesional. El profesional puede solicitar una corrección, pero no sustituir por su cuenta el domicilio aportado por el cliente.
+- Los aumentos de precio integrado requieren aceptación y pago simulado de la diferencia antes del trabajo adicional; las reducciones aceptadas producen devolución simulada. En pago directo se registra el acuerdo, sin certificar cobros externos.
+
+**Inicio, finalización e incidencias**
+
+- El profesional dispone de una acción «Comenzar trabajo», visible para el cliente, que distingue el inicio de la confirmación de cita y de la marca de realizado. No autoriza costes adicionales.
+- Antes de comenzar, cualquiera de las partes puede cancelar sin penalización y con devolución total del pago integrado simulado.
+- Tras comenzar, la solicitud de cancelación se trata como incidencia; el dinero queda pendiente de resolución, sin devolución ni entrega automática.
+- El profesional marca «Realizado»; el cliente puede confirmar o comunicar una incidencia. La confirmación libera el pago integrado simulado.
+- Las 48 horas se cuentan desde la marca de realizado con hora del servidor. El cierre y la liberación simulada deben ejecutarse aunque las dos aplicaciones estén cerradas, sin depender de la hora del teléfono.
+- Se avisa al cliente al marcar realizado y se envía un recordatorio a las 24 horas si sigue pendiente y sin incidencia. Se explica el vencimiento y se ofrecen confirmar o comunicar incidencia.
+- Una incidencia previa a la liberación bloquea la entrega automática. Confirmación, incidencia y vencimiento deben coordinarse para no entregar dos veces el mismo pago ni entregar uno bloqueado.
+- Tras 48 horas sin respuesta ni incidencia, la cita queda «Finalizada sin confirmación del cliente» y se libera el pago integrado simulado. El mismo cierre se aplica a citas gratuitas o con pago directo, sin inventar cobros ni entregas.
+- El cliente puede comunicar un problema tras el cierre; esto no revierte automáticamente una entrega ya registrada.
+- La resolución administrativa de incidencias no se presupone implementada: alcance y permisos del panel siguen en su decisión separada.
+
+**Reseñas**
+
+- Se permite una reseña por cita realizada, también para citas gratuitas o con pago directo y después del cierre automático sin respuesta.
+- Nunca se genera una reseña automáticamente.
+- Una queja de calidad no impide reseñar si ambas partes reconocen que se realizó el servicio, aunque el pago siga pendiente de revisión.
+- Si se discute que el servicio haya ocurrido, la reseña espera a la revisión.
+
+**Privacidad, multimedia y conservación**
+
+- Solo las dos personas implicadas pueden leer la conversación, adjuntos y cita privados. El domicilio exacto no aparece en la búsqueda ni al abrir el chat: se comparte al solicitar la cita.
+- Cada persona actúa en su nombre. El profesional propone condiciones, comienza y marca realizado; el cliente acepta las condiciones y confirma la realización. Los permisos deben comprobarse realmente, no solo ocultar botones.
+- Fotos y vídeos se pueden enviar y abrir desde el primer contacto, antes de cualquier respuesta o aceptación del profesional.
+- Compresión integrada automática con progreso y posibilidad de cancelar, sin modificar el original del teléfono. Si falla o el resultado supera los límites, se explica y no se envía silenciosamente el original.
+- Para la demo: vídeos de hasta un minuto; fotos de hasta 1600 píxeles en su lado mayor y vídeos de hasta 720p, sin ampliar archivos de menor resolución. Máximos tras comprimir: 2 MB por foto y 20 MB por vídeo. Compatibilidad concreta de formatos y estrategia técnica pendientes de la arquitectura.
+- Se conservan entre sesiones los perfiles y operaciones preparados en la aplicación. No se añade una operación de reinicio ni borrado automático para la presentación.
+- Se utilizan cuentas, direcciones y contenidos ficticios o autorizados sin exponer información privada de terceros. Perfiles ficticios y pagos simulados siguen identificados.
+- Durante la preparación y presentación se conservan mensajes, adjuntos y propuestas sin edición ni borrado individual. No supone conservación indefinida en el producto final: la política de borrado comercial sigue pendiente.
+- Este acuerdo no aprueba el diseño visual ni elige arquitectura o proveedor.
 
 #### Criterios observables del recorrido acordado
 
@@ -69,6 +117,8 @@ Las reglas de este apartado sustituyen las propuestas anteriores incompatibles s
 - La interfaz entregada está disponible en castellano, inglés, francés y alemán; el vídeo muestra brevemente el selector.
 - La escena de suscripción muestra precio y ventajas sin cobrar dinero; las imágenes y los datos ficticios están autorizados o creados para la demo.
 - Visitas gratuitas o con coste y confirmación para pago directo siguen dentro del alcance, aunque el vídeo se centra en el pago integrado simulado.
+- La automatización de cierre y liberación simulada a las 48 horas funciona con aplicaciones cerradas, respeta incidencias y evita entregas duplicadas; no se confunde la explicación del vídeo con evidencia de su funcionamiento.
+- Fotos y vídeos se comprimen en la aplicación con los límites acordados, progreso, cancelación y aviso si no pueden enviarse.
 
 Teloarreglo conecta a particulares que necesitan arreglos con profesionales independientes y pequeñas empresas. Permite encontrar profesionales, contactar, concertar citas, acordar precios, pagar opcionalmente y dejar reseñas.
 
@@ -206,7 +256,7 @@ Una cita es una cita: no se crean tipos separados para «valoración» y «reali
 - Si añade costes, el cliente debe aceptarlos antes de confirmar la cita.
 - No se pueden confirmar citas solapadas.
 
-El flujo exacto de aceptación de cambios de duración u otras condiciones queda por concretar.
+Los cambios de duración y demás condiciones requieren aceptación expresa según las reglas aprobadas del apartado 1.
 
 ### Organización de la agenda
 
@@ -228,7 +278,7 @@ Desde el lanzamiento, el profesional podrá registrar una cita acordada por llam
 - El profesional puede marcar una cita como realizada.
 - El cliente puede confirmarlo o comunicar un problema.
 - Si no responde, recibe recordatorios.
-- Tras siete días sin respuesta se cierra como «Finalizada sin confirmación del cliente».
+- Tras 48 horas sin respuesta ni incidencia desde la marca de realizado se cierra como «Finalizada sin confirmación del cliente», según la revisión del apartado 1; sustituye el plazo anterior de siete días.
 - Se permite reclamar posteriormente.
 - El silencio no autoriza cobros ni genera reseñas automáticas.
 - Si se discute que la cita haya ocurrido, queda en revisión por administración.
@@ -271,7 +321,7 @@ Los pagos dentro de la aplicación estarán incluidos en la primera versión y s
 - Pagar fuera de la aplicación no impide valorar una cita realizada y registrada.
 - Una disputa sobre la calidad no impide por sí sola publicar una reseña si consta que el servicio se realizó.
 - Si se discute si la cita ocurrió, se revisa antes de habilitar la reseña.
-- Las citas cerradas sin respuesta no publican reseñas automáticas; el criterio para habilitar una reseña posterior en estos casos queda por concretar.
+- Las citas cerradas sin respuesta no publican reseñas automáticas; el cliente puede escribir posteriormente una reseña, salvo disputa sobre si el servicio ocurrió pendiente de revisión.
 
 ## 12. Suscripción y posicionamiento
 
@@ -365,12 +415,11 @@ Fuera del alcance inicial:
 
 ### Producto y operativa
 
-- Flujo detallado y estados de citas, propuestas, cambios y disputas.
-- Reglas de agenda ante varias solicitudes pendientes y cambios de duración.
-- Habilitación de reseñas tras cierres sin confirmación.
+- Concretar en la arquitectura los estados y contratos que implementen las reglas aprobadas del apartado 1, incluida concurrencia en agenda y automatización de 48 horas.
+- Resolución administrativa de disputas y permisos del panel, pendiente de su decisión específica.
 - Requisitos documentales concretos de verificación y revisión periódica.
 - Reglas del posicionamiento destacado y métricas de la suscripción.
-- Límites de fotos y vídeos, moderación y conservación.
+- Compatibilidad técnica de formatos y compresión; moderación y política de conservación y borrado para el producto comercial. Los límites de la demo están aprobados en el apartado 1.
 - Alcance y formato de exportaciones y plantillas.
 - Políticas y plazos de reclamación, devolución y atención.
 
