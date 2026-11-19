@@ -11,10 +11,10 @@ para desarrollo, pruebas funcionales y presentación. David prepara los datos de
 la presentación en esa base. No hay una segunda base ni promoción de datos;
 no se reinician, borran ni repueblan datos automáticamente.
 
-**La implementación inicial aún debe adaptarse:** conserva dos variantes y un
-asistente que pide dos proyectos. **No ejecutes `scripts/setup-supabase.sh`
-en su estado actual**: ese flujo ha quedado obsoleto. Esta decisión sustituye
-la separación descrita originalmente en los tickets y en la revisión inicial.
+El asistente configura **un solo proyecto**. Conserva los nombres heredados
+`TEST_*` y `PRESENTATION_*` como alias de la **misma conexión y cuenta**, para
+compatibilidad con las dos variantes actuales de APK; no son dos bases.
+Esta decisión sustituye la separación original de los tickets y la revisión inicial.
 
 ## Preparación
 
@@ -24,12 +24,17 @@ la separación descrita originalmente en los tickets y en la revisión inicial.
   supabase-kt **3.1.4**, Ktor/OkHttp **3.1.3** fijados en el repositorio.
 - Supabase CLI **3.2.0** y Docker para comprobaciones de servidor locales.
 
-Mientras se adapta el asistente, configura en `.env` solo la conexión del único
-proyecto mediante `TEST_SUPABASE_URL` y `TEST_SUPABASE_PUBLISHABLE_KEY`.
-Los nombres `TEST_*` y la variante `pruebas` son heredados: **no implican otra
-base de datos**. No se necesita configurar `PRESENTATION_*`.
-Para el contrato funcional se usan `TEST_TEST_EMAIL` y `TEST_TEST_PASSWORD`
-de una cuenta verificada de esa misma base. No compartas estos valores.
+```bash
+bash scripts/setup-supabase.sh
+```
+
+Tres pasos: abrir o crear el único proyecto, copiar URL/clave publicable y
+configurar una cuenta verificada de esa misma base. Reutiliza tu proyecto y
+cuenta existentes si ya los tienes. El asistente no ejecuta migraciones ni
+modifica datos; antes de guardar pide confirmar la sincronización de los alias
+locales, sustituyendo valores antiguos que apuntaran a otro proyecto.
+Para el contrato funcional se usan `TEST_TEST_EMAIL` y `TEST_TEST_PASSWORD`;
+sus alias `PRESENTATION_*` reciben los mismos valores. No compartas credenciales.
 Comprueba personalmente el plan Free y la región Frankfurt.
 No desactives **Confirm email**. El alta administrativa de una cuenta de prueba
 con confirmación explícita no equivale a tener implementado registro público.
@@ -74,9 +79,8 @@ cuatro variables públicas, nunca las contraseñas. También admite esas cuatro 
 o propiedades en `local.properties`. Son APKs debug para distribución directa,
 con identificadores separados `es.teloarreglo.pruebas` y
 `es.teloarreglo.presentacion`; no una firma de publicación comercial.
-La segunda variante sigue existiendo en el código inicial, pero ya no es un
-entorno alojado requerido. Hasta adaptar la configuración, utiliza `pruebas`
-tanto para probar como para presentar, contra la única base.
+La segunda variante no es un entorno alojado diferente: con el asistente ambas
+usan la misma base. Puedes utilizar `pruebas` tanto para probar como para presentar.
 Sin configuración se muestra un error explícito: compilar no demuestra conexión.
 
 APKs: `app/build/outputs/apk/{pruebas,presentacion}/debug/`.

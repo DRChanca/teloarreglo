@@ -23,8 +23,8 @@ de separar pruebas y presentación en dos proyectos.
   operaciones destructivas sobre la base compartida.
 - Las referencias anteriores en issues o informes a dos proyectos quedan
   sustituidas por esta decisión. La configuración técnica inicial del ticket de
-  acceso todavía contempla dos entornos y debe adaptarse; no acredita que existan
-  dos proyectos.
+  acceso conserva dos variantes de APK, pero el asistente sincroniza sus alias
+  de configuración con la misma conexión y cuenta; no son dos proyectos.
 - El intervalo reducido de 5 minutos no se aplica globalmente a esta base ni a
   sus citas preparadas. Su comprobación deberá aislarse sin exigir un segundo
   proyecto alojado, antes de desplegarla. Se mantienen 24/48 horas por defecto.

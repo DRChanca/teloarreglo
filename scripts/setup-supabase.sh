@@ -200,7 +200,7 @@ finish() {
 
 run_wizard() {
 
-TOTAL_STAGES=6
+TOTAL_STAGES=3
 cd "$(dirname "$0")/.."
 ENV_FILE=".env"
 umask 077
@@ -208,62 +208,66 @@ umask 077
 touch "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 
-banner "Teloarreglo · Supabase Free, sin facturación"
+banner "Teloarreglo · Una sola base de datos"
 
+stage "Un único proyecto para probar y presentar"
+open_url "https://supabase.com/dashboard"
+step "Abre tu proyecto habitual. Si aún no existe, crea UNO en una organización Free."
+step "Para un proyecto nuevo: nombre sugerido teloarreglo; región Frankfurt (eu-central-1)."
+step "Guarda la contraseña de base de datos en tu gestor; NO la pegues aquí."
+say "Usaremos esta misma base para desarrollo, pruebas funcionales y presentación."
+say "David prepara los datos de la presentación. Este asistente no los modifica."
+warn "No crees otro proyecto para presentar, cambies de plan ni añadas tarjeta."
+confirm "¿Tienes abierto el único proyecto Free en Frankfurt, sin activar facturación?" || exit 1
+
+stage "Conexión pública de tu base"
+open_url "https://supabase.com/dashboard"
+step "Abre ese mismo proyecto y pulsa Connect para copiar Project URL."
+ask TEST_SUPABASE_URL "Project URL (https://...supabase.co):"
+url="${TEST_SUPABASE_URL%/}"
+[[ "$url" =~ ^https://[a-z0-9]+\.supabase\.co$ ]] || {
+    warn "Se requiere la URL HTTPS de tu proyecto Supabase."; exit 1;
+}
+ref="${url#https://}"; ref="${ref%.supabase.co}"
+open_url "https://supabase.com/dashboard/project/$ref/settings/api-keys"
+step "En Settings → API Keys, copia Publishable key (sb_publishable_...)."
+note "Los nombres del dashboard pueden variar. No copies Secret key ni service_role."
+ask TEST_SUPABASE_PUBLISHABLE_KEY "Publishable key:"
+public_key="$TEST_SUPABASE_PUBLISHABLE_KEY"
+[[ "$public_key" =~ ^sb_publishable_[A-Za-z0-9_-]+$ ]] || {
+    warn "Solo se admite una clave publicable, nunca una privilegiada."; exit 1;
+}
+
+stage "Cuenta verificada de esa misma base"
+open_url "https://supabase.com/dashboard/project/$ref/auth/users"
+step "Authentication → Sign In / Providers → Email: mantén Confirm email activado."
+step "Vuelve a Users. Reutiliza una cuenta verificada; no hace falta crear otra."
+step "Si no tienes ninguna, Add user → Create new user permite crear la cuenta de prueba."
+step "Solo en ese alta administrativa puedes marcar Auto Confirm User."
+note "No desactives la verificación global ni modifiques cuentas preparadas."
+confirm "¿La cuenta tiene el correo confirmado y la verificación global sigue activa?" || exit 1
+ask TEST_TEST_EMAIL "Correo de la cuenta:"
+[[ "$TEST_TEST_EMAIL" =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]] || {
+    warn "Introduce un correo válido."; exit 1;
+}
+ask_secret TEST_TEST_PASSWORD "Contraseña de la cuenta (entrada oculta):"
+[[ -n "$TEST_TEST_PASSWORD" ]] || { warn "La contraseña no puede estar vacía."; exit 1; }
+
+say "Se guardará una sola conexión en .env, con permisos 600."
+note "TEST_* y PRESENTATION_* son alias heredados de las variantes de APK."
+note "Ambos quedarán apuntando a esta MISMA base y cuenta, incluso si antes eran distintos."
+confirm "¿Guardar la configuración y sincronizar esos alias locales?" || exit 1
+# Keep both existing build/contract variants on the same project, never a second database.
 for prefix in TEST PRESENTATION; do
-    if [[ "$prefix" == TEST ]]; then
-        project_name="teloarreglo-pruebas"
-    else
-        project_name="teloarreglo-presentacion"
-    fi
-
-    stage "$project_name · proyecto"
-    open_url "https://supabase.com/dashboard"
-    step "En una organización Free, abre el proyecto existente o pulsa New project."
-    step "Nombre sugerido: $project_name. Región: Central EU (Frankfurt), eu-central-1."
-    step "Guarda la contraseña de base de datos en tu gestor; NO la pegues aquí."
-    warn "No cambies de plan ni añadas tarjeta. Si no quedan dos plazas Free, detente."
-    confirm "¿Confirmas proyecto Free en Frankfurt, sin facturación?" || exit 1
-
-    stage "$project_name · conexión pública"
-    step "En el proyecto abre Connect para copiar Project URL."
-    step "Para la clave: Settings → API Keys → Publishable key (sb_publishable_...)."
-    note "Los nombres del dashboard pueden variar. No copies Secret key ni service_role."
-    ask "${prefix}_SUPABASE_URL" "Project URL (https://...supabase.co):"
-    key="${prefix}_SUPABASE_URL"; url="${!key}"
-    [[ "$url" =~ ^https://[a-z0-9]+\.supabase\.co$ ]] || {
-        warn "Se requiere la URL HTTPS del proyecto, sin / final."; exit 1;
-    }
-    ask "${prefix}_SUPABASE_PUBLISHABLE_KEY" "Publishable key:"
-    key="${prefix}_SUPABASE_PUBLISHABLE_KEY"; public_key="${!key}"
-    [[ "$public_key" == sb_publishable_* ]] || {
-        warn "Solo se admite la clave publicable sb_publishable_, nunca una privilegiada."; exit 1;
-    }
-    if [[ "$prefix" == PRESENTATION && "$url" == "$TEST_SUPABASE_URL" ]]; then
-        warn "Pruebas y presentación deben ser proyectos distintos."; exit 1
-    fi
     write_env "${prefix}_SUPABASE_URL" "$url"
     write_env "${prefix}_SUPABASE_PUBLISHABLE_KEY" "$public_key"
-
-    stage "$project_name · cuenta verificada"
-    ref="${url#https://}"; ref="${ref%.supabase.co}"
-    open_url "https://supabase.com/dashboard/project/$ref/auth/users"
-    step "Authentication → Sign In / Providers → Email: mantén Confirm email activado."
-    step "Vuelve a Users. Usa una cuenta ya verificada o Add user → Create new user."
-    step "Solo para la cuenta de prueba: puedes marcar Auto Confirm User (alta administrativa)."
-    note "Esto no desactiva la verificación global. Registro público queda para otro ticket."
-    step "Usa correo propio/autorizado y una contraseña nueva guardada en tu gestor."
-    confirm "¿Cuenta de prueba creada y correo confirmado, verificación global activa?" || exit 1
-    ask "${prefix}_TEST_EMAIL" "Correo de la cuenta de prueba:"
-    ask_secret "${prefix}_TEST_PASSWORD" "Contraseña de la cuenta (entrada oculta):"
-    key="${prefix}_TEST_EMAIL"; write_env "$key" "${!key}"
-    key="${prefix}_TEST_PASSWORD"
-    [[ -n "${!key}" ]] || { warn "La contraseña no puede estar vacía."; exit 1; }
-    write_env "$key" "${!key}"
+    write_env "${prefix}_TEST_EMAIL" "$TEST_TEST_EMAIL"
+    write_env "${prefix}_TEST_PASSWORD" "$TEST_TEST_PASSWORD"
 done
 
 finish
 say "Valores guardados solo en .env (ignorado por Git, permisos 600). No se enviaron a GitHub."
+say "Una sola base configurada para probar y presentar. No se ejecutaron migraciones ni se tocaron datos."
 say "Siguiente: migraciones y pruebas según README.md. No se ha demostrado todavía el acceso."
 }
 

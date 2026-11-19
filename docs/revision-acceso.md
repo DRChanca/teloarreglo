@@ -8,7 +8,8 @@ Las observaciones se conservan por eje, sin mezclar sus prioridades.
 David lo ha sustituido por un único proyecto/base para desarrollo, pruebas
 funcionales y presentación, cuyos datos prepara él. Las referencias a dos
 proyectos que siguen abajo son históricas, no requisitos vigentes. La
-configuración inicial debe adaptarse; no se exige provisionar un segundo proyecto.
+configuración del asistente ya se ha adaptado a una sola conexión compartida;
+no se exige provisionar un segundo proyecto.
 
 ## Estándares
 
