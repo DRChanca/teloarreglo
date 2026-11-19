@@ -18,6 +18,9 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: android-actions/setup-android@v3
+        with:
+          # The action defaults to "tools platform-tools"; the legacy tools package was removed.
+          packages: platform-tools
       - uses: gradle/actions/setup-gradle@v4
       - run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - name: Typecheck, unit tests, lint and both APKs

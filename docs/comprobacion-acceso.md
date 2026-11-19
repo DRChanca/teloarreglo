@@ -68,13 +68,38 @@ David ha ejecutado el recorrido interactivo y guardado la conexión real.
 | Dos emuladores | Creados `Teloarreglo_Cliente_API35` y `Teloarreglo_Profesional_API35`, puertos 5556/5558; no se sobrescribió el existente API 37 |
 | Supabase alojado Free/Frankfurt ×1 | Conexión configurada; Auth comprobado; plan/región confirmados manualmente, sin contraste por API |
 | Acceso real desde APK y reabrir contra alojado | Comprobado en ambos emuladores API 35: acceso, recuperación tras force-stop y logout persistente |
-| GitHub Checks | Workflow versionado; **no ejecutado en GitHub**, falta push/revisión |
+| GitHub Checks | Primera ejecución observada: Supabase y API 26 superados; preparación SDK y descarga de dependencias API 35 fallidas. Ver diagnóstico y última ejecución de la PR |
 | Revisión visual con David | **Pendiente**; este diseño no se declara aprobado |
+
+### Diagnóstico de la primera ejecución de GitHub (20/11/2026)
+
+[Ejecución 44632945800](https://github.com/DRChanca/teloarreglo/actions/runs/44632945800),
+commit `5706da6`:
+
+- `supabase`: superado, incluidas migraciones, pgTAP y contrato HTTP local.
+- `android-ui (26)`: superado; ya existe evidencia de ejecución en Android 8/API 26.
+- `android`: falló antes de compilar porque `android-actions/setup-android@v3`
+  instala por defecto `tools platform-tools`. `tools` ya no está disponible.
+  El fallo se reprodujo con `sdkmanager tools`. Se corrige indicando explícitamente
+  `packages: platform-tools`, sin cambiar versiones de Android ni omitir pruebas.
+- `android-ui (35)`: el emulador arrancó; falló después la resolución de varias
+  dependencias de Maven Central, antes de ejecutar los tests. Tres de los JAR
+  indicados devuelven HTTP 200 al comprobarlos directamente. API 26 pasó con las
+  mismas versiones: no se justifica cambiar dependencias ni atribuirlo al emulador.
+  Se debe validar una ejecución nueva antes de dar este fallo por resuelto.
+- Tras la corrección, `:app:test :app:lint :app:assemblePruebasDebug
+  :app:assemblePresentacionDebug` supera la comprobación local. La verificación
+  específica del runner Linux se realiza en GitHub; no se sustituye por un test
+  que solo compruebe el texto del YAML.
+
+Consultar el resultado vigente en los Checks de la
+[PR #35](https://github.com/DRChanca/teloarreglo/pull/35). Subir la corrección
+no fusiona la rama ni despliega cambios sobre Supabase.
 
 La primera prueba en el emulador preexistente API 37 falló dentro de Espresso
 (`InputManager.getInstance` no disponible), no en el acceso. Se conservó ese
 dispositivo y se prepararon dos API 35. CI incluye API 26 y 35; la ejecución
-API 26 no se ha observado localmente en Apple Silicon.
+API 26 no se ha observado localmente en Apple Silicon, pero sí ha pasado en GitHub.
 
 Se corrigió durante la prueba UI un error que quedaba fuera de la zona visible
 con teclado abierto: al enviar se cierra el teclado y el aviso entra en pantalla.
