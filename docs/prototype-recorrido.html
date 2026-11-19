@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teloarreglo · Prototipo desechable del recorrido</title>
+<style>
+  :root{font-family:system-ui,sans-serif;color:#19332c;background:#f1f5f2;line-height:1.5}
+  *{box-sizing:border-box}body{max-width:1200px;margin:auto;padding:28px}
+  h1{font-size:clamp(25px,4vw,38px);line-height:1.15;margin:12px 0}h2{font-size:21px}h3{font-size:16px}
+  p{max-width:90ch}.tag{display:inline-block;background:#d8eade;border-radius:5px;padding:3px 9px;font-size:13px;font-weight:700}
+  .notice{border-left:4px solid #237453;padding:12px 18px;background:#e0eee5}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  section,.card{background:white;border:1px solid #d0dfd5;border-radius:12px;padding:20px;margin:18px 0}
+  .grid .card{margin:0}button,input,textarea{font:inherit}
+  button{border:1px solid #9db9a8;border-radius:7px;padding:9px 12px;background:#fff;color:#19332c;cursor:pointer;margin:4px 4px 4px 0;text-align:left}
+  button:hover,button[aria-selected=true]{background:#e0eee5;border-color:#237453}
+  button:focus-visible{outline:3px solid #237453;outline-offset:2px}
+  button:disabled{opacity:.45;cursor:default}.primary{background:#237453;color:white}
+  .primary:hover{color:#19332c}.small{font-size:13px;color:#50665b}
+  dt{font-size:13px;color:#50665b}dd{margin:0 0 10px;font-weight:600;overflow-wrap:anywhere}
+  .steps{padding-left:24px}.steps button{display:block}
+  .messages{max-height:230px;overflow:auto;padding-left:20px}
+  .feedback{position:sticky;top:8px;z-index:1;background:#19332c;color:white;padding:12px 18px;border-radius:8px}
+  .actions button{font-size:14px}input,textarea{display:block;width:100%;padding:9px;border:1px solid #9db9a8;border-radius:6px}
+  footer{margin:24px 0;color:#50665b}details{margin:12px 0}
+  @media(max-width:720px){body{padding:16px}.grid{grid-template-columns:1fr}.feedback{position:static}}
+</style>
+<header>
+  <span class="tag">DESECHABLE · DATOS FICTICIOS · SIN DINERO REAL</span>
+  <h1>De una fuga a una reseña</h1>
+  <p><strong>Pregunta:</strong> ¿Se entiende qué hace cada parte desde la búsqueda hasta la finalización,
+    cuándo se confirma la cita y qué costes o cambios debe aceptar el cliente?</p>
+  <p class="notice">Esto prueba el <strong>comportamiento</strong>, no el diseño final. Ambas cuentas comparten
+    memoria en esta página: no hay servidor, persistencia, GPS, mapas reales, archivos reales ni cobros.
+    Recargar lo borra todo. La demo Android posterior sí debe compartir y conservar datos entre dos cuentas
+    y enviar fotos y vídeos reales. Aquí se representan con mensajes identificados.</p>
+</header>
+<p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+<section aria-labelledby="state-title">
+  <h2 id="state-title">1. Lo que ve cada parte ahora</h2>
+  <div class="grid">
+    <article class="card"><h3>Cliente · Lucía (ficticia)</h3><dl id="client"></dl></article>
+    <article class="card"><h3>Profesional · Fontanería Nora (ficticio)</h3><dl id="professional"></dl></article>
+  </div>
+  <h3>Conversación compartida</h3>
+  <p>Desde el primer contacto puedes enviar fotos y vídeos para explicar el problema.
+    No necesitas que el fontanero responda ni acepte o confirme una cita.</p>
+  <ol id="messages" class="messages"></ol>
+  <details><summary>Todo el estado relevante, sin ocultar los supuestos</summary><dl id="full-state"></dl></details>
+  <p class="small">El domicilio ficticio del cliente solo se comparte al solicitar la cita, nunca en la búsqueda.
+    Los controles de esta página no demuestran autorización ni seguridad entre cuentas.</p>
+</section>
+<section>
+  <h2>2. Exploración libre</h2>
+  <p>Puedes pulsar cualquier acción, incluso fuera de orden: el mensaje superior explica por qué se admite o se bloquea.</p>
+  <div class="grid">
+    <div><h3>Acciones del cliente</h3><div id="client-actions" class="actions"></div>
+      <label for="review">Comentario de la reseña</label>
+      <textarea id="review" rows="2">Reparación resuelta y precio acordado respetado.</textarea>
+      <label for="stars">Estrellas (1–5)</label><input id="stars" type="number" min="1" max="5" value="5">
+    </div>
+    <div><h3>Acciones del profesional</h3><div id="pro-actions" class="actions"></div>
+      <h3>Controles del escenario (no son funciones de la app)</h3>
+      <div id="setup-actions" class="actions"></div>
+    </div>
+  </div>
+</section>
+<section>
+  <h2>3. Recorridos guiados</h2>
+  <p>Cada pestaña reinicia el estado. Pulsa los pasos de arriba abajo. Si usas la exploración libre,
+    el guion se pausa: vuelve a empezar para repetirlo.</p>
+  <div id="tabs" role="tablist" aria-label="Escenarios"></div>
+  <div id="walkthrough" role="tabpanel" aria-labelledby="tab-0" tabindex="0">
+    <p id="scenario-description"></p><button id="restart">Volver a empezar este recorrido</button><ol id="steps" class="steps"></ol>
+  </div>
+</section>
+<section>
+  <h2>Qué queda explicado, no demostrado</h2>
+  <ul>
+    <li>Sin respuesta ni incidencia: entrega simulada a las 48 horas desde «Realizado», con recordatorios.
+      No hay reloj acelerado ni automatización implementada aquí.</li>
+    <li>Una incidencia antes de la entrega la deja pendiente de revisión. No se decide ni devolución ni entrega automática.
+      El panel y su operativa siguen pendientes de decisión.</li>
+    <li>Cancelar antes de empezar devuelve el total simulado. Después de empezar no se inventa una política.</li>
+    <li>Suscripción opcional simulada de 5 €/mes: estadísticas, exportación de agenda, plantillas y espacios «Destacado»
+      identificados, solo dentro de cobertura y sin posición fija garantizada. No compra la verificación;
+      el perfil gratuito conserva chat, agenda, cobros opcionales y reseñas.</li>
+    <li>Este archivo está en castellano. La app acordada tendrá ES/EN/FR/DE. No se valida aquí su traducción.</li>
+    <li>La búsqueda usa una muestra fija de tres fontaneros, no el catálogo final de 18 ni un algoritmo geográfico.
+      GPS y mapa son representaciones; no se implementan hexágonos ni seguimiento en directo.</li>
+  </ul>
+  <p><strong>Pendiente de validar:</strong> aceptación detallada de cambios de fecha/duración y condiciones,
+    reseñas en casos de disputa y cancelación tras inicio. Este prototipo no resuelve esas decisiones.</p>
+</section>
+<footer>Fuente: docs/especificacion.md, revisión del guion. Prototipo para la decisión
+  <a href="https://github.com/DRChanca/teloarreglo/issues/5">Validar el recorrido de cliente y profesional</a>.
+  Sin dependencias externas: abre este HTML con doble clic.</footer>
+<script>
+// Modelo puro: sin DOM, red, almacenamiento ni reloj. Todos los importes son simulados.
+const Model = (() => {
+  const initial = () => ({
+    location:null, view:'Lista', results:[], profile:false, chat:false, media:[],
+    appointment:'Sin solicitud', address:null, scope:null, date:null, price:null,
+    mode:null, clientAgreed:false, proAgreed:false, pendingPrice:null,
+    occupied:false, begun:false, performed:false, completed:false, incident:false,
+    paid:0, refunded:0, held:0, released:0, review:null, subscription:false, messages:[],
+    note:'Empieza por buscar, o elige un recorrido guiado.'
+  });
+  const reduce = (old, action) => {
+    const s=structuredClone(old);
+    const require=(condition,message)=>{if(!condition)throw new Error(message)};
+    const say=(who,text)=>s.messages.push(`${who}: ${text}`);
+    const openProposal=()=>{
+      require(s.appointment==='Propuesta pendiente','Hace falta una propuesta pendiente del profesional.');
+      require(!s.occupied,'Horario ocupado: no se confirma ni se simula ningún cobro. Debe acordarse otra hora.');
+    };
+    try {
+      switch(action.type){
+        case 'gps': case 'manual':
+          s.location=action.type==='gps'?'Oviedo · GPS representado':'Oviedo · entrada manual representada';
+          s.results=['Fontanería Nora · 1,2 km · desde 80 €','Agua Clara · 3,4 km · desde 95 €'];
+          s.note='Muestra: dos perfiles cubren Oviedo, ordenados por distancia fija a su ubicación registrada. Un tercero fuera de cobertura no aparece.';break;
+        case 'map':
+          require(s.location,'Busca primero una ubicación.');
+          s.view=s.view==='Lista'?'Mapa esquemático (sin cartografía real)':'Lista';
+          s.note='Cambia la representación de los mismos resultados, no la cobertura ni el orden.';break;
+        case 'profile':
+          require(s.location,'Primero busca fontanería en Oviedo.');s.profile=true;
+          s.note='Perfil ficticio: reparación de fugas, Oviedo y Siero, ES/EN, precio orientativo desde 80 €. El presupuesto acordado puede ser distinto.';break;
+        case 'chat':
+          require(s.profile,'Abre primero el perfil.');s.chat=true;
+          say('Cliente','Tengo una fuga bajo el fregadero en Oviedo.');s.note='Ya puedes enviar fotos y vídeos para dar contexto, sin respuesta ni aceptación previa del fontanero. No se publica el domicilio.';break;
+        case 'photo':case 'video':
+          require(s.chat,'Abre primero una conversación.');
+          s.media.push(action.type==='photo'?'Foto representada':'Vídeo representado');
+          say('Cliente',action.type==='photo'?'[FOTO SIMULADA: fuga bajo el fregadero]':'[VÍDEO SIMULADO: goteo del sifón]');
+          s.note='Adjunto representado enviado sin necesitar aceptación del fontanero. No se ha enviado ni abierto un archivo real.';break;
+        case 'request':
+          require(s.chat,'Explica primero el problema en el chat.');
+          require(s.appointment==='Sin solicitud','Ya hay una solicitud en este recorrido.');
+          s.appointment='Pendiente de confirmación';s.address='Calle Ejemplo 12, Oviedo (ficticia)';
+          s.date='26/11/2026 · 10:00–11:00';
+          say('Cliente','Solicito cita y comparto el domicilio solo con este profesional.');
+          s.note='La solicitud no reserva definitivamente el horario. Aún no hay un precio acordado.';break;
+        case 'repair':case 'visit':case 'free':
+          require(s.appointment==='Pendiente de confirmación','Hace falta una solicitud pendiente.');
+          s.price=action.type==='repair'?80:action.type==='visit'?20:0;
+          s.scope=action.type==='repair'?'Reparar sifón; material, desplazamiento e IVA incluidos':
+            action.type==='visit'?'Visita de diagnóstico: 20 € aunque no se repare; desplazamiento e IVA incluidos':
+            'Visita sin coste; ninguna reparación adicional autorizada';
+          s.appointment='Propuesta pendiente';s.proAgreed=true;
+          say('Profesional',`${s.scope}. ${s.date}. Total: ${s.price} €.`);
+          s.note='El profesional propone alcance, fecha y total. No añade costes sin aceptación.';break;
+        case 'pay':
+          openProposal();require(s.price>0,'Una cita gratuita no necesita pago: usa «Aceptar cita gratuita».');
+          s.mode='Integrado simulado';s.clientAgreed=true;s.paid=s.price;s.held=s.price;s.appointment='Confirmada';
+          say('Cliente',`Acepto la propuesta y simulo pagar ${s.price} €.`);
+          s.note='Disponibilidad comprobada en memoria; cita confirmada. Dinero simulado pendiente de entrega, no custodiado realmente.';break;
+        case 'direct':
+          openProposal();require(s.price>0,'Usa la aceptación gratuita para una propuesta de 0 €.');
+          s.mode='Directo al profesional';s.clientAgreed=true;s.appointment='Confirmada';
+          say('Cliente','Acepto la propuesta y el pago directo acordado con el profesional.');
+          s.note='Ambas partes han aceptado (propuesta del profesional y aceptación del cliente). No se procesa ni se da por pagado dinero externo.';break;
+        case 'acceptFree':
+          openProposal();require(s.price===0,'Esta propuesta tiene coste: acepta pago simulado o directo.');
+          s.mode='Sin coste';s.clientAgreed=true;s.appointment='Confirmada';
+          say('Cliente','Acepto la visita gratuita.');s.note='Cita confirmada sin pasarela ni pago.';break;
+        case 'occupy':
+          require(s.appointment!=='Confirmada','Este control solo representa una ocupación antes de confirmar.');
+          s.occupied=!s.occupied;s.note=s.occupied?'Otro compromiso ocupa la hora propuesta.':'Horario de nuevo disponible.';break;
+        case 'up':case 'down':
+          require(s.appointment==='Confirmada'&&!s.performed,'Cambia el precio antes de marcar realizado.');
+          require(s.mode==='Integrado simulado','Este ejemplo de ajustes solo cubre pago integrado simulado.');
+          require(s.pendingPrice===null,'Acepta o rechaza antes el cambio pendiente.');
+          s.pendingPrice=action.type==='up'?s.price+20:Math.max(0,s.price-10);
+          say('Profesional',`Propongo ${s.pendingPrice} €: ${action.type==='up'?'incluye sustitución adicional de junta':'descuento por material no necesario'}.`);
+          s.note='El total aceptado no cambia todavía. El trabajo adicional no está autorizado.';break;
+        case 'acceptChange':case 'rejectChange':
+          require(s.pendingPrice!==null,'No hay un cambio de precio pendiente.');
+          if(action.type==='rejectChange'){
+            s.pendingPrice=null;s.note='Cambio rechazado: se mantienen alcance e importe anteriores; no se autoriza trabajo adicional.';
+            say('Cliente','Rechazo el cambio de precio.');break;
+          }
+          {const delta=s.pendingPrice-s.price;
+          if(delta>0){s.paid+=delta;s.held+=delta;}else{s.refunded-=delta;s.held+=delta;}
+          s.price=s.pendingPrice;s.pendingPrice=null;
+          say('Cliente',`Acepto el nuevo importe: ${s.price} €.`);
+          s.note=delta>0?'Diferencia pagada de forma simulada antes del trabajo adicional.':'Diferencia devuelta de forma simulada tras aceptación expresa.';}break;
+        case 'begin':
+          require(s.appointment==='Confirmada'&&!s.performed,'Solo se inicia una cita confirmada.');
+          require(s.pendingPrice===null,'Resuelve el cambio pendiente antes de continuar.');
+          require(!s.begun,'El trabajo ya está iniciado.');s.begun=true;s.note='Trabajo iniciado. La cancelación posterior tiene reglas aún pendientes.';break;
+        case 'done':
+          require(s.begun&&!s.performed,'Primero debe iniciarse un trabajo confirmado.');
+          require(s.pendingPrice===null,'Resuelve el cambio de precio antes de marcar realizado.');
+          s.performed=true;s.appointment='Realizado, pendiente del cliente';
+          say('Profesional','Marco el servicio como realizado.');
+          s.note='El cliente puede confirmar o comunicar una incidencia. Se explica el plazo de 48 h; aquí no corre ningún temporizador.';break;
+        case 'confirm':
+          require(s.performed&&!s.completed,'El profesional debe marcar realizado antes.');
+          require(!s.incident,'Hay una incidencia: no se libera el pago automáticamente; requiere revisión.');
+          s.completed=true;s.appointment='Finalizada';s.released+=s.held;s.held=0;
+          say('Cliente','Confirmo que el servicio se ha realizado.');
+          s.note=s.mode==='Integrado simulado'?'Pago entregado de forma simulada. Ya puede dejar una reseña.':'Cita finalizada. No se certifica ningún pago externo. Ya puede dejar una reseña.';break;
+        case 'incident':
+          require(s.performed&&!s.completed&&!s.incident,'Este caso cubre una incidencia después de «Realizado» y antes de la entrega.');
+          s.incident=true;s.appointment='Incidencia pendiente de revisión';
+          say('Cliente','Comunico una incidencia antes de la entrega.');
+          s.note='No se entrega ni devuelve automáticamente. Revisión administrativa pendiente de definir; no hay un botón de resolución ficticia.';break;
+        case 'cancel':
+          require(!s.begun,'Cancelación tras inicio pendiente de decisión: no se inventa un resultado.');
+          require(['Pendiente de confirmación','Propuesta pendiente','Confirmada'].includes(s.appointment),'No hay una cita activa que cancelar.');
+          s.refunded+=s.held;s.held=0;s.appointment='Cancelada';s.pendingPrice=null;
+          s.note='Cancelada antes de comenzar, sin penalización. Se devuelve todo lo pagado en la simulación; pagos externos no gestionados.';break;
+        case 'review':
+          require(s.completed,'Este prototipo habilita reseñas tras confirmación manual. Los otros casos siguen pendientes.');
+          require(!s.review,'Solo una reseña por cita realizada.');
+          require(Number.isInteger(action.stars)&&action.stars>=1&&action.stars<=5&&action.text.trim(),'Introduce de 1 a 5 estrellas y un comentario.');
+          s.review={stars:action.stars,text:action.text.trim()};
+          s.note='Reseña publicada solo en memoria. No publiques caras, direcciones ni datos privados.';break;
+        case 'subscribe':
+          s.subscription=!s.subscription;s.note='Suscripción representada, sin compra ni renovación real. No afecta a esta cita ni a su pago.';break;
+        default:throw new Error('Acción desconocida.');
+      }
+      return s;
+    }catch(error){return {...old,note:`No se puede: ${error.message}`};}
+  };
+  return {initial,reduce};
+})();
+</script>
+<script>
+const actions={
+  gps:['Cliente','Buscar fontanería · GPS representado'],manual:['Cliente','GPS denegado → ubicación manual'],
+  map:['Cliente','Alternar lista / mapa representado'],profile:['Cliente','Consultar perfil de Nora'],
+  chat:['Cliente','Abrir chat y explicar fuga'],photo:['Cliente','Representar envío de foto'],video:['Cliente','Representar envío de vídeo'],
+  request:['Cliente','Solicitar 26/11, 10–11 h'],pay:['Cliente','Aceptar y pagar total SIMULADO'],
+  direct:['Cliente','Aceptar propuesta con pago directo'],acceptFree:['Cliente','Aceptar cita gratuita'],
+  acceptChange:['Cliente','Aceptar cambio y ajustar dinero SIMULADO'],rejectChange:['Cliente','Rechazar cambio'],
+  confirm:['Cliente','Confirmar realizado y liberar pago SIMULADO'],incident:['Cliente','Comunicar incidencia'],
+  review:['Cliente','Publicar reseña'],cancel:['Cliente','Cancelar antes de empezar'],
+  repair:['Profesional','Proponer reparación · total 80 €'],visit:['Profesional','Proponer visita con coste · total 20 €'],
+  free:['Profesional','Proponer visita gratuita · 0 €'],up:['Profesional','Proponer trabajo adicional · +20 €'],
+  down:['Profesional','Proponer reducción · −10 €'],begin:['Profesional','Comenzar trabajo'],done:['Profesional','Marcar realizado'],
+  subscribe:['Profesional','Representar suscripción opcional · 5 €/mes'],
+  occupy:['Escenario','Alternar horario ocupado por otra cita']
+};
+const pre=['manual','profile','chat','photo','video','request'];
+const booked=[...pre,'repair','pay'];
+const scenarios=[
+  ['Historia principal','Fuga en Oviedo. El cliente envía foto y vídeo antes de cualquier respuesta o aceptación del fontanero para darle contexto. Observa quién propone y quién acepta; el pago no se entrega hasta la confirmación del cliente.',
+    [...booked,'begin','done','confirm','review','subscribe']],
+  ['Visita con coste','La visita cuesta 20 € aunque no se repare. Intentar aceptarla como gratuita debe bloquearse.',
+    [...pre,'visit','acceptFree','pay']],
+  ['Visita gratuita','El alcance es una visita, no una reparación autorizada. No hay paso de pago.',
+    [...pre,'free','acceptFree','begin','done','confirm','review']],
+  ['Pago directo','El profesional propone y el cliente acepta expresamente. La cita existe y se puede valorar, sin fingir cobro externo.',
+    [...pre,'repair','direct','begin','done','confirm','review']],
+  ['Cambio de importe','Rechaza un aumento, propón otro y acéptalo. Comprueba el pago de diferencia y la devolución al aceptar una reducción.',
+    [...booked,'up','begin','rejectChange','up','acceptChange','down','acceptChange','begin','done','confirm']],
+  ['Horario ocupado','La propuesta no reserva. Si otra cita ocupa la hora, el pago y la confirmación se bloquean sin mover dinero.',
+    [...pre,'repair','occupy','pay']],
+  ['Incidencia','Antes de entregar el pago, una incidencia bloquea la entrega. No simulamos su resolución administrativa ni decidimos aquí la reseña en disputa.',
+    [...booked,'begin','done','incident','confirm']],
+  ['Cancelación','Antes de iniciar se devuelve todo lo simulado, sin penalización.',
+    [...booked,'cancel']],
+  ['Acciones prematuras','Intenta valorar o finalizar antes de tiempo y cancelar después de empezar. La última política sigue pendiente, no se inventa.',
+    ['review','done',...booked,'begin','cancel']]
+];
+let state=Model.initial(),selected=0,step=0,paused=false;
+const $=id=>document.getElementById(id);
+const money=n=>`${n} € (simulados)`;
+function fields(id,rows){
+  const el=$(id);el.replaceChildren();
+  for(const [label,value] of rows){
+    const dt=document.createElement('dt'),dd=document.createElement('dd');
+    dt.textContent=label;dd.textContent=value??'—';el.append(dt,dd);
+  }
+}
+function dispatch(type,guided=false){
+  state=Model.reduce(state,{type,stars:Number($('stars').value),text:$('review').value});
+  if(guided)step++;else paused=true;
+  render();
+}
+function button(label,click){const b=document.createElement('button');b.textContent=label;b.onclick=click;return b;}
+for(const [type,[role,label]] of Object.entries(actions)){
+  $(role==='Cliente'?'client-actions':role==='Profesional'?'pro-actions':'setup-actions')
+    .append(button(label,()=>dispatch(type)));
+}
+function start(index){
+  selected=index;step=0;paused=false;state=Model.initial();
+  $('review').value='Reparación resuelta y precio acordado respetado.';$('stars').value=5;render();
+}
+scenarios.forEach(([name],i)=>{
+  const b=button(name,()=>start(i));b.id=`tab-${i}`;b.setAttribute('role','tab');
+  b.setAttribute('aria-controls','walkthrough');
+  b.onkeydown=e=>{
+    if(!['ArrowRight','ArrowLeft','Home','End'].includes(e.key))return;
+    e.preventDefault();const next=e.key==='Home'?0:e.key==='End'?scenarios.length-1:
+      (selected+(e.key==='ArrowRight'?1:-1)+scenarios.length)%scenarios.length;
+    start(next);$(`tab-${next}`).focus();
+  };$('tabs').append(b);
+});
+$('restart').onclick=()=>start(selected);
+function render(){
+  $('feedback').textContent=state.note;
+  fields('client',[
+    ['Lugar del trabajo',state.location],['Representación',state.view],
+    ['Resultados de muestra',state.results.join(' · ')||'Sin búsqueda'],
+    ['Perfil consultado',state.profile?'Nora · ficticio · cobertura Oviedo/Siero · ES/EN':'No'],
+    ['Estado de cita',state.appointment],['Alcance',state.scope],['Fecha e intervalo',state.date],
+    ['Total aceptado',state.clientAgreed?`${state.price} €`:'Todavía no aceptado'],
+    ['Nuevo total pendiente de aceptación',state.pendingPrice===null?'Ninguno':`${state.pendingPrice} €`],
+    ['Modalidad',state.mode],['Pagado / devuelto',`${money(state.paid)} / ${money(state.refunded)}`],
+    ['Reseña',state.review?`${state.review.stars}/5 · ${state.review.text}`:'No publicada']
+  ]);
+  fields('professional',[
+    ['Solicitud / cita',state.appointment],['Domicilio compartido en privado',state.address||'No recibido'],
+    ['Propuesta del profesional',state.price===null?'Sin propuesta':`${state.price} € · ${state.scope}`],
+    ['Acuerdo expreso del profesional / cliente',`${state.proAgreed?'Sí':'No'} / ${state.clientAgreed?'Sí':'No'}`],
+    ['Horario ocupado por otra cita',state.occupied?'Sí':'No'],
+    ['Trabajo iniciado / marcado realizado',`${state.begun?'Sí':'No'} / ${state.performed?'Sí':'No'}`],
+    ['Dinero pendiente de entrega / entregado',`${money(state.held)} / ${money(state.released)}`],
+    ['Incidencia',state.incident?'Pendiente de revisión · sin resolución automática':'No'],
+    ['Suscripción',state.subscription?'Ventajas de 5 €/mes representadas · no contratada':'Perfil gratuito']
+  ]);
+  const names={location:'Lugar de búsqueda',view:'Vista',results:'Resultados',profile:'Perfil abierto',chat:'Chat abierto',
+    media:'Adjuntos representados',appointment:'Estado de cita',address:'Dirección privada',scope:'Alcance',date:'Fecha',
+    price:'Precio propuesto o aceptado',mode:'Modalidad',clientAgreed:'Cliente aceptó',proAgreed:'Profesional propuso',
+    pendingPrice:'Cambio de importe pendiente',occupied:'Horario ocupado',begun:'Trabajo iniciado',performed:'Marcado realizado',
+    completed:'Confirmado por cliente',incident:'Incidencia',paid:'Total pagado simulado',refunded:'Total devuelto simulado',
+    held:'Pendiente de entrega simulado',released:'Entregado simulado',review:'Reseña',subscription:'Suscripción representada',
+    messages:'Conversación',note:'Último resultado'};
+  fields('full-state',Object.entries(state).map(([k,v])=>[names[k],v===null?'Sin dato':
+    typeof v==='boolean'?(v?'Sí':'No'):Array.isArray(v)?v.join(' · ')||'Ninguno':
+    typeof v==='object'?`${v.stars}/5 · ${v.text}`:String(v)]));
+  $('messages').replaceChildren();
+  for(const message of state.messages){const li=document.createElement('li');li.textContent=message;$('messages').append(li);}
+  if(!state.messages.length){const li=document.createElement('li');li.textContent='Todavía no hay mensajes.';$('messages').append(li);}
+  [...$('tabs').children].forEach((b,i)=>{b.setAttribute('aria-selected',String(i===selected));b.tabIndex=i===selected?0:-1;});
+  $('walkthrough').setAttribute('aria-labelledby',`tab-${selected}`);
+  $('scenario-description').textContent=scenarios[selected][1]+(paused?' Guion pausado por exploración libre.':'');
+  $('steps').replaceChildren();
+  scenarios[selected][2].forEach((type,i)=>{
+    const li=document.createElement('li'),[role,label]=actions[type];
+    const b=button(`${i<step?'✓ ':''}${role}: ${label}`,()=>dispatch(type,true));
+    b.disabled=paused||i!==step;if(i===step)b.classList.add('primary');li.append(b);$('steps').append(li);
+  });
+}
+render();
+</script>
+</html>

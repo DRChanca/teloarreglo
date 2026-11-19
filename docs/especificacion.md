@@ -161,6 +161,7 @@ La dirección exacta del cliente nunca será pública: se comparte con el profes
 
 - Chat dentro de la aplicación.
 - Cliente y profesional pueden enviar mensajes, fotos y vídeos.
+- El cliente puede enviar fotos y vídeos desde el primer contacto, antes de que el profesional responda, acepte una solicitud o confirme una cita. Sirven para aportar contexto del problema antes de acordar alcance y precio; no requieren aceptación previa del profesional.
 - Teléfono del profesional visible para quienes prefieran llamar.
 - El chat permite explicar el problema, solicitar información y compartir resultados.
 - El profesional puede enviar propuestas de precio que el cliente acepte expresamente.
