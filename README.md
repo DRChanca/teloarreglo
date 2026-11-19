@@ -4,6 +4,18 @@ Una app Android Kotlin/Compose para cliente y profesional. Base de identidad de
 [Acceder por correo y conservar sesión](https://github.com/DRChanca/teloarreglo/issues/12).
 Reglas: [especificación](docs/especificacion.md).
 
+## Decisión vigente: una sola base
+
+Se utiliza **un único proyecto Supabase Free en Frankfurt**, con la misma base
+para desarrollo, pruebas funcionales y presentación. David prepara los datos de
+la presentación en esa base. No hay una segunda base ni promoción de datos;
+no se reinician, borran ni repueblan datos automáticamente.
+
+**La implementación inicial aún debe adaptarse:** conserva dos variantes y un
+asistente que pide dos proyectos. **No ejecutes `scripts/setup-supabase.sh`
+en su estado actual**: ese flujo ha quedado obsoleto. Esta decisión sustituye
+la separación descrita originalmente en los tickets y en la revisión inicial.
+
 ## Preparación
 
 - JDK 21 (el código genera bytecode Java 17), Python 3, Android Studio/SDK.
@@ -12,13 +24,13 @@ Reglas: [especificación](docs/especificacion.md).
   supabase-kt **3.1.4**, Ktor/OkHttp **3.1.3** fijados en el repositorio.
 - Supabase CLI **3.2.0** y Docker para comprobaciones de servidor locales.
 
-```bash
-bash scripts/setup-supabase.sh
-```
-
-El asistente guía la creación de **dos proyectos Free en Frankfurt** y cuentas
-de prueba verificadas. No añade tarjetas, cambia planes ni guarda contraseñas
-de base de datos. Comprueba personalmente plan y región en cada proyecto.
+Mientras se adapta el asistente, configura en `.env` solo la conexión del único
+proyecto mediante `TEST_SUPABASE_URL` y `TEST_SUPABASE_PUBLISHABLE_KEY`.
+Los nombres `TEST_*` y la variante `pruebas` son heredados: **no implican otra
+base de datos**. No se necesita configurar `PRESENTATION_*`.
+Para el contrato funcional se usan `TEST_TEST_EMAIL` y `TEST_TEST_PASSWORD`
+de una cuenta verificada de esa misma base. No compartas estos valores.
+Comprueba personalmente el plan Free y la región Frankfurt.
 No desactives **Confirm email**. El alta administrativa de una cuenta de prueba
 con confirmación explícita no equivale a tener implementado registro público.
 
@@ -27,27 +39,25 @@ con confirmación explícita no equivale a tener implementado registro público.
 El asistente **no** envía valores a GitHub. No compartas el archivo ni captures
 tokens/contraseñas en evidencias.
 
-## Migraciones y entornos
+## Migraciones en la base compartida
 
 El historial de `supabase/migrations/` es común. No editar migraciones ya aplicadas.
-`supabase/config.toml` configura la pila **local**, no los proyectos alojados.
-Verifica por separado que ambos mantienen la confirmación por correo.
+`supabase/config.toml` configura la pila **local**, no el proyecto alojado.
+Mantén activa la confirmación por correo.
 
 Para aplicar a un proyecto alojado, autentícate en CLI fuera del repositorio:
 
 ```bash
 supabase login
-supabase link --project-ref REFERENCIA_DE_PRUEBAS
+supabase link --project-ref REFERENCIA_DEL_UNICO_PROYECTO
 supabase db push --linked --dry-run
 supabase db push --linked
 python3 scripts/contract_identity.py --environment pruebas
 ```
 
 Revisa el proyecto enlazado y el listado antes de confirmar el despliegue.
-Promoción a presentación: **solo tras validar pruebas y revisar los cambios**,
-volver a enlazar explícitamente la referencia de presentación y repetir
-`db push --linked --dry-run`, `db push --linked` y el contrato con
-`--environment presentacion`. No hay despliegue automático ni seed.
+No hay promoción a un proyecto de presentación: David prepara esa misma base
+para mostrarla. No hay despliegue automático ni seed.
 **No ejecutar `db reset` contra datos preparados**, ni borrar usuarios para
 repetir la presentación. Contraseñas de base y tokens de despliegue se introducen
 en CLI/gestor de credenciales, nunca en app/Git.
@@ -57,7 +67,6 @@ en CLI/gestor de credenciales, nunca en app/Git.
 ```bash
 python3 scripts/android.py check
 python3 scripts/android.py build --environment pruebas
-python3 scripts/android.py build --environment presentacion
 ```
 
 El script lee `.env` **sin ejecutarlo**. De ese archivo solo pasa a Gradle las
@@ -65,6 +74,9 @@ cuatro variables públicas, nunca las contraseñas. También admite esas cuatro 
 o propiedades en `local.properties`. Son APKs debug para distribución directa,
 con identificadores separados `es.teloarreglo.pruebas` y
 `es.teloarreglo.presentacion`; no una firma de publicación comercial.
+La segunda variante sigue existiendo en el código inicial, pero ya no es un
+entorno alojado requerido. Hasta adaptar la configuración, utiliza `pruebas`
+tanto para probar como para presentar, contra la única base.
 Sin configuración se muestra un error explícito: compilar no demuestra conexión.
 
 APKs: `app/build/outputs/apk/{pruebas,presentacion}/debug/`.
@@ -92,7 +104,7 @@ python3 scripts/android.py install --serial emulator-5556
 python3 scripts/android.py install --serial emulator-5558
 ```
 
-Abrir la app del mismo entorno en ambos y entrar con cuentas verificadas distintas.
+Abrir la misma variante `pruebas` en ambos, conectada a la única base, y entrar con cuentas verificadas distintas.
 No hay aplicación separada por rol. Este ticket solo entrega acceso, no perfiles/chat.
 
 ## Comprobaciones
@@ -112,6 +124,8 @@ con una sesión o datos locales que deban conservarse. Después de probar, insta
 de nuevo la APK con el comando `install`.
 
 - SQL/pgTAP: identidad de sesión, acceso anónimo y elevación de permisos.
+- Las pruebas funcionales contra Supabase alojado usan la base normal. La pila
+  local de CI sirve para pruebas aisladas; no es otro proyecto alojado requerido.
 - Contrato HTTP **real**: credenciales incorrectas, acceso protegido, recuperación
   con refresh token y cierre contra Auth. `--local` crea y elimina únicamente su
   propia cuenta desechable en loopback; nunca usa administración remota.

@@ -4,6 +4,12 @@ Base confirmada por David: `main` (`530566d`).
 Revisión inicial: `git diff main...34701f8`, dos revisores independientes.
 Las observaciones se conservan por eje, sin mezclar sus prioridades.
 
+**Nota posterior:** esta revisión evaluó el requisito original de dos proyectos.
+David lo ha sustituido por un único proyecto/base para desarrollo, pruebas
+funcionales y presentación, cuyos datos prepara él. Las referencias a dos
+proyectos que siguen abajo son históricas, no requisitos vigentes. La
+configuración inicial debe adaptarse; no se exige provisionar un segundo proyecto.
+
 ## Estándares
 
 1. **Defecto P2:** el observador de Auth podía aplicar un evento antiguo después

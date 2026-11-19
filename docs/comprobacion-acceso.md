@@ -5,9 +5,16 @@ Fecha: 19 de noviembre de 2026. Rama: `feat/12-acceso-sesion`.
 
 ## Estado de aceptación
 
-**Implementación local; aceptación del ticket pendiente.** No se han configurado
-todavía los dos proyectos Supabase alojados ni demostrado su acceso desde la APK.
+**Implementación local; aceptación del ticket pendiente.** No se ha configurado
+todavía el único proyecto Supabase alojado ni demostrado su acceso desde la APK.
 No hay planes, facturación ni compras activados por este trabajo.
+
+**Cambio posterior de David:** una única base para desarrollo, pruebas
+funcionales y presentación; él prepara los datos de la presentación.
+La implementación inicial de dos variantes y el asistente de dos proyectos
+están pendientes de adaptación. No ejecutar ese asistente en su estado actual.
+Los resultados técnicos siguientes describen lo comprobado antes de este cambio;
+no constituyen una exigencia vigente de mantener dos bases.
 
 | Área | Estado / evidencia |
 | --- | --- |
@@ -20,7 +27,7 @@ No hay planes, facturación ni compras activados por este trabajo.
 | Sesión cifrada entre clientes nuevos | `PersistedIdentityTest` en API 35: 1/1, almacenamiento/Keystore reales y HTTP controlado |
 | Idiomas | Recursos ES/EN/FR/DE completos; `LanguageTest` en API 35: 1/1, selección de alemán y persistencia al recrear actividad |
 | Dos emuladores | Creados `Teloarreglo_Cliente_API35` y `Teloarreglo_Profesional_API35`, puertos 5556/5558; no se sobrescribió el existente API 37 |
-| Supabase alojado Free/Frankfurt ×2 | **Pendiente del asistente humano** |
+| Supabase alojado Free/Frankfurt ×1 | **Pendiente de configuración; adaptar el asistente a un único proyecto** |
 | Acceso real desde APK y reabrir contra alojado | **Pendiente** |
 | GitHub Checks | Workflow versionado; **no ejecutado en GitHub**, falta push/revisión |
 | Revisión visual con David | **Pendiente**; este diseño no se declara aprobado |
@@ -73,9 +80,10 @@ para reiniciar una sesión o datos locales preparados de presentación.
 
 ## Pasos que faltan para aceptar el ticket
 
-1. Ejecutar `bash scripts/setup-supabase.sh`; confirmar en dashboard región y
-   plan de cada proyecto, que son distintos y que **Confirm email** sigue activo.
-2. Aplicar la migración a pruebas con revisión/dry-run, ejecutar
+1. Adaptar el asistente/configuración a **un solo proyecto**. Confirmar en
+   dashboard plan Free, Frankfurt y **Confirm email** activo. No crear otro
+   proyecto para presentación.
+2. Aplicar la migración a la base compartida con revisión/dry-run, ejecutar
    `python3 scripts/contract_identity.py --environment pruebas`.
 3. Compilar pruebas con la configuración, instalar en ambos emuladores y entrar
    con cuentas Auth verificadas diferentes. No registrar ni grabar contraseñas.
@@ -83,14 +91,15 @@ para reiniciar una sesión o datos locales preparados de presentación.
    reabrir desde el lanzador y observar cuenta verificada tras consulta al servidor.
 5. Quitar conectividad y repetir: aviso comprensible y sin acceso confirmado falso;
    restaurar conexión y reintentar. Intentar logout sin conexión: no declarar éxito.
-6. Con una cuenta de prueba desechable, revocar su sesión desde Auth, cerrar/reabrir:
-   pedir acceso de nuevo. No revocar cuentas de presentación preparadas.
+6. Con una cuenta de prueba desechable autorizada, revocar su sesión desde Auth,
+   cerrar/reabrir y pedir acceso de nuevo. No alterar las cuentas que David haya
+   preparado para presentar en esa misma base.
 7. Revisar ES/EN/FR/DE, selector, persistencia al reabrir, teclado, legibilidad,
    tamaño de texto y aspecto con David. Dispositivo en idioma no soportado: ES.
-8. Tras validar pruebas, promover explícitamente a presentación; repetir contrato
-   y recorrido con la APK de presentación. No reiniciar ni repoblar datos.
-9. Ejecutar Checks en GitHub y conservar SHA, APK, firma/hash y resultados de ambos
-   entornos, sin secretos. Adjuntar evidencias depuradas antes de cerrar el ticket.
+8. David prepara los datos de presentación en la misma base. No promover a otra
+   base ni reiniciar, borrar o repoblar automáticamente los datos.
+9. Ejecutar Checks en GitHub y conservar SHA, APK, firma/hash y resultados de la
+   base compartida, sin secretos. Adjuntar evidencias depuradas antes de cerrar el ticket.
 
 El contrato de logout comprueba que el refresh token deja de funcionar. Un JWT
 de acceso ya emitido puede seguir siendo válido hasta caducar; no se afirma una

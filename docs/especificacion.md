@@ -6,6 +6,29 @@ Repositorio: https://github.com/DRChanca/teloarreglo
 
 Este documento consolida las decisiones de la conversación con el promotor. No implica que las funcionalidades estén implementadas ni que se hayan contratado proveedores. Las cuestiones pendientes se recogen al final.
 
+## Actualización: una única base de datos compartida
+
+Decisión posterior de David, 19 de noviembre de 2026: se utilizará **un único
+proyecto Supabase Free en Frankfurt y una única base de datos alojada** para
+desarrollo, pruebas funcionales y presentación. Sustituye el acuerdo anterior
+de separar pruebas y presentación en dos proyectos.
+
+- Las pruebas funcionales se realizan contra la base normal del proyecto.
+- David prepara y ajusta los datos que quiera utilizar en la presentación;
+  no se exige copiar datos ni promoverlos a una segunda base.
+- Los agentes no reinician, vacían, repueblan ni borran automáticamente los datos
+  preparados. Cualquier operación destructiva requiere autorización expresa.
+- Las pruebas automáticas que necesiten datos desechables o aislamiento pueden
+  ejecutarse localmente, sin exigir otro proyecto Supabase alojado. No autorizan
+  operaciones destructivas sobre la base compartida.
+- Las referencias anteriores en issues o informes a dos proyectos quedan
+  sustituidas por esta decisión. La configuración técnica inicial del ticket de
+  acceso todavía contempla dos entornos y debe adaptarse; no acredita que existan
+  dos proyectos.
+- El intervalo reducido de 5 minutos no se aplica globalmente a esta base ni a
+  sus citas preparadas. Su comprobación deberá aislarse sin exigir un segundo
+  proyecto alojado, antes de desplegarla. Se mantienen 24/48 horas por defecto.
+
 ## Actualización: objetivo inmediato de demostración universitaria
 
 Esta sección tiene prioridad sobre las referencias posteriores al alcance del primer lanzamiento. El resto del documento conserva la visión del producto futuro; no todo es requisito de la demostración.
@@ -56,7 +79,7 @@ Las reglas de este apartado sustituyen las propuestas anteriores incompatibles s
 - Vídeo de un máximo de diez minutos según el usuario; objetivo acordado de siete a ocho minutos narrados.
 - En el vídeo, el cliente confirma manualmente que el servicio se realizó y se muestra la liberación del pago simulado.
 - La decisión posterior sobre citas, reseñas y privacidad exige que la liberación automática tras 48 horas sin respuesta ni incidencia funcione realmente en la demo, aunque ambas aplicaciones estén cerradas. Sustituye el alcance anterior de solo explicarla. En el vídeo se conserva la confirmación manual, sin esperar esas horas ni añadir un botón para adelantar el reloj.
-- La decisión de preparación del vídeo permite validar esa automatización con un intervalo de 5 minutos en el entorno de pruebas, sin exigir una espera real de 48 horas como criterio de aceptación. La configuración de presentación y producto mantiene 48 horas; no se afirma haber observado esa espera si solo se probó el intervalo reducido.
+- La decisión de preparación del vídeo permite validar esa automatización con un intervalo de 5 minutos en una prueba aislada, sin exigir una espera real de 48 horas como criterio de aceptación. No exige un segundo proyecto alojado ni autoriza reducir globalmente el plazo de la base compartida. La configuración normal de presentación y producto mantiene 48 horas; no se afirma haber observado esa espera si solo se probó el intervalo reducido.
 
 #### Reglas aprobadas de citas, reseñas y privacidad
 
@@ -130,7 +153,7 @@ Estas decisiones actualizan el calendario, la evidencia del reloj y la forma de 
 
 - Calendario: 27 de noviembre, recorrido completo integrado; 28, pruebas; 29–30, correcciones y grabación; 1 de diciembre, entrega del vídeo. Se envía el vídeo antes de la prueba posterior de la aplicación.
 - La aceptación distingue aprobado, implementado y comprobado. Se necesita una lista de verificación del recorrido entre cuentas, persistencia al reabrir, archivos reales y compresión, citas/costes, permisos, incidencias, reseñas, idiomas y panel; no bastan pantallas aparentes. Las evidencias se obtienen durante la implementación, no se dan por existentes al cerrar el mapa.
-- Automatización comprobada con intervalo de 5 minutos en el proyecto de pruebas, con las apps cerradas y registros del servidor. Verificar también recordatorios, bloqueo por incidencia y ausencia de duplicados; pruebas automáticas con fechas controladas complementan la ejecución real corta.
+- Automatización comprobada con intervalo de 5 minutos en una prueba aislada, con las apps cerradas y registros del servidor, sin exigir un segundo proyecto alojado ni afectar a datos preparados en la base compartida. Verificar también recordatorios, bloqueo por incidencia y ausencia de duplicados; pruebas automáticas con fechas controladas complementan la ejecución real corta.
 - No se exige esperar 48 horas reales para aceptar esta entrega. Presentación/producto conservan 24 horas para el recordatorio y 48 para el cierre; el intervalo reducido queda aislado en pruebas. El vídeo mantiene confirmación manual, sin botón para acelerar el reloj.
 - La app debe verse cuidada y fluida, no como una maqueta. Revisar pronto las primeras pantallas reales con el usuario antes de extender su diseño: navegación coherente, jerarquía visual, legibilidad, imágenes cuidadas y respuesta visible a acciones.
 - Mostrar progreso de cargas/subidas y explicar fallos. No confirmar una operación pendiente de respuesta del servidor ni dejar bloqueos inexplicables.

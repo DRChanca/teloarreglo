@@ -5,6 +5,10 @@ Fecha: 19 de noviembre de 2026.
 
 Fuente: [Elegir arquitectura y contratos para desarrollar la demo entre dos personas](https://github.com/DRChanca/teloarreglo/issues/6).
 Actualización de aceptación y entrega: [Preparación del vídeo y paso a especificación](https://github.com/DRChanca/teloarreglo/issues/8).
+Actualización posterior de David, 19/11/2026: **un único proyecto Supabase y una
+única base alojada para desarrollo, pruebas funcionales y presentación**.
+Prevalece sobre las referencias anteriores a dos proyectos; véase la
+[decisión vigente](especificacion.md#actualización-una-única-base-de-datos-compartida).
 Reglas funcionales: [especificación](especificacion.md), especialmente apartados 1 y 14.
 La resolución de la issue es la referencia de aprobación; este documento desarrolla sus contratos para compartirlos entre las dos líneas de trabajo. No constituye un desglose de tickets.
 
@@ -108,7 +112,7 @@ Repetir una operación con la misma clave y datos devuelve su resultado sin repe
 ## 4. Automatización y notificaciones
 
 - Persistir en servidor el instante de realizado y sus vencimientos de 24 y 48 horas.
-- Para aceptación se permite un intervalo de cierre de 5 minutos en el proyecto de pruebas, con recordatorio de prueba anterior al cierre. Aislar esta configuración del proyecto de presentación, que mantiene 24/48 horas. No se exige observar una espera real de 48 horas ni se afirma haberla observado al probar el intervalo reducido.
+- Para aceptación se permite un intervalo de cierre de 5 minutos en una prueba aislada, con recordatorio previo. Con la decisión de base única, no se exige otro proyecto alojado ni se aplica ese intervalo globalmente a la base compartida o sus citas preparadas. Acordar el aislamiento antes de desplegarlo; el funcionamiento normal conserva 24/48 horas. No se exige observar una espera real de 48 horas ni se afirma haberla observado al probar el intervalo reducido.
 - Supabase Cron comprueba cada minuto los registros elegibles. No mantener una Edge Function esperando 48 horas ni depender del teléfono.
 - Nunca cerrar antes del vencimiento. En operación normal se procesa en la siguiente ejecución disponible; no se promete exactitud al segundo ni disponibilidad que Free no garantiza.
 - Al reanudar tras un fallo, recuperar vencimientos atrasados sin duplicar recordatorios, cierres o entregas y respetando incidencias.
@@ -136,9 +140,9 @@ Repetir una operación con la misma clave y datos devuelve su resultado sin repe
 - Acordar y compartir estos contratos antes de trabajar en paralelo. Cada recorrido incluye presentación, persistencia y permisos.
 - Primera integración: acceso, perfil y conversación persistente entre dos cuentas en dos emuladores contra Supabase. Ampliar después con archivos, citas y administración.
 - Ramas por ticket, revisión y comprobaciones en GitHub. Coordinar cambios de interfaces, migraciones y archivos compartidos antes de modificarlos.
-- Dos proyectos Supabase Free: pruebas y presentación, con la misma historia de migraciones en Git. No probar operaciones destructivas sobre los datos de presentación.
-- Desplegar primero en pruebas; pasar a presentación tras comprobación explícita. Ninguna migración o despliegue repone ni borra automáticamente datos preparados.
-- Secretos de despliegue fuera de Git y diferenciados por entorno; builds del panel Cloudflare Pages desde el mismo repositorio.
+- Un único proyecto Supabase Free en Frankfurt y una única base alojada para desarrollo, pruebas funcionales y presentación. David prepara los datos de la presentación en esa misma base.
+- Revisar migraciones antes de aplicarlas a la base compartida. No hay promoción a otra base ni reinicio, repoblación o borrado automáticos de los datos preparados. Las pruebas que necesiten aislamiento se ejecutan localmente, sin exigir otro proyecto alojado.
+- Secretos de despliegue fuera de Git y de los clientes; builds del panel Cloudflare Pages desde el mismo repositorio.
 - Conservar APK identificada para grabación y distribución directa. El diseño visual no se aprueba con esta decisión.
 - Calendario actualizado: recorrido integrado el 27/11, pruebas el 28/11, correcciones/grabación el 29–30/11 y entrega del vídeo el 1/12/2026; prueba posterior de la aplicación.
 - Revisar primeras pantallas reales con el usuario antes de extender el diseño. Apariencia cuidada, navegación fluida, progreso y respuesta a acciones, sin bloqueos ni confirmaciones falsas.

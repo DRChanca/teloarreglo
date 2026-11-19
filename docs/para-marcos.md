@@ -25,6 +25,14 @@ Cada issue es una tarea. Dentro se explica qué debe quedar funcionando y hay un
 
 No es «tú todas las pantallas y David todo lo demás»: cada uno termina sus recorridos y los vamos juntando con frecuencia.
 
+## Base de datos compartida
+
+Usamos **un solo proyecto Supabase y una sola base de datos** para desarrollar,
+probar y presentar. David prepara los datos de la presentación en esa misma
+base. No hay una segunda base de presentación ni hay que copiar datos entre
+entornos. No reinicies, borres ni repuebles datos automáticamente; cualquier
+operación destructiva se consulta antes con David.
+
 ## Cómo empezar una tarea
 
 1. Abre la lista de tus issues y lee una completa.
