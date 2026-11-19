@@ -28,6 +28,48 @@ Esta sección tiene prioridad sobre las referencias posteriores al alcance del p
 
 ## 1. Objetivo y ámbito
 
+### Revisión acordada durante el guion de la demo
+
+Las reglas de este apartado sustituyen las propuestas anteriores incompatibles sobre búsqueda, confirmación y momento del pago, tanto para el flujo demostrado como para la visión que se explicará del producto. El dinero sigue siendo simulado en la demo; la viabilidad del flujo real requiere nueva validación del proveedor.
+
+- Catálogo de demostración: 18 profesionales ficticios, tres de cada uno de los seis oficios iniciales, con servicios, concejos y precios variados.
+- La historia principal muestra una reparación de fontanería en Oviedo: búsqueda, perfil, conversación con foto y vídeo reales, propuesta de reparación con fecha y precio, confirmación mediante pago simulado, finalización y reseña.
+- Demostración con la aplicación Android funcionando en dos emuladores: uno para el cliente y otro para el profesional, con persistencia compartida. No basta una maqueta navegable.
+- Cuatro idiomas en la interfaz entregada; vídeo narrado en castellano y demostración breve del selector.
+- Escena de suscripción de 5 €/mes con sus ventajas; sin cobros reales.
+- Búsqueda por proximidad desde el GPS, con mapa y lista y alternativa de ubicación manual para denegación del permiso o trabajo en otra dirección.
+- Primero se filtra por cobertura del lugar del trabajo; después se ordena por distancia a la ubicación profesional registrada, no por seguimiento en directo.
+- Se solicita organización espacial por hexágonos, ampliando desde la celda de búsqueda a sus vecinas y calculando las distancias reales para ordenar. La tecnología y los detalles quedan para la decisión técnica.
+- La propuesta del profesional especifica alcance, precio y hora. Para pago integrado, el cliente paga el total para confirmar la cita.
+- Se conserva el pago directo: la cita puede confirmarse por acuerdo expreso de ambas partes sin pagar dentro de la aplicación.
+- Una visita puede ser gratuita o tener un coste acordado. Una cita gratuita no requiere pasar por el pago. No se crean tipos rígidos de cita.
+- Cambiar el importe requiere aceptación expresa: si aumenta se paga la diferencia antes del trabajo adicional; si disminuye se devuelve la diferencia, de forma simulada.
+- El pago integrado queda pendiente de entrega al técnico hasta la confirmación de realización. En producción se necesitaría un proveedor adecuado, no custodia directa de fondos asumida por Teloarreglo.
+- El profesional marca el servicio como realizado; el cliente confirma para liberar el pago simulado.
+- Si el cliente no responde, se libera a las 48 horas desde esa marca, con recordatorios. Sustituye el plazo anterior de siete días para ese flujo.
+- Si el cliente comunica una incidencia antes de la liberación, el pago queda pendiente de revisión; no se entrega ni se devuelve automáticamente.
+- Cancelar antes de comenzar el servicio da lugar a devolución total simulada, sin penalizaciones. El tratamiento tras comenzar sigue pendiente.
+- Las propuestas pendientes no reservan definitivamente el horario. Antes del pago se comprueba disponibilidad; no deben confirmarse citas solapadas. El mecanismo de concurrencia y su futura coordinación con el proveedor queda pendiente.
+- Objetivo de integración del recorrido: 26 de noviembre; 27 y 28 reservados para pruebas, correcciones y grabación.
+- El alcance del panel de administración no está aprobado: requiere una decisión específica y no se presume aceptada la propuesta de panel mínimo.
+- Vídeo de un máximo de diez minutos según el usuario; objetivo acordado de siete a ocho minutos narrados.
+- En el vídeo, el cliente confirma manualmente que el servicio se realizó y se muestra la liberación del pago simulado.
+- Se explicará la liberación automática tras 48 horas sin respuesta ni incidencia; no se esperarán esas horas ni habrá un botón para adelantar el reloj. Esta explicación no demuestra que la automatización esté implementada: su alcance técnico queda pendiente.
+
+#### Criterios observables del recorrido acordado
+
+- El catálogo contiene 18 perfiles ficticios de seis oficios y permite comparar sus servicios.
+- La ubicación se obtiene mediante permiso GPS o entrada manual; los resultados se muestran en lista y mapa y respetan la cobertura de servicio.
+- Una acción de una cuenta se refleja en la otra sin editar datos manualmente fuera de la aplicación.
+- Las conversaciones permiten enviar y abrir una foto y un vídeo reales.
+- El profesional propone alcance, fecha y precio; el cliente acepta y confirma mediante pago simulado claramente identificado.
+- No se confirma una cita cuyo horario ya esté ocupado.
+- El profesional marca realizado; el cliente confirma; la aplicación registra la liberación simulada y permite una reseña.
+- Las operaciones del recorrido persisten al volver a abrir la aplicación.
+- La interfaz entregada está disponible en castellano, inglés, francés y alemán; el vídeo muestra brevemente el selector.
+- La escena de suscripción muestra precio y ventajas sin cobrar dinero; las imágenes y los datos ficticios están autorizados o creados para la demo.
+- Visitas gratuitas o con coste y confirmación para pago directo siguen dentro del alcance, aunque el vídeo se centra en el pago integrado simulado.
+
 Teloarreglo conecta a particulares que necesitan arreglos con profesionales independientes y pequeñas empresas. Permite encontrar profesionales, contactar, concertar citas, acordar precios, pagar opcionalmente y dejar reseñas.
 
 - Aplicación para Android.
