@@ -5,8 +5,9 @@ Fecha: 19 de noviembre de 2026. Rama: `feat/12-acceso-sesion`.
 
 ## Estado de aceptación
 
-**Implementación local; aceptación del ticket pendiente.** No se ha configurado
-todavía el único proyecto Supabase alojado ni demostrado su acceso desde la APK.
+**Aceptación del ticket pendiente.** Configurado el único proyecto Supabase
+alojado; acceso real a Auth comprobado desde el contrato HTTP, pero todavía no
+se ha demostrado el recorrido completo desde la APK ni está disponible la RPC.
 No hay planes, facturación ni compras activados por este trabajo.
 
 **Cambio posterior de David:** una única base para desarrollo, pruebas
@@ -17,7 +18,29 @@ Los resultados técnicos siguientes describen lo comprobado antes de este cambio
 no constituyen una exigencia vigente de mantener dos bases.
 La adaptación del asistente pasa `bash -n` y verificación estática de sus tres
 etapas, biblioteca intacta y escritura de ambos alias con los mismos valores.
-No se ha ejecutado el recorrido interactivo ni configurado un proyecto real.
+David ha ejecutado el recorrido interactivo y guardado la conexión real.
+
+## Avance: conexión al proyecto alojado
+
+- `.env` contiene los ocho campos esperados, con los mismos valores para ambos
+  alias, y permisos 600. Con autorización de David se retiró únicamente una
+  primera línea ajena al formato; se conservaron sus credenciales y demás líneas.
+- Auth alojado: configuración consultada (HTTP 200); confirmación por correo
+  activa. Acceso con la cuenta configurada (HTTP 200), correo confirmado.
+- Se cerró únicamente la sesión creada para esta comprobación (HTTP 204).
+  No se crearon ni borraron usuarios, ni se reiniciaron datos.
+- `current_account` devuelve HTTP 404 incluso autenticado: la operación protegida
+  todavía no está disponible. El contrato completo falla en su primer control,
+  no se declara superado.
+- No hay acceso de administración utilizable desde CLI. Falta desplegar
+  `supabase/migrations/20261119000100_identity.sql` mediante acceso autorizado;
+  no se ha aplicado automáticamente contra la base compartida.
+- APK `pruebas` compilada con la conexión alojada, sin contraseñas incorporadas:
+  `app/build/outputs/apk/pruebas/debug/app-pruebas-debug.apk`.
+  SHA-256: `64df949bf26ab5a6ea5b5be562faa57815e16582d62b16b149cd03de03746a7e`.
+  Sigue pendiente instalarla/comprobar el recorrido real tras desplegar la RPC.
+- Plan Free y región Frankfurt: confirmación humana del asistente, no contrastada
+  todavía mediante API de administración.
 
 | Área | Estado / evidencia |
 | --- | --- |
@@ -30,7 +53,7 @@ No se ha ejecutado el recorrido interactivo ni configurado un proyecto real.
 | Sesión cifrada entre clientes nuevos | `PersistedIdentityTest` en API 35: 1/1, almacenamiento/Keystore reales y HTTP controlado |
 | Idiomas | Recursos ES/EN/FR/DE completos; `LanguageTest` en API 35: 1/1, selección de alemán y persistencia al recrear actividad |
 | Dos emuladores | Creados `Teloarreglo_Cliente_API35` y `Teloarreglo_Profesional_API35`, puertos 5556/5558; no se sobrescribió el existente API 37 |
-| Supabase alojado Free/Frankfurt ×1 | **Pendiente de configuración humana; asistente adaptado a un único proyecto** |
+| Supabase alojado Free/Frankfurt ×1 | Conexión configurada; Auth comprobado; plan/región confirmados manualmente, sin contraste por API |
 | Acceso real desde APK y reabrir contra alojado | **Pendiente** |
 | GitHub Checks | Workflow versionado; **no ejecutado en GitHub**, falta push/revisión |
 | Revisión visual con David | **Pendiente**; este diseño no se declara aprobado |
