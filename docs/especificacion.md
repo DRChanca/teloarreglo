@@ -24,6 +24,7 @@ Esta sección tiene prioridad sobre las referencias posteriores al alcance del p
 - La visión comercial mantiene la suscripción opcional de 5 €/mes con herramientas de gestión y ventajas de posicionamiento, y los pagos opcionales sin comisión propia.
 - No se exige operar un negocio, revisar documentación real o procesar dinero real para esta demo.
 - La planificación de implementación deberá permitir repartir trabajo entre los dos integrantes, con dependencias e integración explícitas.
+- Arquitectura y contratos aprobados: [arquitectura de la demo](arquitectura-demo.md), decisión [Elegir arquitectura y contratos](https://github.com/DRChanca/teloarreglo/issues/6). Kotlin/Compose, Supabase Free en Frankfurt, panel React/TypeScript en Cloudflare Pages Free, Google Maps y APK directa. Son elecciones documentadas, no servicios contratados ni funciones implementadas.
 - El cartel aportado anuncia vídeo demostrativo el 1 de diciembre de 2026 y presentación final el 4 de diciembre de 2026 a las 17:00. El día de la semana impreso para el 1 de diciembre no coincide con el calendario; las condiciones y fechas oficiales requieren confirmación. Se conserva el 28 de noviembre como objetivo interno.
 
 ## 1. Objetivo y ámbito
@@ -39,7 +40,7 @@ Las reglas de este apartado sustituyen las propuestas anteriores incompatibles s
 - Escena de suscripción de 5 €/mes con sus ventajas; sin cobros reales.
 - Búsqueda por proximidad desde el GPS, con mapa y lista y alternativa de ubicación manual para denegación del permiso o trabajo en otra dirección.
 - Primero se filtra por cobertura del lugar del trabajo; después se ordena por distancia a la ubicación profesional registrada, no por seguimiento en directo.
-- Se solicita organización espacial por hexágonos, ampliando desde la celda de búsqueda a sus vecinas y calculando las distancias reales para ordenar. La tecnología y los detalles quedan para la decisión técnica.
+- Organización espacial H3 en servidor mediante h3-js, ampliando desde la celda de búsqueda a sus vecinas y calculando distancia geográfica entre coordenadas originales para ordenar; no distancia por carretera. Validar la integración en Supabase Edge Functions y los bordes de celda según la arquitectura acordada.
 - La propuesta del profesional especifica alcance, precio y hora. Para pago integrado, el cliente paga el total para confirmar la cita.
 - Se conserva el pago directo: la cita puede confirmarse por acuerdo expreso de ambas partes sin pagar dentro de la aplicación.
 - Una visita puede ser gratuita o tener un coste acordado. Una cita gratuita no requiere pasar por el pago. No se crean tipos rígidos de cita.
@@ -49,7 +50,7 @@ Las reglas de este apartado sustituyen las propuestas anteriores incompatibles s
 - Si el cliente no responde, se libera a las 48 horas desde esa marca, con recordatorios. Sustituye el plazo anterior de siete días para ese flujo.
 - Si el cliente comunica una incidencia antes de la liberación, el pago queda pendiente de revisión; no se entrega ni se devuelve automáticamente.
 - Cancelar antes de comenzar el servicio da lugar a devolución total simulada, sin penalizaciones. Tras comenzar se comunica una incidencia, sin devolución ni entrega automática.
-- Las propuestas pendientes no reservan definitivamente el horario. Antes del pago se comprueba disponibilidad; no deben confirmarse citas solapadas. El mecanismo de concurrencia y su futura coordinación con el proveedor queda pendiente.
+- Las propuestas pendientes no reservan definitivamente el horario. Antes del pago se comprueba disponibilidad; no deben confirmarse citas solapadas. La demo lo protege mediante operaciones transaccionales y restricciones de PostgreSQL; la futura coordinación con un proveedor de cobros reales sigue pendiente.
 - Objetivo de integración del recorrido: 26 de noviembre; 27 y 28 reservados para pruebas, correcciones y grabación.
 - El panel web privado de demostración está aprobado con el alcance limitado de revisión de perfiles e incidencias del apartado 14, sin cobros ni revisión documental reales.
 - Vídeo de un máximo de diez minutos según el usuario; objetivo acordado de siete a ocho minutos narrados.
@@ -98,7 +99,7 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 - Cada persona actúa en su nombre. El profesional propone condiciones, comienza y marca realizado; el cliente acepta las condiciones y confirma la realización. Los permisos deben comprobarse realmente, no solo ocultar botones.
 - Fotos y vídeos se pueden enviar y abrir desde el primer contacto, antes de cualquier respuesta o aceptación del profesional.
 - Compresión integrada automática con progreso y posibilidad de cancelar, sin modificar el original del teléfono. Si falla o el resultado supera los límites, se explica y no se envía silenciosamente el original.
-- Para la demo: vídeos de hasta un minuto; fotos de hasta 1600 píxeles en su lado mayor y vídeos de hasta 720p, sin ampliar archivos de menor resolución. Máximos tras comprimir: 2 MB por foto y 20 MB por vídeo. Compatibilidad concreta de formatos y estrategia técnica pendientes de la arquitectura.
+- Para la demo: vídeos de hasta un minuto; fotos de hasta 1600 píxeles en su lado mayor y vídeos de hasta 720p, sin ampliar archivos de menor resolución. Máximos tras comprimir: 2 MB por foto y 20 MB por vídeo. Formatos iniciales JPEG/PNG y MP4 compatible, compresión Android y Media3 Transformer; comprobar compatibilidad real según la arquitectura acordada.
 - Se conservan entre sesiones los perfiles y operaciones preparados en la aplicación. No se añade una operación de reinicio ni borrado automático para la presentación.
 - Se utilizan cuentas, direcciones y contenidos ficticios o autorizados sin exponer información privada de terceros. Perfiles ficticios y pagos simulados siguen identificados.
 - Durante la preparación y presentación se conservan mensajes, adjuntos y propuestas sin edición ni borrado individual. No supone conservación indefinida en el producto final: la política de borrado comercial sigue pendiente.
@@ -135,7 +136,7 @@ Teloarreglo conecta a particulares que necesitan arreglos con profesionales inde
 - Una misma cuenta puede contratar servicios y ofrecerlos mediante un perfil profesional opcional.
 - Se pueden consultar perfiles y buscar sin registrarse.
 - Para contactar, solicitar citas o dejar reseñas se requiere una cuenta.
-- Acceso previsto con Google o correo electrónico; el mecanismo concreto de autenticación queda pendiente.
+- Acceso con Google y correo/contraseña mediante Supabase Auth, sesión persistente y correo de verificación/recuperación mediante SMTP Brevo Free. Configuración y entrega real pendientes de validación.
 - Se verificará el correo electrónico.
 - El teléfono del profesional es obligatorio y público, pero no se exige verificarlo.
 - Verificar el correo no equivale a verificar el negocio.
@@ -216,7 +217,7 @@ La dirección exacta del cliente nunca será pública: se comparte con el profes
 - Teléfono del profesional visible para quienes prefieran llamar.
 - El chat permite explicar el problema, solicitar información y compartir resultados.
 - El profesional puede enviar propuestas de precio que el cliente acepte expresamente.
-- Límites de archivos, formatos y conservación de contenidos pendientes.
+- Límites, formatos iniciales y conservación durante la demo acordados en el apartado 1 y en la [arquitectura](arquitectura-demo.md); compatibilidad real pendiente de comprobación. Conservación y borrado del producto comercial requieren su propia política.
 
 ## 8. Precios y propuestas
 
@@ -460,22 +461,21 @@ Fuera del alcance inicial:
 
 ### Producto y operativa
 
-- Concretar en la arquitectura los estados y contratos que implementen las reglas aprobadas del apartado 1, incluida concurrencia en agenda y automatización de 48 horas.
-- Concretar en la arquitectura la implementación de permisos, pruebas aportadas y resoluciones administrativas aprobadas en el apartado 14, sin ampliar su acceso a conversaciones privadas.
+- Convertir la [arquitectura y contratos aprobados](arquitectura-demo.md) en una especificación implementable y validar concurrencia, permisos, pruebas aportadas, resoluciones administrativas y automatización de 48 horas, sin ampliar el acceso a conversaciones privadas.
 - Requisitos documentales concretos de verificación y revisión periódica.
 - Reglas del posicionamiento destacado y métricas de la suscripción.
-- Compatibilidad técnica de formatos y compresión; moderación y política de conservación y borrado para el producto comercial. Los límites de la demo están aprobados en el apartado 1.
+- Validar la compresión Android/Media3 con JPEG/PNG y MP4 compatible. Moderación y política de conservación y borrado para el producto comercial siguen pendientes; los límites de la demo están aprobados en el apartado 1.
 - Alcance y formato de exportaciones y plantillas.
 - Políticas y plazos de reclamación, devolución y atención.
 
 ### Tecnología y proveedores
 
-- Arquitectura y tecnologías de Android, servidor y panel.
-- Proveedor de autenticación, mapas y obtención del concejo a partir de direcciones.
+- Provisionar y comprobar la arquitectura elegida: Kotlin/Compose, Supabase Free, React/TypeScript y Cloudflare Pages Free; fijar versiones compatibles, sin dar por validada la implementación.
+- Configurar y comprobar Supabase Auth, SMTP Brevo, FCM y Google Maps. Concejo mediante GPS/pin y polígonos IGN/CNIG con PostGIS, con confirmación en fronteras; sin geocodificación de direcciones inicialmente.
 - Proveedor de pagos apto para plataforma de profesionales.
 - Flujo de liquidaciones, devoluciones, contracargos y costes asociados.
 - Facturación y gestión de suscripciones conforme a las reglas de distribución de Android.
-- Almacenamiento de archivos, notificaciones y costes operativos.
+- Comprobar cuotas de Supabase Storage, automatización y disponibilidad en Free, entrega de notificaciones, remitente/dominio de correo, activación explícita de billing de Maps y costes operativos. No contratar ni degradar alcance automáticamente.
 
 ### Legal y lanzamiento
 
