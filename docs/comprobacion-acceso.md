@@ -6,8 +6,10 @@ Fecha: 19 de noviembre de 2026. Rama: `feat/12-acceso-sesion`.
 ## Estado de aceptación
 
 **Aceptación del ticket pendiente.** Configurado el único proyecto Supabase
-alojado; acceso real a Auth comprobado desde el contrato HTTP, pero todavía no
-se ha demostrado el recorrido completo desde la APK ni está disponible la RPC.
+alojado; contrato completo de Auth/RPC superado y acceso, restauración y cierre
+comprobados desde la APK en los dos emuladores API 35. Siguen pendientes la
+revisión visual con David, Checks en GitHub y las comprobaciones manuales
+restantes de la lista final.
 No hay planes, facturación ni compras activados por este trabajo.
 
 **Cambio posterior de David:** una única base para desarrollo, pruebas
@@ -29,27 +31,34 @@ David ha ejecutado el recorrido interactivo y guardado la conexión real.
   activa. Acceso con la cuenta configurada (HTTP 200), correo confirmado.
 - Se cerró únicamente la sesión creada para esta comprobación (HTTP 204).
   No se crearon ni borraron usuarios, ni se reiniciaron datos.
-- `current_account` devuelve HTTP 404 incluso autenticado: la operación protegida
-  todavía no está disponible. El contrato completo falla en su primer control,
-  no se declara superado.
-- No hay acceso de administración utilizable desde CLI. Falta desplegar
-  `supabase/migrations/20261119000100_identity.sql` mediante acceso autorizado;
-  no se ha aplicado automáticamente contra la base compartida.
-  David ha elegido SQL Editor: `scripts/deploy-identity.sh` guía su revisión,
-  ejecución manual transaccional y comprobación posterior. El asistente aún no
-  se ha ejecutado; después habrá que registrar esa aplicación en el historial
-  antes de utilizar `db push`.
+- Tras configurar la conexión, `current_account` devolvía HTTP 404. David ha
+  aplicado la migración mediante SQL Editor, guiado por `scripts/deploy-identity.sh`,
+  que imprime el SQL para copiar y pegar manualmente.
+- Después de esa aplicación, `python3 scripts/contract_identity.py --environment
+  pruebas` pasa completo contra el proyecto alojado: anónimo rechazado,
+  credenciales incorrectas, acceso verificado, identidad protegida, rechazo de
+  ID de otra cuenta, renovación y rechazo del refresh token tras logout.
+- No hay acceso de administración utilizable desde CLI. La aplicación manual
+  debe registrarse en su historial antes de utilizar `db push`, como indica el
+  README. No se ha manipulado ese historial ni reaplicado automáticamente SQL.
 - APK `pruebas` compilada con la conexión alojada, sin contraseñas incorporadas:
   `app/build/outputs/apk/pruebas/debug/app-pruebas-debug.apk`.
   SHA-256: `64df949bf26ab5a6ea5b5be562faa57815e16582d62b16b149cd03de03746a7e`.
-  Sigue pendiente instalarla/comprobar el recorrido real tras desplegar la RPC.
+  Instalada con `-r` (sin borrar datos) y abierta en ambos emuladores API 35.
+- Desde la interfaz real de esa APK, en `emulator-5556` y `emulator-5558`:
+  acceso correcto → cuenta conectada → `am force-stop` y reapertura → cuenta
+  restaurada → cerrar sesión → nuevo `am force-stop` y reapertura → formulario
+  de acceso, sin cuenta conectada. Todos los pasos comprobados.
+  Se utilizó la misma cuenta verificada configurada en los dos dispositivos;
+  esto no acredita todavía un recorrido entre dos personas ni perfiles/chat.
+  No se ejecutó instrumentación que desinstalara la app ni se reiniciaron AVDs.
 - Plan Free y región Frankfurt: confirmación humana del asistente, no contrastada
   todavía mediante API de administración.
 
 | Área | Estado / evidencia |
 | --- | --- |
 | Kotlin/Compose, minSdk 26 | Ambas APKs debug compiladas; variantes separadas de pruebas/presentación |
-| Auth real y operación protegida | Contrato HTTP ejecutado contra Supabase **local**: acceso, credenciales incorrectas, RPC, renovación y logout |
+| Auth real y operación protegida | Contrato HTTP completo superado tanto en Supabase local como en el único proyecto alojado |
 | Identidad/permisos | `supabase test db supabase/tests/identity.test.sql`: 6/6, tras comprobar fallo antes de crear la RPC |
 | Interfaz de acceso | `AccessTest` en Pixel 7/API 35: 2/2; acceso incorrecto y acceso/cierre, con servicio externo controlado |
 | Identidad Kotlin | 6 tests: credenciales incorrectas, token renovable, token revocado, conexión, evento obsoleto y error de servidor en renovación; HTTP controlado |
@@ -58,7 +67,7 @@ David ha ejecutado el recorrido interactivo y guardado la conexión real.
 | Idiomas | Recursos ES/EN/FR/DE completos; `LanguageTest` en API 35: 1/1, selección de alemán y persistencia al recrear actividad |
 | Dos emuladores | Creados `Teloarreglo_Cliente_API35` y `Teloarreglo_Profesional_API35`, puertos 5556/5558; no se sobrescribió el existente API 37 |
 | Supabase alojado Free/Frankfurt ×1 | Conexión configurada; Auth comprobado; plan/región confirmados manualmente, sin contraste por API |
-| Acceso real desde APK y reabrir contra alojado | **Pendiente** |
+| Acceso real desde APK y reabrir contra alojado | Comprobado en ambos emuladores API 35: acceso, recuperación tras force-stop y logout persistente |
 | GitHub Checks | Workflow versionado; **no ejecutado en GitHub**, falta push/revisión |
 | Revisión visual con David | **Pendiente**; este diseño no se declara aprobado |
 
@@ -110,15 +119,16 @@ para reiniciar una sesión o datos locales preparados de presentación.
 
 ## Pasos que faltan para aceptar el ticket
 
-1. Ejecutar `bash scripts/setup-supabase.sh` para el **único proyecto**. Confirmar
-   en dashboard plan Free, Frankfurt y **Confirm email** activo. No crear otro
-   proyecto para presentación. El asistente solo guarda configuración local.
-2. Aplicar la migración a la base compartida con revisión/dry-run, ejecutar
-   `python3 scripts/contract_identity.py --environment pruebas`.
-3. Compilar pruebas con la configuración, instalar en ambos emuladores y entrar
-   con cuentas Auth verificadas diferentes. No registrar ni grabar contraseñas.
-4. Forzar cierre (`adb -s SERIAL shell am force-stop es.teloarreglo.pruebas`),
-   reabrir desde el lanzador y observar cuenta verificada tras consulta al servidor.
+1. Configuración del único proyecto y confirmación de correo: realizadas.
+   Plan Free y Frankfurt siguen siendo confirmaciones humanas; no crear otro
+   proyecto para presentación.
+2. Migración aplicada manualmente y contrato alojado superado. Antes de futuros
+   despliegues por CLI, registrar su aplicación en el historial siguiendo README.
+3. APK conectada instalada y acceso/reapertura comprobados en ambos emuladores.
+   La integración futura entre cliente/profesional necesitará dos cuentas
+   verificadas diferentes; no grabar contraseñas.
+4. Cierre forzado y recuperación de sesión: comprobados. Cierre de sesión y
+   reapertura sin acceso: comprobados. Conservar esas evidencias al cambiar versiones.
 5. Quitar conectividad y repetir: aviso comprensible y sin acceso confirmado falso;
    restaurar conexión y reintentar. Intentar logout sin conexión: no declarar éxito.
 6. Con una cuenta de prueba desechable autorizada, revocar su sesión desde Auth,
