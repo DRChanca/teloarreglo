@@ -4,6 +4,7 @@ Estado: decisión aprobada, no implementada ni desplegada.
 Fecha: 19 de noviembre de 2026.
 
 Fuente: [Elegir arquitectura y contratos para desarrollar la demo entre dos personas](https://github.com/DRChanca/teloarreglo/issues/6).
+Actualización de aceptación y entrega: [Preparación del vídeo y paso a especificación](https://github.com/DRChanca/teloarreglo/issues/8).
 Reglas funcionales: [especificación](especificacion.md), especialmente apartados 1 y 14.
 La resolución de la issue es la referencia de aprobación; este documento desarrolla sus contratos para compartirlos entre las dos líneas de trabajo. No constituye un desglose de tickets.
 
@@ -66,7 +67,7 @@ Son contratos lógicos compartidos. Los nombres de tablas, RPC y DTO definitivos
 | Reseña | Cita y autor únicos por cita, estrellas 1–5 y contenido; habilitación comprobada por servidor |
 | Evento/decisión | Operación, actor, fecha y resultado; motivo administrativo obligatorio; avisos asociados sin duplicar el efecto de dominio |
 
-- Importes enteros en céntimos, nunca números decimales de coma flotante. Todos los movimientos son explícitamente simulados.
+- Importes enteros en céntimos, nunca números decimales de coma flotante. Todos los movimientos son simulados: no integrar cobros ni pedir datos bancarios reales. En la presentación universitaria se explica por voz, sin exigir banners globales de demo.
 - Fechas y vencimientos en UTC de servidor; mostrar según zona horaria/idioma sin alterar el instante.
 - Intervalos de agenda con principio incluido y final excluido: dos citas contiguas pueden tocarse sin solaparse.
 - Propuestas y cambios versionados: aceptar una versión no autoriza otra posterior.
@@ -107,6 +108,7 @@ Repetir una operación con la misma clave y datos devuelve su resultado sin repe
 ## 4. Automatización y notificaciones
 
 - Persistir en servidor el instante de realizado y sus vencimientos de 24 y 48 horas.
+- Para aceptación se permite un intervalo de cierre de 5 minutos en el proyecto de pruebas, con recordatorio de prueba anterior al cierre. Aislar esta configuración del proyecto de presentación, que mantiene 24/48 horas. No se exige observar una espera real de 48 horas ni se afirma haberla observado al probar el intervalo reducido.
 - Supabase Cron comprueba cada minuto los registros elegibles. No mantener una Edge Function esperando 48 horas ni depender del teléfono.
 - Nunca cerrar antes del vencimiento. En operación normal se procesa en la siguiente ejecución disponible; no se promete exactitud al segundo ni disponibilidad que Free no garantiza.
 - Al reanudar tras un fallo, recuperar vencimientos atrasados sin duplicar recordatorios, cierres o entregas y respetando incidencias.
@@ -138,6 +140,10 @@ Repetir una operación con la misma clave y datos devuelve su resultado sin repe
 - Desplegar primero en pruebas; pasar a presentación tras comprobación explícita. Ninguna migración o despliegue repone ni borra automáticamente datos preparados.
 - Secretos de despliegue fuera de Git y diferenciados por entorno; builds del panel Cloudflare Pages desde el mismo repositorio.
 - Conservar APK identificada para grabación y distribución directa. El diseño visual no se aprueba con esta decisión.
+- Calendario actualizado: recorrido integrado el 27/11, pruebas el 28/11, correcciones/grabación el 29–30/11 y entrega del vídeo el 1/12/2026; prueba posterior de la aplicación.
+- Revisar primeras pantallas reales con el usuario antes de extender el diseño. Apariencia cuidada, navegación fluida, progreso y respuesta a acciones, sin bloqueos ni confirmaciones falsas.
+- Conservar versiones de APK, panel y servidor utilizadas al grabar y comprobar disponibilidad. No realizar despliegues improvisados durante la grabación.
+- Para la presentación universitaria las simulaciones y perfiles ficticios se explican por voz; no se exigen avisos globales de demo. No cambia la prohibición de cobros y documentos personales reales.
 
 ## 7. Validaciones pendientes, no decisiones omitidas
 
@@ -146,13 +152,14 @@ La arquitectura está elegida, pero todavía no está demostrada ni provisionada
 - Compilación Kotlin/Compose y dependencias compatibles con API 26; sesión, Auth/Storage/Realtime y reconexión con el SDK comunitario supabase-kt.
 - Dos emuladores simultáneos; actualmente solo se ha observado uno configurado. Comprobar multimedia, Google OAuth, firma y retorno de sesión.
 - H3 en Edge Functions, PostGIS e importación de concejos, orden/cobertura y bordes de celda.
-- Cron real, recordatorio a 24 horas y cierre a 48 con apps cerradas, recuperación tras interrupción y coordinación con incidencias.
+- Cron real y avisos con apps cerradas, recuperación tras interrupción y coordinación con incidencias. Evidencia de ejecución mediante intervalo reducido de 5 minutos en pruebas y comprobación de configuración 24/48 horas en presentación; no se exige una espera real de 48 horas.
 - Permisos de cuenta/administración, RLS y Storage contra terceros; conflictos concurrentes y reintentos; revisión de perfil e incidencia de extremo a extremo.
 - Pruebas automáticas de contratos, permisos y transacciones; tiempos controlados solo en pruebas aisladas. No introducir un botón de adelanto de reloj en la demo.
 - Correo Brevo aprobado y remitente/dominio verificable; confirmación, recuperación y límites. No desactivar verificación como atajo.
 - Proyecto Google Cloud, billing y restricciones de Maps; configuración FCM y recepción de avisos con app cerrada.
 - Cuotas y consumo de cada entorno y servicio. Activaciones, credenciales y cualquier compra requieren pasos posteriores explícitos.
-- Alternativa de presentación si falla la red y evidencia de aceptación: siguen en [Preparación del vídeo y paso a especificación](https://github.com/DRChanca/teloarreglo/issues/8).
+- Dependencia de red aceptada sin conexión alternativa ni grabación de respaldo obligatorias por ahora; no hay modo completo sin conexión. Aceptación por lista verificable de comportamientos según la [especificación](especificacion.md), no por apariencia de pantallas.
+- El mapa de decisiones deja paso a una especificación implementable y después tickets aprobados con dependencias; cerrar el mapa no acredita implementación ni comprobaciones ya realizadas.
 
 ## Fuentes técnicas consultadas
 

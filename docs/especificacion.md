@@ -15,17 +15,17 @@ Esta sección tiene prioridad sobre las referencias posteriores al alcance del p
 - Sin experiencia previa en desarrollo Android; la implementación se realizará con ayuda de agentes.
 - Dedicación disponible: unas tres horas al día por integrante, aproximadamente seis horas diarias combinadas. Esto no equivale a seis horas de trabajo independiente sin costes de coordinación.
 - Reparto aceptado: dos líneas de trabajo con interfaces acordadas e integración frecuente, no una integración única al final.
-- Objetivo interno: demo preparada para el 28 de noviembre de 2026.
+- Calendario acordado: recorrido completo integrado el 27 de noviembre de 2026; 28 para pruebas; 29–30 para correcciones y grabación; entrega del vídeo el 1 de diciembre.
 - Presupuesto orientativo de infraestructura: unos 10 €/mes; no es una estimación comprobada de costes.
 - Destino del mapa Wayfinder: resolver las decisiones necesarias para una demo Android presentable y documentar cómo evolucionarla a producto viable.
 - Recorrido prioritario real y persistente entre dos cuentas: buscar profesional, consultar perfil, conversar, solicitar cita, confirmarla como profesional y dejar una reseña tras finalizarla.
-- Se utilizarán profesionales ficticios, imágenes autorizadas y un entorno identificado como demostración.
-- Pagos, suscripción y comprobación del negocio pueden simularse, sin cobros reales ni presentación de perfiles ficticios como negocios auténticos.
+- Se utilizarán profesionales ficticios e imágenes autorizadas. Para la prueba universitaria no se exigen avisos globales de «demo» en la interfaz: el carácter ficticio y las simulaciones se explican por voz.
+- Pagos, suscripción y comprobación del negocio se simulan, sin cobros ni petición de datos bancarios reales. La narración no los presenta como operaciones comerciales auténticas.
 - La visión comercial mantiene la suscripción opcional de 5 €/mes con herramientas de gestión y ventajas de posicionamiento, y los pagos opcionales sin comisión propia.
 - No se exige operar un negocio, revisar documentación real o procesar dinero real para esta demo.
 - La planificación de implementación deberá permitir repartir trabajo entre los dos integrantes, con dependencias e integración explícitas.
 - Arquitectura y contratos aprobados: [arquitectura de la demo](arquitectura-demo.md), decisión [Elegir arquitectura y contratos](https://github.com/DRChanca/teloarreglo/issues/6). Kotlin/Compose, Supabase Free en Frankfurt, panel React/TypeScript en Cloudflare Pages Free, Google Maps y APK directa. Son elecciones documentadas, no servicios contratados ni funciones implementadas.
-- El cartel aportado anuncia vídeo demostrativo el 1 de diciembre de 2026 y presentación final el 4 de diciembre de 2026 a las 17:00. El día de la semana impreso para el 1 de diciembre no coincide con el calendario; las condiciones y fechas oficiales requieren confirmación. Se conserva el 28 de noviembre como objetivo interno.
+- El usuario confirma la entrega del vídeo el 1 de diciembre de 2026, antes de la prueba posterior de la aplicación. El cartel anuncia presentación final el 4 de diciembre a las 17:00; mantiene una discrepancia entre día semanal y fecha para el 1 de diciembre y no aporta una rúbrica oficial detallada.
 
 ## 1. Objetivo y ámbito
 
@@ -51,11 +51,12 @@ Las reglas de este apartado sustituyen las propuestas anteriores incompatibles s
 - Si el cliente comunica una incidencia antes de la liberación, el pago queda pendiente de revisión; no se entrega ni se devuelve automáticamente.
 - Cancelar antes de comenzar el servicio da lugar a devolución total simulada, sin penalizaciones. Tras comenzar se comunica una incidencia, sin devolución ni entrega automática.
 - Las propuestas pendientes no reservan definitivamente el horario. Antes del pago se comprueba disponibilidad; no deben confirmarse citas solapadas. La demo lo protege mediante operaciones transaccionales y restricciones de PostgreSQL; la futura coordinación con un proveedor de cobros reales sigue pendiente.
-- Objetivo de integración del recorrido: 26 de noviembre; 27 y 28 reservados para pruebas, correcciones y grabación.
+- Objetivo de integración del recorrido: 27 de noviembre; 28 para pruebas y 29–30 para correcciones y grabación, antes de entregar el vídeo el 1 de diciembre.
 - El panel web privado de demostración está aprobado con el alcance limitado de revisión de perfiles e incidencias del apartado 14, sin cobros ni revisión documental reales.
 - Vídeo de un máximo de diez minutos según el usuario; objetivo acordado de siete a ocho minutos narrados.
 - En el vídeo, el cliente confirma manualmente que el servicio se realizó y se muestra la liberación del pago simulado.
 - La decisión posterior sobre citas, reseñas y privacidad exige que la liberación automática tras 48 horas sin respuesta ni incidencia funcione realmente en la demo, aunque ambas aplicaciones estén cerradas. Sustituye el alcance anterior de solo explicarla. En el vídeo se conserva la confirmación manual, sin esperar esas horas ni añadir un botón para adelantar el reloj.
+- La decisión de preparación del vídeo permite validar esa automatización con un intervalo de 5 minutos en el entorno de pruebas, sin exigir una espera real de 48 horas como criterio de aceptación. La configuración de presentación y producto mantiene 48 horas; no se afirma haber observado esa espera si solo se probó el intervalo reducido.
 
 #### Reglas aprobadas de citas, reseñas y privacidad
 
@@ -101,7 +102,7 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 - Compresión integrada automática con progreso y posibilidad de cancelar, sin modificar el original del teléfono. Si falla o el resultado supera los límites, se explica y no se envía silenciosamente el original.
 - Para la demo: vídeos de hasta un minuto; fotos de hasta 1600 píxeles en su lado mayor y vídeos de hasta 720p, sin ampliar archivos de menor resolución. Máximos tras comprimir: 2 MB por foto y 20 MB por vídeo. Formatos iniciales JPEG/PNG y MP4 compatible, compresión Android y Media3 Transformer; comprobar compatibilidad real según la arquitectura acordada.
 - Se conservan entre sesiones los perfiles y operaciones preparados en la aplicación. No se añade una operación de reinicio ni borrado automático para la presentación.
-- Se utilizan cuentas, direcciones y contenidos ficticios o autorizados sin exponer información privada de terceros. Perfiles ficticios y pagos simulados siguen identificados.
+- Se utilizan cuentas, direcciones y contenidos ficticios o autorizados sin exponer información privada de terceros. El carácter ficticio de perfiles y las simulaciones de pagos, suscripción y comprobación comercial se explican por voz, sin exigir avisos globales de demo en la interfaz para la presentación universitaria.
 - Durante la preparación y presentación se conservan mensajes, adjuntos y propuestas sin edición ni borrado individual. No supone conservación indefinida en el producto final: la política de borrado comercial sigue pendiente.
 - Este acuerdo no aprueba el diseño visual ni elige arquitectura o proveedor.
 
@@ -111,7 +112,7 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 - La ubicación se obtiene mediante permiso GPS o entrada manual; los resultados se muestran en lista y mapa y respetan la cobertura de servicio.
 - Una acción de una cuenta se refleja en la otra sin editar datos manualmente fuera de la aplicación.
 - Las conversaciones permiten enviar y abrir una foto y un vídeo reales.
-- El profesional propone alcance, fecha y precio; el cliente acepta y confirma mediante pago simulado claramente identificado.
+- El profesional propone alcance, fecha y precio; el cliente acepta y confirma mediante pago simulado, cuyo carácter no real se explica por voz.
 - No se confirma una cita cuyo horario ya esté ocupado.
 - El profesional marca realizado; el cliente confirma; la aplicación registra la liberación simulada y permite una reseña.
 - Las operaciones del recorrido persisten al volver a abrir la aplicación.
@@ -121,6 +122,24 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 - La automatización de cierre y liberación simulada a las 48 horas funciona con aplicaciones cerradas, respeta incidencias y evita entregas duplicadas; no se confunde la explicación del vídeo con evidencia de su funcionamiento.
 - Fotos y vídeos se comprimen en la aplicación con los límites acordados, progreso, cancelación y aviso si no pueden enviarse.
 - Fuera del vídeo principal se comprueban revisión de perfiles, resolución de incidencias, permisos del panel y registro de decisiones; no basta con mostrar sus pantallas.
+
+#### Preparación del vídeo y cierre de decisiones
+
+Fuente: [Acordar la preparación del vídeo, contingencias y paso a especificación](https://github.com/DRChanca/teloarreglo/issues/8).
+Estas decisiones actualizan el calendario, la evidencia del reloj y la forma de comunicar las simulaciones de los acuerdos anteriores.
+
+- Calendario: 27 de noviembre, recorrido completo integrado; 28, pruebas; 29–30, correcciones y grabación; 1 de diciembre, entrega del vídeo. Se envía el vídeo antes de la prueba posterior de la aplicación.
+- La aceptación distingue aprobado, implementado y comprobado. Se necesita una lista de verificación del recorrido entre cuentas, persistencia al reabrir, archivos reales y compresión, citas/costes, permisos, incidencias, reseñas, idiomas y panel; no bastan pantallas aparentes. Las evidencias se obtienen durante la implementación, no se dan por existentes al cerrar el mapa.
+- Automatización comprobada con intervalo de 5 minutos en el proyecto de pruebas, con las apps cerradas y registros del servidor. Verificar también recordatorios, bloqueo por incidencia y ausencia de duplicados; pruebas automáticas con fechas controladas complementan la ejecución real corta.
+- No se exige esperar 48 horas reales para aceptar esta entrega. Presentación/producto conservan 24 horas para el recordatorio y 48 para el cierre; el intervalo reducido queda aislado en pruebas. El vídeo mantiene confirmación manual, sin botón para acelerar el reloj.
+- La app debe verse cuidada y fluida, no como una maqueta. Revisar pronto las primeras pantallas reales con el usuario antes de extender su diseño: navegación coherente, jerarquía visual, legibilidad, imágenes cuidadas y respuesta visible a acciones.
+- Mostrar progreso de cargas/subidas y explicar fallos. No confirmar una operación pendiente de respuesta del servidor ni dejar bloqueos inexplicables.
+- No se exigen banners globales de demo para la prueba universitaria. La narración informa de profesionales ficticios y simulaciones de pagos, suscripción y comprobación comercial. No se cobra ni se solicitan datos bancarios reales.
+- La dependencia de internet se acepta expresamente sin conexión alternativa ni grabación de respaldo obligatorias por ahora. No se promete funcionamiento completo sin conexión.
+- Identificar y conservar APK y versiones del panel/servidor utilizadas al grabar; comprobar disponibilidad de servicios y evitar despliegues improvisados durante la grabación. No reiniciar los datos preparados.
+- Separar lo demostrado de los requisitos de negocio futuro. No prometer coste garantizado de 10 €/mes, ingreso bancario en 48 horas, verificación comercial real ni rentabilidad demostrada de la suscripción.
+- Cerrar Wayfinder significa que las decisiones permiten pasar a especificación, no que se hayan construido o validado los servicios. Siguiente paso: consolidar una especificación implementable y después proponer y aprobar tickets con dependencias y reparto. No se generan tickets de implementación con este cierre.
+- Las comprobaciones técnicas pendientes de la arquitectura deben hacerse pronto durante el trabajo posterior. Si revelan cambios necesarios de coste, alcance o tecnología, se vuelve al usuario antes de aplicarlos.
 
 Teloarreglo conecta a particulares que necesitan arreglos con profesionales independientes y pequeñas empresas. Permite encontrar profesionales, contactar, concertar citas, acordar precios, pagar opcionalmente y dejar reseñas.
 
@@ -291,8 +310,8 @@ Desde el lanzamiento, el profesional podrá registrar una cita acordada por llam
 
 Los pagos dentro de la aplicación estarán incluidos en la primera versión y serán opcionales.
 
-- Se paga al terminar el trabajo, sin anticipos inicialmente.
-- El profesional indica el importe final y el cliente lo revisa y autoriza.
+- Para pago integrado se paga el total acordado antes de confirmar la cita y la entrega queda pendiente de realización, según el apartado 1. Sustituye la propuesta anterior de pagar solo al terminar; en esta demo todo el dinero es simulado.
+- El profesional propone el importe y el cliente lo revisa y autoriza expresamente; los cambios requieren nueva aceptación.
 - No se cobran incrementos automáticamente.
 - Se permite pagar directamente al profesional, por ejemplo en efectivo o con su datáfono.
 - La aplicación distinguirá pagos externos de los que realmente procesa.
@@ -398,7 +417,7 @@ La aprobación exige funcionamiento real del panel y sus permisos; no significa 
 - El administrador aprueba o rechaza, pero no reescribe los datos del profesional.
 - Los cambios de datos públicos de un perfil aprobado requieren nueva revisión. Hasta aprobarse sigue visible la última versión aprobada; si se rechazan, esa versión permanece.
 - Revisar un cambio de perfil no elimina citas ni conversaciones. Los cambios de agenda no necesitan revisión administrativa.
-- Las insignias de comprobación deben indicar su carácter de demostración: no aparentan una verificación comercial auténtica. No se solicita documentación personal real.
+- La comprobación comercial de estos perfiles es simulada y se explica por voz, sin exigir avisos globales de demo en la interfaz para la prueba universitaria. La narración no presenta una insignia como acreditación comercial auténtica. No se solicita documentación personal real.
 
 **Incidencias y privacidad**
 
@@ -449,7 +468,6 @@ La secuencia de implementación y el lanzamiento de una prueba limitada se defin
 
 Fuera del alcance inicial:
 
-- Anticipos.
 - Comisión propia por trabajo.
 - Gestión de empleados y múltiples agendas por negocio.
 - Traducción automática de contenido de usuarios.
