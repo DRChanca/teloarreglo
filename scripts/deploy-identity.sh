@@ -240,23 +240,13 @@ trap 'rm -f "$sql"; rmdir "$scratch"' EXIT
     cat "$migration"
     printf '\ncommit;\n'
 } > "$sql"
-if command -v pbcopy >/dev/null 2>&1; then
-    pbcopy < "$sql"
-    say "SQL completo copiado al portapapeles."
-elif command -v wl-copy >/dev/null 2>&1; then
-    wl-copy < "$sql"
-    say "SQL completo copiado al portapapeles."
-elif command -v xclip >/dev/null 2>&1; then
-    xclip -selection clipboard < "$sql"
-    say "SQL completo copiado al portapapeles."
-elif command -v clip.exe >/dev/null 2>&1; then
-    clip.exe < "$sql"
-    say "SQL completo copiado al portapapeles."
-else
-    say "Abre y copia todo el contenido de este archivo: $sql"
-fi
 open_url "https://supabase.com/dashboard/project/$ref/sql/new"
-step "En SQL Editor, crea una consulta y pega el SQL. Todavía NO pulses Run."
+say "Copia la consulta que aparece debajo, desde BEGIN hasta COMMIT incluidos."
+say "No incluyas las líneas de separación ni las instrucciones."
+printf '\n--- INICIO DE LA CONSULTA ---\n'
+cat "$sql"
+printf '\n--- FIN DE LA CONSULTA ---\n\n'
+step "En SQL Editor, crea una consulta y pega el texto copiado. Todavía NO pulses Run."
 step "Revisa el destino y la consulta: contiene BEGIN, la migración y COMMIT."
 note "La transacción evita dejar cambios parciales si una instrucción falla."
 confirm "¿Has revisado el SQL y quieres aplicarlo a este proyecto?" || exit 1

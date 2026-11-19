@@ -75,9 +75,11 @@ Para aplicar **por primera vez** la migración inicial de identidad:
 bash scripts/deploy-identity.sh
 ```
 
-El asistente abre el único proyecto configurado, copia al portapapeles el SQL
-versionado envuelto en una transacción y te guía para revisarlo y ejecutarlo en
-SQL Editor. Después comprueba el contrato completo contra la base compartida.
+El asistente abre el único proyecto configurado e imprime en la consola el SQL
+versionado envuelto en una transacción. Copia desde `begin;` hasta `commit;`
+incluidos, pégalo en SQL Editor y revísalo antes de ejecutarlo. No escribe la
+consulta en la página ni usa el portapapeles automáticamente.
+Después comprueba el contrato completo contra la base compartida.
 No aplica SQL por su cuenta, no solicita credenciales de administración y no
 reinicia datos. Si el dashboard devuelve un error, detente sin repetir la migración.
 
