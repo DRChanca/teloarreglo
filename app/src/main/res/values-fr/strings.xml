@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">Teloarreglo</string>
+    <string name="welcome">Votre réparation,\nà portée de main.</string>
+    <string name="intro">Contactez des professionnels près de chez vous.</string>
+    <string name="sign_in_title">Bienvenue</string>
+    <string name="sign_in_hint">Connectez-vous à votre compte pour continuer.</string>
+    <string name="email">Adresse e-mail</string>
+    <string name="password">Mot de passe</string>
+    <string name="show_password">Afficher le mot de passe</string>
+    <string name="hide_password">Masquer le mot de passe</string>
+    <string name="sign_in">Se connecter</string>
+    <string name="sign_out">Se déconnecter</string>
+    <string name="language">Langue</string>
+    <string name="language_system">Langue de l’appareil</string>
+    <string name="checking_session">Vérification de votre session…</string>
+    <string name="working">Veuillez patienter…</string>
+    <string name="account_title">Vous êtes connecté</string>
+    <string name="account_hint">Votre compte est connecté. Vous pouvez fermer l’application et retrouver votre session à votre retour.</string>
+    <string name="connected_as">Connecté en tant que %1$s</string>
+    <string name="retry">Réessayer</string>
+    <string name="error_credentials">L’adresse e-mail ou le mot de passe est incorrect.</string>
+    <string name="error_unverified">Vérifiez votre adresse e-mail avant de vous connecter.</string>
+    <string name="error_expired">Votre session a expiré. Veuillez vous reconnecter.</string>
+    <string name="error_network">Connexion impossible. Vérifiez votre connexion et réessayez.</string>
+    <string name="error_service">Le service est momentanément indisponible. Veuillez réessayer.</string>
+    <string name="error_configuration">La connexion Supabase n’est pas configurée pour cet environnement.</string>
+    <string name="error_input">Saisissez votre adresse e-mail et votre mot de passe.</string>
+    <string name="environment_test">Environnement de test</string>
+    <string name="environment_presentation">Environnement de présentation</string>
+</resources>
