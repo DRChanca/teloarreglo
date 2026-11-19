@@ -35,6 +35,10 @@ David ha ejecutado el recorrido interactivo y guardado la conexión real.
 - No hay acceso de administración utilizable desde CLI. Falta desplegar
   `supabase/migrations/20261119000100_identity.sql` mediante acceso autorizado;
   no se ha aplicado automáticamente contra la base compartida.
+  David ha elegido SQL Editor: `scripts/deploy-identity.sh` guía su revisión,
+  ejecución manual transaccional y comprobación posterior. El asistente aún no
+  se ha ejecutado; después habrá que registrar esa aplicación en el historial
+  antes de utilizar `db push`.
 - APK `pruebas` compilada con la conexión alojada, sin contraseñas incorporadas:
   `app/build/outputs/apk/pruebas/debug/app-pruebas-debug.apk`.
   SHA-256: `64df949bf26ab5a6ea5b5be562faa57815e16582d62b16b149cd03de03746a7e`.

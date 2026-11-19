@@ -55,8 +55,8 @@ Para aplicar a un proyecto alojado, autentícate en CLI fuera del repositorio:
 ```bash
 supabase login
 supabase link --project-ref REFERENCIA_DEL_UNICO_PROYECTO
-supabase db push --linked --dry-run
-supabase db push --linked
+supabase db push --remote --dry-run
+supabase db push --remote
 python3 scripts/contract_identity.py --environment pruebas
 ```
 
@@ -66,6 +66,33 @@ para mostrarla. No hay despliegue automático ni seed.
 **No ejecutar `db reset` contra datos preparados**, ni borrar usuarios para
 repetir la presentación. Contraseñas de base y tokens de despliegue se introducen
 en CLI/gestor de credenciales, nunca en app/Git.
+
+### Alternativa sin credenciales de administración en CLI: SQL Editor
+
+Para aplicar **por primera vez** la migración inicial de identidad:
+
+```bash
+bash scripts/deploy-identity.sh
+```
+
+El asistente abre el único proyecto configurado, copia al portapapeles el SQL
+versionado envuelto en una transacción y te guía para revisarlo y ejecutarlo en
+SQL Editor. Después comprueba el contrato completo contra la base compartida.
+No aplica SQL por su cuenta, no solicita credenciales de administración y no
+reinicia datos. Si el dashboard devuelve un error, detente sin repetir la migración.
+
+**Historial de migraciones:** SQL Editor no lo actualiza. Antes de usar posteriormente
+`db push`, autentícate/enlaza el mismo proyecto, revisa que la migración se aplicó
+completa y registra esa versión con Supabase CLI 3.2.0:
+
+```bash
+supabase migration repair 20261119000100 --status applied --remote
+supabase db push --remote --dry-run
+```
+
+No marques una versión como aplicada si la ejecución falló. `repair` registra
+el historial, no vuelve a ejecutar el SQL. Solo después de comprobar el historial
+se podrán desplegar migraciones posteriores; no volver a ejecutar esta por SQL Editor.
 
 ## Compilar y ejecutar
 
