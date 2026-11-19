@@ -6,6 +6,26 @@ Repositorio: https://github.com/DRChanca/teloarreglo
 
 Este documento consolida las decisiones de la conversación con el promotor. No implica que las funcionalidades estén implementadas ni que se hayan contratado proveedores. Las cuestiones pendientes se recogen al final.
 
+## Actualización: objetivo inmediato de demostración universitaria
+
+Esta sección tiene prioridad sobre las referencias posteriores al alcance del primer lanzamiento. El resto del documento conserva la visión del producto futuro; no todo es requisito de la demostración.
+
+- Contexto: programa universitario de emprendimiento en aplicaciones móviles.
+- Equipo: dos personas.
+- Sin experiencia previa en desarrollo Android; la implementación se realizará con ayuda de agentes.
+- Dedicación disponible: unas tres horas al día por integrante, aproximadamente seis horas diarias combinadas. Esto no equivale a seis horas de trabajo independiente sin costes de coordinación.
+- Reparto aceptado: dos líneas de trabajo con interfaces acordadas e integración frecuente, no una integración única al final.
+- Objetivo interno: demo preparada para el 28 de noviembre de 2026.
+- Presupuesto orientativo de infraestructura: unos 10 €/mes; no es una estimación comprobada de costes.
+- Destino del mapa Wayfinder: resolver las decisiones necesarias para una demo Android presentable y documentar cómo evolucionarla a producto viable.
+- Recorrido prioritario real y persistente entre dos cuentas: buscar profesional, consultar perfil, conversar, solicitar cita, confirmarla como profesional y dejar una reseña tras finalizarla.
+- Se utilizarán profesionales ficticios, imágenes autorizadas y un entorno identificado como demostración.
+- Pagos, suscripción y comprobación del negocio pueden simularse, sin cobros reales ni presentación de perfiles ficticios como negocios auténticos.
+- La visión comercial mantiene la suscripción opcional de 5 €/mes con herramientas de gestión y ventajas de posicionamiento, y los pagos opcionales sin comisión propia.
+- No se exige operar un negocio, revisar documentación real o procesar dinero real para esta demo.
+- La planificación de implementación deberá permitir repartir trabajo entre los dos integrantes, con dependencias e integración explícitas.
+- El cartel aportado anuncia vídeo demostrativo el 1 de diciembre de 2026 y presentación final el 4 de diciembre de 2026 a las 17:00. El día de la semana impreso para el 1 de diciembre no coincide con el calendario; las condiciones y fechas oficiales requieren confirmación. Se conserva el 28 de noviembre como objetivo interno.
+
 ## 1. Objetivo y ámbito
 
 Teloarreglo conecta a particulares que necesitan arreglos con profesionales independientes y pequeñas empresas. Permite encontrar profesionales, contactar, concertar citas, acordar precios, pagar opcionalmente y dejar reseñas.
