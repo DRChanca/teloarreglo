@@ -51,7 +51,7 @@ Las reglas de este apartado sustituyen las propuestas anteriores incompatibles s
 - Cancelar antes de comenzar el servicio da lugar a devolución total simulada, sin penalizaciones. Tras comenzar se comunica una incidencia, sin devolución ni entrega automática.
 - Las propuestas pendientes no reservan definitivamente el horario. Antes del pago se comprueba disponibilidad; no deben confirmarse citas solapadas. El mecanismo de concurrencia y su futura coordinación con el proveedor queda pendiente.
 - Objetivo de integración del recorrido: 26 de noviembre; 27 y 28 reservados para pruebas, correcciones y grabación.
-- El alcance del panel de administración no está aprobado: requiere una decisión específica y no se presume aceptada la propuesta de panel mínimo.
+- El panel web privado de demostración está aprobado con el alcance limitado de revisión de perfiles e incidencias del apartado 14, sin cobros ni revisión documental reales.
 - Vídeo de un máximo de diez minutos según el usuario; objetivo acordado de siete a ocho minutos narrados.
 - En el vídeo, el cliente confirma manualmente que el servicio se realizó y se muestra la liberación del pago simulado.
 - La decisión posterior sobre citas, reseñas y privacidad exige que la liberación automática tras 48 horas sin respuesta ni incidencia funcione realmente en la demo, aunque ambas aplicaciones estén cerradas. Sustituye el alcance anterior de solo explicarla. En el vídeo se conserva la confirmación manual, sin esperar esas horas ni añadir un botón para adelantar el reloj.
@@ -83,7 +83,7 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 - Una incidencia previa a la liberación bloquea la entrega automática. Confirmación, incidencia y vencimiento deben coordinarse para no entregar dos veces el mismo pago ni entregar uno bloqueado.
 - Tras 48 horas sin respuesta ni incidencia, la cita queda «Finalizada sin confirmación del cliente» y se libera el pago integrado simulado. El mismo cierre se aplica a citas gratuitas o con pago directo, sin inventar cobros ni entregas.
 - El cliente puede comunicar un problema tras el cierre; esto no revierte automáticamente una entrega ya registrada.
-- La resolución administrativa de incidencias no se presupone implementada: alcance y permisos del panel siguen en su decisión separada.
+- La resolución administrativa de incidencias forma parte del alcance aprobado de la demo según el apartado 14; este acuerdo no acredita que ya esté implementada.
 
 **Reseñas**
 
@@ -94,7 +94,7 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 
 **Privacidad, multimedia y conservación**
 
-- Solo las dos personas implicadas pueden leer la conversación, adjuntos y cita privados. El domicilio exacto no aparece en la búsqueda ni al abrir el chat: se comparte al solicitar la cita.
+- Solo las dos personas implicadas pueden leer la conversación y sus adjuntos privados. La excepción administrativa del apartado 14 permite revisar los datos necesarios de una cita con incidencia y las pruebas aportadas expresamente, sin acceso general al chat. El domicilio exacto no aparece en la búsqueda ni al abrir el chat: se comparte al solicitar la cita.
 - Cada persona actúa en su nombre. El profesional propone condiciones, comienza y marca realizado; el cliente acepta las condiciones y confirma la realización. Los permisos deben comprobarse realmente, no solo ocultar botones.
 - Fotos y vídeos se pueden enviar y abrir desde el primer contacto, antes de cualquier respuesta o aceptación del profesional.
 - Compresión integrada automática con progreso y posibilidad de cancelar, sin modificar el original del teléfono. Si falla o el resultado supera los límites, se explica y no se envía silenciosamente el original.
@@ -119,6 +119,7 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 - Visitas gratuitas o con coste y confirmación para pago directo siguen dentro del alcance, aunque el vídeo se centra en el pago integrado simulado.
 - La automatización de cierre y liberación simulada a las 48 horas funciona con aplicaciones cerradas, respeta incidencias y evita entregas duplicadas; no se confunde la explicación del vídeo con evidencia de su funcionamiento.
 - Fotos y vídeos se comprimen en la aplicación con los límites acordados, progreso, cancelación y aviso si no pueden enviarse.
+- Fuera del vídeo principal se comprueban revisión de perfiles, resolución de incidencias, permisos del panel y registro de decisiones; no basta con mostrar sus pantallas.
 
 Teloarreglo conecta a particulares que necesitan arreglos con profesionales independientes y pequeñas empresas. Permite encontrar profesionales, contactar, concertar citas, acordar precios, pagar opcionalmente y dejar reseñas.
 
@@ -377,7 +378,51 @@ Investigación de apoyo: [Modelo de Wallapop](modelo-wallapop.md).
 
 ## 14. Administración
 
-Panel web privado para:
+### Alcance aprobado para la demo
+
+Fuente: [Decidir qué administración necesita la demo y qué queda simulado](https://github.com/DRChanca/teloarreglo/issues/9).
+La aprobación exige funcionamiento real del panel y sus permisos; no significa que esté implementado. Los movimientos de dinero y la comprobación comercial siguen siendo simulados.
+
+**Acceso y registro**
+
+- Panel web privado con cuenta administradora del equipo, separada de las cuentas de cliente y profesional.
+- La autorización se comprueba en el servidor: un usuario normal no puede concederse el rol ni ejecutar acciones administrativas aunque conozca sus rutas.
+- Las decisiones quedan registradas con administrador, fecha y motivo obligatorio y se reflejan en las cuentas afectadas, con aviso a las partes.
+- No se permite borrar el historial ni editar decisiones ya ejecutadas. No se promete atención comercial ni un plazo garantizado de resolución.
+
+**Perfiles ficticios**
+
+- El catálogo puede estar precargado y aprobado; se dispone además de un perfil de prueba para comprobar aprobación, rechazo y nueva presentación.
+- Un perfil pendiente o rechazado no aparece en búsquedas. El rechazo muestra un motivo al profesional y permite corregir el perfil y solicitar nueva revisión.
+- El administrador aprueba o rechaza, pero no reescribe los datos del profesional.
+- Los cambios de datos públicos de un perfil aprobado requieren nueva revisión. Hasta aprobarse sigue visible la última versión aprobada; si se rechazan, esa versión permanece.
+- Revisar un cambio de perfil no elimina citas ni conversaciones. Los cambios de agenda no necesitan revisión administrativa.
+- Las insignias de comprobación deben indicar su carácter de demostración: no aparentan una verificación comercial auténtica. No se solicita documentación personal real.
+
+**Incidencias y privacidad**
+
+- El administrador puede consultar los datos de la cita, las condiciones aceptadas, los movimientos simulados y las pruebas aportadas expresamente a esa incidencia.
+- No tiene acceso general a los chats. Las partes pueden aportar mensajes, fotos o vídeos concretos para revisión.
+- Antes de aportar una prueba se avisa de que será visible para la otra parte y administración. Ambas partes pueden consultar las pruebas presentadas en su incidencia y añadir información mientras siga abierta, sin borrar lo ya aportado.
+- Este acceso limitado es la excepción expresa al acceso privado entre las dos partes; no autoriza explorar otras conversaciones.
+
+**Resolución**
+
+- Sobre el importe integrado simulado que siga pendiente en esa cita, el administrador puede entregarlo al profesional, devolverlo íntegramente al cliente o repartirlo mediante devolución parcial y entrega del resto.
+- Se requiere motivo y se impiden importes fuera del saldo pendiente, movimientos duplicados y modificaciones de pagos ya entregados. La resolución debe coordinarse con la confirmación y el reloj de 48 horas.
+- Por separado se registra si consta que el servicio se realizó, que no se realizó o que faltan pruebas. Si consta realizado se habilita la reseña; si no se realizó no se habilita; si faltan pruebas, la disputa sobre realización sigue pendiente.
+- La decisión sobre realización no se deduce del reparto del dinero: devolver un importe no significa necesariamente que el servicio no ocurriera. Una queja de calidad no bloquea por sí sola una reseña de un servicio reconocido como realizado.
+- Una incidencia posterior a la entrega puede revisarse y tener una conclusión registrada, incluida la revisión de realización y posibilidad de reseñar. No se ofrecen acciones para revertir fondos ya entregados ni se simula una devolución de dinero que ya no está pendiente.
+- En citas gratuitas o con pago directo no se inventa un saldo administrado por la aplicación.
+
+**Comprobación y exclusiones**
+
+- Se comprueban fuera del vídeo principal aprobación y rechazo de perfiles, resolución de incidencias, permisos y registro de decisiones. El guion conserva la historia aprobada con confirmación manual, sin escenas administrativas obligatorias.
+- Quedan fuera de esta demo la revisión documental real, gestión de categorías, estadísticas administrativas, sanciones y moderación general. No se operan cobros reales ni se revisan negocios auténticos.
+
+### Visión comercial posterior
+
+La visión del producto incluye un panel privado para:
 
 - Revisar altas y verificar negocios.
 - Revisar documentación y el alcance de la verificación.
@@ -386,7 +431,7 @@ Panel web privado para:
 - Revisar disputas sobre realización de citas.
 - Suspender cuentas cuando corresponda.
 
-Los permisos, procedimientos y plazos de atención quedan por definir.
+Los procedimientos documentales, permisos adicionales y plazos de atención comercial quedan por definir; no amplían automáticamente el alcance aprobado para la demo.
 
 ## 15. Alcance inicial y ampliaciones
 
@@ -416,7 +461,7 @@ Fuera del alcance inicial:
 ### Producto y operativa
 
 - Concretar en la arquitectura los estados y contratos que implementen las reglas aprobadas del apartado 1, incluida concurrencia en agenda y automatización de 48 horas.
-- Resolución administrativa de disputas y permisos del panel, pendiente de su decisión específica.
+- Concretar en la arquitectura la implementación de permisos, pruebas aportadas y resoluciones administrativas aprobadas en el apartado 14, sin ampliar su acceso a conversaciones privadas.
 - Requisitos documentales concretos de verificación y revisión periódica.
 - Reglas del posicionamiento destacado y métricas de la suscripción.
 - Compatibilidad técnica de formatos y compresión; moderación y política de conservación y borrado para el producto comercial. Los límites de la demo están aprobados en el apartado 1.
