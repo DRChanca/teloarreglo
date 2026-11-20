@@ -80,5 +80,6 @@ jobs:
       - run: python3 scripts/contract_identity.py --local
       - run: python3 scripts/contract_catalogue.py --local
       - run: python3 scripts/contract_covers.py --local
+      - run: python3 scripts/contract_chat.py --local
       - if: always()
         run: supabase stop

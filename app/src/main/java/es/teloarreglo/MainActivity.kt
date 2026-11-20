@@ -11,6 +11,11 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.teloarreglo.identity.AccessStage
+import es.teloarreglo.chat.Conversation
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import androidx.compose.material3.*
+import androidx.compose.ui.res.stringResource
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,6 +23,9 @@ class MainActivity : AppCompatActivity() {
         setContent {
             var account by rememberSaveable { mutableStateOf(false) }
             var ownProfile by rememberSaveable { mutableStateOf<String?>(null) }
+            var chatVisible by rememberSaveable { mutableStateOf(false) }
+            var contactProfile by rememberSaveable { mutableStateOf<String?>(null) }
+            var conversationJson by rememberSaveable { mutableStateOf<String?>(null) }
             val app = application as TeloarregloApplication
             val access by app.identity.state.collectAsStateWithLifecycle()
             var knownOwner by rememberSaveable { mutableStateOf<String?>(null) }
@@ -29,14 +37,26 @@ class MainActivity : AppCompatActivity() {
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
             }
             BackHandler(enabled = account) { account = false }
-            if (account) {
+            if (chatVisible && access.stage == AccessStage.CONNECTED && app.chat != null) {
+                key(access.account!!.userId) {
+                    ChatRoute(app.chat!!, access.account!!.userId, contactProfile,
+                        conversationJson?.let { Json.decodeFromString<Conversation>(it) },
+                        onOpened = { contactProfile = null; conversationJson = Json.encodeToString(it) },
+                        onBack = {
+                            if (conversationJson != null && ownProfile == null) conversationJson = null
+                            else { chatVisible = false; contactProfile = null; conversationJson = null }
+                        })
+                }
+            } else if (account || chatVisible) {
                 AccessScreen(app.identity, changeLanguage,
-                    onCatalogue = { account = false },
-                    onProfile = { ownProfile = it; account = false },
+                    onCatalogue = { account = false; chatVisible = false; contactProfile = null; conversationJson = null },
+                    onProfile = { ownProfile = it; account = false; chatVisible = false; conversationJson = null },
                     operationScope = app.applicationScope)
             } else {
                 CatalogueScreen(app.catalogue, onAccount = { ownProfile = null; account = true }, onLanguageChange = changeLanguage,
-                    initialProfileId = ownProfile, covers = app.covers, ownedProfileId = owner)
+                    initialProfileId = ownProfile, covers = app.covers, ownedProfileId = owner,
+                    onContact = { ownProfile = it; contactProfile = it; conversationJson = null; chatVisible = true; account = false },
+                    onChats = { ownProfile = null; contactProfile = null; conversationJson = null; chatVisible = true; account = false })
             }
         }
     }

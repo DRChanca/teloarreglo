@@ -8,6 +8,8 @@ El inicio permite consultar sin registro la lista por oficio y los perfiles
 públicos. Contratos, carga explícita de los 18 perfiles y permisos:
 [catálogo](docs/catalogo-contrato.md).
 Portadas editables y revisión de usabilidad: [portadas y diseño](docs/portadas-y-diseno.md).
+Chat privado de texto: [contratos](docs/chat-contrato.md) y
+[comprobaciones y pendientes](docs/comprobacion-chat.md).
 
 ## Decisión vigente: una sola base
 
@@ -168,8 +170,9 @@ python3 scripts/android.py install --serial emulator-5558
 ```
 
 Abrir la misma variante `pruebas` en ambos, conectada a la única base, y entrar con cuentas verificadas distintas.
-No hay aplicación separada por rol. El catálogo público comparte identidad;
-el chat se integra en su propio ticket.
+No hay aplicación separada por rol. El cliente contacta desde el perfil y el
+profesional responde desde «Conversaciones». Aplicar primero las migraciones de
+chat revisadas; consultar sus comprobaciones pendientes antes de la presentación.
 
 ## Comprobaciones
 

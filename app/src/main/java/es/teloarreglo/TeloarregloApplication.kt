@@ -12,6 +12,8 @@ import es.teloarreglo.catalogue.PublicProfile
 import es.teloarreglo.catalogue.SupabaseCatalogue
 import es.teloarreglo.catalogue.ProfessionalCovers
 import es.teloarreglo.catalogue.SupabaseProfessionalCovers
+import es.teloarreglo.chat.Chat
+import es.teloarreglo.chat.SupabaseChat
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
@@ -47,6 +49,7 @@ class TeloarregloApplication : Application() {
     val identity: Identity by lazy { client?.let { SupabaseIdentity(it, applicationScope) } ?: MissingConfiguration() }
     val catalogue: Catalogue by lazy { client?.let(::SupabaseCatalogue) ?: MissingCatalogueConfiguration() }
     val covers: ProfessionalCovers? by lazy { client?.let(::SupabaseProfessionalCovers) }
+    val chat: Chat? by lazy { client?.let(::SupabaseChat) }
 }
 
 private class MissingCatalogueConfiguration : Catalogue {

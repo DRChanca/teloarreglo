@@ -1,0 +1,19 @@
+<resources>
+    <string name="chat_title">Conversaciones</string>
+    <string name="chat_contact">Enviar mensaje</string>
+    <string name="chat_empty">Aún no hay conversaciones. Contacta desde un perfil profesional.</string>
+    <string name="chat_first">Explica qué necesitas. No hace falta una cita para conversar.</string>
+    <string name="chat_privacy">Chat privado entre las dos cuentas. No se comparte tu dirección al abrirlo.</string>
+    <string name="chat_error">No se pudo actualizar. Comprueba la conexión; se volverá a intentar.</string>
+    <string name="chat_open_error">No se pudo contactar. Comprueba la conexión y que el perfil tenga una cuenta disponible.</string>
+    <string name="chat_send_error">Envío sin confirmar. Reintenta el mismo mensaje sin duplicarlo.</string>
+    <string name="chat_retry_send">Reintentar envío</string>
+    <string name="chat_input">Mensaje (máximo 4000 caracteres)</string>
+    <string name="chat_send">Enviar</string>
+    <string name="chat_sending">Enviando…</string>
+    <string name="chat_sent">Confirmado por el servidor</string>
+    <string name="chat_you">Tú</string>
+    <string name="chat_other">Otra cuenta</string>
+    <string name="chat_client">Cliente · %1$s</string>
+    <string name="chat_access">Accede a tu cuenta para contactar.</string>
+</resources>

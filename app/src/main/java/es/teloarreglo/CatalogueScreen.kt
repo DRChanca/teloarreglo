@@ -45,6 +45,8 @@ fun CatalogueScreen(
     initialProfileId: String? = null,
     covers: ProfessionalCovers? = null,
     ownedProfileId: String? = null,
+    onContact: ((String) -> Unit)? = null,
+    onChats: (() -> Unit)? = null,
 ) {
     var trade by rememberSaveable { mutableStateOf<String?>(null) }
     var selected by rememberSaveable(initialProfileId) { mutableStateOf(initialProfileId) }
@@ -105,6 +107,7 @@ fun CatalogueScreen(
                         Text("teloarreglo", color = green, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
                     }
                     Row {
+                        if (onChats != null) TextButton(onClick = onChats) { Text(stringResource(R.string.chat_title)) }
                         TextButton(onClick = onAccount) { Text(stringResource(R.string.catalogue_account)) }
                         LanguageMenu(onLanguageChange)
                     }
@@ -163,7 +166,8 @@ fun CatalogueScreen(
                         }
                     }
                     selected != null -> ProfileDetail(profiles.single(), covers,
-                        onEdit = if (selected == ownedProfileId && covers != null) ({ editing = true }) else null)
+                        onEdit = if (selected == ownedProfileId && covers != null) ({ editing = true }) else null,
+                        onContact = if (selected != ownedProfileId) onContact?.let { contact -> { contact(profiles.single().id) } } else null)
                     else -> {
                         Text(pluralStringResource(R.plurals.catalogue_results, visible.size, visible.size),
                             Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
@@ -206,7 +210,7 @@ fun CatalogueScreen(
 }
 
 @Composable
-private fun ProfileDetail(profile: PublicProfile, covers: ProfessionalCovers?, onEdit: (() -> Unit)?) {
+private fun ProfileDetail(profile: PublicProfile, covers: ProfessionalCovers?, onEdit: (() -> Unit)?, onContact: (() -> Unit)?) {
     val locale = LocalConfiguration.current.locales[0]
     LazyColumn(
         modifier = Modifier.testTag("profile_detail"),
@@ -216,6 +220,9 @@ private fun ProfileDetail(profile: PublicProfile, covers: ProfessionalCovers?, o
             Text(profile.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(), color = green)
             Rating(profile)
+            if (onContact != null) Button(onClick = onContact, modifier = Modifier.fillMaxWidth().testTag("chat_contact")) {
+                Text(stringResource(R.string.chat_contact))
+            }
         }
         item {
             ProfileCover(profile.trades.firstOrNull().orEmpty(), profile.coverPath, covers, Modifier.fillMaxWidth().height(180.dp))
