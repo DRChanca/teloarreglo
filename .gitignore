@@ -1,0 +1,14 @@
+.DS_Store
+.gradle/
+**/build/
+local.properties
+.env
+.env.*
+!.env.example
+.supabase/
+supabase/.temp/
+supabase/.branches/
+*.jks
+*.keystore
+captures/
+__pycache__/
