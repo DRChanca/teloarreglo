@@ -116,3 +116,15 @@ y más referencias de servicios, incluida visita de valoración.
   SQL revisado y repetir allí `contract_catalogue.py --details`.
 - Se mantienen intactos los cambios de Gradle/wrapper hechos por David en su
   entorno; no forman parte de esta modificación.
+
+### Standards
+
+Revisión independiente del cambio `50a7137...a809e19`: sin incumplimientos
+accionables de normas ni problemas sustanciales de mantenibilidad. Se revisaron
+en particular privacidad, conservación de datos preparados y despliegue manual.
+
+### Spec
+
+Sin defectos de implementación confirmados ni ampliaciones de alcance. Cumple
+los ajustes de la revisión visual; sigue pendiente ejecutar la actualización
+alojada y revisar su resultado con David. Total: cero hallazgos por eje.
