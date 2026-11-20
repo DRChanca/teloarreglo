@@ -78,5 +78,6 @@ jobs:
       - run: supabase start > /dev/null
       - run: supabase test db
       - run: python3 scripts/contract_identity.py --local
+      - run: python3 scripts/contract_catalogue.py --local
       - if: always()
         run: supabase stop

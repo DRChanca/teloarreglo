@@ -7,6 +7,9 @@ import es.teloarreglo.identity.AccessState
 import es.teloarreglo.identity.EncryptedSessionManager
 import es.teloarreglo.identity.Identity
 import es.teloarreglo.identity.SupabaseIdentity
+import es.teloarreglo.catalogue.Catalogue
+import es.teloarreglo.catalogue.PublicProfile
+import es.teloarreglo.catalogue.SupabaseCatalogue
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
@@ -19,13 +22,13 @@ import kotlin.time.Duration.Companion.seconds
 
 class TeloarregloApplication : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    val identity: Identity by lazy {
+    private val client by lazy {
         if (!BuildConfig.SUPABASE_URL.startsWith("https://") ||
             !BuildConfig.SUPABASE_KEY.startsWith("sb_publishable_")
         ) {
-            MissingConfiguration()
+            null
         } else {
-            val client = createSupabaseClient(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_KEY) {
+            createSupabaseClient(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_KEY) {
                 defaultLogLevel = LogLevel.NONE
                 install(Auth) {
                     autoLoadFromStorage = false
@@ -34,9 +37,15 @@ class TeloarregloApplication : Application() {
                 install(Postgrest)
                 requestTimeout = 15.seconds
             }
-            SupabaseIdentity(client, applicationScope)
         }
     }
+    val identity: Identity by lazy { client?.let { SupabaseIdentity(it, applicationScope) } ?: MissingConfiguration() }
+    val catalogue: Catalogue by lazy { client?.let(::SupabaseCatalogue) ?: MissingCatalogueConfiguration() }
+}
+
+private class MissingCatalogueConfiguration : Catalogue {
+    override suspend fun list(trade: String?): List<PublicProfile> = error("configuration_required")
+    override suspend fun profile(id: String): PublicProfile? = error("configuration_required")
 }
 
 private class MissingConfiguration : Identity {

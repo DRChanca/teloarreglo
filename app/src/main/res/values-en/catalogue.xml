@@ -1,0 +1,35 @@
+<resources>
+    <string name="catalogue_title">Find help for your home</string>
+    <string name="catalogue_account">Account</string>
+    <string name="catalogue_back">Back</string>
+    <string name="catalogue_open">View profile →</string>
+    <string name="catalogue_loading">Loading professionals…</string>
+    <string name="catalogue_error">Could not load professionals. Check your connection and try again.</string>
+    <string name="catalogue_empty">No professionals have been published for this trade yet.</string>
+    <string name="catalogue_unpublished">This profile is not publicly available.</string>
+    <string name="catalogue_services">Services</string>
+    <string name="catalogue_coverage">Service areas</string>
+    <string name="catalogue_languages">Languages</string>
+    <string name="catalogue_phone">Public phone number</string>
+    <string name="catalogue_prices">Indicative prices</string>
+    <string name="catalogue_prices_hint">These are references, not accepted proposals. Scope and final price must be explicitly agreed before confirming an appointment.</string>
+    <string name="catalogue_no_prices">Request a proposal for your job.</string>
+    <string name="catalogue_includes">Includes: %1$s</string>
+    <string name="catalogue_excludes">Extra: %1$s</string>
+    <string name="catalogue_no_reviews">No reviews yet</string>
+    <string name="catalogue_rating">%1$.1f out of 5 · %2$d reviews</string>
+    <string name="catalogue_illustration">%1$s illustration; not a photo of completed work</string>
+    <string name="catalogue_owned">Your professional profile</string>
+    <string name="catalogue_can_hire">This account can hire services and have its own professional profile.</string>
+    <string name="trade_all">All</string>
+    <string name="trade_plumbing">Plumbing</string>
+    <string name="trade_electrical">Electrical</string>
+    <string name="trade_carpentry">Carpentry</string>
+    <string name="trade_painting">Painting</string>
+    <string name="trade_masonry">Masonry</string>
+    <string name="trade_general">General repairs</string>
+    <string name="price_hour">hour</string>
+    <string name="price_sqm">m²</string>
+    <string name="price_unit">unit</string>
+    <string name="price_job">job</string>
+</resources>

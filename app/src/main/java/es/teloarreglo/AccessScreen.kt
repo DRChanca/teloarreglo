@@ -67,7 +67,12 @@ private val Green = Color(0xFF246451)
 private val Canvas = Color(0xFFF7F8F5)
 
 @Composable
-fun AccessScreen(identity: Identity, onLanguageChange: (String) -> Unit) {
+fun AccessScreen(
+    identity: Identity,
+    onLanguageChange: (String) -> Unit,
+    onCatalogue: (() -> Unit)? = null,
+    onProfile: ((String) -> Unit)? = null,
+) {
     val state by identity.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val keyboard = LocalSoftwareKeyboardController.current
@@ -93,6 +98,9 @@ fun AccessScreen(identity: Identity, onLanguageChange: (String) -> Unit) {
                     LanguageMenu(onLanguageChange)
                 }
                 Spacer(Modifier.height(48.dp))
+                if (onCatalogue != null) {
+                    TextButton(onClick = onCatalogue) { Text(stringResource(R.string.catalogue_back)) }
+                }
                 Column(Modifier.widthIn(max = 480.dp).fillMaxWidth()) {
                     Text(stringResource(R.string.welcome), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(16.dp))
@@ -115,6 +123,14 @@ fun AccessScreen(identity: Identity, onLanguageChange: (String) -> Unit) {
                                         Modifier.testTag("account"),
                                     )
                                     Text(stringResource(R.string.account_hint))
+                                    Text(stringResource(R.string.catalogue_can_hire))
+                                    state.account?.professionalProfileId?.let { id ->
+                                        if (onProfile != null) {
+                                            TextButton(onClick = { onProfile(id) }) {
+                                                Text(stringResource(R.string.catalogue_owned))
+                                            }
+                                        }
+                                    }
                                     OutlinedButton(
                                         enabled = !state.busy,
                                         onClick = { scope.launch { identity.signOut() } },
@@ -186,7 +202,7 @@ fun AccessScreen(identity: Identity, onLanguageChange: (String) -> Unit) {
 }
 
 @Composable
-private fun LanguageMenu(onLanguageChange: (String) -> Unit) {
+internal fun LanguageMenu(onLanguageChange: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         TextButton(onClick = { expanded = true }, modifier = Modifier.testTag("language")) {

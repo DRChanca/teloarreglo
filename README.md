@@ -4,6 +4,10 @@ Una app Android Kotlin/Compose para cliente y profesional. Base de identidad de
 [Acceder por correo y conservar sesión](https://github.com/DRChanca/teloarreglo/issues/12).
 Reglas: [especificación](docs/especificacion.md).
 
+El inicio permite consultar sin registro la lista por oficio y los perfiles
+públicos. Contratos, carga explícita de los 18 perfiles y permisos:
+[catálogo](docs/catalogo-contrato.md).
+
 ## Decisión vigente: una sola base
 
 Se utiliza **un único proyecto Supabase Free en Frankfurt**, con la misma base
@@ -138,7 +142,8 @@ python3 scripts/android.py install --serial emulator-5558
 ```
 
 Abrir la misma variante `pruebas` en ambos, conectada a la única base, y entrar con cuentas verificadas distintas.
-No hay aplicación separada por rol. Este ticket solo entrega acceso, no perfiles/chat.
+No hay aplicación separada por rol. El catálogo público comparte identidad;
+el chat se integra en su propio ticket.
 
 ## Comprobaciones
 
@@ -178,10 +183,12 @@ Resultados y comprobaciones pendientes: [evidencia del ticket](docs/comprobacion
 
 - `Identity`: `restore`, `signIn`, `signOut`, `state` observable.
 - `current_account()` (RPC sin argumentos): `{user_id, email, is_administrator}`.
+  El catálogo añade `can_hire` y `professional_profile_id` (UUID o `null`).
   Actor derivado de Auth y correo confirmado; no admite un ID ni rol del cliente.
 - `private.administrators`: lista privada gestionada por SQL de confianza.
   Ninguna ruta para autoconcederse rol. El permiso no da acceso general a chats.
-  El perfil profesional opcional se integrará en su ticket; no se deduce de metadatos.
+  La propiedad del perfil profesional opcional se consulta en servidor;
+  no se deduce de metadatos.
 - Tokens guardados cifrados mediante Android Keystore; copia de seguridad desactivada.
   La contraseña solo se usa durante el acceso, sin persistirla.
 - Recuperar no equivale a confiar en un token guardado: se renueva y se consulta

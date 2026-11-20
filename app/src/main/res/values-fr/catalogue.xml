@@ -1,0 +1,35 @@
+<resources>
+    <string name="catalogue_title">Trouvez de l’aide pour votre logement</string>
+    <string name="catalogue_account">Compte</string>
+    <string name="catalogue_back">Retour</string>
+    <string name="catalogue_open">Voir le profil →</string>
+    <string name="catalogue_loading">Chargement des professionnels…</string>
+    <string name="catalogue_error">Impossible de charger les professionnels. Vérifiez votre connexion et réessayez.</string>
+    <string name="catalogue_empty">Aucun professionnel publié pour ce métier pour le moment.</string>
+    <string name="catalogue_unpublished">Ce profil n’est pas accessible au public.</string>
+    <string name="catalogue_services">Services</string>
+    <string name="catalogue_coverage">Communes desservies</string>
+    <string name="catalogue_languages">Langues</string>
+    <string name="catalogue_phone">Téléphone public</string>
+    <string name="catalogue_prices">Prix indicatifs</string>
+    <string name="catalogue_prices_hint">Ce sont des références, pas des propositions acceptées. Le périmètre et le prix final doivent être expressément convenus avant de confirmer un rendez-vous.</string>
+    <string name="catalogue_no_prices">Demandez une proposition pour vos travaux.</string>
+    <string name="catalogue_includes">Inclus : %1$s</string>
+    <string name="catalogue_excludes">En supplément : %1$s</string>
+    <string name="catalogue_no_reviews">Aucun avis pour le moment</string>
+    <string name="catalogue_rating">%1$.1f sur 5 · %2$d avis</string>
+    <string name="catalogue_illustration">Illustration de %1$s ; ce n’est pas une photo de travaux réalisés</string>
+    <string name="catalogue_owned">Votre profil professionnel</string>
+    <string name="catalogue_can_hire">Ce compte peut faire appel à des services et avoir son propre profil professionnel.</string>
+    <string name="trade_all">Tous</string>
+    <string name="trade_plumbing">Plomberie</string>
+    <string name="trade_electrical">Électricité</string>
+    <string name="trade_carpentry">Menuiserie</string>
+    <string name="trade_painting">Peinture</string>
+    <string name="trade_masonry">Maçonnerie</string>
+    <string name="trade_general">Réparations générales</string>
+    <string name="price_hour">heure</string>
+    <string name="price_sqm">m²</string>
+    <string name="price_unit">unité</string>
+    <string name="price_job">intervention</string>
+</resources>

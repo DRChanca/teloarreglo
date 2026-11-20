@@ -7,17 +7,29 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            AccessScreen(
-                identity = (application as TeloarregloApplication).identity,
-                onLanguageChange = { tag ->
-                    AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
-                },
-            )
+            var account by rememberSaveable { mutableStateOf(false) }
+            var ownProfile by rememberSaveable { mutableStateOf<String?>(null) }
+            val app = application as TeloarregloApplication
+            val changeLanguage: (String) -> Unit = { tag ->
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
+            }
+            BackHandler(enabled = account) { account = false }
+            if (account) {
+                AccessScreen(app.identity, changeLanguage,
+                    onCatalogue = { account = false },
+                    onProfile = { ownProfile = it; account = false })
+            } else {
+                CatalogueScreen(app.catalogue, onAccount = { ownProfile = null; account = true }, onLanguageChange = changeLanguage,
+                    initialProfileId = ownProfile)
+            }
         }
     }
 
