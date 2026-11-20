@@ -11,6 +11,7 @@ import uuid
 from configuration import ROOT, configuration
 from contract_identity import Api
 from prepare_catalogue import profiles, preparation_sql, TRADES
+from update_catalogue_details import update_sql
 
 
 def local_sql(sql):
@@ -22,6 +23,63 @@ def local_sql(sql):
 
 
 class CatalogueContract(unittest.TestCase):
+    def test_reviewed_update_preserves_prepared_data_and_aborts_on_concurrent_changes(self):
+        if not args.local:
+            self.skipTest("content updates are tested on loopback only")
+        first, second = expected_ids[:2]
+        # Arrange old-style fixtures only within this invocation's random UUIDs.
+        local_sql(f"""update public.approved_profiles
+            set business_address = null, prices = jsonb_build_array(prices->0)
+            where profile_id in ('{first}', '{second}');
+            update public.approved_profiles set description = 'Prepared content to preserve'
+            where profile_id = '{first}';""")
+        code, before = api.request("/rest/v1/rpc/catalogue", {})
+        self.assertEqual(code, 200)
+        sql = update_sql(before, namespace)
+        # A later edit must abort the whole batch rather than overwrite it.
+        local_sql(f"""update public.approved_profiles set services = services || array['Later prepared service']
+            where profile_id = '{second}';""")
+        with self.assertRaises(subprocess.CalledProcessError):
+            local_sql(sql)
+        code, first_detail = api.request("/rest/v1/rpc/catalogue", {"p_id": first})
+        self.assertEqual(code, 200)
+        self.assertIsNone(first_detail[0]["business_address"])
+        self.assertEqual(len(first_detail[0]["prices"]), 1, "the earlier update must also have rolled back")
+        code, current = api.request("/rest/v1/rpc/catalogue", {})
+        self.assertEqual(code, 200)
+        local_sql(update_sql(current, namespace))
+        code, after = api.request("/rest/v1/rpc/catalogue", {"p_id": first})
+        self.assertEqual(code, 200)
+        self.assertEqual(after[0]["description"], "Prepared content to preserve")
+        self.assertEqual(after[0]["prices"][0], first_detail[0]["prices"][0])
+        self.assertEqual(len(after[0]["prices"]), 3)
+        code, second_detail = api.request("/rest/v1/rpc/catalogue", {"p_id": second})
+        self.assertEqual(code, 200)
+        self.assertIn("Later prepared service", second_detail[0]["services"])
+        self.assertEqual(len(second_detail[0]["prices"]), 3)
+
+    def test_commercial_addresses_and_multiple_reference_services(self):
+        if not args.local and not args.details:
+            self.skipTest("run --details after the reviewed catalogue content update")
+        code, detail = api.request("/rest/v1/rpc/catalogue", {"p_id": expected_ids[0]})
+        self.assertEqual(code, 200)
+        self.assertEqual(detail[0].get("business_address"), "Calle Gascona, local ficticio 01, Oviedo")
+        self.assertEqual(len(detail[0]["prices"]), 3)
+        visit = next(price for price in detail[0]["prices"] if price["service"] == "Visita de valoración")
+        self.assertEqual(visit["amount_cents"], 2000)
+        self.assertIn("aunque no se repare", visit["scope"])
+        code, free_detail = api.request("/rest/v1/rpc/catalogue", {"p_id": expected_ids[7]})
+        self.assertEqual(code, 200)
+        free_visit = next(p for p in free_detail[0]["prices"] if p["service"] == "Visita de valoración")
+        self.assertEqual(free_visit["amount_cents"], 0)
+        self.assertIn("sin obligación de contratar", free_visit["scope"])
+        code, rows = api.request("/rest/v1/rpc/catalogue", {})
+        self.assertEqual(code, 200)
+        for row in rows:
+            if row["profile_id"] in expected_ids:
+                self.assertTrue(row.get("business_address"))
+                self.assertGreaterEqual(len(row["prices"]), 3)
+
     def test_public_catalogue_and_detail(self):
         code, rows = api.request("/rest/v1/rpc/catalogue", {})
         self.assertEqual(code, 200, "public catalogue RPC must exist")
@@ -79,6 +137,7 @@ class CatalogueContract(unittest.TestCase):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--local", action="store_true")
+    parser.add_argument("--details", action="store_true", help="also verify reviewed commercial addresses and expanded prices")
     args = parser.parse_args()
     created = []
     namespace = uuid.uuid4() if args.local else None

@@ -89,3 +89,30 @@ aceptación alojada, idiomas y revisión humana indicados arriba. La especificac
 general menciona fotos de trabajos anteriores; la issue admite imágenes
 autorizadas y esta entrega incluye ilustraciones, no fotos. David debe validar
 esa elección de contenido antes de aceptar el catálogo.
+
+## Ajustes solicitados durante la revisión de lista/perfil
+
+David confirmó que ve la lista alojada y pidió dirección comercial ficticia,
+texto de precios breve, idiomas solo cuando haya alguno adicional al español
+y más referencias de servicios, incluida visita de valoración.
+
+- Se conserva la distinción comercial/pública frente al domicilio privado.
+  La migración nueva `20261120000200` añade una columna opcional, sin copiar datos
+  privados. La nueva APK también admite respuestas antiguas sin esa columna.
+- TDD: fallo observado de DTO sin dirección, de SQL sin columna y de pantalla sin
+  dirección; después pasaron las pruebas específicas de cada frontera.
+- El contrato HTTP local de seis casos comprueba los perfiles ampliados, visitas
+  con coste/gratuitas y que la actualización respeta datos preparados. Ante una
+  edición concurrente se observó el aborto de toda la transacción, incluido el
+  primer perfil ya actualizado dentro de ella.
+- Suite SQL completa: 22 aserciones correctas. Suite Compose completa: nueve
+  pruebas correctas en el emulador desechable API 35. Se añadió desplazamiento
+  explícito en dos aserciones de cuenta para evitar depender de la posición
+  visible tras cerrar el teclado; no se cambió el acceso de producción.
+- Suite JVM completa, lint de ambas variantes y ambas APK debug: correctos con
+  las versiones de Gradle/AGP presentes en el entorno de David.
+- Los datos nuevos están en `supabase/catalogue/details.json`. No se ha vuelto a
+  cargar ni modificado automáticamente el catálogo alojado. Falta ejecutar el
+  SQL revisado y repetir allí `contract_catalogue.py --details`.
+- Se mantienen intactos los cambios de Gradle/wrapper hechos por David en su
+  entorno; no forman parte de esta modificación.

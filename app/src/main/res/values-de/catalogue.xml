@@ -11,8 +11,9 @@
     <string name="catalogue_coverage">Einsatzgebiete</string>
     <string name="catalogue_languages">Sprachen</string>
     <string name="catalogue_phone">Öffentliche Telefonnummer</string>
+    <string name="catalogue_address">Geschäftsadresse</string>
     <string name="catalogue_prices">Richtpreise</string>
-    <string name="catalogue_prices_hint">Dies sind Richtwerte, keine angenommenen Angebote. Umfang und Endpreis müssen vor der Terminbestätigung ausdrücklich vereinbart werden.</string>
+    <string name="catalogue_prices_hint">Der Endpreis wird bei der Terminvereinbarung vereinbart.</string>
     <string name="catalogue_no_prices">Fordere ein Angebot für deine Arbeiten an.</string>
     <string name="catalogue_includes">Enthalten: %1$s</string>
     <string name="catalogue_excludes">Zusätzlich: %1$s</string>

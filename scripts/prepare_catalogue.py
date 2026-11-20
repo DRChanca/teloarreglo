@@ -17,7 +17,32 @@ def literal(value):
 def profiles(namespace=NAMESPACE):
     rows = json.loads((ROOT / "supabase/catalogue/profiles.json").read_text())
     assert len(rows) == 18 and all(sum(p["trade"] == t for p in rows) == 3 for t in TRADES)
+    details = {p["name"]: p for p in json.loads((ROOT / "supabase/catalogue/details.json").read_text())}
+    if set(details) != {p["name"] for p in rows}:
+        raise ValueError("Catalogue details must match the 18 prepared profiles")
+    rows = [dict(p, **details[p["name"]]) for p in rows]
     return [(str(uuid.uuid5(namespace, str(i))), p) for i, p in enumerate(rows)]
+
+
+def reference_prices(p):
+    standard = {"includes": "Mano de obra e IVA",
+                "excludes": "Materiales y desplazamiento; requieren acuerdo previo"}
+    return [
+        dict(standard, service=p["service"], scope=p["scope"], unit=p["unit"], amount_cents=p["amount_cents"]),
+        {
+            "service": "Visita de valoración", "unit": "job", "amount_cents": p["visit_cents"],
+            "scope": "Visita de hasta 30 minutos para valorar el problema; " + (
+                "se cobra aunque no se repare." if p["visit_cents"] else "sin obligación de contratar."
+            ),
+            "includes": "Valoración e IVA",
+            "excludes": "Reparación, materiales y desplazamiento; requieren acuerdo previo",
+        },
+        dict(standard, **p["extra_price"]),
+    ]
+
+
+def public_services(p):
+    return list(dict.fromkeys(p["services"] + [price["service"] for price in reference_prices(p)[1:]]))
 
 
 def preparation_sql(owner_email, namespace=NAMESPACE):
@@ -36,22 +61,20 @@ def preparation_sql(owner_email, namespace=NAMESPACE):
             f"insert into private.professional_profiles(id, owner_id, review_status) "
             f"values ({literal(profile_id)}, {owner}, 'approved');"
         )
-        price = [{
-            "service": p["service"], "scope": p["scope"], "unit": p["unit"], "amount_cents": p["amount_cents"],
-            "includes": "Mano de obra e IVA", "excludes": "Materiales y desplazamiento; requieren acuerdo previo",
-        }]
+        price = reference_prices(p)
         values = [
             literal(profile_id), literal(p["name"]), literal(p["description"]),
-            f"array[{literal(p['trade'])}]", "array[" + ",".join(map(literal, p["services"])) + "]",
+            f"array[{literal(p['trade'])}]", "array[" + ",".join(map(literal, public_services(p))) + "]",
             literal(json.dumps(p["coverage"], ensure_ascii=False)) + "::jsonb",
             "array[" + ",".join(map(literal, p["languages"])) + "]",
             # Deliberately invalid numbers: never calls unrelated real people.
             literal(f"+34 000 000 {i + 1:03}"), f"array[{literal(p['trade'])}]",
             literal(json.dumps(price, ensure_ascii=False)) + "::jsonb",
+            literal(p["business_address"]),
         ]
         statements.append(
             "insert into public.approved_profiles "
-            "(profile_id,name,description,trades,services,coverage,languages,phone,images,prices) "
+            "(profile_id,name,description,trades,services,coverage,languages,phone,images,prices,business_address) "
             f"values ({','.join(values)});"
         )
     statements.append("commit;")

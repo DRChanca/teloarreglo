@@ -11,8 +11,9 @@
     <string name="catalogue_coverage">Communes desservies</string>
     <string name="catalogue_languages">Langues</string>
     <string name="catalogue_phone">Téléphone public</string>
+    <string name="catalogue_address">Adresse professionnelle</string>
     <string name="catalogue_prices">Prix indicatifs</string>
-    <string name="catalogue_prices_hint">Ce sont des références, pas des propositions acceptées. Le périmètre et le prix final doivent être expressément convenus avant de confirmer un rendez-vous.</string>
+    <string name="catalogue_prices_hint">Le prix final est convenu lors de la prise de rendez-vous.</string>
     <string name="catalogue_no_prices">Demandez une proposition pour vos travaux.</string>
     <string name="catalogue_includes">Inclus : %1$s</string>
     <string name="catalogue_excludes">En supplément : %1$s</string>

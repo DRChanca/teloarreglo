@@ -144,7 +144,10 @@ fun CatalogueScreen(
 @Composable
 private fun ProfileDetail(profile: PublicProfile) {
     val locale = LocalConfiguration.current.locales[0]
-    LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    LazyColumn(
+        modifier = Modifier.testTag("profile_detail"),
+        contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         item {
             Text(profile.name, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
             Rating(profile)
@@ -153,6 +156,12 @@ private fun ProfileDetail(profile: PublicProfile) {
             TradeIllustration(key, Modifier.fillMaxWidth().height(180.dp))
         }
         item { Text(profile.description, style = MaterialTheme.typography.bodyLarge) }
+        profile.businessAddress?.takeIf { it.isNotBlank() }?.let { address ->
+            item {
+                Section(R.string.catalogue_address)
+                androidx.compose.foundation.text.selection.SelectionContainer { Text(address) }
+            }
+        }
         item {
             Section(R.string.catalogue_services)
             profile.services.forEach { Text("• $it") }
@@ -161,9 +170,12 @@ private fun ProfileDetail(profile: PublicProfile) {
             Section(R.string.catalogue_coverage)
             Text(profile.coverage.joinToString { it.name })
         }
-        item {
-            Section(R.string.catalogue_languages)
-            Text(profile.languages.joinToString { Locale.forLanguageTag(it).getDisplayLanguage(locale) })
+        if (profile.languages.any { Locale.forLanguageTag(it).language != "es" }) {
+            item {
+                Text(stringResource(R.string.catalogue_languages), Modifier.testTag("profile_languages"),
+                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(profile.languages.joinToString { Locale.forLanguageTag(it).getDisplayLanguage(locale) })
+            }
         }
         item {
             Section(R.string.catalogue_phone)

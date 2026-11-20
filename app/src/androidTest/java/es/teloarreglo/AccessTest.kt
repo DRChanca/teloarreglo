@@ -37,7 +37,7 @@ class AccessTest {
         compose.onNodeWithTag("back_from_account").performScrollTo().performClick()
         response.complete(Unit)
         compose.onNodeWithTag("return_account").performClick()
-        compose.onNodeWithTag("account").assertIsDisplayed()
+        compose.onNodeWithTag("account").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("signOut").performScrollTo().performClick()
         compose.onNodeWithTag("email").performScrollTo().assertIsDisplayed()
     }
@@ -48,7 +48,7 @@ class AccessTest {
         compose.onNodeWithTag("email").performTextInput("cliente@example.org")
         compose.onNodeWithTag("password").performTextInput("correcta")
         compose.onNodeWithTag("signIn").performScrollTo().performClick()
-        compose.onNodeWithTag("account").assertIsDisplayed()
+        compose.onNodeWithTag("account").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("signOut").performScrollTo().performClick()
         compose.onNodeWithTag("account").assertDoesNotExist()
         compose.onNodeWithTag("email").performScrollTo().assertIsDisplayed()

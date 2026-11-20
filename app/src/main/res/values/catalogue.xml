@@ -11,8 +11,9 @@
     <string name="catalogue_coverage">Concejos donde trabaja</string>
     <string name="catalogue_languages">Idiomas</string>
     <string name="catalogue_phone">Teléfono público</string>
+    <string name="catalogue_address">Dirección comercial</string>
     <string name="catalogue_prices">Precios orientativos</string>
-    <string name="catalogue_prices_hint">Son referencias, no propuestas aceptadas. El alcance y el precio final se acuerdan expresamente antes de confirmar una cita.</string>
+    <string name="catalogue_prices_hint">El precio final se acuerda al agendar la cita.</string>
     <string name="catalogue_no_prices">Solicita una propuesta para tu trabajo.</string>
     <string name="catalogue_includes">Incluye: %1$s</string>
     <string name="catalogue_excludes">Aparte: %1$s</string>

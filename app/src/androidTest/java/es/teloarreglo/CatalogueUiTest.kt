@@ -6,6 +6,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -26,7 +29,12 @@ class CatalogueUiTest {
         "profile-14", "Fontanería Nalón", "Reparaciones domésticas", listOf("plumbing"),
         listOf("Fugas"), listOf(Coverage("33044", "Oviedo")), listOf("es", "en"),
         "+34 000 000 014", listOf("plumbing"),
-        listOf(ReferencePrice("Reparación", "Mano de obra", "hour", 3500, "IVA", "Materiales")),
+        listOf(
+            ReferencePrice("Reparación", "Mano de obra", "hour", 3500, "IVA", "Materiales"),
+            ReferencePrice("Visita de valoración", "Se cobra aunque no se repare", "job", 2000, "Valoración e IVA", "Reparación"),
+            ReferencePrice("Cambio de grifería", "Montaje de un grifo", "unit", 4500, "IVA", "Grifo"),
+        ),
+        businessAddress = "Calle Gascona, local ficticio A, Oviedo",
     )
 
     private fun screenshot(name: String) {
@@ -34,6 +42,17 @@ class CatalogueUiTest {
         File(context.cacheDir, "$name.png").outputStream().use {
             compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }
+    }
+
+    @Test fun commercialAddressIsVisibleAndSpanishOnlyDoesNotShowLanguages() {
+        val profile = plumber.copy(languages = listOf("es"),
+            businessAddress = "Calle Gascona, local ficticio A, Oviedo")
+        compose.setContent { CatalogueScreen(object : Catalogue {
+            override suspend fun list(trade: String?) = listOf(profile)
+            override suspend fun profile(id: String) = profile
+        }, onAccount = {}, onLanguageChange = {}, initialProfileId = profile.id) }
+        compose.onNodeWithText("Calle Gascona, local ficticio A, Oviedo").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("profile_languages").assertDoesNotExist()
     }
 
     @Test fun visitorOpensProfileAndReturnsToTheFilteredList() {
@@ -48,8 +67,16 @@ class CatalogueUiTest {
         compose.onNodeWithTag("profile_profile-14").performClick()
         compose.onNodeWithText("Fontanería Nalón").assertIsDisplayed()
         screenshot("catalogue-profile")
-        compose.onNodeWithText("+34 000 000 014").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag("reference_prices").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("profile_detail").performScrollToNode(hasTestTag("profile_languages"))
+        compose.onNodeWithTag("profile_languages").assertIsDisplayed()
+        compose.onNodeWithTag("profile_detail").performScrollToNode(hasText("+34 000 000 014"))
+        compose.onNodeWithText("+34 000 000 014").assertIsDisplayed()
+        compose.onNodeWithTag("profile_detail").performScrollToNode(hasTestTag("reference_prices"))
+        compose.onNodeWithTag("reference_prices").assertIsDisplayed()
+        compose.onNodeWithTag("profile_detail").performScrollToNode(hasText("Visita de valoración"))
+        compose.onNodeWithText("Visita de valoración").assertIsDisplayed()
+        compose.onNodeWithTag("profile_detail").performScrollToNode(hasText("Cambio de grifería"))
+        compose.onNodeWithText("Cambio de grifería").assertIsDisplayed()
         compose.onNodeWithTag("back_catalogue").performClick()
         compose.onNodeWithTag("profile_profile-14").assertIsDisplayed()
     }

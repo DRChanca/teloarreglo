@@ -47,6 +47,7 @@ class CatalogueTest {
                     """[{"profile_id":"profile-14","name":"Fontanería Nalón","description":"Reparaciones",
                        "trades":["plumbing"],"services":["Fugas"],"coverage":[{"code":"33044","name":"Oviedo"}],
                        "languages":["es","en"],"phone":"+34 000 000 014","images":["plumbing"],
+                       "business_address":"Calle Gascona, local ficticio A, Oviedo",
                        "prices":[{"service":"Reparación","scope":"Mano de obra","unit":"hour","amount_cents":3500,
                        "includes":"IVA","excludes":"Materiales y desplazamiento"}],"rating":null,"review_count":0}]""",
                     HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"),
@@ -58,6 +59,7 @@ class CatalogueTest {
             assertEquals("Fontanería Nalón", profiles.single().name)
             assertEquals(3500, profiles.single().prices.single().amountCents)
             assertEquals(null, profiles.single().rating)
+            assertEquals("Calle Gascona, local ficticio A, Oviedo", profiles.single().businessAddress)
         } finally { client.close() }
     }
 }

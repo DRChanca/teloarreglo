@@ -11,8 +11,9 @@
     <string name="catalogue_coverage">Service areas</string>
     <string name="catalogue_languages">Languages</string>
     <string name="catalogue_phone">Public phone number</string>
+    <string name="catalogue_address">Business address</string>
     <string name="catalogue_prices">Indicative prices</string>
-    <string name="catalogue_prices_hint">These are references, not accepted proposals. Scope and final price must be explicitly agreed before confirming an appointment.</string>
+    <string name="catalogue_prices_hint">The final price is agreed when scheduling the appointment.</string>
     <string name="catalogue_no_prices">Request a proposal for your job.</string>
     <string name="catalogue_includes">Includes: %1$s</string>
     <string name="catalogue_excludes">Extra: %1$s</string>
