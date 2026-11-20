@@ -18,6 +18,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -218,7 +219,7 @@ private fun TradeIllustration(key: String, modifier: Modifier) {
         "general" -> Color(0xFF7D91B3)
         else -> Color(0xFF5A9DA2)
     }
-    Canvas(modifier.background(accent.copy(alpha = 0.16f)).semantics { contentDescription = label }) {
+    Canvas(modifier.clipToBounds().background(accent.copy(alpha = 0.16f)).semantics { contentDescription = label }) {
         val w = size.width
         val h = size.height
         drawCircle(Color.White.copy(alpha = 0.7f), h * .75f, Offset(w * .72f, h * .35f))

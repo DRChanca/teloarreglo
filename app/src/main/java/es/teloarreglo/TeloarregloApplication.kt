@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.time.Duration.Companion.seconds
 
 class TeloarregloApplication : Application() {
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    internal val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val client by lazy {
         if (!BuildConfig.SUPABASE_URL.startsWith("https://") ||
             !BuildConfig.SUPABASE_KEY.startsWith("sb_publishable_")

@@ -5,7 +5,6 @@ import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.*
@@ -25,7 +24,8 @@ class MainActivity : AppCompatActivity() {
             if (account) {
                 AccessScreen(app.identity, changeLanguage,
                     onCatalogue = { account = false },
-                    onProfile = { ownProfile = it; account = false })
+                    onProfile = { ownProfile = it; account = false },
+                    operationScope = app.applicationScope)
             } else {
                 CatalogueScreen(app.catalogue, onAccount = { ownProfile = null; account = true }, onLanguageChange = changeLanguage,
                     initialProfileId = ownProfile)
@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        lifecycleScope.launch { (application as TeloarregloApplication).identity.restore() }
+        val app = application as TeloarregloApplication
+        app.applicationScope.launch { app.identity.restore() }
     }
 }

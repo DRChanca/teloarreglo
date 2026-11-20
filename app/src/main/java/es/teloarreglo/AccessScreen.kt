@@ -62,6 +62,7 @@ import es.teloarreglo.identity.AccessError
 import es.teloarreglo.identity.AccessStage
 import es.teloarreglo.identity.Identity
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
 
 private val Green = Color(0xFF246451)
 private val Canvas = Color(0xFFF7F8F5)
@@ -72,9 +73,10 @@ fun AccessScreen(
     onLanguageChange: (String) -> Unit,
     onCatalogue: (() -> Unit)? = null,
     onProfile: ((String) -> Unit)? = null,
+    operationScope: CoroutineScope = rememberCoroutineScope(),
 ) {
     val state by identity.state.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
+    val scope = operationScope
     val keyboard = LocalSoftwareKeyboardController.current
     val errorInView = remember { BringIntoViewRequester() }
     var email by rememberSaveable { mutableStateOf("") }
@@ -99,7 +101,9 @@ fun AccessScreen(
                 }
                 Spacer(Modifier.height(48.dp))
                 if (onCatalogue != null) {
-                    TextButton(onClick = onCatalogue) { Text(stringResource(R.string.catalogue_back)) }
+                    TextButton(onClick = onCatalogue, Modifier.testTag("back_from_account")) {
+                        Text(stringResource(R.string.catalogue_back))
+                    }
                 }
                 Column(Modifier.widthIn(max = 480.dp).fillMaxWidth()) {
                     Text(stringResource(R.string.welcome), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)

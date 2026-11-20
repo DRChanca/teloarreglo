@@ -8,10 +8,39 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import org.junit.Rule
 import org.junit.Test
+import androidx.compose.runtime.*
+import androidx.compose.material3.Text
+import androidx.compose.material3.Button
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import kotlinx.coroutines.CompletableDeferred
 
 /** UI boundary; the fake replaces only the remote identity service, never a UI state. */
 class AccessTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun leavingAccountDuringSignInDoesNotStrandThePendingOperation() {
+        val response = CompletableDeferred<Unit>()
+        val identity = TestIdentity().apply { failure = null; signInResponse = response }
+        compose.setContent {
+            val operations = rememberCoroutineScope()
+            var account by remember { mutableStateOf(true) }
+            if (account) {
+                AccessScreen(identity, {}, onCatalogue = { account = false }, operationScope = operations)
+            } else {
+                Button(onClick = { account = true }, Modifier.testTag("return_account")) { Text("Account") }
+            }
+        }
+        compose.onNodeWithTag("email").performTextInput("cliente@example.org")
+        compose.onNodeWithTag("password").performTextInput("correcta")
+        compose.onNodeWithTag("signIn").performScrollTo().performClick()
+        compose.onNodeWithTag("back_from_account").performScrollTo().performClick()
+        response.complete(Unit)
+        compose.onNodeWithTag("return_account").performClick()
+        compose.onNodeWithTag("account").assertIsDisplayed()
+        compose.onNodeWithTag("signOut").performScrollTo().performClick()
+        compose.onNodeWithTag("email").performScrollTo().assertIsDisplayed()
+    }
 
     @Test fun signedInAccountCanSignOutWithoutLeavingAnAuthenticatedScreen() {
         val identity = TestIdentity().apply { failure = null }

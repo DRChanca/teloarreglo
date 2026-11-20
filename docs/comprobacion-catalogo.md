@@ -21,10 +21,14 @@ Ticket: [Consultar catálogo y perfiles públicos](https://github.com/DRChanca/t
   protegido entre dos cuentas verificadas reales de la pila local.
   Solo crea/retira UUIDs y cuentas desechables de esa ejecución en loopback.
 - `android.py check`: compilación Kotlin, tests JVM y lint correctos.
-- `android.py ui-test --serial emulator-5560`: siete pruebas correctas en el AVD
+- Suite completa Gradle `:app:test :app:lint :app:assemblePruebasDebug
+  :app:assemblePresentacionDebug`: correcta en las cuatro variantes de tests JVM;
+  ambas APK debug generadas. Contrato HTTP local de identidad también correcto.
+- `android.py ui-test --serial emulator-5560`: ocho pruebas correctas en el AVD
   **nuevo y desechable** `Teloarreglo_Catalogue_Disposable`, Android 15/API 35.
   Lista→perfil→volver, precios, carga, fallo→reintento→vacío, identidad y selector
-  alemán conservado tras recrear la actividad. No se tocaron los AVD preparados.
+  alemán conservado tras recrear la actividad y navegación durante un acceso
+  pendiente. No se tocaron los AVD preparados.
   Compose sustituye el servicio externo: estas pruebas no demuestran la conexión
   de Android con la base alojada.
 
@@ -50,3 +54,21 @@ Ticket: [Consultar catálogo y perfiles públicos](https://github.com/DRChanca/t
 La issue permanece abierta: implementación local y comprobación alojada/revisión
 humana se distinguen expresamente. Preparación y contratos:
 [catálogo](catalogo-contrato.md).
+
+## Revisión de código
+
+### Normas
+
+La revisión independiente detectó un bloqueo posible al abandonar Cuenta durante
+una petición: su coroutine estaba ligada a la pantalla. Se corrigió inyectando
+el scope de aplicación en las operaciones de identidad y en la restauración.
+Se añadió una regresión Compose con respuesta retrasada y salida/vuelta a Cuenta.
+También se limitó el dibujo de las ilustraciones a sus límites visuales.
+
+### Especificación
+
+Sin defectos adicionales de código confirmados. Permanecen los límites de
+aceptación alojada, idiomas y revisión humana indicados arriba. La especificación
+general menciona fotos de trabajos anteriores; la issue admite imágenes
+autorizadas y esta entrega incluye ilustraciones, no fotos. David debe validar
+esa elección de contenido antes de aceptar el catálogo.
