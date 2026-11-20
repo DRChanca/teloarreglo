@@ -3,6 +3,7 @@
 import argparse
 from pathlib import Path
 import subprocess
+import time
 
 from configuration import ROOT, public_build_environment
 
@@ -29,4 +30,26 @@ elif args.command == "check":
 else:
     if args.serial:
         env["ANDROID_SERIAL"] = args.serial
-    subprocess.run(["./gradlew", f":app:connected{variant}AndroidTest"], cwd=ROOT, env=env, check=True)
+    command = ["./gradlew", f":app:connected{variant}AndroidTest"]
+    for attempt in range(1, 4):
+        result = subprocess.run(
+            command,
+            cwd=ROOT,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            check=False,
+        )
+        print(result.stdout, end="")
+        resolution_failed = (
+            "Could not resolve all artifacts for configuration 'classpath'" in result.stdout
+            or "Could not resolve all dependencies" in result.stdout
+            or "could not resolve plugin artifact" in result.stdout
+        )
+        if result.returncode == 0:
+            break
+        if not resolution_failed or attempt == 3:
+            raise subprocess.CalledProcessError(result.returncode, command)
+        print(f"Transient Gradle dependency resolution failure; retrying ({attempt}/3)...", flush=True)
+        time.sleep(10)
