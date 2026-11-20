@@ -116,6 +116,31 @@ La segunda variante no es un entorno alojado diferente: con el asistente ambas
 usan la misma base. Puedes utilizar `pruebas` tanto para probar como para presentar.
 Sin configuración se muestra un error explícito: compilar no demuestra conexión.
 
+### Ejecutar con Run en Android Studio
+
+Abre la carpeta raíz `MOVIL` (no solo `app`), selecciona la configuración `app`,
+la variante `pruebasDebug` y un emulador, y pulsa **Run ▶**.
+Gradle lee automáticamente las cuatro entradas públicas del `.env` de la raíz;
+no necesitas ejecutar el asistente de nuevo, copiar valores a `local.properties`
+ni arrancar Android Studio desde una terminal.
+
+Prioridad: variable de entorno no vacía → `.env` → `local.properties`.
+Se admiten los valores sin comillas o entre comillas simples/dobles, incluidos
+los que escribe el asistente. No se ejecutan comandos ni se expanden variables.
+Solo URL y clave **publicable** se incorporan a `BuildConfig`; las contraseñas,
+correos de prueba y claves administrativas no se empaquetan en la APK.
+Los cambios del `.env` se leen al volver a compilar con Run, no en una APK ya
+instalada sin recompilar.
+
+Comprobación de esa ruta directa, sin inyectar las variables mediante el wrapper:
+
+```bash
+python3 scripts/check_android_configuration.py
+```
+
+Esta configuración resuelve la conexión de la APK, pero no aplica migraciones
+ni carga perfiles en Supabase. El catálogo alojado requiere su despliegue revisado.
+
 APKs: `app/build/outputs/apk/{pruebas,presentacion}/debug/`.
 Guardar APK y SHA del commit usados para grabar; no sustituirlas durante la sesión.
 

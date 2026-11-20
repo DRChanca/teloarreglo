@@ -10,14 +10,63 @@ plugins {
 val local = Properties().apply {
     rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
 }
+
+// Read only public connection settings. Never evaluate shell expressions or copy
+// credentials from .env into BuildConfig, resources or packaged assets.
+val publicNames = setOf(
+    "TEST_SUPABASE_URL", "TEST_SUPABASE_PUBLISHABLE_KEY",
+    "PRESENTATION_SUPABASE_URL", "PRESENTATION_SUPABASE_PUBLISHABLE_KEY",
+)
+fun dotenvValue(raw: String, lineNumber: Int): String {
+    val result = StringBuilder()
+    var quote: Char? = null
+    var ended = false
+    var index = 0
+    fun invalid(): Nothing = error("Invalid public .env entry at line $lineNumber; use one quoted or unquoted value")
+    while (index < raw.length) {
+        val char = raw[index++]
+        when {
+            quote == '\'' -> if (char == '\'') quote = null else result.append(char)
+            quote == '"' -> when {
+                char == '"' -> quote = null
+                char == '\\' && index < raw.length && raw[index] in listOf('"', '\\') -> result.append(raw[index++])
+                else -> result.append(char)
+            }
+            char == '#' -> break
+            char.isWhitespace() -> ended = true
+            ended -> invalid()
+            char == '\'' || char == '"' -> quote = char
+            char == '\\' -> {
+                if (index == raw.length) invalid()
+                result.append(raw[index++])
+            }
+            else -> result.append(char)
+        }
+    }
+    if (quote != null) invalid()
+    return result.toString()
+}
+val dotenv = mutableMapOf<String, String>()
+// Provider-backed file reads are tracked by Gradle, including configuration-cache
+// invalidation when .env changes between IDE builds.
+providers.fileContents(rootProject.layout.projectDirectory.file(".env")).asText.orNull
+    ?.lineSequence()?.forEachIndexed { index, line ->
+        val name = line.substringBefore('=').trim()
+        if ('=' in line && name in publicNames) {
+            dotenv[name] = dotenvValue(line.substringAfter('=').trimStart(), index + 1)
+        }
+    }
 fun publicConfig(name: String): String {
-    val value = System.getenv(name) ?: local.getProperty(name, "")
+    require(name in publicNames)
+    val value = providers.environmentVariable(name).orNull?.takeIf { it.isNotEmpty() }
+        ?: dotenv[name] ?: local.getProperty(name, "")
     require(!name.endsWith("PUBLISHABLE_KEY") || value.isEmpty() || value.startsWith("sb_publishable_")) {
         "$name must be a publishable key, never a privileged secret"
     }
     require(!name.endsWith("_URL") || value.isEmpty() || value.startsWith("https://")) {
         "$name must use HTTPS"
     }
+    require(value.none { it.isISOControl() }) { "$name must not contain control characters" }
     return value.replace("\\", "\\\\").replace("\"", "\\\"")
 }
 
