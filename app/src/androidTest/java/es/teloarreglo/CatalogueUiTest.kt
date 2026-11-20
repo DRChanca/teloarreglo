@@ -1,6 +1,7 @@
 package es.teloarreglo
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -10,6 +11,7 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -65,9 +67,18 @@ class CatalogueUiTest {
             override suspend fun profile(id: String) = plumber
         }, onAccount = {}, onLanguageChange = {}) }
         compose.onNodeWithTag("catalogue_search").performTextInput("No existe")
+        compose.onNodeWithTag("catalogue_search").performImeAction()
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onNodeWithTag("catalogue_empty").isDisplayed()
+        }
         compose.onNodeWithTag("catalogue_empty").assertIsDisplayed()
         compose.onNodeWithTag("catalogue_error").assertDoesNotExist()
         compose.onNodeWithTag("catalogue_reset").performClick()
+        // IME dismissal is asynchronous and is not tracked by Compose idling.
+        // On CI's small display the keyboard still covers the restored list.
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onNodeWithTag("profile_profile-14").isDisplayed()
+        }
         compose.onNodeWithTag("profile_profile-14").assertIsDisplayed()
     }
 
