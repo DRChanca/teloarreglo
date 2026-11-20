@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -22,6 +23,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 @Composable
 fun ChatRoute(
@@ -75,6 +80,7 @@ fun ChatScreen(
     var requestId by rememberSaveable(accountId, conversation?.id) { mutableStateOf<String?>(null) }
     var sending by remember { mutableStateOf(false) }
     var sendFailed by rememberSaveable(accountId, conversation?.id) { mutableStateOf(false) }
+    var rejection by remember(accountId, conversation?.id) { mutableStateOf<SendFailure?>(null) }
     val context = LocalContext.current
     val outbox = remember { ChatOutbox(context.applicationContext) }
     var outboxReady by remember(accountId, conversation?.id) { mutableStateOf(conversation == null) }
@@ -95,6 +101,26 @@ fun ChatScreen(
         }
     }
     val list = rememberLazyListState()
+    val locale = LocalConfiguration.current.locales[0]
+    val timestampFormat = remember(locale) {
+        DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(locale).withZone(ZoneId.systemDefault())
+    }
+    LaunchedEffect(messages, requestId, outboxReady, sending) {
+        val pending = requestId
+        if (conversation != null && outboxReady && !sending && pending != null &&
+            messages.any { it.authorId == accountId && it.requestId == pending && it.body == text.trim(' ') }) {
+            try {
+                outbox.clear(accountId, conversation.id)
+                requestId = null
+                text = ""
+                sendFailed = false
+                rejection = null
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                outboxFailed = true
+            }
+        }
+    }
     LaunchedEffect(chat, accountId, conversation?.id, refresh) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (true) {
@@ -124,6 +150,7 @@ fun ChatScreen(
             val body = text
             sending = true
             sendFailed = false
+            rejection = null
             scope.launch {
                 try {
                     outbox.save(accountId, current.id, PendingText(key, body))
@@ -134,7 +161,17 @@ fun ChatScreen(
                     requestId = null
                 } catch (error: Exception) {
                     if (error is CancellationException) throw error
-                    sendFailed = true
+                    rejection = (error as? ChatSendException)?.failure
+                    if (rejection == SendFailure.INVALID_TEXT) {
+                        try {
+                            outbox.clear(accountId, current.id)
+                            requestId = null
+                        } catch (storageError: Exception) {
+                            if (storageError is CancellationException) throw storageError
+                            outboxFailed = true
+                        }
+                    }
+                    sendFailed = rejection == null
                 } finally { sending = false }
             }
         }
@@ -179,7 +216,8 @@ fun ChatScreen(
                                         Text(stringResource(if (message.authorId == accountId) R.string.chat_you else R.string.chat_other),
                                             style = MaterialTheme.typography.labelSmall)
                                         Text(message.body)
-                                        Text(message.createdAt, style = MaterialTheme.typography.labelSmall)
+                                        Text(timestampFormat.format(Instant.parse(message.createdAt)),
+                                            style = MaterialTheme.typography.labelSmall)
                                         if (message.authorId == accountId) Text(stringResource(R.string.chat_sent),
                                             style = MaterialTheme.typography.labelSmall)
                                     }
@@ -188,10 +226,16 @@ fun ChatScreen(
                         }
                     }
                     if (sending) Text(stringResource(R.string.chat_sending), Modifier.testTag("chat_sending"))
-                    if (sendFailed || (requestId != null && !sending)) {
-                        Text(stringResource(R.string.chat_send_error), Modifier.testTag("chat_send_error"),
+                    if (sendFailed || rejection != null || (requestId != null && !sending)) {
+                        Text(stringResource(when (rejection) {
+                            SendFailure.ACCESS -> R.string.chat_send_access
+                            SendFailure.INVALID_TEXT -> R.string.chat_send_invalid
+                            SendFailure.CONFLICT -> R.string.chat_send_conflict
+                            null -> R.string.chat_send_error
+                        }), Modifier.testTag("chat_send_error"),
                             color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = send, enabled = !sending, modifier = Modifier.testTag("chat_retry_send")) {
+                        if (requestId != null) TextButton(onClick = send, enabled = outboxReady && !sending,
+                            modifier = Modifier.testTag("chat_retry_send")) {
                             Text(stringResource(R.string.chat_retry_send))
                         }
                     }

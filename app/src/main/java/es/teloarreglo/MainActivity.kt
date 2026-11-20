@@ -14,8 +14,6 @@ import es.teloarreglo.identity.AccessStage
 import es.teloarreglo.chat.Conversation
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
-import androidx.compose.material3.*
-import androidx.compose.ui.res.stringResource
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,7 +34,9 @@ class MainActivity : AppCompatActivity() {
             val changeLanguage: (String) -> Unit = { tag ->
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
             }
-            BackHandler(enabled = account) { account = false }
+            BackHandler(enabled = account || (chatVisible && access.stage != AccessStage.CONNECTED)) {
+                account = false; chatVisible = false; contactProfile = null; conversationJson = null
+            }
             if (chatVisible && access.stage == AccessStage.CONNECTED && app.chat != null) {
                 key(access.account!!.userId) {
                     ChatRoute(app.chat!!, access.account!!.userId, contactProfile,

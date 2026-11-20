@@ -3,6 +3,7 @@ package es.teloarreglo.chat
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.exceptions.RestException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
@@ -26,6 +27,9 @@ data class ChatMessage(
     val body: String,
     @SerialName("created_at") val createdAt: String,
 )
+
+enum class SendFailure { ACCESS, INVALID_TEXT, CONFLICT }
+class ChatSendException(val failure: SendFailure, cause: Exception) : Exception(failure.name, cause)
 
 /** All returned messages are server-confirmed. Reuse requestId after an uncertain result. */
 interface Chat {
@@ -59,10 +63,20 @@ class SupabaseChat(private val client: SupabaseClient) : Chat {
         } while (page.size == 200)
     }
 
-    override suspend fun send(conversationId: String, requestId: String, body: String): ChatMessage =
+    override suspend fun send(conversationId: String, requestId: String, body: String): ChatMessage = try {
         client.postgrest.rpc("send_text", buildJsonObject {
             put("p_conversation_id", conversationId)
             put("p_request_id", requestId)
             put("p_body", body)
         }).decodeAs()
+    } catch (error: RestException) {
+        val failure = when {
+            error.statusCode == 401 || error.statusCode == 403 -> SendFailure.ACCESS
+            error.statusCode == 400 && error.message.orEmpty().contains("invalid_message") -> SendFailure.INVALID_TEXT
+            error.statusCode == 400 && error.message.orEmpty().contains("retry_conflict") -> SendFailure.CONFLICT
+            else -> null
+        }
+        if (failure != null) throw ChatSendException(failure, error)
+        throw error
+    }
 }

@@ -7,6 +7,9 @@
     <string name="chat_error">No se pudo actualizar. Comprueba la conexión; se volverá a intentar.</string>
     <string name="chat_open_error">No se pudo contactar. Comprueba la conexión y que el perfil tenga una cuenta disponible.</string>
     <string name="chat_send_error">Envío sin confirmar. Reintenta el mismo mensaje sin duplicarlo.</string>
+    <string name="chat_send_access">El servidor ha denegado el acceso. Vuelve al catálogo y comprueba tu sesión antes de reintentar. Se conserva el mensaje pendiente.</string>
+    <string name="chat_send_invalid">El servidor ha rechazado el texto. Escribe entre 1 y 4000 caracteres.</string>
+    <string name="chat_send_conflict">Esta petición ya corresponde a otro texto. Vuelve a abrir el chat para revisar el historial; no se ha modificado ningún mensaje.</string>
     <string name="chat_retry_send">Reintentar envío</string>
     <string name="chat_input">Mensaje (máximo 4000 caracteres)</string>
     <string name="chat_send">Enviar</string>

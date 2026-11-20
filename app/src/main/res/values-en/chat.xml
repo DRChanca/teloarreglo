@@ -7,6 +7,9 @@
     <string name="chat_error">Could not refresh. Check your connection; we will try again.</string>
     <string name="chat_open_error">Could not contact this professional. Check your connection and that the profile has an available account.</string>
     <string name="chat_send_error">Send not confirmed. Retry the same message without duplicating it.</string>
+    <string name="chat_send_access">The server denied access. Return to the catalogue and check your session before retrying. Your pending message is kept.</string>
+    <string name="chat_send_invalid">The server rejected the text. Enter between 1 and 4000 characters.</string>
+    <string name="chat_send_conflict">This request already belongs to another text. Reopen the chat to review its history; no message was changed.</string>
     <string name="chat_retry_send">Retry send</string>
     <string name="chat_input">Message (4000 characters maximum)</string>
     <string name="chat_send">Send</string>

@@ -54,6 +54,27 @@ class ChatUiTest {
         compose.onNodeWithText("Necesito una reparación").assertIsDisplayed()
     }
 
+    @Test fun recoveredHistoryConfirmsUncertainSendWithoutManualRetry() {
+        val current = conversation.copy(id = UUID.randomUUID().toString())
+        var committed: ChatMessage? = null
+        val chat = object : Chat {
+            override suspend fun open(profileId: String) = current
+            override suspend fun conversations() = listOf(current)
+            override suspend fun messages(conversationId: String) = listOfNotNull(committed)
+            override suspend fun send(conversationId: String, requestId: String, body: String): ChatMessage {
+                committed = ChatMessage("synced", conversationId, "client", requestId, body, "2026-11-20T18:00:00Z")
+                throw java.io.IOException("response lost after commit")
+            }
+        }
+        compose.setContent { ChatScreen(chat, "client", current, {}, {}) }
+        compose.waitUntil { runCatching { compose.onNodeWithTag("chat_input").assertIsEnabled(); true }.getOrDefault(false) }
+        compose.onNodeWithTag("chat_input").performTextInput("Ya guardado")
+        compose.onNodeWithTag("chat_send").performClick()
+        compose.waitUntil(10000) { compose.onAllNodesWithTag("message_synced").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10000) { runCatching { compose.onNodeWithTag("chat_input").assertIsEnabled(); true }.getOrDefault(false) }
+        compose.onNodeWithTag("chat_retry_send").assertDoesNotExist()
+    }
+
     @Test fun uncertainSendSurvivesLeavingAndReopeningChat() {
         val current = conversation.copy(id = UUID.randomUUID().toString())
         var firstKey: String? = null

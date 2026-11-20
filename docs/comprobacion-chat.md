@@ -12,12 +12,20 @@ Fecha: 20 de noviembre de 2026. Separar implementación de aceptación alojada.
   Dos cuentas intercambian texto, se renueva sesión y se recuperan ambos
   mensajes conservados; una tercera cuenta administradora no lee ni escribe.
   También se rechazan visitante, escritura directa, suplantación, edición y borrado.
-- `ChatTest`: tres pruebas HTTP controladas correctas: apertura, recuperación
-  ordenada y fallo/reintento con la misma clave. No acreditan la base alojada.
-- `ChatUiTest`: tres pruebas Compose correctas en emulador **desechable**
+- `ChatTest`: cuatro pruebas HTTP controladas correctas: apertura, recuperación
+  ordenada, fallo/reintento con la misma clave y rechazo de permisos diferenciado.
+  No acreditan la base alojada.
+- `ChatUiTest`: cuatro pruebas Compose correctas en emulador **desechable**
   `Teloarreglo_Catalogue_Disposable`, Android API 35, puerto 5560:
   fallo conserva texto y UUID, bandeja profesional abre historial y salida
-  pendiente sobrevive a salir/reabrir pantalla. HTTP sustituido en estas pruebas.
+  pendiente sobrevive a salir/reabrir pantalla y el historial recuperado confirma
+  automáticamente un envío cuya respuesta se perdió. HTTP sustituido en estas pruebas.
+- Batería completa final: `:app:test :app:lint :app:assemblePruebasDebug
+  :app:assemblePresentacionDebug :app:connectedPruebasDebugAndroidTest`, correcta
+  (22 pruebas instrumentadas, incluidas cuatro de chat).
+  `supabase test db`: 53 comprobaciones correctas en cinco archivos.
+  Contratos locales completos de identidad, catálogo, portadas y chat: correctos.
+- [Revisión en dos ejes y correcciones](revision-chat.md).
 
 ## Pendiente antes de dar por aceptada la issue
 

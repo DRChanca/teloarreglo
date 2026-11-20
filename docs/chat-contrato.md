@@ -44,6 +44,10 @@ con Android Keystore, separada por cuenta/conversación. Navegar fuera, perder l
 respuesta o cerrar la app no cambia su UUID al reintentar. Hasta resolver ese
 envío no se permite editarlo ni enviar otro texto con una clave diferente.
 La copia pendiente se retira tras confirmación; no se borran mensajes del servidor.
+También se concilia con el historial por autor y clave al reconectar, sin exigir
+reintentar un mensaje cuya confirmación ya se ha recuperado. Los rechazos por
+permisos/sesión y por texto inválido tienen explicaciones distintas de un fallo
+de red; un texto definitivamente inválido permite corregirlo sin perderlo.
 Desinstalar o borrar datos locales elimina esta protección local y no forma
 parte del recorrido de reapertura.
 

@@ -7,6 +7,9 @@
     <string name="chat_error">Aktualisierung fehlgeschlagen. Prüfen Sie die Verbindung; wir versuchen es erneut.</string>
     <string name="chat_open_error">Kontakt nicht möglich. Prüfen Sie die Verbindung und ob das Profil ein verfügbares Konto hat.</string>
     <string name="chat_send_error">Versand nicht bestätigt. Wiederholen Sie dieselbe Nachricht ohne Duplikat.</string>
+    <string name="chat_send_access">Der Server hat den Zugriff verweigert. Kehren Sie zum Katalog zurück und prüfen Sie Ihre Sitzung. Die ausstehende Nachricht bleibt erhalten.</string>
+    <string name="chat_send_invalid">Der Server hat den Text abgelehnt. Geben Sie 1 bis 4000 Zeichen ein.</string>
+    <string name="chat_send_conflict">Diese Anfrage gehört bereits zu einem anderen Text. Öffnen Sie den Chat erneut und prüfen Sie den Verlauf; keine Nachricht wurde geändert.</string>
     <string name="chat_retry_send">Versand wiederholen</string>
     <string name="chat_input">Nachricht (höchstens 4000 Zeichen)</string>
     <string name="chat_send">Senden</string>

@@ -1,6 +1,8 @@
 package es.teloarreglo
 
 import es.teloarreglo.chat.SupabaseChat
+import es.teloarreglo.chat.ChatSendException
+import es.teloarreglo.chat.SendFailure
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.ktor.client.engine.mock.MockEngine
@@ -11,6 +13,21 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class ChatTest {
+    @Test fun permissionRejectionIsNotPresentedAsUncertainNetworkDelivery() = runTest {
+        val client = createSupabaseClient("https://chat.example.org", "public-key") {
+            install(Postgrest)
+            httpEngine = MockEngine {
+                respond("""{"code":"42501","message":"permission_denied","details":null,"hint":null}""",
+                    HttpStatusCode.Forbidden, headersOf(HttpHeaders.ContentType, "application/json"))
+            }
+        }
+        try {
+            var failure: SendFailure? = null
+            try { SupabaseChat(client).send("conversation", "key", "Hola") }
+            catch (error: ChatSendException) { failure = error.failure }
+            assertEquals(SendFailure.ACCESS, failure)
+        } finally { client.close() }
+    }
     @Test fun retryUsesSameRequestAndDoesNotInventSuccessWhenOffline() = runTest {
         var attempts = 0
         val client = createSupabaseClient("https://chat.example.org", "public-key") {
