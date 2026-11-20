@@ -112,8 +112,10 @@ y más referencias de servicios, incluida visita de valoración.
 - Suite JVM completa, lint de ambas variantes y ambas APK debug: correctos con
   las versiones de Gradle/AGP presentes en el entorno de David.
 - Los datos nuevos están en `supabase/catalogue/details.json`. No se ha vuelto a
-  cargar ni modificado automáticamente el catálogo alojado. Falta ejecutar el
-  SQL revisado y repetir allí `contract_catalogue.py --details`.
+  cargar ni modificado automáticamente el catálogo alojado. Posteriormente David
+  confirmó la ejecución de la actualización `20261120000200`; la comprobación
+  remota `contract_catalogue.py --details` pasó cuatro casos de lectura (dos
+  casos de escritura omitidos). Los 18 perfiles tienen dirección y tres precios.
 - Se mantienen intactos los cambios de Gradle/wrapper hechos por David en su
   entorno; no forman parte de esta modificación.
 
@@ -126,5 +128,12 @@ en particular privacidad, conservación de datos preparados y despliegue manual.
 ### Spec
 
 Sin defectos de implementación confirmados ni ampliaciones de alcance. Cumple
-los ajustes de la revisión visual; sigue pendiente ejecutar la actualización
-alojada y revisar su resultado con David. Total: cero hallazgos por eje.
+los ajustes de la revisión visual. La actualización de direcciones/servicios ya
+se verificó alojada; sigue pendiente la aceptación visual final. Total: cero
+hallazgos por eje.
+
+## Portadas editables y nuevo diseño
+
+Alcance, evaluación con mejoraInterfaz, pruebas y límites:
+[portadas y diseño](portadas-y-diseno.md). Las migraciones de portada son
+posteriores e independientes de la actualización de direcciones ya ejecutada.

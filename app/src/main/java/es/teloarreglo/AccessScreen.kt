@@ -84,7 +84,7 @@ fun AccessScreen(
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
 
-    MaterialTheme(colorScheme = lightColorScheme(primary = Green, background = Canvas)) {
+    TeloTheme {
         Surface(Modifier.fillMaxSize(), color = Canvas) {
             Column(
                 Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()

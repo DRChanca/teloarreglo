@@ -10,9 +10,13 @@ import es.teloarreglo.identity.SupabaseIdentity
 import es.teloarreglo.catalogue.Catalogue
 import es.teloarreglo.catalogue.PublicProfile
 import es.teloarreglo.catalogue.SupabaseCatalogue
+import es.teloarreglo.catalogue.ProfessionalCovers
+import es.teloarreglo.catalogue.SupabaseProfessionalCovers
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.storage.Storage
+import io.github.jan.supabase.storage.resumable.MemoryResumableCache
 import io.github.jan.supabase.logging.LogLevel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,12 +39,14 @@ class TeloarregloApplication : Application() {
                     sessionManager = EncryptedSessionManager(this@TeloarregloApplication)
                 }
                 install(Postgrest)
+                install(Storage) { resumable { cache = MemoryResumableCache() } }
                 requestTimeout = 15.seconds
             }
         }
     }
     val identity: Identity by lazy { client?.let { SupabaseIdentity(it, applicationScope) } ?: MissingConfiguration() }
     val catalogue: Catalogue by lazy { client?.let(::SupabaseCatalogue) ?: MissingCatalogueConfiguration() }
+    val covers: ProfessionalCovers? by lazy { client?.let(::SupabaseProfessionalCovers) }
 }
 
 private class MissingCatalogueConfiguration : Catalogue {

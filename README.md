@@ -7,6 +7,7 @@ Reglas: [especificación](docs/especificacion.md).
 El inicio permite consultar sin registro la lista por oficio y los perfiles
 públicos. Contratos, carga explícita de los 18 perfiles y permisos:
 [catálogo](docs/catalogo-contrato.md).
+Portadas editables y revisión de usabilidad: [portadas y diseño](docs/portadas-y-diseno.md).
 
 ## Decisión vigente: una sola base
 

@@ -35,6 +35,7 @@ data class PublicProfile(
     val rating: Double? = null,
     @SerialName("review_count") val reviewCount: Int = 0,
     @SerialName("business_address") val businessAddress: String? = null,
+    @SerialName("cover_path") val coverPath: String? = null,
 )
 
 /** Read-only approved public snapshot. Missing/unpublished details return null. */

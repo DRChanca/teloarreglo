@@ -9,6 +9,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -42,6 +43,32 @@ class CatalogueUiTest {
         File(context.cacheDir, "$name.png").outputStream().use {
             compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }
+    }
+
+    @Test fun returningFromAProfileKeepsTheListPosition() {
+        val rows = (0..29).map { plumber.copy(id = "profile-$it", name = "Negocio $it") }
+        compose.setContent { CatalogueScreen(object : Catalogue {
+            override suspend fun list(trade: String?) = rows
+            override suspend fun profile(id: String) = rows.first { it.id == id }
+        }, onAccount = {}, onLanguageChange = {}) }
+        compose.onNodeWithTag("catalogue_list").performScrollToNode(hasTestTag("profile_profile-20"))
+        compose.onNodeWithTag("profile_profile-20").performClick()
+        compose.onNodeWithText("Negocio 20").assertIsDisplayed()
+        compose.onNodeWithTag("back_catalogue").performClick()
+        compose.onNodeWithTag("profile_profile-20").assertIsDisplayed()
+        compose.onNodeWithTag("profile_profile-0").assertDoesNotExist()
+    }
+
+    @Test fun aSearchWithoutMatchesOffersAResetInsteadOfATechnicalError() {
+        compose.setContent { CatalogueScreen(object : Catalogue {
+            override suspend fun list(trade: String?) = listOf(plumber)
+            override suspend fun profile(id: String) = plumber
+        }, onAccount = {}, onLanguageChange = {}) }
+        compose.onNodeWithTag("catalogue_search").performTextInput("No existe")
+        compose.onNodeWithTag("catalogue_empty").assertIsDisplayed()
+        compose.onNodeWithTag("catalogue_error").assertDoesNotExist()
+        compose.onNodeWithTag("catalogue_reset").performClick()
+        compose.onNodeWithTag("profile_profile-14").assertIsDisplayed()
     }
 
     @Test fun commercialAddressIsVisibleAndSpanishOnlyDoesNotShowLanguages() {

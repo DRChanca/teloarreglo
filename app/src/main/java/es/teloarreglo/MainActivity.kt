@@ -9,6 +9,8 @@ import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import es.teloarreglo.identity.AccessStage
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -17,6 +19,12 @@ class MainActivity : AppCompatActivity() {
             var account by rememberSaveable { mutableStateOf(false) }
             var ownProfile by rememberSaveable { mutableStateOf<String?>(null) }
             val app = application as TeloarregloApplication
+            val access by app.identity.state.collectAsStateWithLifecycle()
+            var knownOwner by rememberSaveable { mutableStateOf<String?>(null) }
+            LaunchedEffect(access) {
+                if (access.stage != AccessStage.CHECKING) knownOwner = access.account?.professionalProfileId
+            }
+            val owner = if (access.stage == AccessStage.CHECKING) knownOwner else access.account?.professionalProfileId
             val changeLanguage: (String) -> Unit = { tag ->
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
             }
@@ -28,7 +36,7 @@ class MainActivity : AppCompatActivity() {
                     operationScope = app.applicationScope)
             } else {
                 CatalogueScreen(app.catalogue, onAccount = { ownProfile = null; account = true }, onLanguageChange = changeLanguage,
-                    initialProfileId = ownProfile)
+                    initialProfileId = ownProfile, covers = app.covers, ownedProfileId = owner)
             }
         }
     }

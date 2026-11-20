@@ -1,32 +1,35 @@
 package es.teloarreglo
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import es.teloarreglo.catalogue.Catalogue
 import es.teloarreglo.catalogue.PublicProfile
+import es.teloarreglo.catalogue.ProfessionalCovers
+import es.teloarreglo.catalogue.ReferencePrice
 import kotlinx.coroutines.CancellationException
 import java.text.NumberFormat
 import java.util.Locale
@@ -40,6 +43,8 @@ private val canvas = Color(0xFFF7F8F5)
 fun CatalogueScreen(
     catalogue: Catalogue, onAccount: () -> Unit, onLanguageChange: (String) -> Unit,
     initialProfileId: String? = null,
+    covers: ProfessionalCovers? = null,
+    ownedProfileId: String? = null,
 ) {
     var trade by rememberSaveable { mutableStateOf<String?>(null) }
     var selected by rememberSaveable(initialProfileId) { mutableStateOf(initialProfileId) }
@@ -47,6 +52,20 @@ fun CatalogueScreen(
     var profiles by remember { mutableStateOf<List<PublicProfile>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var failed by remember { mutableStateOf(false) }
+    var search by rememberSaveable { mutableStateOf("") }
+    var editing by rememberSaveable { mutableStateOf(false) }
+    val listState = rememberLazyListState()
+    val tradeScroll = rememberScrollState()
+    var previousTrade by rememberSaveable { mutableStateOf(trade) }
+    var previousSearch by rememberSaveable { mutableStateOf(search) }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val clearSearchLabel = stringResource(R.string.catalogue_clear_search)
+    LaunchedEffect(trade) {
+        if (trade != previousTrade) { listState.scrollToItem(0); previousTrade = trade }
+    }
+    LaunchedEffect(search) {
+        if (search != previousSearch) { listState.scrollToItem(0); previousSearch = search }
+    }
     val request = Triple(trade, selected, retry)
     var completedRequest by remember { mutableStateOf<Triple<String?, String?, Int>?>(null) }
     LaunchedEffect(catalogue, trade, selected, retry) {
@@ -62,9 +81,17 @@ fun CatalogueScreen(
         completedRequest = request
     }
     BackHandler(enabled = selected != null) { selected = null }
-    MaterialTheme(colorScheme = lightColorScheme(primary = green, background = canvas)) {
+    val profile = profiles.singleOrNull()?.takeIf { selected == it.id && completedRequest == request }
+    if (editing && profile != null && profile.id == ownedProfileId && covers != null) {
+        CoverEditorRoute(profile, covers, onBack = { editing = false; retry++ })
+        return
+    }
+    val visible = profiles.filter { p ->
+        searchable(p.name + " " + p.services.joinToString(" ")).contains(searchable(search.trim()))
+    }
+    TeloTheme {
         Surface(Modifier.fillMaxSize(), color = canvas) {
-            Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) {
+            Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()) {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -85,10 +112,23 @@ fun CatalogueScreen(
                 if (selected == null) {
                     Text(
                         stringResource(R.string.catalogue_title), Modifier.padding(20.dp),
-                        style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold,
+                    )
+                    OutlinedTextField(
+                        value = search, onValueChange = { search = it },
+                        label = { Text(stringResource(R.string.catalogue_search)) }, singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("catalogue_search"),
+                        trailingIcon = {
+                            if (search.isNotEmpty()) IconButton(onClick = { search = "" },
+                                modifier = Modifier.semantics { contentDescription = clearSearchLabel }) {
+                                Text("×")
+                            }
+                        },
                     )
                     Row(
-                        Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+                        Modifier.horizontalScroll(tradeScroll).padding(horizontal = 16.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         FilterChip(selected = trade == null, onClick = { trade = null },
@@ -110,29 +150,53 @@ fun CatalogueScreen(
                             Text(stringResource(R.string.retry))
                         }
                     }
-                    profiles.isEmpty() -> Text(
-                        stringResource(if (selected == null) R.string.catalogue_empty else R.string.catalogue_unpublished),
-                        Modifier.padding(24.dp).testTag("catalogue_empty"),
-                    )
-                    selected != null -> ProfileDetail(profiles.single())
-                    else -> LazyColumn(
-                        contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        items(profiles, key = { it.id }) { profile ->
+                    profiles.isEmpty() || (selected == null && visible.isEmpty()) -> Column(Modifier.padding(24.dp)) {
+                        Text(stringResource(when {
+                            selected != null -> R.string.catalogue_unpublished
+                            profiles.isNotEmpty() -> R.string.catalogue_filtered_empty
+                            else -> R.string.catalogue_empty
+                        }), Modifier.testTag("catalogue_empty"))
+                        if (selected == null && (trade != null || search.isNotEmpty())) {
+                            TextButton(onClick = { trade = null; search = ""; keyboard?.hide() }, Modifier.testTag("catalogue_reset")) {
+                                Text(stringResource(R.string.catalogue_reset_filters))
+                            }
+                        }
+                    }
+                    selected != null -> ProfileDetail(profiles.single(), covers,
+                        onEdit = if (selected == ownedProfileId && covers != null) ({ editing = true }) else null)
+                    else -> {
+                        Text(pluralStringResource(R.plurals.catalogue_results, visible.size, visible.size),
+                            Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelLarge)
+                        LazyColumn(
+                            state = listState, modifier = Modifier.testTag("catalogue_list"),
+                            contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                        items(visible, key = { it.id }) { profile ->
                             Card(
                                 onClick = { selected = profile.id }, modifier = Modifier.fillMaxWidth().testTag("profile_${profile.id}"),
                                 colors = CardDefaults.cardColors(containerColor = Color.White),
                                 shape = RoundedCornerShape(20.dp),
                             ) {
-                                TradeIllustration(profile.images.firstOrNull().orEmpty(), Modifier.fillMaxWidth().height(128.dp))
-                                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Text(profile.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                                    Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString())
-                                    Text(profile.coverage.joinToString { it.name })
-                                    Rating(profile)
-                                    Text(stringResource(R.string.catalogue_open), color = green, fontWeight = FontWeight.Bold)
+                                Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                    ProfileCover(profile.trades.firstOrNull().orEmpty(), profile.coverPath, covers,
+                                        Modifier.width(100.dp).height(120.dp))
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                        Text(profile.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                                            maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        Text(profile.services.firstOrNull() ?: profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(),
+                                            style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        Text(profile.coverage.joinToString { it.name }, style = MaterialTheme.typography.bodySmall,
+                                            maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        profile.prices.firstOrNull()?.let { price ->
+                                            Text(stringResource(R.string.catalogue_reference, priceText(price)),
+                                                color = green, style = MaterialTheme.typography.labelLarge)
+                                        }
+                                        Rating(profile)
+                                    }
                                 }
                             }
+                        }
                         }
                     }
                 }
@@ -142,18 +206,22 @@ fun CatalogueScreen(
 }
 
 @Composable
-private fun ProfileDetail(profile: PublicProfile) {
+private fun ProfileDetail(profile: PublicProfile, covers: ProfessionalCovers?, onEdit: (() -> Unit)?) {
     val locale = LocalConfiguration.current.locales[0]
     LazyColumn(
         modifier = Modifier.testTag("profile_detail"),
         contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Text(profile.name, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+            Text(profile.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(), color = green)
             Rating(profile)
         }
-        items(profile.images) { key ->
-            TradeIllustration(key, Modifier.fillMaxWidth().height(180.dp))
+        item {
+            ProfileCover(profile.trades.firstOrNull().orEmpty(), profile.coverPath, covers, Modifier.fillMaxWidth().height(180.dp))
+            if (onEdit != null) OutlinedButton(onClick = onEdit, modifier = Modifier.fillMaxWidth().testTag("edit_cover")) {
+                Text(stringResource(R.string.cover_edit))
+            }
         }
         item { Text(profile.description, style = MaterialTheme.typography.bodyLarge) }
         profile.businessAddress?.takeIf { it.isNotBlank() }?.let { address ->
@@ -191,8 +259,7 @@ private fun ProfileDetail(profile: PublicProfile) {
             Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(price.service, fontWeight = FontWeight.Bold)
-                    val money = NumberFormat.getCurrencyInstance(locale).apply { currency = java.util.Currency.getInstance("EUR") }
-                    Text("${money.format(java.math.BigDecimal(price.amountCents).movePointLeft(2))} / ${stringResource(unitLabel(price.unit))}",
+                    Text(priceText(price),
                         style = MaterialTheme.typography.titleLarge, color = green)
                     Text(price.scope)
                     Text(stringResource(R.string.catalogue_includes, price.includes))
@@ -216,57 +283,23 @@ private fun Section(label: Int) {
 @Composable
 private fun Rating(profile: PublicProfile) {
     Text(if (profile.rating == null) stringResource(R.string.catalogue_no_reviews)
-        else stringResource(R.string.catalogue_rating, profile.rating, profile.reviewCount))
+        else stringResource(R.string.catalogue_rating, profile.rating, profile.reviewCount),
+        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
-/** Original procedural illustrations, bundled in the APK; no third-party photos or private URLs. */
 @Composable
-private fun TradeIllustration(key: String, modifier: Modifier) {
-    val label = stringResource(R.string.catalogue_illustration, stringResource(tradeLabel(key)))
-    val accent = when (key) {
-        "electrical" -> Color(0xFFE4B84C)
-        "carpentry" -> Color(0xFFBD8757)
-        "painting" -> Color(0xFFD58A83)
-        "masonry" -> Color(0xFFB46C50)
-        "general" -> Color(0xFF7D91B3)
-        else -> Color(0xFF5A9DA2)
-    }
-    Canvas(modifier.clipToBounds().background(accent.copy(alpha = 0.16f)).semantics { contentDescription = label }) {
-        val w = size.width
-        val h = size.height
-        drawCircle(Color.White.copy(alpha = 0.7f), h * .75f, Offset(w * .72f, h * .35f))
-        drawRect(green, Offset(w * .28f, h * .40f), Size(w * .44f, h * .46f))
-        drawPath(Path().apply {
-            moveTo(w * .22f, h * .43f); lineTo(w * .50f, h * .12f)
-            lineTo(w * .78f, h * .43f); close()
-        }, accent)
-        drawRect(Color.White, Offset(w * .46f, h * .60f), Size(w * .09f, h * .26f))
-        when (key) {
-            "plumbing" -> {
-                drawLine(accent, Offset(w * .12f, h * .65f), Offset(w * .23f, h * .65f), 12.dp.toPx())
-                drawLine(accent, Offset(w * .18f, h * .65f), Offset(w * .18f, h * .9f), 12.dp.toPx())
-            }
-            "electrical" -> drawPath(Path().apply {
-                moveTo(w * .83f, h * .18f); lineTo(w * .73f, h * .55f); lineTo(w * .83f, h * .55f)
-                lineTo(w * .76f, h * .90f); lineTo(w * .94f, h * .43f); lineTo(w * .84f, h * .43f); close()
-            }, accent)
-            "painting" -> {
-                drawRect(accent, Offset(w * .76f, h * .25f), Size(w * .16f, h * .17f))
-                drawLine(accent, Offset(w * .83f, h * .42f), Offset(w * .83f, h * .86f), 6.dp.toPx())
-            }
-            "masonry" -> repeat(3) { row -> repeat(2) { col ->
-                drawRect(accent, Offset(w * (.77f + col * .09f), h * (.50f + row * .12f)),
-                    Size(w * .08f, h * .10f))
-            } }
-            else -> {
-                drawLine(accent, Offset(w * .80f, h * .40f), Offset(w * .80f, h * .88f), 9.dp.toPx())
-                drawRect(accent, Offset(w * .73f, h * .31f), Size(w * .19f, h * .14f))
-            }
-        }
-    }
+private fun priceText(price: ReferencePrice): String {
+    if (price.amountCents == 0) return stringResource(R.string.catalogue_free)
+    val locale = LocalConfiguration.current.locales[0]
+    val money = NumberFormat.getCurrencyInstance(locale).apply { currency = java.util.Currency.getInstance("EUR") }
+    return "${money.format(java.math.BigDecimal(price.amountCents).movePointLeft(2))} / ${stringResource(unitLabel(price.unit))}"
 }
 
-private fun tradeLabel(key: String): Int = when (key) {
+private fun searchable(value: String): String =
+    java.text.Normalizer.normalize(value.lowercase(Locale.ROOT), java.text.Normalizer.Form.NFD)
+        .replace("\\p{M}".toRegex(), "")
+
+internal fun tradeLabel(key: String): Int = when (key) {
     "plumbing" -> R.string.trade_plumbing
     "electrical" -> R.string.trade_electrical
     "carpentry" -> R.string.trade_carpentry
