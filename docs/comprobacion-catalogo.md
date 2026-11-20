@@ -9,8 +9,9 @@ Ticket: [Consultar catálogo y perfiles públicos](https://github.com/DRChanca/t
 - TDD en las fronteras confirmadas: PostgreSQL/pgTAP, interfaz `Catalogue` contra
   HTTP controlado y pantallas Compose. Se observaron fallos iniciales por ausencia
   del esquema y de las interfaces antes de implementarlos.
-- Migración aplicada **solo** a la pila local existente mediante `migration up`,
-  sin reiniciar ni repoblar su base.
+- Inicialmente, migración aplicada **solo** a la pila local existente mediante
+  `migration up`, sin reiniciar ni repoblar su base. Despliegue alojado posterior
+  comprobado en el apartado siguiente.
 - `supabase test db`: 19 aserciones correctas (13 catálogo y 6 identidad).
   Lectura pública por oficio/ID; pendiente oculto; acceso directo privado denegado;
   escrituras de visitante denegadas; capacidades y propiedad desde servidor;
@@ -32,15 +33,28 @@ Ticket: [Consultar catálogo y perfiles públicos](https://github.com/DRChanca/t
   Compose sustituye el servicio externo: estas pruebas no demuestran la conexión
   de Android con la base alojada.
 
+## Despliegue alojado comprobado — 20/11/2026
+
+- David confirmó la ejecución mediante SQL Editor de la migración
+  `20261120000100` y de la carga explícita. La comprobación inicial HTTP 404
+  queda sustituida por los resultados siguientes.
+- `python3 scripts/contract_catalogue.py`: tres casos de lectura correctos,
+  uno omitido deliberadamente porque las escrituras se prueban solo en loopback.
+  Se verificaron los 18 identificadores preparados, tres por oficio, detalle de
+  Fontanería Nalón, referencias de precios, ausencia de campos privados, rechazo
+  del acceso directo a datos privados y detalle vacío para un ID inexistente.
+  No acredita un perfil pendiente real en la base alojada; ese caso se mantiene
+  comprobado con fixtures locales.
+- Acceso Auth real con la cuenta configurada y lectura de `current_account()`:
+  `professional_profile_id` coincide con Fontanería Nalón y `can_hire=true`.
+  Solo se cerró la sesión creada para esta comprobación (`scope=local`),
+  sin modificar perfiles ni cerrar las sesiones del emulador.
+- No se reiniciaron, borraron ni sobrescribieron datos para comprobar el despliegue.
+
 ## No comprobado / pendiente de aprobación
 
-- `contract_catalogue.py` contra la única base alojada, **solo lectura**:
-  las llamadas a `catalogue` devolvieron HTTP 404. La migración y la carga nueva
-  no están desplegadas; no se afirma un catálogo alojado operativo.
-- Revisar y aplicar la migración compartida y la carga explícita con David.
-  Elegir la cuenta verificada propietaria de Fontanería Nalón y otra cuenta
-  cliente distinta. No se han creado usuarios ni modificado datos alojados.
-- Aprobar contenido de los 18 perfiles e ilustraciones originales. Los otros
+- Elegir o preparar otra cuenta verificada distinta como cliente.
+- Aceptación visual del contenido de los 18 perfiles e ilustraciones. Los otros
   17 perfiles están sin reclamar hasta asociarlos expresamente a cuentas.
 - **Revisión visual con David de las primeras pantallas de lista y perfil reales**,
   antes de ampliar el diseño. Tener tests Compose correctos no equivale a esa
@@ -50,6 +64,9 @@ Ticket: [Consultar catálogo y perfiles públicos](https://github.com/DRChanca/t
   idiomas; los contenidos originales de los perfiles no se traducen.
 - API 26 se mantiene en la matriz de CI, no se ejecutó localmente en esta sesión.
   No se ha ejecutado el workflow remoto ni publicado ninguna APK.
+- Reconciliar el historial de migraciones de CLI antes de un futuro `db push`;
+  SQL Editor no lo actualiza. La versión comunicada por David se registra aquí,
+  no se ha marcado automáticamente como aplicada en el historial remoto.
 
 La issue permanece abierta: implementación local y comprobación alojada/revisión
 humana se distinguen expresamente. Preparación y contratos:
