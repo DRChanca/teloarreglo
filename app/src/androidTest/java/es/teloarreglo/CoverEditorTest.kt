@@ -7,6 +7,15 @@ import es.teloarreglo.catalogue.*
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.logging.LogLevel
+import io.github.jan.supabase.postgrest.Postgrest
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
+import androidx.compose.ui.semantics.SemanticsProperties
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -22,6 +31,26 @@ class CoverEditorTest {
         bitmap.compress(Bitmap.CompressFormat.JPEG, 80, output)
         bitmap.recycle()
         return CoverPhoto(output.toByteArray(), "request-1")
+    }
+
+    @Test fun aRealSdkNullResponseOpensTheEditorWithoutAConnectionError() {
+        val client = createSupabaseClient("https://covers.example.org", "public-key") {
+            defaultLogLevel = LogLevel.NONE
+            install(Postgrest)
+            httpEngine = MockEngine {
+                respond("null", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            }
+        }
+        try {
+            compose.setContent { CoverEditorScreen(profile, SupabaseProfessionalCovers(client), {}, onPickPhoto = {}) }
+            compose.waitUntil(5000) {
+                compose.onAllNodesWithTag("cover_generic").fetchSemanticsNodes().any {
+                    !it.config.contains(SemanticsProperties.Disabled)
+                }
+            }
+            compose.onNodeWithTag("cover_error").assertDoesNotExist()
+            compose.onNodeWithTag("cover_generic").performScrollTo().assertIsEnabled()
+        } finally { kotlinx.coroutines.runBlocking { client.close() } }
     }
 
     @Test fun anInvalidReplacementCannotSubmitThePreviousSelection() {

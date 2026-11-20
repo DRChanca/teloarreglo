@@ -116,7 +116,10 @@ actualizaciones desde el cliente.
   original intacto. El selector nativo y el retorno desde él requieren además
   comprobación manual en el emulador del usuario.
 
-**Pendiente alojado:** revisar y aplicar las migraciones de portadas. La actualización
+**Estado alojado:** David ha comunicado la ejecución del despliegue de portadas;
+la consulta autenticada de estado se ha comprobado correctamente. Sigue pendiente
+comprobar la selección, subida y revisión con la APK corregida en su emulador.
+La actualización
 anterior de direcciones/servicios `20261120000200` ya fue confirmada por David y
 verificada en remoto: 18 direcciones y tres precios por perfil; cuatro pruebas
 de lectura correctas y dos pruebas de escritura omitidas deliberadamente.
@@ -145,5 +148,30 @@ además las cadenas de estado por el tipo serializado `CoverStatus`.
 Dos defectos corregidos: selección inválida no enviable y separación explícita
 entre una previsualización nueva sin confirmar y la decisión de la propuesta
 anterior. La revisión posterior confirmó la resolución de todos los hallazgos.
-La entrega de fotografías genéricas generadas con IA, el despliegue alojado y
+La entrega de fotografías genéricas generadas con IA, la comprobación completa alojada y
 la aceptación visual/manual siguen distinguiéndose de lo implementado.
+
+## Corrección: error al abrir la primera portada
+
+David comunicó haber ejecutado el despliegue de portadas, pero el editor mostraba
+un error de conexión. La comprobación autenticada y de solo lectura en el proyecto
+alojado devolvió HTTP 200 y el JSON `null` (cuatro bytes): no había propuestas de
+portada previas. No se modificaron perfiles ni se subieron fotos para diagnosticarlo.
+
+Se reprodujo en `ProfessionalCoversTest.anOwnerWithoutAnyCoverSubmissionCanOpenTheEditor`:
+el SDK intentaba deserializar `null` como un objeto `CoverRequest` no anulable.
+Su método `decodeAs` exige un tipo derivado de `Any`, aunque nuestra función
+devolviese un tipo nullable. La corrección reconoce únicamente el JSON `null`
+como ausencia de propuesta y conserva la deserialización tipada para objetos.
+Los errores de servidor o respuestas inválidas no se convierten en un estado
+vacío con falso éxito.
+
+La regresión pasó de `JsonDecodingException` a correcta. Se añadieron casos de
+estado existente y HTTP 503, más una prueba Compose con el SDK real y HTTP
+controlado que abre el editor sin historial. Este arreglo es solo de Android:
+no requiere repetir migraciones ni borrar datos.
+
+Comprobación final de esta corrección: cinco casos JVM de portadas, suite JVM
+completa, lint y ambas APK correctos; 18 pruebas instrumentadas API 35 correctas,
+incluida apertura del editor con respuesta JSON `null` usando el SDK. El contrato
+real local de Storage también pasó, con un caso inicial explícito sin historial.

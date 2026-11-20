@@ -21,6 +21,52 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ProfessionalCoversTest {
+    @Test fun anOwnerWithoutAnyCoverSubmissionCanOpenTheEditor() = runTest {
+        val client = createSupabaseClient("https://covers.example.org", "public-key") {
+            defaultLogLevel = LogLevel.NONE
+            install(Postgrest)
+            httpEngine = MockEngine { request ->
+                assertEquals("/rest/v1/rpc/professional_cover", request.url.encodedPath)
+                respond("null", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            }
+        }
+        try { assertNull(SupabaseProfessionalCovers(client).state("profile")) }
+        finally { client.close() }
+    }
+
+    @Test fun anExistingCoverSubmissionStillLoadsItsReviewState() = runTest {
+        val client = createSupabaseClient("https://covers.example.org", "public-key") {
+            defaultLogLevel = LogLevel.NONE
+            install(Postgrest)
+            httpEngine = MockEngine {
+                respond("""{"id":"request","status":"pending","object_path":"profile/request.jpg","reason":null}""",
+                    HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            }
+        }
+        try {
+            val state = SupabaseProfessionalCovers(client).state("profile")
+            assertEquals(CoverStatus.PENDING, state?.status)
+            assertEquals("request", state?.id)
+        } finally { client.close() }
+    }
+
+    @Test fun aStateServiceFailureIsNotMistakenForNoPreviousSubmission() = runTest {
+        val client = createSupabaseClient("https://covers.example.org", "public-key") {
+            defaultLogLevel = LogLevel.NONE
+            install(Postgrest)
+            httpEngine = MockEngine {
+                respond("""{"code":"unavailable","message":"Unavailable"}""",
+                    HttpStatusCode.ServiceUnavailable, headersOf(HttpHeaders.ContentType, "application/json"))
+            }
+        }
+        try {
+            var failed = false
+            try { SupabaseProfessionalCovers(client).state("profile") }
+            catch (error: RestException) { assertEquals(503, error.statusCode); failed = true }
+            assertTrue(failed)
+        } finally { client.close() }
+    }
+
     @Test fun aDuplicateImmutableUploadCanRecoverItsPendingSubmission() = runTest {
         val calls = mutableListOf<String>()
         val client = createSupabaseClient("https://covers.example.org", "public-key") {

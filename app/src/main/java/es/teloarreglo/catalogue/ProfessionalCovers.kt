@@ -37,8 +37,12 @@ interface ProfessionalCovers {
 }
 
 class SupabaseProfessionalCovers(private val client: SupabaseClient) : ProfessionalCovers {
-    override suspend fun state(profileId: String): CoverRequest? =
-        client.postgrest.rpc("professional_cover", buildJsonObject { put("p_profile", profileId) }).decodeAs()
+    override suspend fun state(profileId: String): CoverRequest? {
+        val result = client.postgrest.rpc("professional_cover", buildJsonObject { put("p_profile", profileId) })
+        // decodeAs is bounded by Any, so a nullable return type cannot make its
+        // inferred serializer nullable. SQL JSON null means no submission yet.
+        return if (result.data.trim() == "null") null else result.decodeAs<CoverRequest>()
+    }
 
     override suspend fun generic(profileId: String, requestId: String): CoverRequest =
         client.postgrest.rpc("request_professional_cover", buildJsonObject {

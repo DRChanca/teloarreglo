@@ -31,6 +31,9 @@ def binary(path, data=None, token=None, method="GET", mime="image/jpeg"):
 
 class CoverContract(unittest.TestCase):
     def test_owner_upload_review_and_private_storage(self):
+        code, empty_state = api.request("/rest/v1/rpc/professional_cover", {"p_profile": profile_id}, tokens["owner"])
+        self.assertEqual(code, 200)
+        self.assertIsNone(empty_state, "a new owner has no prior cover request")
         request_id = str(uuid.uuid4())
         payload = {"p_profile": profile_id, "p_request": request_id, "p_sha256": hashlib.sha256(photo).hexdigest()}
         for token in (None, tokens["other"]):
