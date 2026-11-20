@@ -67,7 +67,9 @@ la preparación falla.
 
 ## Contrato compartido y permisos
 
-Migraciones nuevas `20261120000300` y `20261120000400`.
+Migraciones nuevas `20261120000300`, `20261120000400` y `20261120000500`.
+La última añade la prohibición expresa de autorrevisión, incluso para una cuenta
+que por una configuración de confianza tuviese ambos roles.
 
 - `approved_profiles.cover_path`: ruta opcional de la **última portada aprobada**.
   Compatible con clientes anteriores y con perfiles sin foto.
@@ -122,9 +124,26 @@ de lectura correctas y dos pruebas de escritura omitidas deliberadamente.
 La apariencia final y la edición de portada deben revisarse con David antes de
 ampliar este diseño al resto de recorridos.
 
-Resultados locales del 20/11/2026: 36 aserciones pgTAP, contrato real de Storage
-completo, seis casos de catálogo y contrato de identidad correctos; 14 pruebas
+Resultados locales del 20/11/2026: 37 aserciones pgTAP, contrato real de Storage
+completo, seis casos de catálogo y contrato de identidad correctos; 17 pruebas
 instrumentadas API 35 correctas, incluidos orientación/GPS y editor. Suite JVM
 completa, lint de las dos variantes y ambas APK debug correctos. Las dos pruebas
 JVM de `ProfessionalCovers` ejercitan también el SDK real con HTTP controlado:
 recuperación de subida duplicada y rechazo de falso éxito ante HTTP 503.
+
+## Revisión independiente
+
+### Standards
+
+Tres defectos corregidos y cubiertos por regresión: impedir autorrevisión con
+doble rol, no enviar la selección anterior tras fallar otra imagen y retirar la
+clave de una propuesta genérica al comenzar otra intención. Se sustituyeron
+además las cadenas de estado por el tipo serializado `CoverStatus`.
+
+### Spec
+
+Dos defectos corregidos: selección inválida no enviable y separación explícita
+entre una previsualización nueva sin confirmar y la decisión de la propuesta
+anterior. La revisión posterior confirmó la resolución de todos los hallazgos.
+La entrega de fotografías genéricas generadas con IA, el despliegue alojado y
+la aceptación visual/manual siguen distinguiéndose de lo implementado.

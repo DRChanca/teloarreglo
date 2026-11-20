@@ -7,6 +7,7 @@
     <string name="cover_limits">Usa una imagen propia o autorizada, sin domicilios ni datos privados. Máximo de origen: 20 MB. Se ajusta a 1600 píxeles y 2 MB sin cambiar el original.</string>
     <string name="cover_preparing">Preparando imagen…</string>
     <string name="cover_pending">Portada enviada. Pendiente de revisión.</string>
+    <string name="cover_unsent">Nueva portada: envío aún no confirmado.</string>
     <string name="cover_approved">Portada aprobada.</string>
     <string name="cover_rejected">Portada rechazada. Puedes elegir otra imagen y volver a enviarla.</string>
     <string name="cover_invalid">No se pudo preparar esta imagen. Elige otra foto de hasta 20 MB.</string>

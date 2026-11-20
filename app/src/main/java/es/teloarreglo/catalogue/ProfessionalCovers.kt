@@ -13,9 +13,17 @@ import kotlinx.serialization.json.put
 import kotlin.time.Duration.Companion.minutes
 
 @Serializable
+enum class CoverStatus {
+    @SerialName("uploading") UPLOADING,
+    @SerialName("pending") PENDING,
+    @SerialName("approved") APPROVED,
+    @SerialName("rejected") REJECTED,
+}
+
+@Serializable
 data class CoverRequest(
     val id: String,
-    val status: String,
+    val status: CoverStatus,
     @SerialName("object_path") val objectPath: String? = null,
     val reason: String? = null,
 )
@@ -43,7 +51,7 @@ class SupabaseProfessionalCovers(private val client: SupabaseClient) : Professio
         val request = client.postgrest.rpc("request_professional_cover", buildJsonObject {
             put("p_profile", profileId); put("p_request", requestId); put("p_sha256", digest)
         }).decodeAs<CoverRequest>()
-        if (request.status != "uploading") return request
+        if (request.status != CoverStatus.UPLOADING) return request
         try {
             client.storage.from("professional-covers").upload(checkNotNull(request.objectPath), jpeg) {
                 contentType = ContentType.Image.JPEG

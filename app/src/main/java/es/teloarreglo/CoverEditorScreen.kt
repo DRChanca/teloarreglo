@@ -34,6 +34,9 @@ internal fun CoverEditorRoute(profile: PublicProfile, covers: ProfessionalCovers
     var selectionId by rememberSaveable(profile.id) { mutableStateOf(UUID.randomUUID().toString()) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
+            selected = null
+            preparing = true
+            invalid = false
             selectedUri = uri.toString()
             selectionId = UUID.randomUUID().toString()
         }
@@ -103,14 +106,16 @@ internal fun CoverEditorScreen(
                         Text(stringResource(if (preparing) R.string.cover_preparing else R.string.working))
                     }
                 }
-                if (request != null && loaded) {
+                if (unsent) Text(stringResource(R.string.cover_unsent), Modifier.testTag("cover_unsent")
+                    .semantics { liveRegion = LiveRegionMode.Polite })
+                if (request != null && loaded && !unsent) {
                     Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) {
                         Column(Modifier.fillMaxWidth().padding(16.dp).testTag("cover_state")
                             .semantics { liveRegion = LiveRegionMode.Polite }) {
                             Text(stringResource(when (request?.status) {
-                                "pending" -> R.string.cover_pending
-                                "approved" -> R.string.cover_approved
-                                "rejected" -> R.string.cover_rejected
+                                CoverStatus.PENDING -> R.string.cover_pending
+                                CoverStatus.APPROVED -> R.string.cover_approved
+                                CoverStatus.REJECTED -> R.string.cover_rejected
                                 else -> R.string.cover_review_hint
                             }))
                             request?.reason?.let { Text(it) }
@@ -127,13 +132,15 @@ internal fun CoverEditorScreen(
                         Text(stringResource(R.string.cover_check))
                     }
                 }
-                OutlinedButton(onClick = onPickPhoto, enabled = !busy && !preparing, modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(onClick = { genericId = null; onPickPhoto() },
+                    enabled = !busy && !preparing, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.cover_choose))
                 }
                 Button(
-                    enabled = loaded && unsent && !busy && !preparing,
+                    enabled = loaded && unsent && !busy && !preparing && !invalid,
                     modifier = Modifier.fillMaxWidth().testTag("cover_submit"),
                     onClick = {
+                        genericId = null
                         selected?.let { photo -> scope.launch {
                             busy = true; failed = false
                             try { request = covers.photo(profile.id, photo.requestId, photo.jpeg) }
@@ -144,8 +151,8 @@ internal fun CoverEditorScreen(
                         } }
                     },
                 ) { Text(stringResource(R.string.cover_submit)) }
-                TextButton(enabled = loaded && !busy && !preparing &&
-                    !(request?.status == "pending" && request?.objectPath == null && !unsent), onClick = {
+                TextButton(modifier = Modifier.testTag("cover_generic"), enabled = loaded && !busy && !preparing &&
+                    !(request?.status == CoverStatus.PENDING && request?.objectPath == null && !unsent), onClick = {
                     val id = genericId ?: UUID.randomUUID().toString().also { genericId = it }
                     scope.launch {
                         busy = true; failed = false

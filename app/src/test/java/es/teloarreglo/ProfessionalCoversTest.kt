@@ -1,6 +1,7 @@
 package es.teloarreglo
 
 import es.teloarreglo.catalogue.SupabaseProfessionalCovers
+import es.teloarreglo.catalogue.CoverStatus
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.MemorySessionManager
 import io.github.jan.supabase.auth.minimalSettings
@@ -45,7 +46,7 @@ class ProfessionalCoversTest {
         }
         try {
             val result = SupabaseProfessionalCovers(client).photo("profile", "request", byteArrayOf(1, 2, 3))
-            assertEquals("pending", result.status)
+            assertEquals(CoverStatus.PENDING, result.status)
             assertEquals(listOf("/rest/v1/rpc/request_professional_cover",
                 "/storage/v1/object/professional-covers/profile/request.jpg",
                 "/rest/v1/rpc/submit_professional_cover"), calls)

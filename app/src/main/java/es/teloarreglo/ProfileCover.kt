@@ -84,8 +84,13 @@ private fun TradeArtwork(trade: String, modifier: Modifier) {
             "plumbing" -> {
                 drawLine(dark, Offset(w * .35f, h * .24f), Offset(w * .35f, h * .66f), unit * .10f)
                 drawLine(dark, Offset(w * .35f, h * .65f), Offset(w * .68f, h * .65f), unit * .10f)
-                drawCircle(accent, unit * .12f, Offset(w * .63f, h * .34f), style = Stroke(unit * .05f))
-                drawLine(accent, Offset(w * .63f, h * .43f), Offset(w * .54f, h * .70f), unit * .07f)
+                drawPath(Path().apply {
+                    moveTo(w * .66f, h * .22f)
+                    cubicTo(w * .61f, h * .34f, w * .53f, h * .40f, w * .53f, h * .48f)
+                    cubicTo(w * .53f, h * .66f, w * .80f, h * .66f, w * .80f, h * .48f)
+                    cubicTo(w * .80f, h * .40f, w * .71f, h * .31f, w * .66f, h * .22f)
+                    close()
+                }, accent)
             }
             "electrical" -> {
                 drawRoundRect(dark, Offset(w * .26f, h * .26f), Size(w * .34f, h * .43f),

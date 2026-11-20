@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(14);
+select plan(15);
 insert into auth.users(id,email,email_confirmed_at) values
  ('00000000-0000-0000-0000-000000000031','cover-owner@example.org',now()),
  ('00000000-0000-0000-0000-000000000032','cover-other@example.org',now()),
@@ -47,6 +47,13 @@ set local role anon;
 select set_config('request.jwt.claims','{}',true);
 select is(public.can_read_professional_cover('10000000-0000-0000-0000-000000000031/20000000-0000-0000-0000-000000000032.jpg'),
  false,'unpublished photo is not publicly readable');
+reset role;
+insert into private.administrators values ('00000000-0000-0000-0000-000000000031');
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000000031","role":"authenticated"}',true);
+select public.request_professional_cover('10000000-0000-0000-0000-000000000031','20000000-0000-0000-0000-000000000033');
+select throws_ok($$select public.review_professional_cover('20000000-0000-0000-0000-000000000033',true,'Self review with dual role')$$,
+ '42501','permission_denied','even a dual-role account cannot review its own cover');
 reset role;
 select * from finish();
 rollback;

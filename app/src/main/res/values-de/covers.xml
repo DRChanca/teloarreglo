@@ -7,6 +7,7 @@
     <string name="cover_limits">Verwende ein eigenes oder freigegebenes Bild ohne Adressen oder private Daten. Original höchstens 20 MB. Auf 1600 Pixel und 2 MB angepasst, ohne das Original zu ändern.</string>
     <string name="cover_preparing">Bild wird vorbereitet…</string>
     <string name="cover_pending">Titelbild eingereicht. Prüfung ausstehend.</string>
+    <string name="cover_unsent">Neues Titelbild: Versand noch nicht bestätigt.</string>
     <string name="cover_approved">Titelbild genehmigt.</string>
     <string name="cover_rejected">Titelbild abgelehnt. Du kannst ein anderes Bild wählen und erneut einreichen.</string>
     <string name="cover_invalid">Dieses Bild konnte nicht vorbereitet werden. Wähle ein anderes Foto mit höchstens 20 MB.</string>
