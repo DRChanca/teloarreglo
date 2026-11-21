@@ -1,0 +1,33 @@
+<resources>
+    <string name="cover_edit">Modifier la couverture</string>
+    <string name="cover_photo_description">Photo de couverture de l’entreprise</string>
+    <string name="cover_generic_description">Image générique de %1$s</string>
+    <string name="cover_image_unavailable">Photo indisponible ; l’image du métier est affichée.</string>
+    <string name="cover_review_hint">Votre nouvelle couverture sera publique après examen. La couverture approuvée reste visible jusque-là.</string>
+    <string name="cover_limits">Utilisez une image personnelle ou autorisée, sans adresse ni données privées. Original : 20 Mo maximum. Ajustée à 1600 pixels et 2 Mo sans modifier l’original.</string>
+    <string name="cover_preparing">Préparation de l’image…</string>
+    <string name="cover_pending">Couverture envoyée. En attente d’examen.</string>
+    <string name="cover_unsent">Nouvelle couverture : envoi pas encore confirmé.</string>
+    <string name="cover_approved">Couverture approuvée.</string>
+    <string name="cover_rejected">Couverture refusée. Vous pouvez choisir une autre image et la renvoyer.</string>
+    <string name="cover_invalid">Impossible de préparer cette image. Choisissez une autre photo de 20 Mo maximum.</string>
+    <string name="cover_error">Impossible de confirmer l’état de la couverture. Vérifiez la connexion et consultez son état avant de réessayer.</string>
+    <string name="cover_check">Vérifier l’état</string>
+    <string name="cover_choose">Choisir une photo sur l’appareil</string>
+    <string name="cover_submit">Envoyer la couverture pour examen</string>
+    <string name="cover_use_generic">Utiliser l’image de mon métier</string>
+    <string name="cover_leave_title">Quitter la modification ?</string>
+    <string name="cover_leave_hint">La sélection non envoyée sera perdue. Si un envoi était en cours, vérifiez son état à votre retour. Votre photo originale reste inchangée.</string>
+    <string name="cover_leave">Quitter</string>
+    <string name="cover_stay">Continuer</string>
+    <string name="catalogue_search">Rechercher un nom ou un service</string>
+    <string name="catalogue_clear_search">Effacer la recherche</string>
+    <string name="catalogue_filtered_empty">Aucun résultat pour cette recherche.</string>
+    <string name="catalogue_reset_filters">Voir tous les professionnels</string>
+    <string name="catalogue_reference">Référence : %1$s</string>
+    <string name="catalogue_free">Sans frais</string>
+    <plurals name="catalogue_results">
+        <item quantity="one">%d professionnel</item>
+        <item quantity="other">%d professionnels</item>
+    </plurals>
+</resources>

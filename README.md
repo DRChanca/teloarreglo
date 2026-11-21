@@ -4,6 +4,13 @@ Una app Android Kotlin/Compose para cliente y profesional. Base de identidad de
 [Acceder por correo y conservar sesión](https://github.com/DRChanca/teloarreglo/issues/12).
 Reglas: [especificación](docs/especificacion.md).
 
+El inicio permite consultar sin registro la lista por oficio y los perfiles
+públicos. Contratos, carga explícita de los 18 perfiles y permisos:
+[catálogo](docs/catalogo-contrato.md).
+Portadas editables y revisión de usabilidad: [portadas y diseño](docs/portadas-y-diseno.md).
+Chat privado de texto: [contratos](docs/chat-contrato.md) y
+[comprobaciones y pendientes](docs/comprobacion-chat.md).
+
 ## Decisión vigente: una sola base
 
 Se utiliza **un único proyecto Supabase Free en Frankfurt**, con la misma base
@@ -112,6 +119,31 @@ La segunda variante no es un entorno alojado diferente: con el asistente ambas
 usan la misma base. Puedes utilizar `pruebas` tanto para probar como para presentar.
 Sin configuración se muestra un error explícito: compilar no demuestra conexión.
 
+### Ejecutar con Run en Android Studio
+
+Abre la carpeta raíz `MOVIL` (no solo `app`), selecciona la configuración `app`,
+la variante `pruebasDebug` y un emulador, y pulsa **Run ▶**.
+Gradle lee automáticamente las cuatro entradas públicas del `.env` de la raíz;
+no necesitas ejecutar el asistente de nuevo, copiar valores a `local.properties`
+ni arrancar Android Studio desde una terminal.
+
+Prioridad: variable de entorno no vacía → `.env` → `local.properties`.
+Se admiten los valores sin comillas o entre comillas simples/dobles, incluidos
+los que escribe el asistente. No se ejecutan comandos ni se expanden variables.
+Solo URL y clave **publicable** se incorporan a `BuildConfig`; las contraseñas,
+correos de prueba y claves administrativas no se empaquetan en la APK.
+Los cambios del `.env` se leen al volver a compilar con Run, no en una APK ya
+instalada sin recompilar.
+
+Comprobación de esa ruta directa, sin inyectar las variables mediante el wrapper:
+
+```bash
+python3 scripts/check_android_configuration.py
+```
+
+Esta configuración resuelve la conexión de la APK, pero no aplica migraciones
+ni carga perfiles en Supabase. El catálogo alojado requiere su despliegue revisado.
+
 APKs: `app/build/outputs/apk/{pruebas,presentacion}/debug/`.
 Guardar APK y SHA del commit usados para grabar; no sustituirlas durante la sesión.
 
@@ -138,7 +170,9 @@ python3 scripts/android.py install --serial emulator-5558
 ```
 
 Abrir la misma variante `pruebas` en ambos, conectada a la única base, y entrar con cuentas verificadas distintas.
-No hay aplicación separada por rol. Este ticket solo entrega acceso, no perfiles/chat.
+No hay aplicación separada por rol. El cliente contacta desde el perfil y el
+profesional responde desde «Conversaciones». Aplicar primero las migraciones de
+chat revisadas; consultar sus comprobaciones pendientes antes de la presentación.
 
 ## Comprobaciones
 
@@ -178,10 +212,12 @@ Resultados y comprobaciones pendientes: [evidencia del ticket](docs/comprobacion
 
 - `Identity`: `restore`, `signIn`, `signOut`, `state` observable.
 - `current_account()` (RPC sin argumentos): `{user_id, email, is_administrator}`.
+  El catálogo añade `can_hire` y `professional_profile_id` (UUID o `null`).
   Actor derivado de Auth y correo confirmado; no admite un ID ni rol del cliente.
 - `private.administrators`: lista privada gestionada por SQL de confianza.
   Ninguna ruta para autoconcederse rol. El permiso no da acceso general a chats.
-  El perfil profesional opcional se integrará en su ticket; no se deduce de metadatos.
+  La propiedad del perfil profesional opcional se consulta en servidor;
+  no se deduce de metadatos.
 - Tokens guardados cifrados mediante Android Keystore; copia de seguridad desactivada.
   La contraseña solo se usa durante el acceso, sin persistirla.
 - Recuperar no equivale a confiar en un token guardado: se renueva y se consulta

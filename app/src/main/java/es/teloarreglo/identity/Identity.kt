@@ -9,6 +9,8 @@ data class Account(
     @SerialName("user_id") val userId: String,
     val email: String,
     @SerialName("is_administrator") val isAdministrator: Boolean = false,
+    @SerialName("professional_profile_id") val professionalProfileId: String? = null,
+    @SerialName("can_hire") val canHire: Boolean = true,
 )
 
 enum class AccessError { CREDENTIALS, UNVERIFIED, EXPIRED, NETWORK, SERVICE, CONFIGURATION, INPUT }

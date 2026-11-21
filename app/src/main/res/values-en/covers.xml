@@ -1,0 +1,33 @@
+<resources>
+    <string name="cover_edit">Change cover</string>
+    <string name="cover_photo_description">Business cover photo</string>
+    <string name="cover_generic_description">Generic %1$s image</string>
+    <string name="cover_image_unavailable">Photo unavailable; showing the trade image.</string>
+    <string name="cover_review_hint">Your new cover becomes public after review. The approved cover stays visible until then.</string>
+    <string name="cover_limits">Use an image you own or have permission to use, without addresses or private data. Original limit: 20 MB. Resized to 1600 pixels and 2 MB without changing the original.</string>
+    <string name="cover_preparing">Preparing image…</string>
+    <string name="cover_pending">Cover submitted. Awaiting review.</string>
+    <string name="cover_unsent">New cover: submission not yet confirmed.</string>
+    <string name="cover_approved">Cover approved.</string>
+    <string name="cover_rejected">Cover rejected. You can choose another image and submit it again.</string>
+    <string name="cover_invalid">Could not prepare this image. Choose another photo up to 20 MB.</string>
+    <string name="cover_error">Could not confirm the cover status. Check your connection and retrieve its status before retrying.</string>
+    <string name="cover_check">Check status</string>
+    <string name="cover_choose">Choose photo from device</string>
+    <string name="cover_submit">Submit cover for review</string>
+    <string name="cover_use_generic">Use my trade image</string>
+    <string name="cover_leave_title">Leave the editor?</string>
+    <string name="cover_leave_hint">An unsent selection will not be kept. If a submission was in progress, check its status when you return. Your original photo is unchanged.</string>
+    <string name="cover_leave">Leave</string>
+    <string name="cover_stay">Keep editing</string>
+    <string name="catalogue_search">Search by name or service</string>
+    <string name="catalogue_clear_search">Clear search</string>
+    <string name="catalogue_filtered_empty">No matches for this search.</string>
+    <string name="catalogue_reset_filters">View all professionals</string>
+    <string name="catalogue_reference">Reference: %1$s</string>
+    <string name="catalogue_free">No charge</string>
+    <plurals name="catalogue_results">
+        <item quantity="one">%d professional</item>
+        <item quantity="other">%d professionals</item>
+    </plurals>
+</resources>

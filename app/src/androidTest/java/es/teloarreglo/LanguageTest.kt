@@ -16,10 +16,12 @@ class LanguageTest {
     @Test fun manualLanguageSurvivesActivityRecreation() {
         val original = AppCompatDelegate.getApplicationLocales()
         try {
-            compose.onNodeWithTag("language").performScrollTo().performClick()
+            compose.onNodeWithTag("language").assertIsDisplayed().performClick()
             compose.onNodeWithTag("language_de").performClick()
-            compose.onNodeWithText("Willkommen zurück").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText("Hilfe für dein Zuhause finden").assertIsDisplayed()
             compose.activityRule.scenario.recreate()
+            compose.onNodeWithText("Hilfe für dein Zuhause finden").assertIsDisplayed()
+            compose.onNodeWithText("Konto").performClick()
             compose.onNodeWithText("Willkommen zurück").performScrollTo().assertIsDisplayed()
         } finally {
             compose.activityRule.scenario.onActivity {
