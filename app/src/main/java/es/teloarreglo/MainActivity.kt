@@ -1,5 +1,6 @@
 package es.teloarreglo
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
@@ -10,14 +11,19 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import es.teloarreglo.identity.AccessError
 import es.teloarreglo.identity.AccessStage
 import es.teloarreglo.chat.Conversation
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 
 class MainActivity : AppCompatActivity() {
+    private val app get() = application as TeloarregloApplication
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // After a configuration change the link was already handled; codes are single use.
+        if (savedInstanceState == null) handleAuthLink(intent)
         setContent {
             var account by rememberSaveable { mutableStateOf(false) }
             var ownProfile by rememberSaveable { mutableStateOf<String?>(null) }
@@ -31,6 +37,9 @@ class MainActivity : AppCompatActivity() {
                 if (access.stage != AccessStage.CHECKING) knownOwner = access.account?.professionalProfileId
             }
             val owner = if (access.stage == AccessStage.CHECKING) knownOwner else access.account?.professionalProfileId
+            // An email link (new password or invalid link) must be answered on the account screen.
+            val emailLinkPending = access.stage == AccessStage.RECOVERING_PASSWORD ||
+                access.error == AccessError.LINK_INVALID
             val changeLanguage: (String) -> Unit = { tag ->
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
             }
@@ -47,11 +56,16 @@ class MainActivity : AppCompatActivity() {
                             else { chatVisible = false; contactProfile = null; conversationJson = null }
                         })
                 }
-            } else if (account || chatVisible) {
+            } else if (account || chatVisible || emailLinkPending) {
                 AccessScreen(app.identity, changeLanguage,
-                    onCatalogue = { account = false; chatVisible = false; contactProfile = null; conversationJson = null },
+                    onCatalogue = {
+                        // Also clears a shown invalid-link error so the catalogue can be reached.
+                        app.identity.dismiss()
+                        account = false; chatVisible = false; contactProfile = null; conversationJson = null
+                    },
                     onProfile = { ownProfile = it; account = false; chatVisible = false; conversationJson = null },
-                    operationScope = app.applicationScope)
+                    operationScope = app.applicationScope,
+                    googleAuth = app.googleAuth)
             } else {
                 CatalogueScreen(app.catalogue, onAccount = { ownProfile = null; account = true }, onLanguageChange = changeLanguage,
                     initialProfileId = ownProfile, covers = app.covers, ownedProfileId = owner,
@@ -61,9 +75,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleAuthLink(intent)
+    }
+
     override fun onStart() {
         super.onStart()
-        val app = application as TeloarregloApplication
         app.applicationScope.launch { app.identity.restore() }
+    }
+
+    private fun handleAuthLink(intent: Intent?) {
+        val link = intent?.takeIf { it.action == Intent.ACTION_VIEW }?.dataString ?: return
+        // Same scope as restore(): the exchange must not be cancelled by navigation.
+        app.applicationScope.launch { app.identity.handleAuthLink(link) }
     }
 }

@@ -1,6 +1,7 @@
 package es.teloarreglo
 
 import es.teloarreglo.identity.AccessError
+import es.teloarreglo.identity.AccessNotice
 import es.teloarreglo.identity.AccessStage
 import es.teloarreglo.identity.AccessState
 import es.teloarreglo.identity.Account
@@ -30,6 +31,24 @@ class TestIdentity : Identity {
     }
     override suspend fun signOut() {
         savedAccount = null
+        state.value = AccessState(AccessStage.SIGNED_OUT)
+    }
+    override suspend fun signUp(email: String, password: String) {
+        state.value = AccessState(
+            AccessStage.AWAITING_VERIFICATION, pendingEmail = email, notice = AccessNotice.VERIFICATION_SENT,
+        )
+    }
+    override suspend fun resendVerification(email: String) = signUp(email, "")
+    override suspend fun requestPasswordReset(email: String) {
+        state.value = AccessState(AccessStage.SIGNED_OUT, notice = AccessNotice.RESET_SENT)
+    }
+    override suspend fun handleAuthLink(link: String) = false
+    override suspend fun setNewPassword(password: String) = Unit
+    override suspend fun completeGoogleSignIn() = Unit
+    override fun reportGoogleFailure() {
+        state.value = AccessState(AccessStage.SIGNED_OUT, error = AccessError.GOOGLE)
+    }
+    override fun dismiss() {
         state.value = AccessState(AccessStage.SIGNED_OUT)
     }
 }
