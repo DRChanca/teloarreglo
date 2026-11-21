@@ -16,7 +16,7 @@ class LanguageTest {
     @Test fun manualLanguageSurvivesActivityRecreation() {
         val original = AppCompatDelegate.getApplicationLocales()
         try {
-            compose.onNodeWithTag("language").performClick()
+            compose.onNodeWithTag("language").assertIsDisplayed().performClick()
             compose.onNodeWithTag("language_de").performClick()
             compose.onNodeWithText("Hilfe für dein Zuhause finden").assertIsDisplayed()
             compose.activityRule.scenario.recreate()

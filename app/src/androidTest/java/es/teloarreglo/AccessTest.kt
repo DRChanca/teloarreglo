@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import org.junit.Rule
@@ -37,19 +38,23 @@ class AccessTest {
         compose.onNodeWithTag("back_from_account").performScrollTo().performClick()
         response.complete(Unit)
         compose.onNodeWithTag("return_account").performClick()
+        awaitTag("account")
         compose.onNodeWithTag("account").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("signOut").performScrollTo().performClick()
+        awaitTag("email")
         compose.onNodeWithTag("email").performScrollTo().assertIsDisplayed()
     }
 
     @Test fun signedInAccountCanSignOutWithoutLeavingAnAuthenticatedScreen() {
-        val identity = TestIdentity().apply { failure = null }
+        val identity = TestIdentity().apply { failure = null; signInDelayMillis = 250 }
         compose.setContent { AccessScreen(identity = identity, onLanguageChange = {}) }
         compose.onNodeWithTag("email").performTextInput("cliente@example.org")
         compose.onNodeWithTag("password").performTextInput("correcta")
         compose.onNodeWithTag("signIn").performScrollTo().performClick()
+        awaitTag("account")
         compose.onNodeWithTag("account").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("signOut").performScrollTo().performClick()
+        awaitTag("email")
         compose.onNodeWithTag("account").assertDoesNotExist()
         compose.onNodeWithTag("email").performScrollTo().assertIsDisplayed()
     }
@@ -62,7 +67,14 @@ class AccessTest {
         compose.onNodeWithTag("email").performTextInput("cliente@example.org")
         compose.onNodeWithTag("password").performTextInput("incorrecta")
         compose.onNodeWithTag("signIn").performScrollTo().performClick()
+        awaitTag("error")
         compose.onNodeWithTag("error").assertIsDisplayed()
         compose.onNodeWithTag("signIn").assertIsDisplayed()
+    }
+
+    private fun awaitTag(tag: String) {
+        compose.waitUntil(timeoutMillis = 5000) {
+            compose.onAllNodesWithTag(tag).fetchSemanticsNodes().size == 1
+        }
     }
 }

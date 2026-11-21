@@ -99,18 +99,19 @@ fun CatalogueScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (selected != null) {
+                     if (selected != null) {
                         TextButton(onClick = { selected = null }, Modifier.testTag("back_catalogue")) {
                             Text(stringResource(R.string.catalogue_back))
                         }
-                    } else {
-                        Text("teloarreglo", color = green, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-                    }
-                    Row {
-                        if (onChats != null) TextButton(onClick = onChats) { Text(stringResource(R.string.chat_title)) }
-                        TextButton(onClick = onAccount) { Text(stringResource(R.string.catalogue_account)) }
-                        LanguageMenu(onLanguageChange)
-                    }
+                     } else {
+                        Text("teloarreglo", modifier = Modifier.weight(1f), color = green,
+                            fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                     }
+                    LanguageMenu(onLanguageChange)
+                }
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.End) {
+                    if (onChats != null) TextButton(onClick = onChats) { Text(stringResource(R.string.chat_title)) }
+                    TextButton(onClick = onAccount) { Text(stringResource(R.string.catalogue_account)) }
                 }
                 if (selected == null) {
                     Text(

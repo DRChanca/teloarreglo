@@ -49,3 +49,28 @@ Fecha: 20 de noviembre de 2026. Separar implementación de aceptación alojada.
 
 No se ha desplegado ni escrito en la base alojada durante esta implementación.
 No se cierra la issue hasta completar la comprobación compartida.
+
+## Corrección de CI — 21 de noviembre
+
+Ejecución analizada:
+https://github.com/DRChanca/teloarreglo/actions/runs/44795274786
+
+- `LanguageTest` fallaba en API 26 y 35: la cabecera añadida para chat dejaba
+  el selector de idioma fuera de pantalla a 320×640 dp. Reproducido localmente
+  con el mismo error `language_de`, aislando únicamente `LanguageTest`.
+  La aserción adicional de visibilidad confirmó que el botón no se mostraba.
+  Se separan navegación y selector de idioma en dos filas, sin retirar funciones.
+- `AccessTest.signedInAccountCanSignOutWithoutLeavingAnAuthenticatedScreen`
+  fallaba en API 35 buscando `account` antes de completarse el acceso.
+  Una respuesta de identidad controlada con 250 ms reproduce el mismo fallo.
+  La prueba espera ahora al estado visible con límite de cinco segundos,
+  manteniendo las aserciones de acceso y cierre de sesión. No añade esperas
+  fijas ni reintentos de pruebas fallidas; el retraso solo pertenece al servicio
+  simulado para comprobar una respuesta asíncrona.
+- Verificación final local, emulador desechable API 35 configurado a
+  320×640 píxeles y densidad 160 (320×640 dp):
+  `:app:test :app:lint :app:connectedPruebasDebugAndroidTest` correcto,
+  22 pruebas instrumentadas sin fallos. La prueba de idioma falló antes del
+  arreglo y pasó después en esa misma configuración.
+- Pendiente volver a ejecutar Actions con el arreglo en las dos API;
+  no se afirma haber ejecutado API 26 localmente.
