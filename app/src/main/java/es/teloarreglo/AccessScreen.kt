@@ -1,9 +1,9 @@
 package es.teloarreglo
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -59,13 +59,20 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.teloarreglo.identity.AccessError
+import es.teloarreglo.identity.AccessNotice
 import es.teloarreglo.identity.AccessStage
 import es.teloarreglo.identity.Identity
+import io.github.jan.supabase.compose.auth.ComposeAuth
+import io.github.jan.supabase.compose.auth.composable.NativeSignInResult
+import io.github.jan.supabase.compose.auth.composable.rememberSignInWithGoogle
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 
 private val Green = Color(0xFF246451)
 private val Canvas = Color(0xFFF7F8F5)
+
+/** What the signed-out card shows. Not identity state: only which form the user chose. */
+private enum class Form { SIGN_IN, SIGN_UP, RESET }
 
 @Composable
 fun AccessScreen(
@@ -74,15 +81,41 @@ fun AccessScreen(
     onCatalogue: (() -> Unit)? = null,
     onProfile: ((String) -> Unit)? = null,
     operationScope: CoroutineScope = rememberCoroutineScope(),
+    googleAuth: ComposeAuth? = null,
 ) {
     val state by identity.state.collectAsStateWithLifecycle()
     val scope = operationScope
     val keyboard = LocalSoftwareKeyboardController.current
     val errorInView = remember { BringIntoViewRequester() }
+    var form by rememberSaveable { mutableStateOf(Form.SIGN_IN) }
     var email by rememberSaveable { mutableStateOf("") }
     // A password is never saved into the instance state or preferences.
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
+
+    // Leaving a form after a successful request returns to sign in with the email kept.
+    LaunchedEffect(state.notice) {
+        if (state.notice == AccessNotice.RESET_SENT) form = Form.SIGN_IN
+    }
+
+    val google = googleAuth?.rememberSignInWithGoogle(
+        onResult = { result ->
+            when (result) {
+                NativeSignInResult.Success -> scope.launch { identity.completeGoogleSignIn() }
+                NativeSignInResult.ClosedByUser -> Unit // Cancelling is a choice, not an error.
+                is NativeSignInResult.Error, is NativeSignInResult.NetworkError -> identity.reportGoogleFailure()
+            }
+        },
+        // Never fall back to a browser flow that was not designed or tested.
+        fallback = { identity.reportGoogleFailure() },
+    )
+
+    fun submit(action: suspend (String) -> Unit) {
+        keyboard?.hide()
+        val entered = password
+        password = ""
+        scope.launch { action(entered) }
+    }
 
     TeloTheme {
         Surface(Modifier.fillMaxSize(), color = Canvas) {
@@ -115,6 +148,30 @@ fun AccessScreen(
                         shape = RoundedCornerShape(24.dp),
                     ) {
                         Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            @Composable
+                            fun EmailField() = OutlinedTextField(
+                                value = email, onValueChange = { email = it },
+                                label = { Text(stringResource(R.string.email)) },
+                                enabled = !state.busy, singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                                modifier = Modifier.fillMaxWidth().testTag("email"),
+                            )
+
+                            @Composable
+                            fun PasswordField(label: Int, tag: String) {
+                                OutlinedTextField(
+                                    value = password, onValueChange = { password = it },
+                                    label = { Text(stringResource(label)) },
+                                    enabled = !state.busy, singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                                    modifier = Modifier.fillMaxWidth().testTag(tag),
+                                )
+                                TextButton(onClick = { showPassword = !showPassword }) {
+                                    Text(stringResource(if (showPassword) R.string.hide_password else R.string.show_password))
+                                }
+                            }
+
                             when (state.stage) {
                                 AccessStage.CHECKING -> {
                                     CircularProgressIndicator(Modifier.size(28.dp))
@@ -147,41 +204,102 @@ fun AccessScreen(
                                         modifier = Modifier.fillMaxWidth().testTag("retry"),
                                     ) { Text(stringResource(R.string.retry)) }
                                 }
-                                AccessStage.SIGNED_OUT -> {
-                                    Text(stringResource(R.string.sign_in_title), style = MaterialTheme.typography.headlineSmall)
-                                    Text(stringResource(R.string.sign_in_hint))
-                                    OutlinedTextField(
-                                        value = email, onValueChange = { email = it },
-                                        label = { Text(stringResource(R.string.email)) },
-                                        enabled = !state.busy, singleLine = true,
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                                        modifier = Modifier.fillMaxWidth().testTag("email"),
+                                AccessStage.AWAITING_VERIFICATION -> {
+                                    Text(stringResource(R.string.verify_title), style = MaterialTheme.typography.headlineSmall)
+                                    Text(
+                                        stringResource(R.string.verify_hint, state.pendingEmail.orEmpty()),
+                                        Modifier.testTag("verifyHint"),
                                     )
-                                    OutlinedTextField(
-                                        value = password, onValueChange = { password = it },
-                                        label = { Text(stringResource(R.string.password)) },
-                                        enabled = !state.busy, singleLine = true,
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                                        visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                                        modifier = Modifier.fillMaxWidth().testTag("password"),
-                                    )
-                                    TextButton(onClick = { showPassword = !showPassword }) {
-                                        Text(stringResource(if (showPassword) R.string.hide_password else R.string.show_password))
-                                    }
-                                    Button(
+                                    OutlinedButton(
                                         enabled = !state.busy,
-                                        onClick = {
+                                        onClick = { scope.launch { identity.resendVerification(state.pendingEmail.orEmpty()) } },
+                                        modifier = Modifier.fillMaxWidth().testTag("resend"),
+                                    ) { Text(stringResource(if (state.busy) R.string.working else R.string.resend)) }
+                                    Button(
+                                        onClick = { form = Form.SIGN_IN; identity.dismiss() },
+                                        modifier = Modifier.fillMaxWidth().testTag("verifiedSignIn"),
+                                    ) { Text(stringResource(R.string.verified_sign_in)) }
+                                }
+                                AccessStage.RECOVERING_PASSWORD -> {
+                                    Text(stringResource(R.string.new_password_title), style = MaterialTheme.typography.headlineSmall)
+                                    Text(stringResource(R.string.new_password_hint, state.account?.email.orEmpty()))
+                                    PasswordField(R.string.new_password, "newPassword")
+                                    Text(stringResource(R.string.password_rule), style = MaterialTheme.typography.bodySmall)
+                                    PrimaryButton(state.busy, R.string.save_password, "savePassword") {
+                                        submit(identity::setNewPassword)
+                                    }
+                                    TextButton(
+                                        enabled = !state.busy,
+                                        onClick = { scope.launch { identity.signOut() } },
+                                        modifier = Modifier.testTag("cancelRecovery"),
+                                    ) { Text(stringResource(R.string.cancel)) }
+                                }
+                                AccessStage.SIGNED_OUT -> when (form) {
+                                    Form.SIGN_IN -> {
+                                        Text(stringResource(R.string.sign_in_title), style = MaterialTheme.typography.headlineSmall)
+                                        Text(stringResource(R.string.sign_in_hint))
+                                        EmailField()
+                                        PasswordField(R.string.password, "password")
+                                        PrimaryButton(state.busy, R.string.sign_in, "signIn") {
+                                            submit { identity.signIn(email.trim(), it) }
+                                        }
+                                        if (state.error == AccessError.UNVERIFIED && state.pendingEmail != null) {
+                                            OutlinedButton(
+                                                enabled = !state.busy,
+                                                onClick = { scope.launch { identity.resendVerification(state.pendingEmail.orEmpty()) } },
+                                                modifier = Modifier.fillMaxWidth().testTag("resend"),
+                                            ) { Text(stringResource(R.string.resend)) }
+                                        }
+                                        if (google != null) {
+                                            Text(stringResource(R.string.or), Modifier.align(Alignment.CenterHorizontally))
+                                            OutlinedButton(
+                                                enabled = !state.busy,
+                                                onClick = { google.startFlow() },
+                                                modifier = Modifier.fillMaxWidth().testTag("google"),
+                                            ) { Text(stringResource(R.string.google)) }
+                                        }
+                                        FormLinks(
+                                            R.string.forgot_password to "toReset",
+                                            R.string.no_account to "toSignUp",
+                                            enabled = !state.busy,
+                                        ) { tag ->
+                                            identity.dismiss()
+                                            form = if (tag == "toReset") Form.RESET else Form.SIGN_UP
+                                        }
+                                    }
+                                    Form.SIGN_UP -> {
+                                        Text(stringResource(R.string.sign_up_title), style = MaterialTheme.typography.headlineSmall)
+                                        Text(stringResource(R.string.sign_up_hint))
+                                        EmailField()
+                                        PasswordField(R.string.password, "password")
+                                        Text(stringResource(R.string.password_rule), style = MaterialTheme.typography.bodySmall)
+                                        PrimaryButton(state.busy, R.string.create_account, "signUp") {
+                                            submit { identity.signUp(email.trim(), it) }
+                                        }
+                                        FormLinks(R.string.have_account to "toSignIn", enabled = !state.busy) {
+                                            identity.dismiss(); form = Form.SIGN_IN
+                                        }
+                                    }
+                                    Form.RESET -> {
+                                        Text(stringResource(R.string.reset_title), style = MaterialTheme.typography.headlineSmall)
+                                        Text(stringResource(R.string.reset_hint))
+                                        EmailField()
+                                        PrimaryButton(state.busy, R.string.send_link, "sendReset") {
                                             keyboard?.hide()
-                                            val entered = password
-                                            password = ""
-                                            scope.launch { identity.signIn(email.trim(), entered) }
-                                        },
-                                        modifier = Modifier.fillMaxWidth().testTag("signIn"),
-                                    ) {
-                                        if (state.busy) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White)
-                                        else Text(stringResource(R.string.sign_in))
+                                            scope.launch { identity.requestPasswordReset(email.trim()) }
+                                        }
+                                        FormLinks(R.string.back_to_sign_in to "toSignIn", enabled = !state.busy) {
+                                            identity.dismiss(); form = Form.SIGN_IN
+                                        }
                                     }
                                 }
+                            }
+                            state.notice?.let { notice ->
+                                Text(
+                                    stringResource(notice.message()),
+                                    Modifier.testTag("notice").semantics { liveRegion = LiveRegionMode.Polite },
+                                    color = Green,
+                                )
                             }
                             state.error?.let { error ->
                                 LaunchedEffect(error) { errorInView.bringIntoView() }
@@ -202,6 +320,25 @@ fun AccessScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun PrimaryButton(busy: Boolean, label: Int, tag: String, onClick: () -> Unit) {
+    Button(enabled = !busy, onClick = onClick, modifier = Modifier.fillMaxWidth().testTag(tag)) {
+        if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White)
+        else Text(stringResource(label))
+    }
+}
+
+@Composable
+private fun ColumnScope.FormLinks(vararg links: Pair<Int, String>, enabled: Boolean, onClick: (String) -> Unit) {
+    links.forEach { (label, tag) ->
+        TextButton(
+            enabled = enabled,
+            onClick = { onClick(tag) },
+            modifier = Modifier.align(Alignment.CenterHorizontally).testTag(tag),
+        ) { Text(stringResource(label)) }
     }
 }
 
@@ -233,4 +370,14 @@ private fun AccessError.message(): Int = when (this) {
     AccessError.SERVICE -> R.string.error_service
     AccessError.CONFIGURATION -> R.string.error_configuration
     AccessError.INPUT -> R.string.error_input
+    AccessError.LINK_INVALID -> R.string.error_link_invalid
+    AccessError.RATE_LIMITED -> R.string.error_rate_limited
+    AccessError.WEAK_PASSWORD -> R.string.error_weak_password
+    AccessError.GOOGLE -> R.string.error_google
+}
+
+private fun AccessNotice.message(): Int = when (this) {
+    AccessNotice.VERIFICATION_SENT -> R.string.notice_verification_sent
+    AccessNotice.RESET_SENT -> R.string.notice_reset_sent
+    AccessNotice.PASSWORD_CHANGED -> R.string.notice_password_changed
 }

@@ -16,6 +16,8 @@ val local = Properties().apply {
 val publicNames = setOf(
     "TEST_SUPABASE_URL", "TEST_SUPABASE_PUBLISHABLE_KEY",
     "PRESENTATION_SUPABASE_URL", "PRESENTATION_SUPABASE_PUBLISHABLE_KEY",
+    // Public OAuth web client ID for native Google sign-in (its secret lives only in Supabase).
+    "GOOGLE_WEB_CLIENT_ID",
 )
 fun dotenvValue(raw: String, lineNumber: Int): String {
     val result = StringBuilder()
@@ -67,6 +69,9 @@ fun publicConfig(name: String): String {
         "$name must use HTTPS"
     }
     require(value.none { it.isISOControl() }) { "$name must not contain control characters" }
+    require(name != "GOOGLE_WEB_CLIENT_ID" || value.isEmpty() || value.endsWith(".apps.googleusercontent.com")) {
+        "$name must be the public OAuth web client ID, never its secret"
+    }
     return value.replace("\\", "\\\\").replace("\"", "\\\"")
 }
 
@@ -80,6 +85,8 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Public OAuth web client ID used by native Google sign-in; empty hides the button.
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${publicConfig("GOOGLE_WEB_CLIENT_ID")}\"")
     }
     flavorDimensions += "environment"
     productFlavors {
@@ -120,6 +127,7 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:storage-kt")
+    implementation("io.github.jan-tennert.supabase:compose-auth")
     implementation("io.coil-kt.coil3:coil-compose:3.1.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
     implementation("androidx.exifinterface:exifinterface:1.3.7")
