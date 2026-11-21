@@ -106,8 +106,9 @@ acepta Irlanda (sigue en la UE) y actualizar la especificación.
       ni facturación. David accede con la cuenta del equipo.
 - [x] Pantalla de consentimiento (21/11): app «Teloarreglo», **Externo**, estado **Prueba**,
       asistencia y contacto `hackathonuniovi@gmail.com`.
-- [ ] Añadir como usuarios de prueba las cuentas Google que vayáis a usar (en modo
-      Prueba solo ellas pueden entrar; límite 100).
+- [x] Usuarios de prueba (21/11): `marcosarov7k@gmail.com` y `hackathonuniovi@gmail.com`.
+      En modo Prueba solo esas cuentas pueden entrar con Google (límite 100). Para que
+      David pruebe con su cuenta personal, hay que añadirla aquí.
 - [x] Cliente OAuth **Aplicación web** `Supabase Auth (web)` (21/11):
       ID `852089134796-mihgv1588q6lq17lbovpupgq6i7ljhsd.apps.googleusercontent.com`,
       redirección `https://ipqydkulietvxdbdlkcv.supabase.co/auth/v1/callback`.
