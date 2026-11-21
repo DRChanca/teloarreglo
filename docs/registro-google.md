@@ -102,13 +102,20 @@ acepta Irlanda (sigue en la UE) y actualizar la especificación.
       de confirmación; solo se pueden editar tras configurar el SMTP propio.
 
 ### D. Google Cloud (Marcos, compartido con David)
-- [ ] Crear el proyecto (o usar el de Maps si ya existe) y añadir a David.
-- [ ] Pantalla de consentimiento: tipo **Externo**, modo **Testing**, y añadir
-      como usuarios de prueba las cuentas Google que vayáis a usar (en modo
-      Testing solo ellas pueden entrar).
-- [ ] Credenciales → ID de cliente OAuth tipo **Aplicación web**. Su ID y su
-      secreto van a Supabase → Providers → Google (y el ID también a la app como
-      `serverClientId`, no es secreto).
+- [x] Proyecto Google Cloud `teloarreglo` (21/11), cuenta del equipo, sin organización
+      ni facturación. David accede con la cuenta del equipo.
+- [x] Pantalla de consentimiento (21/11): app «Teloarreglo», **Externo**, estado **Prueba**,
+      asistencia y contacto `hackathonuniovi@gmail.com`.
+- [ ] Añadir como usuarios de prueba las cuentas Google que vayáis a usar (en modo
+      Prueba solo ellas pueden entrar; límite 100).
+- [x] Cliente OAuth **Aplicación web** `Supabase Auth (web)` (21/11):
+      ID `852089134796-mihgv1588q6lq17lbovpupgq6i7ljhsd.apps.googleusercontent.com`,
+      redirección `https://ipqydkulietvxdbdlkcv.supabase.co/auth/v1/callback`.
+      Secreto vigente `****Xt89` (solo en Supabase); el primero, `****zlNN`, se perdió
+      sin usarse y se deja habilitado por decisión de Marcos (21/11). El ID está en el `.env` local como `GOOGLE_WEB_CLIENT_ID`.
+- [x] Supabase → Providers → Google (21/11): **activado** con ese ID y secreto; *Skip
+      nonce checks* y *Allow users without an email* desactivados.
+      `/auth/v1/settings` anuncia `email` y `google`.
 - [ ] **El lunes, al poder compilar:** clientes OAuth tipo **Android** para
       `es.teloarreglo.pruebas` y `es.teloarreglo.presentacion` con la SHA-1 de
       cada máquina (`keytool -list -v -keystore ~/.android/debug.keystore`,
