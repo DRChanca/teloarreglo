@@ -35,8 +35,9 @@ en el mapa» y conserva las coordenadas escritas como alternativa.
 2. El punto desde el que busca el cliente solo se dibuja en su dispositivo y solo se envía a la
    búsqueda, como antes.
 3. Navegación externa: `https://www.google.com/maps/dir/?api=1&destination=lat,lng`, sin `origin`.
-   Destinos: punto comercial aprobado (ficha del perfil) y punto de una cita, que el cliente comparte
-   con ese profesional al solicitarla. Buscar o abrir un chat no revela la dirección del cliente.
+   Destinos: punto comercial aprobado (ficha del perfil) y punto de una cita: el cliente siempre; el
+   profesional solo cuando la cita está confirmada (#38, antes solo ve un círculo aproximado de 400 m sin
+   «Cómo llegar»). Buscar o abrir un chat no revela la dirección del cliente.
 4. El pin no sustituye la dirección: la cita exige calle y número escritos aparte.
 5. No se usan geocodificación ni rutas internas. Mapa sin map ID. Places (New) solo se usa para el
    autocompletado de la dirección de casa (#37, [casa-contrato.md](casa-contrato.md)).

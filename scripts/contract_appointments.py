@@ -13,6 +13,10 @@ from contract_identity import Api
 from contract_chat import sql
 
 CONCEJO = "33995"  # Synthetic code, never a real concejo.
+# Every readable column of public.appointments; address, latitude and longitude are not (#38).
+APPOINTMENT_COLUMNS = ("id,conversation_id,profile_id,client_id,professional_id,request_id,problem,requested_start,"
+                       "requested_end,version,stage,created_at,area_lat,area_lng,area_radius_m,area_ine_code,"
+                       "location_shared_at")
 
 
 class AppointmentContract(unittest.TestCase):
@@ -55,15 +59,29 @@ class AppointmentContract(unittest.TestCase):
             p_visit_fee_cents=None, p_materials_included=False), tokens[1])
         self.assertEqual((code, second["version"]), (200, 2), second)
 
-        # Same read the Android client performs: appointment plus embedded proposal history.
-        path = (f"/rest/v1/appointments?select=*,appointment_proposals(*)&conversation_id=eq.{cid}"
-                "&order=created_at.asc")
+        # Same reads the Android client performs: appointment plus embedded proposal history (the exact
+        # place is not a readable column, #38), then the place through appointment_places.
+        path = (f"/rest/v1/appointments?select={APPOINTMENT_COLUMNS},appointment_proposals(*)"
+                f"&conversation_id=eq.{cid}&order=created_at.asc")
         for token in tokens[:2]:
             code, rows = api.request(path, token=token, method="GET")
             self.assertEqual(code, 200)
-            self.assertEqual(rows[0]["address"], "Calle Ficticia 1, 3ºB")
+            self.assertEqual(rows[0]["area_radius_m"], 400)
             self.assertEqual(sorted((p["version"], p["status"]) for p in rows[0]["appointment_proposals"]),
                              [(1, "rejected"), (2, "pending")])
+            for hidden in ("*", "address", "latitude", "longitude"):
+                self.assertIn(api.request(f"/rest/v1/appointments?select={hidden}", token=token, method="GET")[0],
+                              (401, 403))
+        places = {"p_conversation_id": cid}
+        code, mine = api.request("/rest/v1/rpc/appointment_places", places, tokens[0])
+        self.assertEqual((code, mine[0]["exact"], mine[0]["address"], mine[0]["latitude"]),
+                         (200, True, "Calle Ficticia 1, 3ºB", 43.05))
+        code, theirs = api.request("/rest/v1/rpc/appointment_places", places, tokens[1])
+        self.assertEqual(code, 200)
+        self.assertEqual((theirs[0]["exact"], theirs[0]["address"], theirs[0]["latitude"], theirs[0]["longitude"],
+                          theirs[0]["area_radius_m"]), (False, None, None, None, 400))
+        self.assertNotIn("Calle Ficticia", json.dumps(theirs))
+        self.assertEqual(api.request("/rest/v1/rpc/appointment_places", places, tokens[2])[1], [])
         for token in (None, tokens[2]):
             code, rows = api.request(path, token=token, method="GET")
             self.assertTrue(code in (401, 403) or (code == 200 and rows == []))

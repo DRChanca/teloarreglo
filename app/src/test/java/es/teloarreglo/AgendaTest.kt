@@ -79,8 +79,10 @@ class AgendaTest {
     }
 
     @Test fun bothAccountsSeeAConfirmedAppointmentWithItsAcceptedProposal() = runTest {
-        val appointment = withClient({
-            json("[" + appointmentJson.replace("STAGE", "confirmed").dropLast(1) +
+        val appointment = withClient({ request ->
+            // The place is read apart (#38); this test is about the stage and the accepted version.
+            if (request.url.encodedPath == "/rest/v1/rpc/appointment_places") json("[]")
+            else json("[" + appointmentJson.replace("STAGE", "confirmed").dropLast(1) +
                 ""","appointment_proposals":[${proposalJson("accepted")}]}]""")
         }) { SupabaseAppointments(it).list("conv") }.single()
         assertEquals(AppointmentStage.CONFIRMED, appointment.stage)

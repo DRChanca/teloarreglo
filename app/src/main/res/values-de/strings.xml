@@ -75,7 +75,7 @@
     <string name="appointment_from">Von (HH:MM)</string>
     <string name="appointment_to">Bis (HH:MM)</string>
     <string name="appointment_address">Genaue Adresse des Auftrags</string>
-    <string name="appointment_address_privacy">Nur diese Fachkraft sieht sie nach dem Senden der Anfrage. Sie erscheint weder in Suchen noch im Chat.</string>
+    <string name="appointment_address_privacy">Bis du den Termin bestätigst, sieht diese Fachkraft nur ein ungefähres Gebiet von 400 m; nach der Bestätigung die genaue Adresse. Sie erscheint weder in Suchen noch im Chat.</string>
     <string name="appointment_latitude">Breitengrad</string>
     <string name="appointment_longitude">Längengrad</string>
     <string name="appointment_use_location">Aktuellen Standort verwenden</string>
@@ -194,7 +194,7 @@
     <string name="map_no_map_anchor">Ohne Karte wird die Entfernung von einem Punkt innerhalb der gewählten Gemeinde gemessen.</string>
     <string name="map_search_here">In dieser Gemeinde suchen</string>
     <string name="map_directions">Route mit Google Maps</string>
-    <string name="map_open_appointment">Punkt in Google Maps öffnen</string>
+    <string name="map_open_appointment">Route planen</string>
     <string name="map_no_app">Keine App kann Google Maps öffnen. Installiere Google Maps oder einen Browser.</string>
     <string name="map_pick_on_map">Punkt auf der Karte wählen</string>
     <string name="map_pick_confirm">Diesen Punkt verwenden</string>
@@ -295,6 +295,11 @@
     <string name="home_search_from_home">In der Nähe von zu Hause suchen</string>
     <string name="home_searching_from">Von zu Hause: %1$s</string>
     <string name="home_appointment_prefilled">Wir haben deine Wohnadresse eingetragen. Ändere sie, wenn der Auftrag woanders ist.</string>
+    <string name="area_approximate">Ungefähres Gebiet von %1$d m in %2$s</string>
+    <string name="area_approximate_no_concejo">Ungefähres Gebiet von %1$d m</string>
+    <string name="area_exact_after_confirmation">Die genaue Adresse wird angezeigt, sobald der Termin bestätigt ist.</string>
+    <string name="area_client_notice">Bis der Termin bestätigt ist, sieht die Fachkraft nur ein ungefähres Gebiet von %1$d m.</string>
+    <string name="area_loading">Standort wird geladen…</string>
     <string name="video_attach">Video senden</string>
     <string name="video_limits">Video bis 1 Minute. Die App sendet eine MP4-Kopie mit höchstens 720p und 20 MB; dein Original bleibt unverändert.</string>
     <string name="video_preparing">Video wird komprimiert…</string>

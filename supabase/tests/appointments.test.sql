@@ -51,10 +51,10 @@ select throws_ok($$select public.propose_appointment((select id from public.appo
  1, '40000000-0000-0000-0000-000000200100', 'Self proposal', '2030-01-15 10:00Z', 60, 0, null, false, false)$$,
  '42501', 'permission_denied', 'the client cannot propose conditions');
 
--- Professional reads the shared address and proposes.
+-- Professional sees only the approximate area until confirmation (#38) and proposes.
 select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000200102","role":"authenticated"}',true);
-select is((select address from public.appointments where request_id = '30000000-0000-0000-0000-000000200101'),
- 'Calle Uría 1, 3ºB', 'the professional reads the exact address once requested');
+select is((select area_radius_m from public.appointments where request_id = '30000000-0000-0000-0000-000000200101'),
+ 400, 'the professional reads the approximate area of a pending request, not the exact address');
 select throws_ok($$select public.request_appointment((select id from public.conversations), '30000000-0000-0000-0000-000000200106',
  'Pro request', '2030-01-15 10:00Z', '2030-01-15 12:00Z', 'Calle Uría 1, 3ºB', 43.05, -5.95)$$,
  '42501', 'permission_denied', 'only the conversation client requests');

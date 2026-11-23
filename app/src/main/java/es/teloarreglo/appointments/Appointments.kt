@@ -8,6 +8,8 @@ import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
+import es.teloarreglo.search.GeoPoint
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -52,7 +54,37 @@ data class AppointmentProposal(
     val isFree get() = amountCents == 0 && (visitFeeCents ?: 0) == 0
 }
 
-/** Readable only by its client and professional; the exact address is shared on request. */
+/**
+ * Where the job is, as the server lets this account see it (`appointment_places`, #38). The client always
+ * gets the exact place; the professional only once the appointment is confirmed, and until then a circle
+ * whose centre the server displaced at random (the home is inside it, not necessarily at its centre).
+ */
+@Serializable
+data class AppointmentPlace(
+    @SerialName("appointment_id") val appointmentId: String,
+    val exact: Boolean,
+    val address: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    @SerialName("area_lat") val areaLat: Double,
+    @SerialName("area_lng") val areaLng: Double,
+    @SerialName("area_radius_m") val areaRadiusMeters: Int,
+    @SerialName("concejo_name") val concejoName: String? = null,
+) {
+    val location: AppointmentLocation get() =
+        if (exact && address != null && latitude != null && longitude != null)
+            AppointmentLocation.Exact(address, GeoPoint(latitude, longitude))
+        else AppointmentLocation.Approximate(GeoPoint(areaLat, areaLng), areaRadiusMeters, concejoName)
+}
+
+sealed interface AppointmentLocation {
+    /** Address and pin: shown with "How to get there". */
+    data class Exact(val address: String, val point: GeoPoint) : AppointmentLocation
+    /** Only a circle of [radiusMeters] around [center] and the concejo; no directions. */
+    data class Approximate(val center: GeoPoint, val radiusMeters: Int, val concejoName: String?) : AppointmentLocation
+}
+
+/** Readable only by its client and professional; the exact place comes apart, in [place]. */
 @Serializable
 data class Appointment(
     val id: String,
@@ -63,14 +95,15 @@ data class Appointment(
     val problem: String,
     @SerialName("requested_start") @Serializable(ServerInstant::class) val requestedStart: Instant,
     @SerialName("requested_end") @Serializable(ServerInstant::class) val requestedEnd: Instant,
-    val address: String,
-    val latitude: Double,
-    val longitude: Double,
     val version: Int,
     val stage: AppointmentStage,
     @SerialName("created_at") @Serializable(ServerInstant::class) val createdAt: Instant,
     @SerialName("appointment_proposals") private val rawProposals: List<AppointmentProposal> = emptyList(),
+    /** Filled by [Appointments.list] from `appointment_places`; null until the server has answered. */
+    @Transient val place: AppointmentPlace? = null,
 ) {
+    val location: AppointmentLocation? get() = place?.location
+
     /** Whole history, oldest version first. Rejected and superseded versions are kept. */
     val proposals get() = rawProposals.sortedBy { it.version }
     /** The version the client may still decide on, if any. */
@@ -122,12 +155,19 @@ interface Appointments {
     suspend fun accept(proposalId: String): AppointmentProposal
 }
 
+/** Every column the server lets app accounts read; `*`, address, latitude or longitude would be refused (#38). */
+private const val READABLE_COLUMNS = "id,conversation_id,profile_id,client_id,professional_id,request_id,problem," +
+    "requested_start,requested_end,version,stage,created_at"
+
 class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
     override suspend fun list(conversationId: String): List<Appointment> = mapped {
-        client.postgrest["appointments"].select(Columns.raw("*,appointment_proposals(*)")) {
+        val rows = client.postgrest["appointments"].select(Columns.raw("$READABLE_COLUMNS,appointment_proposals(*)")) {
             filter { eq("conversation_id", conversationId) }
             order("created_at", Order.DESCENDING)
-        }.decodeList()
+        }.decodeList<Appointment>()
+        val places = client.postgrest.rpc("appointment_places", buildJsonObject { put("p_conversation_id", conversationId) })
+            .decodeList<AppointmentPlace>().associateBy { it.appointmentId }
+        rows.map { it.copy(place = places[it.id]) }
     }
 
     override suspend fun request(conversationId: String, requestId: String, request: AppointmentRequest) = mapped {

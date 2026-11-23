@@ -114,7 +114,7 @@ fun AppointmentsPanel(
                                 Text(stringResource(R.string.appointment_new_request))
                             }
                             current.forEach { appointment ->
-                                AppointmentDetails(appointment, accountId, appointments, scope,
+                                AppointmentDetails(appointment, accountId, appointments, scope, pins.mapsReady,
                                     onPropose = { sheet = "propose:${appointment.id}" }, onChanged = { refresh++ })
                             }
                         }
@@ -179,7 +179,7 @@ private fun failureText(failure: AppointmentFailure?): String = stringResource(w
 @Composable
 private fun AppointmentDetails(
     appointment: Appointment, accountId: String, appointments: Appointments, scope: CoroutineScope,
-    onPropose: () -> Unit, onChanged: () -> Unit,
+    mapsReady: Boolean, onPropose: () -> Unit, onChanged: () -> Unit,
 ) {
     val format = dateTimeFormat()
     val professional = appointment.professionalId == accountId
@@ -193,17 +193,7 @@ private fun AppointmentDetails(
             Text(appointment.problem, style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.appointment_requested_window,
                 format.format(appointment.requestedStart), format.format(appointment.requestedEnd)))
-            Text(stringResource(R.string.appointment_address_label, appointment.address), style = MaterialTheme.typography.bodySmall)
-            Text(stringResource(R.string.appointment_pin, "%.5f".format(Locale.ROOT, appointment.latitude),
-                "%.5f".format(Locale.ROOT, appointment.longitude)), style = MaterialTheme.typography.bodySmall)
-            // Shared by the client with this appointment only: both participants may navigate to it.
-            val context = androidx.compose.ui.platform.LocalContext.current
-            var noMapsApp by remember { mutableStateOf(false) }
-            TextButton(onClick = {
-                noMapsApp = !openExternalMaps(context, es.teloarreglo.search.GeoPoint(appointment.latitude, appointment.longitude))
-            }, modifier = Modifier.testTag("map_open_appointment")) { Text(stringResource(R.string.map_open_appointment)) }
-            if (noMapsApp) Text(stringResource(R.string.map_no_app), color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("map_no_app"))
+            AppointmentLocationBlock(appointment, professional, mapsReady)
             Text(noticeText(appointment, accountId), style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.testTag("appointment_notice_${appointment.id}"))
             ReservationLine(appointment)
@@ -522,6 +512,39 @@ private fun ProposalForm(
                 if (failure == AppointmentFailure.STALE) latestKnown.firstOrNull { it.id == appointment.id }?.let { expected = it.version }
                 shownError = true
             } finally { busy = false }
+        }
+    }
+}
+
+/**
+ * Where the job is, as the server allows (#38). Exact: address, pin and directions; for the client, while
+ * pending, a reminder that the professional only sees the area. Approximate: the 400 m circle on the map
+ * (or its text when there is no map) and no directions, since its centre is not the home.
+ */
+@Composable
+private fun AppointmentLocationBlock(appointment: Appointment, professional: Boolean, mapsReady: Boolean) {
+    when (val location = appointment.location) {
+        null -> Text(stringResource(R.string.area_loading), style = MaterialTheme.typography.bodySmall)
+        is AppointmentLocation.Exact -> {
+            Text(stringResource(R.string.appointment_address_label, location.address), style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.appointment_pin, "%.5f".format(Locale.ROOT, location.point.lat),
+                "%.5f".format(Locale.ROOT, location.point.lng)), style = MaterialTheme.typography.bodySmall)
+            if (!professional && appointment.stage == AppointmentStage.PENDING) Text(
+                stringResource(R.string.area_client_notice, appointment.place?.areaRadiusMeters ?: 400),
+                style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("area_client_notice"))
+            val context = androidx.compose.ui.platform.LocalContext.current
+            var noMapsApp by remember { mutableStateOf(false) }
+            TextButton(onClick = { noMapsApp = !openExternalMaps(context, location.point) },
+                modifier = Modifier.testTag("map_open_appointment")) { Text(stringResource(R.string.map_open_appointment)) }
+            if (noMapsApp) Text(stringResource(R.string.map_no_app), color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("map_no_app"))
+        }
+        is AppointmentLocation.Approximate -> {
+            Text(location.concejoName?.let { stringResource(R.string.area_approximate, location.radiusMeters, it) }
+                ?: stringResource(R.string.area_approximate_no_concejo, location.radiusMeters),
+                style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("area_text"))
+            if (mapsReady) ApproximateAreaMap(location.center, location.radiusMeters)
+            Text(stringResource(R.string.area_exact_after_confirmation), style = MaterialTheme.typography.bodySmall)
         }
     }
 }
