@@ -282,7 +282,7 @@ private fun RequestForm(
     known: List<Appointment>, onDone: () -> Unit,
 ) {
     var problem by rememberSaveable(conversation.id) { mutableStateOf("") }
-    var dateText by rememberSaveable(conversation.id) { mutableStateOf<String?>(null) }
+    var dateText by rememberSaveable(conversation.id) { mutableStateOf<String?>(LocalDate.now().plusDays(1).toString()) }
     var from by rememberSaveable(conversation.id) { mutableStateOf("09:00") }
     var to by rememberSaveable(conversation.id) { mutableStateOf("11:00") }
     var address by rememberSaveable(conversation.id) { mutableStateOf("") }
