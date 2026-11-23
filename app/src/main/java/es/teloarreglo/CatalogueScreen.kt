@@ -50,6 +50,8 @@ fun CatalogueScreen(
     onContact: ((String) -> Unit)? = null,
     onChats: (() -> Unit)? = null,
     onNearby: (() -> Unit)? = null,
+    /** Published reviews shown on the profile (#28); null hides them. */
+    reviews: es.teloarreglo.appointments.Reviews? = null,
 ) {
     var trade by rememberSaveable { mutableStateOf<String?>(null) }
     var selected by rememberSaveable(initialProfileId) { mutableStateOf(initialProfileId) }
@@ -174,7 +176,8 @@ fun CatalogueScreen(
                     }
                     selected != null -> ProfileDetail(profiles.single(), covers,
                         onEdit = if (selected == ownedProfileId && covers != null) ({ editing = true }) else null,
-                        onContact = if (selected != ownedProfileId) onContact?.let { contact -> { contact(profiles.single().id) } } else null)
+                        onContact = if (selected != ownedProfileId) onContact?.let { contact -> { contact(profiles.single().id) } } else null,
+                        reviews = reviews)
                     else -> {
                         Text(pluralStringResource(R.plurals.catalogue_results, visible.size, visible.size),
                             Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
@@ -217,7 +220,8 @@ fun CatalogueScreen(
 }
 
 @Composable
-private fun ProfileDetail(profile: PublicProfile, covers: ProfessionalCovers?, onEdit: (() -> Unit)?, onContact: (() -> Unit)?) {
+private fun ProfileDetail(profile: PublicProfile, covers: ProfessionalCovers?, onEdit: (() -> Unit)?, onContact: (() -> Unit)?,
+                          reviews: es.teloarreglo.appointments.Reviews? = null) {
     val locale = LocalConfiguration.current.locales[0]
     LazyColumn(
         modifier = Modifier.testTag("profile_detail"),
@@ -283,6 +287,7 @@ private fun ProfileDetail(profile: PublicProfile, covers: ProfessionalCovers?, o
                 }
             }
         }
+        if (reviews != null) item { ProfileReviewList(profile.id, reviews) }
     }
 }
 

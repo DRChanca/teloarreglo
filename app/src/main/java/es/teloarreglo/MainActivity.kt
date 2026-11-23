@@ -123,7 +123,8 @@ class MainActivity : AppCompatActivity() {
                                 PinSource({ ensureLocationPermission() }, { currentLocation(this@MainActivity) },
                                     mapsReady = deviceMapAvailability(this@MainActivity) == es.teloarreglo.search.MapAvailability.READY,
                                     home = home),
-                                incidentTools = app.incidents?.let { IncidentTools(it, app.chat!!::messages, app.chatAttachments) })
+                                incidentTools = app.incidents?.let { IncidentTools(it, app.chat!!::messages, app.chatAttachments) },
+                                reviews = app.reviews)
                         } },
                         attachments = app.chatAttachments)
                 }
@@ -155,7 +156,8 @@ class MainActivity : AppCompatActivity() {
                     initialProfileId = ownProfile, covers = app.covers, ownedProfileId = owner,
                     onContact = { ownProfile = it; contactProfile = it; conversationJson = null; chatVisible = true; account = false },
                     onChats = { ownProfile = null; contactProfile = null; conversationJson = null; chatVisible = true; account = false },
-                    onNearby = if (app.search != null) ({ ownProfile = null; nearby = true }) else null)
+                    onNearby = if (app.search != null) ({ ownProfile = null; nearby = true }) else null,
+                    reviews = app.reviews)
             }
         }
     }

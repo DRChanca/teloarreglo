@@ -1,0 +1,21 @@
+<resources>
+    <string name="review_section">Reseñas</string>
+    <string name="review_none">Todavía no hay reseñas de clientes.</string>
+    <string name="review_load_error">No se pudieron cargar las reseñas.</string>
+    <string name="review_stars">%1$d de 5 estrellas</string>
+    <string name="review_publish">Escribir una reseña</string>
+    <string name="review_title">Reseña del servicio</string>
+    <string name="review_comment">Comentario</string>
+    <string name="review_privacy">La reseña será pública en el perfil del profesional. No incluyas caras, direcciones, teléfonos ni otros datos privados.</string>
+    <string name="review_privacy_accept">Entiendo que la reseña será pública</string>
+    <string name="review_send">Publicar reseña</string>
+    <string name="review_retry">Reintentar la publicación</string>
+    <string name="review_published_mine">Tu reseña publicada</string>
+    <string name="review_published_client">Reseña del cliente</string>
+    <string name="review_awaiting_confirmation">Podrás escribir una reseña cuando confirmes que el trabajo se realizó.</string>
+    <string name="review_disputed">La reseña espera a que administración revise si el servicio se realizó.</string>
+    <string name="review_not_performed">Administración registró que el servicio no se realizó: no se puede reseñar.</string>
+    <string name="review_error_invalid">Elige de 1 a 5 estrellas, escribe un comentario y acepta el aviso.</string>
+    <string name="review_error_exists">Esta cita ya tiene una reseña; solo se publica una.</string>
+    <string name="review_error_network">No se sabe si se publicó. Reintenta: no se publicará dos veces.</string>
+</resources>
