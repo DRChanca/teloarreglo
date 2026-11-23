@@ -211,10 +211,28 @@ internal fun failureText(failure: AppointmentFailure?): String = stringResource(
     AppointmentFailure.STALE -> R.string.appointment_error_stale
     AppointmentFailure.RETRY_CONFLICT -> R.string.appointment_error_conflict
     AppointmentFailure.SLOT_UNAVAILABLE -> R.string.appointment_error_slot
+    AppointmentFailure.OUTSIDE_HOURS -> R.string.appointment_error_hours
     AppointmentFailure.ALREADY_STARTED -> R.string.start_cancel_error_started
     AppointmentFailure.INCIDENT_BLOCKING -> R.string.completion_error_incident
     null -> R.string.appointment_error_network
 })
+
+/** The answer changed what is current (a newer version or a taken/closed hour): reload the appointment. */
+internal fun AppointmentFailure?.refreshesAgenda() = this == AppointmentFailure.STALE ||
+    this == AppointmentFailure.SLOT_UNAVAILABLE || this == AppointmentFailure.OUTSIDE_HOURS
+
+/**
+ * Refusals while sending a time (#20 proposal, #23 change): the author learns at once, before the client
+ * pays. The professional reads about its own agenda; a client changing the time, about the professional's.
+ */
+@Composable
+internal fun sendFailureText(failure: AppointmentFailure?, professional: Boolean): String = when (failure) {
+    AppointmentFailure.SLOT_UNAVAILABLE -> stringResource(
+        if (professional) R.string.agenda_send_error_slot else R.string.agenda_send_error_slot_client)
+    AppointmentFailure.OUTSIDE_HOURS -> stringResource(
+        if (professional) R.string.agenda_send_error_hours else R.string.agenda_send_error_hours_client)
+    else -> failureText(failure)
+}
 
 @Composable
 private fun AppointmentDetails(
@@ -300,7 +318,7 @@ private fun AppointmentDetails(
                         catch (e: Exception) {
                             if (e is CancellationException) throw e
                             failure = (e as? AppointmentException)?.failure; error = e.message.orEmpty()
-                            if (failure == AppointmentFailure.STALE || failure == AppointmentFailure.SLOT_UNAVAILABLE) onChanged()
+                            if (failure.refreshesAgenda()) onChanged()
                         } finally { busy = false }
                     }
                 }, modifier = Modifier.testTag("appointment_accept_confirm")) { Text(stringResource(R.string.appointment_accept)) }
@@ -336,7 +354,7 @@ private fun AppointmentDetails(
                             failure = (e as? AppointmentException)?.failure; error = e.message.orEmpty()
                             // A definitive answer frees the key; uncertainty keeps it so a retry cannot pay twice.
                             if (failure != null) { payKey = null; payMode = null }
-                            if (failure == AppointmentFailure.STALE || failure == AppointmentFailure.SLOT_UNAVAILABLE) onChanged()
+                            if (failure.refreshesAgenda()) onChanged()
                         } finally { busy = false }
                     }
                 }, modifier = Modifier.testTag("payment_confirm")) {
@@ -436,12 +454,12 @@ internal fun DateField(date: LocalDate?, enabled: Boolean, onDate: (LocalDate) -
 
 @Composable
 private fun SubmitArea(busy: Boolean, keyPending: Boolean, failure: AppointmentFailure?, shownError: Boolean,
-                       label: Int, tag: String, onSubmit: () -> Unit) {
+                       label: Int, tag: String, sendsTime: Boolean = false, onSubmit: () -> Unit) {
     if (busy) {
         LinearProgressIndicator(Modifier.fillMaxWidth())
         Text(stringResource(R.string.appointment_sending))
     }
-    if (shownError) Text(failureText(failure), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("appointment_error"))
+    if (shownError) Text(if (sendsTime) sendFailureText(failure, professional = true) else failureText(failure), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("appointment_error"))
     Button(onClick = onSubmit, enabled = !busy, modifier = Modifier.testTag(tag)) {
         Text(stringResource(if (keyPending) R.string.appointment_retry_send else label))
     }
@@ -615,7 +633,8 @@ private fun ProposalForm(
     }
     if (invalid) Text(stringResource(R.string.appointment_form_invalid), color = MaterialTheme.colorScheme.error)
     SubmitArea(busy, key != null, failure, shownError,
-        if (previous == null) R.string.appointment_propose else R.string.appointment_propose_new, "proposal_send") {
+        if (previous == null) R.string.appointment_propose else R.string.appointment_propose_new, "proposal_send",
+        sendsTime = true) {
         val startAt = localInstant(date, start)
         val duration = minutes.toIntOrNull()
         val cents = parseEuroCents(amount)

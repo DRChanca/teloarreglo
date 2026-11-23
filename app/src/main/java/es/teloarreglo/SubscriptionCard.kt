@@ -149,14 +149,20 @@ private fun Section(title: Int, tag: String, items: List<Int>) {
     }
 }
 
+/** The visible «Destacado» label: same look in the preview, the search results and the public profile. */
+@Composable
+internal fun FeaturedBadge(modifier: Modifier = Modifier) {
+    Text(stringResource(R.string.subscription_featured_badge),
+        color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
+        modifier = modifier.background(Color(0xFF8A5A00), RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp))
+}
+
 /** A labelled sample, never a real ranking: zones come from the approved coverage only. */
 @Composable
 private fun FeaturedPreview(subscription: Subscription?) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.subscription_featured_badge),
-                color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
-                modifier = Modifier.background(Color(0xFF8A5A00), RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp))
+            FeaturedBadge()
             Text(stringResource(R.string.subscription_featured_title), fontWeight = FontWeight.SemiBold)
         }
         val zones = subscription?.featuredZones.orEmpty()

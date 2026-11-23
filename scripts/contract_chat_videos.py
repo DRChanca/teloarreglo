@@ -93,6 +93,33 @@ class ChatVideoContract(unittest.TestCase):
         self.assertNotEqual(binary("/storage/v1/object/public/chat-attachments/" + path)[0], 200,
                             "no permanent public link")
 
+    def test_the_professional_sends_a_video_and_the_client_plays_it(self):
+        # Reverse direction (spec #11 check, 2026-11-23): sending and viewing work both ways.
+        client, professional, outsider = tokens["client"], tokens["professional"], tokens["outsider"]
+        conversation_id = self.conversation()
+        request_id = str(uuid.uuid4())
+        code, upload = api.request("/rest/v1/rpc/request_chat_attachment",
+                                   reserve(conversation_id, request_id, "video", "video/mp4", video), professional)
+        self.assertEqual((code, upload["status"]), (200, "uploading"))
+        path = upload["object_path"]
+        object_paths.append(path)
+        self.assertIn(binary(BUCKET + path, video, professional, "POST")[0], (200, 201))
+        code, message = api.request("/rest/v1/rpc/submit_chat_attachment",
+                                    {"p_conversation_id": conversation_id, "p_request_id": request_id}, professional)
+        self.assertEqual((code, message["attachment_kind"]), (200, "video"))
+        code, history = api.request(
+            f"/rest/v1/chat_messages?conversation_id=eq.{conversation_id}&request_id=eq.{request_id}"
+            "&select=id,attachment_kind,attachment_path",
+            token=client, method="GET")
+        self.assertEqual((code, [(m["id"], m["attachment_kind"]) for m in history]), (200, [(message["id"], "video")]),
+                         "the client sees the professional's video in the conversation")
+        sign = "/storage/v1/object/sign/chat-attachments/" + path
+        code, signed = api.request(sign, {"expiresIn": 600}, client)
+        self.assertEqual(code, 200, "the client can open the professional's video")
+        code, downloaded = binary("/storage/v1" + signed["signedURL"])
+        self.assertEqual((code, downloaded), (200, video), "the client plays back the exact bytes")
+        self.assertNotEqual(api.request(sign, {"expiresIn": 60}, outsider)[0], 200, "no third-party link")
+
     def test_a_video_near_the_limit_fits_but_a_large_file_cannot_become_a_photo(self):
         client = tokens["client"]
         conversation_id = self.conversation()

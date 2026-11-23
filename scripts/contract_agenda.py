@@ -150,8 +150,19 @@ class AgendaContract(unittest.TestCase):
             self.assertEqual((revealed[row["id"]]["exact"], revealed[row["id"]]["address"]), (False, None))
 
         # Outside availability, blocks and paid proposals are refused without partial effects.
-        _, late = self.free_proposal(tokens[0], conversations[0], f"{DAY}T19:00:00Z", f"{DAY}T20:00:00Z")
-        self.assertEqual(self.rpc("accept_proposal", {"p_proposal_id": late["id"]}, tokens[0])[0], 409)
+        # Since the agenda fix (20261123012610) the professional learns it when proposing, with a distinct reason.
+        code, appointment = self.rpc("request_appointment", {
+            "p_conversation_id": conversations[0], "p_request_id": str(uuid.uuid4()), "p_problem": "Fuga",
+            "p_start": f"{DAY}T19:00:00Z", "p_end": f"{DAY}T20:00:00Z", "p_address": "Calle Ficticia 1",
+            "p_lat": 43.05, "p_lng": -5.95}, tokens[0])
+        self.assertEqual(code, 200, appointment)
+        code, late = self.rpc("propose_appointment", {
+            "p_appointment_id": appointment["id"], "p_expected_version": 1, "p_request_id": str(uuid.uuid4()),
+            "p_scope": "Visita gratuita", "p_start": f"{DAY}T19:00:00Z", "p_duration_minutes": 60, "p_amount_cents": 0,
+            "p_visit_fee_cents": None, "p_materials_included": False, "p_travel_included": True}, tokens[1])
+        self.assertEqual(code, 409, "outside the hours is refused when proposing (outside_hours, pgTAP checks the reason)")
+        # Proposed while free; the block taken afterwards still stops the confirmation (race safety).
+        _, during = self.free_proposal(tokens[0], conversations[0], f"{DAY}T16:00:00Z", f"{DAY}T17:00:00Z")
         block = {"p_request_id": str(uuid.uuid4()), "p_start": f"{DAY}T16:00:00Z", "p_end": f"{DAY}T17:00:00Z",
                  "p_reason": "Desplazamiento"}
         self.assertIn(self.rpc("add_agenda_block", block, tokens[0])[0], (401, 403))
@@ -160,7 +171,6 @@ class AgendaContract(unittest.TestCase):
         self.assertEqual(self.rpc("add_agenda_block", block, tokens[1])[1]["id"], blocked["id"])
         self.assertEqual(self.rpc("add_agenda_block", dict(block, p_request_id=str(uuid.uuid4()),
                          p_start=f"{DAY}T14:30:00Z"), tokens[1])[0], 409)
-        _, during = self.free_proposal(tokens[0], conversations[0], f"{DAY}T16:00:00Z", f"{DAY}T17:00:00Z")
         self.assertEqual(self.rpc("accept_proposal", {"p_proposal_id": during["id"]}, tokens[0])[0], 409)
         code, removed = self.rpc("remove_agenda_block", {"p_block_id": blocked["id"]}, tokens[1])
         self.assertEqual((code, removed["removed"]), (200, True))
@@ -171,7 +181,7 @@ class AgendaContract(unittest.TestCase):
             self.assertIn(api.request("/rest/v1/agenda_reservations", {
                 "profile_id": profile_id, "professional_id": users[1], "kind": "block",
                 "during": f"[{DAY}T18:00:00Z,{DAY}T19:00:00Z)", "request_id": str(uuid.uuid4())}, token)[0], (401, 403))
-            self.assertIn(api.request(f"/rest/v1/appointment_proposals?id=eq.{late['id']}",
+            self.assertIn(api.request(f"/rest/v1/appointment_proposals?id=eq.{during['id']}",
                                       {"status": "accepted"}, token, "PATCH")[0], (401, 403))
             self.assertIn(api.request(f"/rest/v1/agenda_reservations?profile_id=eq.{profile_id}",
                                       None, token, "DELETE")[0], (401, 403))

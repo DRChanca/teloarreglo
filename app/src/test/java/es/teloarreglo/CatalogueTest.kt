@@ -25,6 +25,22 @@ class CatalogueTest {
         finally { client.close() }
     }
 
+    @Test fun featuredBadgeComesFromTheServerRule() = runTest {
+        var sent = ""
+        val client = createSupabaseClient("https://catalogue.example.org", "public-key") {
+            install(Postgrest)
+            httpEngine = MockEngine { request ->
+                assertEquals("/rest/v1/rpc/is_featured", request.url.encodedPath)
+                sent = (request.body as io.ktor.http.content.OutgoingContent.ByteArrayContent).bytes().decodeToString()
+                respond("true", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            }
+        }
+        try {
+            assertEquals(true, SupabaseCatalogue(client).featured("profile-14"))
+            assertEquals("""{"p_profile_id":"profile-14"}""", sent)
+        } finally { client.close() }
+    }
+
     @Test fun unavailableServiceDoesNotBecomeAnEmptyCatalogue() = runTest {
         val client = createSupabaseClient("https://catalogue.example.org", "public-key") {
             install(Postgrest)
