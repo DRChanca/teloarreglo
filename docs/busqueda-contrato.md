@@ -60,7 +60,7 @@ node prepare_search_data.mjs --out-dir ../../supabase/.temp/carga --max-kb 200
 ```
 
 - **Concejos**: los 78 del GeoJSON del IGN; comprueba al final que hay exactamente 78.
-- **Ubicaciones** de los 18 perfiles preparados, con los **mismos UUID** que `scripts/prepare_catalogue.py`
+- **Ubicaciones** de los perfiles preparados (18, más 3 de limpieza con `--only-cleaning`, #36), con los **mismos UUID** que `scripts/prepare_catalogue.py`
   (uuid5, comprobado que coinciden). Punto **ficticio** determinista a menos de 800 m del centro de la ciudad
   de su dirección comercial ficticia (Oviedo, Gijón o Avilés), dentro de ese concejo. No son domicilios.
   Celda H3 resolución 6 calculada con h3-js, igual que la Edge Function.

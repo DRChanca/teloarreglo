@@ -7,7 +7,8 @@ Migración nueva: `20261120000100_catalogue.sql`. No modifica la migración de i
 
 - `catalogue(p_trade text = null, p_id uuid = null)`: lectura sin registro,
   devuelve una lista de versiones aprobadas. Un ID no publicado devuelve `[]`.
-  Oficios: `plumbing`, `electrical`, `carpentry`, `painting`, `masonry`, `general`.
+  Oficios: `plumbing`, `electrical`, `carpentry`, `painting`, `masonry`, `general`, `cleaning`
+  (Limpieza, migración aditiva `20261122003600_cleaning_trade.sql`, #36).
   Ambos filtros son opcionales y se combinan.
 - `public.approved_profiles`: solo la última versión aprobada, lectura con RLS
   para visitantes y cuentas. Ningún cliente tiene permisos de escritura.
@@ -58,7 +59,7 @@ todavía permisos ni implementa su operación de aprobación.
 1. Aplicar la migración nueva con el procedimiento revisado del README.
    Si la identidad se aplicó por SQL Editor, reconciliar antes su historial;
    no repetir la migración inicial.
-2. Revisar los 18 perfiles de `supabase/catalogue/profiles.json`. Son datos
+2. Revisar los 21 perfiles de `supabase/catalogue/profiles.json`. Son datos
    ficticios con tres perfiles por oficio. No usan domicilios reales ni teléfonos
    de terceros: los números `+34 000…` son deliberadamente inválidos.
 3. Elegir una cuenta **existente y verificada** para Fontanería Nalón:
@@ -71,7 +72,7 @@ todavía permisos ni implementa su operación de aprobación.
    El programa **no conecta ni ejecuta nada**. Es una carga inicial transaccional,
    no un seed de arranque ni una migración automática. Repetirla causa conflicto
    y aborta toda la transacción: nunca borra ni sobrescribe datos ya preparados.
-5. Los otros 17 perfiles son explícitamente **sin reclamar** (`owner_id=null`),
+5. Los otros 20 perfiles son explícitamente **sin reclamar** (`owner_id=null`),
    no cuentas Auth simuladas. Si deben participar en otros recorridos, asociar
    cada uno a una cuenta verificada distinta mediante SQL de confianza revisado.
    No se crean cuentas ni contraseñas automáticamente en el proyecto alojado.
@@ -128,7 +129,7 @@ comercial, incluye la migración `20261120000200` al principio, dentro de la mis
 transacción que los cambios de contenido.
 
 Se revisa y ejecuta manualmente en el mismo proyecto alojado. Solo toca los
-18 identificadores preparados: añade dirección, referencias de visita y otro
+21 identificadores preparados (cargar antes la limpieza, ver abajo): añade dirección, referencias de visita y otro
 trabajo, y actualiza su fecha de aprobación. Conserva propietarios, domicilios
 privados, nombres, descripciones, cobertura, imágenes, idiomas, teléfonos y
 reseñas; conserva los servicios y precios existentes y no duplica los nuevos.
@@ -145,6 +146,22 @@ python3 scripts/contract_catalogue.py --details
 La app nueva es compatible con el servidor anterior (dirección ausente). El texto
 y los idiomas cambian al instalar la nueva APK; dirección y precios ampliados
 necesitan además ejecutar esta actualización alojada.
+
+### Añadir la limpieza a un catálogo ya cargado (#36)
+
+Los tres perfiles de limpieza son los índices 18–20: los 18 UUID anteriores no
+cambian. **No repetir la carga inicial.** Tras aplicar la migración
+`20261122003600_cleaning_trade.sql` (y desplegar la Edge Function, que valida el
+oficio), generar, revisar y ejecutar a mano en la base alojada:
+
+```bash
+python3 scripts/prepare_catalogue.py --only-cleaning > /RUTA_LOCAL/limpieza.sql
+(cd scripts/search-data && node prepare_search_data.mjs --part locations --only-cleaning) > /RUTA_LOCAL/limpieza-ubicaciones.sql
+```
+
+Los tres quedan sin reclamar (`owner_id=null`), con dirección comercial, visita
+y otro trabajo ya incluidos. Repetir cualquiera de los dos archivos causa
+conflicto y aborta. Después, `python3 scripts/contract_catalogue.py` espera 21.
 
 ## Comprobación
 

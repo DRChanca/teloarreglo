@@ -62,8 +62,6 @@ import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-private val nearbyTrades = listOf("plumbing", "electrical", "carpentry", "painting", "masonry", "general")
-
 /** What the nearby search shows. Positions are kept only for the current search. */
 private sealed interface NearbyState {
     data object Idle : NearbyState
@@ -153,7 +151,7 @@ fun NearbySearchScreen(
                 item {
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(selected = trade == null, onClick = { trade = null }, label = { Text(stringResource(R.string.trade_all)) })
-                        nearbyTrades.forEach { key ->
+                        catalogueTrades.forEach { key ->
                             FilterChip(selected = trade == key, onClick = { trade = key },
                                 modifier = Modifier.testTag("nearby_trade_$key"), label = { Text(stringResource(tradeLabel(key))) })
                         }

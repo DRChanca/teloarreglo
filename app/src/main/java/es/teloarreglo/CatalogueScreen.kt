@@ -36,7 +36,8 @@ import java.text.NumberFormat
 import java.util.Locale
 import androidx.compose.ui.platform.LocalConfiguration
 
-private val trades = listOf("plumbing", "electrical", "carpentry", "painting", "masonry", "general")
+/** Trade keys offered in the catalogue and nearby search; must match the DB constraint and Edge Function. */
+internal val catalogueTrades = listOf("plumbing", "electrical", "carpentry", "painting", "masonry", "general", "cleaning")
 private val green = Color(0xFF246451)
 private val canvas = Color(0xFFF7F8F5)
 
@@ -142,7 +143,7 @@ fun CatalogueScreen(
                     ) {
                         FilterChip(selected = trade == null, onClick = { trade = null },
                             label = { Text(stringResource(R.string.trade_all)) })
-                        trades.forEach { key ->
+                        catalogueTrades.forEach { key ->
                             FilterChip(selected = trade == key, onClick = { trade = key },
                                 modifier = Modifier.testTag("trade_$key"), label = { Text(stringResource(tradeLabel(key))) })
                         }
@@ -319,6 +320,7 @@ internal fun tradeLabel(key: String): Int = when (key) {
     "carpentry" -> R.string.trade_carpentry
     "painting" -> R.string.trade_painting
     "masonry" -> R.string.trade_masonry
+    "cleaning" -> R.string.trade_cleaning
     else -> R.string.trade_general
 }
 

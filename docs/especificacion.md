@@ -56,7 +56,7 @@ Esta sección tiene prioridad sobre las referencias posteriores al alcance del p
 
 Las reglas de este apartado sustituyen las propuestas anteriores incompatibles sobre búsqueda, confirmación y momento del pago, tanto para el flujo demostrado como para la visión que se explicará del producto. El dinero sigue siendo simulado en la demo; la viabilidad del flujo real requiere nueva validación del proveedor.
 
-- Catálogo de demostración: 18 profesionales ficticios, tres de cada uno de los seis oficios iniciales, con servicios, concejos y precios variados.
+- Catálogo de demostración: 21 profesionales ficticios, tres de cada uno de los siete oficios (los seis iniciales más limpieza, [#36](https://github.com/DRChanca/teloarreglo/issues/36)), con servicios, concejos y precios variados.
 - La historia principal muestra una reparación de fontanería en Oviedo: búsqueda, perfil, conversación con foto y vídeo reales, propuesta de reparación con fecha y precio, confirmación mediante pago simulado, finalización y reseña.
 - Demostración con la aplicación Android funcionando en dos emuladores: uno para el cliente y otro para el profesional, con persistencia compartida. No basta una maqueta navegable.
 - Cuatro idiomas en la interfaz entregada; vídeo narrado en castellano y demostración breve del selector.
@@ -131,7 +131,7 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 
 #### Criterios observables del recorrido acordado
 
-- El catálogo contiene 18 perfiles ficticios de seis oficios y permite comparar sus servicios.
+- El catálogo contiene 21 perfiles ficticios de siete oficios y permite comparar sus servicios.
 - La ubicación se obtiene mediante permiso GPS o entrada manual; los resultados se muestran en lista y mapa y respetan la cobertura de servicio.
 - Una acción de una cuenta se refleja en la otra sin editar datos manualmente fuera de la aplicación.
 - Las conversaciones permiten enviar y abrir una foto y un vídeo reales.
@@ -203,6 +203,7 @@ Categorías iniciales:
 4. Pintura.
 5. Albañilería.
 6. Reparaciones generales.
+7. Limpieza (añadida por [#36](https://github.com/DRChanca/teloarreglo/issues/36)).
 
 Un profesional puede seleccionar varias categorías y describir los servicios que ofrece.
 
