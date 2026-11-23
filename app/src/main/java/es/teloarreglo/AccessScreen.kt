@@ -82,6 +82,7 @@ fun AccessScreen(
     onProfile: ((String) -> Unit)? = null,
     operationScope: CoroutineScope = rememberCoroutineScope(),
     googleAuth: ComposeAuth? = null,
+    profileReviews: es.teloarreglo.catalogue.ProfileReviews? = null,
 ) {
     val state by identity.state.collectAsStateWithLifecycle()
     val scope = operationScope
@@ -185,6 +186,9 @@ fun AccessScreen(
                                     )
                                     Text(stringResource(R.string.account_hint))
                                     Text(stringResource(R.string.catalogue_can_hire))
+                                    if (state.account?.professionalProfileId != null && profileReviews != null) {
+                                        ProfileReviewCard(profileReviews)
+                                    }
                                     state.account?.professionalProfileId?.let { id ->
                                         if (onProfile != null) {
                                             TextButton(onClick = { onProfile(id) }) {

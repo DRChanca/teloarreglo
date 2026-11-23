@@ -12,6 +12,8 @@ import es.teloarreglo.catalogue.PublicProfile
 import es.teloarreglo.catalogue.SupabaseCatalogue
 import es.teloarreglo.catalogue.ProfessionalCovers
 import es.teloarreglo.catalogue.SupabaseProfessionalCovers
+import es.teloarreglo.catalogue.ProfileReviews
+import es.teloarreglo.catalogue.SupabaseProfileReviews
 import es.teloarreglo.chat.Chat
 import es.teloarreglo.chat.SupabaseChat
 import es.teloarreglo.search.HttpProfessionalSearch
@@ -76,6 +78,8 @@ class TeloarregloApplication : Application() {
     val catalogue: Catalogue by lazy { client?.let(::SupabaseCatalogue) ?: MissingCatalogueConfiguration() }
     val covers: ProfessionalCovers? by lazy { client?.let(::SupabaseProfessionalCovers) }
     val chat: Chat? by lazy { client?.let(::SupabaseChat) }
+    /** Owner's profile review result decided in the private panel (#29). */
+    val profileReviews: ProfileReviews? by lazy { client?.let(::SupabaseProfileReviews) }
     /** Nearby search through the public Edge Function; null without configuration. */
     val search: ProfessionalSearch? by lazy {
         client?.let { HttpProfessionalSearch(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_KEY, HttpClient(OkHttp)) }

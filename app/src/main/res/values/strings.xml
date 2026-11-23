@@ -56,4 +56,15 @@
     <string name="error_rate_limited">Demasiados intentos. Espera unos minutos y vuelve a probar.</string>
     <string name="error_weak_password">Esa contraseña no sirve: usa al menos 8 caracteres y que no sea la anterior.</string>
     <string name="error_google">No se pudo entrar con Google. Inténtalo de nuevo o entra con tu correo.</string>
+    <string name="profile_review_title">Revisión de tu perfil profesional</string>
+    <string name="profile_review_error">No se pudo consultar la revisión. Comprueba la conexión.</string>
+    <string name="profile_review_refresh">Actualizar</string>
+    <string name="profile_review_decided_at">Decidido el %1$s</string>
+    <string name="profile_review_reason">Motivo: %1$s</string>
+    <string name="profile_review_not_submitted">Tu perfil todavía no se ha presentado a revisión.</string>
+    <string name="profile_review_pending_first">En revisión. No aparece en el catálogo hasta que administración lo apruebe.</string>
+    <string name="profile_review_pending_change">Tus cambios están en revisión. Mientras tanto sigue visible la versión aprobada.</string>
+    <string name="profile_review_published">Aprobado y publicado en el catálogo.</string>
+    <string name="profile_review_rejected_first">Rechazado. No aparece en el catálogo.</string>
+    <string name="profile_review_rejected_change">Cambios rechazados. Sigue visible la versión aprobada anterior.</string>
 </resources>

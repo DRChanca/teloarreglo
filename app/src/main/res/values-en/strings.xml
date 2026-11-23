@@ -56,4 +56,15 @@
     <string name="error_rate_limited">Too many attempts. Wait a few minutes and try again.</string>
     <string name="error_weak_password">That password cannot be used: use at least 8 characters and not your previous one.</string>
     <string name="error_google">Could not sign in with Google. Try again or sign in with your email.</string>
+    <string name="profile_review_title">Review of your professional profile</string>
+    <string name="profile_review_error">Could not load the review. Check your connection.</string>
+    <string name="profile_review_refresh">Refresh</string>
+    <string name="profile_review_decided_at">Decided on %1$s</string>
+    <string name="profile_review_reason">Reason: %1$s</string>
+    <string name="profile_review_not_submitted">Your profile has not been submitted for review yet.</string>
+    <string name="profile_review_pending_first">Under review. It will not appear in the catalogue until administration approves it.</string>
+    <string name="profile_review_pending_change">Your changes are under review. Meanwhile the approved version stays visible.</string>
+    <string name="profile_review_published">Approved and published in the catalogue.</string>
+    <string name="profile_review_rejected_first">Rejected. It does not appear in the catalogue.</string>
+    <string name="profile_review_rejected_change">Changes rejected. The previously approved version stays visible.</string>
 </resources>
