@@ -16,7 +16,15 @@ data class Conversation(
     @SerialName("client_id") val clientId: String,
     @SerialName("professional_id") val professionalId: String,
     val name: String,
+    // Inbox only (#39): the client's self-declared name, never the email, and the
+    // caller's own unread count, both computed by the server.
+    @SerialName("client_name") val clientName: String? = null,
+    @SerialName("unread_count") val unreadCount: Int = 0,
 )
+
+/** The other participant: the client's name for the professional, the business for the client. */
+fun Conversation.counterpartName(accountId: String): String? =
+    if (professionalId == accountId) clientName else name
 
 @Serializable
 data class ChatMessage(
@@ -42,6 +50,8 @@ interface Chat {
     suspend fun conversations(): List<Conversation>
     suspend fun messages(conversationId: String): List<ChatMessage>
     suspend fun send(conversationId: String, requestId: String, body: String): ChatMessage
+    /** Marks read up to the newest persisted message, only for the caller. */
+    suspend fun markRead(conversationId: String) {}
 }
 
 class SupabaseChat(private val client: SupabaseClient) : Chat {
@@ -51,7 +61,13 @@ class SupabaseChat(private val client: SupabaseClient) : Chat {
         }).decodeAs()
 
     override suspend fun conversations(): List<Conversation> =
-        client.postgrest["conversations"].select { order("created_at", Order.DESCENDING) }.decodeList()
+        client.postgrest.rpc("conversation_inbox").decodeAs()
+
+    override suspend fun markRead(conversationId: String) {
+        client.postgrest.rpc("mark_conversation_read", buildJsonObject {
+            put("p_conversation_id", conversationId)
+        })
+    }
 
     // Explicit pages avoid PostgREST's row cap silently dropping older messages.
     override suspend fun messages(conversationId: String): List<ChatMessage> = buildList {
