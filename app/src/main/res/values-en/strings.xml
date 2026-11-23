@@ -399,4 +399,22 @@
     <string name="change_correction_hint">You cannot change the client\'s address. We will send your request and the client will propose the correction.</string>
     <string name="change_correction_note">What needs correcting?</string>
     <string name="change_correction_send">Send the request</string>
+    <string name="start_cancel_notice_started">Work started</string>
+    <string name="start_cancel_notice_cancelled">Appointment cancelled</string>
+    <string name="start_cancel_start">Start work</string>
+    <string name="start_cancel_start_title">Start the work now?</string>
+    <string name="start_cancel_start_explain">The client will see that you have started. From then on the appointment can no longer be cancelled with an automatic refund: any problem will be handled as an incident. Starting does not authorise any extra cost.</string>
+    <string name="start_cancel_started_at">Work started on %1$s.</string>
+    <string name="start_cancel_after_start">It can no longer be cancelled with an automatic refund. If there is a problem, it will be handled as an incident.</string>
+    <string name="start_cancel_cancel">Cancel the appointment</string>
+    <string name="start_cancel_cancel_title">Cancel the appointment?</string>
+    <string name="start_cancel_effect_refund">The client will get back everything paid in the app: %1$s (simulated). No penalty.</string>
+    <string name="start_cancel_effect_direct">The agreed direct payment (%1$s) does not go through the app, so the app refunds nothing. No penalty.</string>
+    <string name="start_cancel_effect_none">No penalty and no money movements.</string>
+    <string name="start_cancel_release">The reserved time will be released and the other party will be notified.</string>
+    <string name="start_cancel_keep">Keep the appointment</string>
+    <string name="start_cancel_cancelled_by_me">Cancelled by you on %1$s.</string>
+    <string name="start_cancel_cancelled_by_other">Cancelled by the other party on %1$s.</string>
+    <string name="start_cancel_released">Cancelled: the time is no longer reserved.</string>
+    <string name="start_cancel_error_started">The work has already started: it cannot be cancelled with an automatic refund.</string>
 </resources>

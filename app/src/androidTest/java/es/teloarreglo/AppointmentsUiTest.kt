@@ -140,6 +140,31 @@ private class FakeAppointments : Appointments {
         items[index] = items[index].copy(version = items[index].version + 1)
         return history[i]
     }
+
+    private fun marks(a: Appointment, refunded: Int = 0) =
+        AppointmentMarks(a.id, a.stage, a.version, a.startedAt, a.cancelledAt, a.cancelledBy, refunded)
+
+    override suspend fun startWork(appointmentId: String): AppointmentMarks {
+        val index = items.indexOfFirst { it.id == appointmentId }
+        val a = items[index]
+        if (a.stage == AppointmentStage.STARTED) return marks(a)
+        if (a.stage != AppointmentStage.CONFIRMED) throw AppointmentException(AppointmentFailure.STALE, Exception())
+        items[index] = a.copy(stage = AppointmentStage.STARTED, startedAt = Instant.now(), version = a.version + 1)
+        return marks(items[index])
+    }
+
+    override suspend fun cancel(appointmentId: String): AppointmentMarks {
+        val index = items.indexOfFirst { it.id == appointmentId }
+        val a = items[index]
+        if (a.stage == AppointmentStage.CANCELLED) return marks(a)
+        if (a.stage == AppointmentStage.STARTED) throw AppointmentException(AppointmentFailure.ALREADY_STARTED, Exception())
+        if (a.stage != AppointmentStage.CONFIRMED) throw AppointmentException(AppointmentFailure.STALE, Exception())
+        val refund = a.payment?.takeIf { it.mode == PaymentMode.INTEGRATED }?.pendingCents ?: 0
+        items[index] = a.copy(stage = AppointmentStage.CANCELLED, cancelledAt = Instant.now(), cancelledBy = a.clientId,
+            version = a.version + 1, payment = a.payment?.let {
+                it.copy(pendingCents = it.pendingCents - refund, refundedCents = it.refundedCents + refund) })
+        return marks(items[index], refund)
+    }
 }
 
 class AppointmentsUiTest {
@@ -346,5 +371,43 @@ class AppointmentsUiTest {
         val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
         assertEquals(8550, appointment.confirmedProposal?.amountCents)
         assertEquals(ChangeStatus.PENDING, appointment.pendingChange?.status)
+    }
+
+    /** A paid, confirmed appointment (85,50 € integrated, still pending of delivery) (#24). */
+    private fun withPaidConfirmation() = withPaidProposal(seeded()).apply {
+        kotlinx.coroutines.runBlocking { confirm("p1", "pay", PaymentMode.INTEGRATED) }
+    }
+
+    @Test fun onlyTheProfessionalStartsAndThenNobodyCancelsWithARefund() {
+        val fake = withPaidConfirmation()
+        var account by mutableStateOf("client")
+        compose.setContent { AppointmentsPanel(fake, account, conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onAllNodesWithTag("start_work").assertCountEquals(0)
+        account = "pro"
+        waitForTag("start_work")
+        compose.onNodeWithTag("start_work").performScrollTo().performClick()
+        compose.onNodeWithTag("start_work_confirm").performClick()
+        waitForTag("started_mark_a1")
+        compose.onAllNodesWithTag("cancel_appointment").assertCountEquals(0)
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.STARTED, appointment.stage)
+        assertEquals(8550, appointment.payment?.pendingCents)
+    }
+
+    @Test fun clientSeesTheFullRefundBeforeCancellingAndTheHourIsReleased() {
+        val fake = withPaidConfirmation()
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("cancel_appointment").performScrollTo().performClick()
+        compose.onNodeWithTag("cancel_effect").assertExists()
+        compose.onNodeWithTag("cancel_appointment_confirm").performClick()
+        waitForTag("cancelled_mark_a1")
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.CANCELLED, appointment.stage)
+        assertEquals(8550, appointment.payment?.refundedCents)
+        assertEquals(0, appointment.payment?.pendingCents)
     }
 }

@@ -399,4 +399,22 @@
     <string name="change_correction_hint">Vous ne pouvez pas modifier l\'adresse du client. Nous lui enverrons votre demande et c\'est lui qui proposera la correction.</string>
     <string name="change_correction_note">Que faut-il corriger ?</string>
     <string name="change_correction_send">Envoyer la demande</string>
+    <string name="start_cancel_notice_started">Travail commencé</string>
+    <string name="start_cancel_notice_cancelled">Rendez-vous annulé</string>
+    <string name="start_cancel_start">Commencer le travail</string>
+    <string name="start_cancel_start_title">Commencer le travail maintenant ?</string>
+    <string name="start_cancel_start_explain">Le client verra que vous avez commencé. Dès lors, le rendez-vous ne peut plus être annulé avec un remboursement automatique : tout problème sera traité comme un incident. Commencer n’autorise aucun coût supplémentaire.</string>
+    <string name="start_cancel_started_at">Travail commencé le %1$s.</string>
+    <string name="start_cancel_after_start">Il ne peut plus être annulé avec un remboursement automatique. En cas de problème, il sera traité comme un incident.</string>
+    <string name="start_cancel_cancel">Annuler le rendez-vous</string>
+    <string name="start_cancel_cancel_title">Annuler le rendez-vous ?</string>
+    <string name="start_cancel_effect_refund">Le client sera intégralement remboursé de ce qu’il a payé dans l’app : %1$s (simulé). Sans pénalité.</string>
+    <string name="start_cancel_effect_direct">Le paiement direct convenu (%1$s) ne passe pas par l’app : l’app ne rembourse donc rien. Sans pénalité.</string>
+    <string name="start_cancel_effect_none">Sans pénalité et sans mouvement d’argent.</string>
+    <string name="start_cancel_release">Le créneau réservé sera libéré et l’autre partie sera prévenue.</string>
+    <string name="start_cancel_keep">Garder le rendez-vous</string>
+    <string name="start_cancel_cancelled_by_me">Annulé par vous le %1$s.</string>
+    <string name="start_cancel_cancelled_by_other">Annulé par l’autre partie le %1$s.</string>
+    <string name="start_cancel_released">Annulé : le créneau n’est plus réservé.</string>
+    <string name="start_cancel_error_started">Le travail a déjà commencé : il ne peut pas être annulé avec un remboursement automatique.</string>
 </resources>

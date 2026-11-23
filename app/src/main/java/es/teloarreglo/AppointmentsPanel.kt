@@ -146,6 +146,8 @@ private fun noticeText(appointment: Appointment, accountId: String): String {
         AppointmentNotice.DECIDE_CHANGE -> stringResource(R.string.change_notice_decide)
         AppointmentNotice.AWAITING_CHANGE -> stringResource(R.string.change_notice_awaiting)
         AppointmentNotice.CORRECT_ADDRESS -> stringResource(R.string.change_notice_correct_address)
+        AppointmentNotice.STARTED -> stringResource(R.string.start_cancel_notice_started)
+        AppointmentNotice.CANCELLED -> stringResource(R.string.start_cancel_notice_cancelled)
     }
 }
 
@@ -153,11 +155,14 @@ private fun noticeText(appointment: Appointment, accountId: String): String {
 @Composable
 private fun ReservationLine(appointment: Appointment) {
     val confirmed = appointment.confirmedProposal
-    if (appointment.stage == AppointmentStage.CONFIRMED && confirmed != null) {
+    val reserved = appointment.stage == AppointmentStage.CONFIRMED || appointment.stage == AppointmentStage.STARTED
+    if (reserved && confirmed != null) {
         Text(stringResource(R.string.appointment_confirmed_reserved, dateTimeFormat().format(confirmed.startAt),
             confirmed.durationMinutes), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.testTag("appointment_confirmed_${appointment.id}"))
-    } else Text(stringResource(R.string.appointment_unreserved), style = MaterialTheme.typography.labelSmall)
+    } else if (appointment.stage == AppointmentStage.CANCELLED) Text(stringResource(R.string.start_cancel_released),
+        style = MaterialTheme.typography.labelSmall)
+    else Text(stringResource(R.string.appointment_unreserved), style = MaterialTheme.typography.labelSmall)
     appointment.payment?.let { PaymentLine(it, appointment.id) }
 }
 
@@ -195,6 +200,7 @@ internal fun failureText(failure: AppointmentFailure?): String = stringResource(
     AppointmentFailure.STALE -> R.string.appointment_error_stale
     AppointmentFailure.RETRY_CONFLICT -> R.string.appointment_error_conflict
     AppointmentFailure.SLOT_UNAVAILABLE -> R.string.appointment_error_slot
+    AppointmentFailure.ALREADY_STARTED -> R.string.start_cancel_error_started
     null -> R.string.appointment_error_network
 })
 
@@ -235,7 +241,8 @@ private fun AppointmentDetails(
             val pending = appointment.currentProposal
             val confirmed = appointment.stage == AppointmentStage.CONFIRMED
             if (confirmed) ChangeSection(appointment, accountId, appointments, scope, onChange, onCorrection, onChanged)
-            if (professional && !confirmed) Button(onClick = onPropose, modifier = Modifier.testTag("appointment_propose")) {
+            StartCancelSection(appointment, accountId, appointments, scope, onChanged)
+            if (professional && appointment.stage == AppointmentStage.PENDING) Button(onClick = onPropose, modifier = Modifier.testTag("appointment_propose")) {
                 Text(stringResource(if (appointment.proposals.isEmpty()) R.string.appointment_propose else R.string.appointment_propose_new))
             }
             if (!professional && pending != null) {

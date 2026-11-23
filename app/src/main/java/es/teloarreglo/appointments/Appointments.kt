@@ -26,7 +26,13 @@ object ServerInstant : KSerializer<Instant> {
     override fun serialize(encoder: Encoder, value: Instant) = encoder.encodeString(value.toString())
 }
 
-@Serializable enum class AppointmentStage { @SerialName("pending") PENDING, @SerialName("confirmed") CONFIRMED }
+@Serializable enum class AppointmentStage {
+    @SerialName("pending") PENDING, @SerialName("confirmed") CONFIRMED,
+    /** Its professional marked «Comenzar trabajo» (#24): no cancellation with an automatic refund any more. */
+    @SerialName("started") STARTED,
+    /** Cancelled before the start (#24): reservation released, pending integrated money refunded (simulated). */
+    @SerialName("cancelled") CANCELLED,
+}
 @Serializable enum class ProposalStatus {
     @SerialName("pending") PENDING, @SerialName("rejected") REJECTED, @SerialName("superseded") SUPERSEDED,
     @SerialName("accepted") ACCEPTED,
@@ -123,6 +129,10 @@ data class Appointment(
     val version: Int,
     val stage: AppointmentStage,
     @SerialName("created_at") @Serializable(ServerInstant::class) val createdAt: Instant,
+    /** Server marks (#24): when the work started, and when and by whom it was cancelled. */
+    @SerialName("started_at") @Serializable(ServerInstant::class) val startedAt: Instant? = null,
+    @SerialName("cancelled_at") @Serializable(ServerInstant::class) val cancelledAt: Instant? = null,
+    @SerialName("cancelled_by") val cancelledBy: String? = null,
     @SerialName("appointment_proposals") private val rawProposals: List<AppointmentProposal> = emptyList(),
     /** Present once a proposal with a cost is confirmed; free visits have none. */
     @SerialName("appointment_payments") val payment: AppointmentPayment? = null,
@@ -160,11 +170,28 @@ data class Appointment(
         }
     }
 
+    /** Only its professional starts, and only a confirmed appointment (#24). */
+    fun canStart(accountId: String) = stage == AppointmentStage.CONFIRMED && accountId == professionalId
+    /** Either participant cancels before the start; afterwards it is an incident, not a cancellation (#24). */
+    fun canCancel(accountId: String) = stage == AppointmentStage.CONFIRMED && accountId in setOf(clientId, professionalId)
+
+    /** What cancelling now would do with the money, shown before the decision. */
+    val cancellationEffect: CancellationEffect get() {
+        val current = payment ?: return CancellationEffect.None
+        return when {
+            current.mode == PaymentMode.DIRECT -> CancellationEffect.DirectNotRefunded(current.agreedCents)
+            current.pendingCents > 0 -> CancellationEffect.Refund(current.pendingCents)
+            else -> CancellationEffect.None
+        }
+    }
+
     /** What this account should know or do next. Only CONFIRMED means the interval is reserved. */
     fun notice(accountId: String): AppointmentNotice {
         val professional = accountId == professionalId
         val change = pendingChange
         return when {
+            stage == AppointmentStage.CANCELLED -> AppointmentNotice.CANCELLED
+            stage == AppointmentStage.STARTED -> AppointmentNotice.STARTED
             stage == AppointmentStage.CONFIRMED && change != null -> when {
                 change.authorId == accountId -> AppointmentNotice.AWAITING_CHANGE
                 change.kind == ChangeKind.ADDRESS_CORRECTION -> AppointmentNotice.CORRECT_ADDRESS
@@ -186,7 +213,34 @@ enum class AppointmentNotice {
     AWAITING_CHANGE,
     /** Confirmed; the professional asks the client to correct the address. */
     CORRECT_ADDRESS,
+    /** The professional started the work (#24). */
+    STARTED,
+    /** Cancelled before the start (#24). */
+    CANCELLED,
 }
+
+/** What a cancellation before the start does with the (simulated) money (#24). No penalty in any case. */
+sealed interface CancellationEffect {
+    /** Free appointment, or nothing integrated left pending. */
+    data object None : CancellationEffect
+    /** Integrated: everything still pending is refunded (simulated). */
+    data class Refund(val cents: Int) : CancellationEffect
+    /** Direct: the app never handled that money, so it refunds nothing. */
+    data class DirectNotRefunded(val agreedCents: Int) : CancellationEffect
+}
+
+/** What start_work and cancel_appointment return: the server marks, never the place. */
+@Serializable
+data class AppointmentMarks(
+    val id: String,
+    val stage: AppointmentStage,
+    val version: Int,
+    @SerialName("started_at") @Serializable(ServerInstant::class) val startedAt: Instant? = null,
+    @SerialName("cancelled_at") @Serializable(ServerInstant::class) val cancelledAt: Instant? = null,
+    @SerialName("cancelled_by") val cancelledBy: String? = null,
+    /** Simulated integrated money the cancellation refunded; 0 for free and direct appointments. */
+    @SerialName("refunded_cents") val refundedCents: Int = 0,
+)
 
 @Serializable enum class ChangeKind { @SerialName("change") CHANGE, @SerialName("address_correction") ADDRESS_CORRECTION }
 @Serializable enum class ChangeStatus {
@@ -265,7 +319,8 @@ data class ProposalDraft(
 
 /** Server rejections, kept apart from network uncertainty (which is rethrown as is). */
 /** SLOT_UNAVAILABLE: the interval overlaps the agenda or leaves its availability; nothing was confirmed. */
-enum class AppointmentFailure { ACCESS, INVALID, OUT_OF_COVERAGE, STALE, RETRY_CONFLICT, SLOT_UNAVAILABLE }
+/** ALREADY_STARTED: the work started first, so there is no cancellation with a refund (#24). */
+enum class AppointmentFailure { ACCESS, INVALID, OUT_OF_COVERAGE, STALE, RETRY_CONFLICT, SLOT_UNAVAILABLE, ALREADY_STARTED }
 class AppointmentException(val failure: AppointmentFailure, cause: Exception) : Exception(failure.name, cause)
 
 /**
@@ -299,11 +354,19 @@ interface Appointments {
      */
     suspend fun acceptChange(changeId: String, mode: PaymentMode?): AppointmentChange
     suspend fun rejectChange(changeId: String): AppointmentChange
+
+    /** Professional only: «Comenzar trabajo» (#24). Moves no money and authorises no cost; repeating is safe. */
+    suspend fun startWork(appointmentId: String): AppointmentMarks
+    /**
+     * Either participant, before the start (#24): releases the reservation and refunds (simulated) everything
+     * integrated still pending, without penalty. Repeating, by either participant, returns the first cancellation.
+     */
+    suspend fun cancel(appointmentId: String): AppointmentMarks
 }
 
 /** Every column the server lets app accounts read; `*`, address, latitude or longitude would be refused (#38). */
 private const val READABLE_COLUMNS = "id,conversation_id,profile_id,client_id,professional_id,request_id,problem," +
-    "requested_start,requested_end,version,stage,created_at"
+    "requested_start,requested_end,version,stage,created_at,started_at,cancelled_at,cancelled_by"
 
 class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
     override suspend fun list(conversationId: String): List<Appointment> = mapped {
@@ -402,6 +465,15 @@ class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
         client.postgrest.rpc("reject_change", buildJsonObject { put("p_change_id", changeId) }).decodeAs<AppointmentChange>()
     }
 
+    override suspend fun startWork(appointmentId: String) = mapped {
+        client.postgrest.rpc("start_work", buildJsonObject { put("p_appointment_id", appointmentId) }).decodeAs<AppointmentMarks>()
+    }
+
+    override suspend fun cancel(appointmentId: String) = mapped {
+        client.postgrest.rpc("cancel_appointment", buildJsonObject { put("p_appointment_id", appointmentId) })
+            .decodeAs<AppointmentMarks>()
+    }
+
     private val PaymentMode.wire get() = if (this == PaymentMode.INTEGRATED) "integrated" else "direct"
 
     private inline fun <T> mapped(block: () -> T): T = try { block() } catch (error: RestException) {
@@ -409,6 +481,7 @@ class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
         val failure = when {
             error.statusCode == 401 || error.statusCode == 403 -> AppointmentFailure.ACCESS
             "slot_unavailable" in message -> AppointmentFailure.SLOT_UNAVAILABLE
+            "already_started" in message -> AppointmentFailure.ALREADY_STARTED
             "stale_version" in message || "incompatible_state" in message || "proposal_expired" in message ->
                 AppointmentFailure.STALE
             "out_of_coverage" in message -> AppointmentFailure.OUT_OF_COVERAGE
