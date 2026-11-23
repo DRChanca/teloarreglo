@@ -69,6 +69,7 @@ private fun TradeArtwork(trade: String, modifier: Modifier) {
         "painting" -> Color(0xFFB66D76)
         "masonry" -> Color(0xFFB37351)
         "general" -> Color(0xFF667CA0)
+        "cleaning" -> Color(0xFF4F93B8)
         else -> Color(0xFF428D92)
     }
     Canvas(modifier.background(Color(0xFFEEF2EB)).semantics { contentDescription = description }) {
@@ -130,6 +131,18 @@ private fun TradeArtwork(trade: String, modifier: Modifier) {
                     moveTo(w * .57f, h * .18f); lineTo(w * .45f, h * .48f)
                     lineTo(w * .76f, h * .43f); close()
                 }, dark)
+            }
+            "cleaning" -> {
+                // Spray bottle and bubbles.
+                drawRoundRect(dark, Offset(w * .30f, h * .40f), Size(w * .26f, h * .34f),
+                    androidx.compose.ui.geometry.CornerRadius(unit * .05f))
+                drawRect(dark, Offset(w * .36f, h * .28f), Size(w * .14f, h * .13f))
+                drawRect(dark, Offset(w * .26f, h * .26f), Size(w * .24f, h * .05f))
+                drawRoundRect(Color.White.copy(alpha = .6f), Offset(w * .35f, h * .50f), Size(w * .16f, h * .12f),
+                    androidx.compose.ui.geometry.CornerRadius(unit * .02f))
+                drawCircle(accent, unit * .07f, Offset(w * .68f, h * .30f))
+                drawCircle(accent.copy(alpha = .75f), unit * .045f, Offset(w * .76f, h * .46f))
+                drawCircle(accent.copy(alpha = .55f), unit * .03f, Offset(w * .63f, h * .55f))
             }
             else -> {
                 drawRoundRect(dark, Offset(w * .23f, h * .39f), Size(w * .54f, h * .32f),
