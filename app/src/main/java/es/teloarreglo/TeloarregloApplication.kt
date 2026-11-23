@@ -13,6 +13,8 @@ import es.teloarreglo.catalogue.SupabaseCatalogue
 import es.teloarreglo.catalogue.ProfessionalCovers
 import es.teloarreglo.catalogue.SupabaseProfessionalCovers
 import es.teloarreglo.chat.Chat
+import es.teloarreglo.chat.ChatAttachments
+import es.teloarreglo.chat.SupabaseChatAttachments
 import es.teloarreglo.chat.SupabaseChat
 import es.teloarreglo.search.HttpProfessionalSearch
 import es.teloarreglo.search.ProfessionalSearch
@@ -76,6 +78,7 @@ class TeloarregloApplication : Application() {
     val catalogue: Catalogue by lazy { client?.let(::SupabaseCatalogue) ?: MissingCatalogueConfiguration() }
     val covers: ProfessionalCovers? by lazy { client?.let(::SupabaseProfessionalCovers) }
     val chat: Chat? by lazy { client?.let(::SupabaseChat) }
+    val chatAttachments: ChatAttachments? by lazy { client?.let(::SupabaseChatAttachments) }
     /** Nearby search through the public Edge Function; null without configuration. */
     val search: ProfessionalSearch? by lazy {
         client?.let { HttpProfessionalSearch(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_KEY, HttpClient(OkHttp)) }

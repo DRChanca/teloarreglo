@@ -73,7 +73,7 @@ class MainActivity : AppCompatActivity() {
                         onBack = {
                             if (conversationJson != null && ownProfile == null) conversationJson = null
                             else { chatVisible = false; contactProfile = null; conversationJson = null }
-                        })
+                        }, attachments = app.chatAttachments)
                 }
             } else if (account || chatVisible || emailLinkPending) {
                 AccessScreen(app.identity, changeLanguage,
