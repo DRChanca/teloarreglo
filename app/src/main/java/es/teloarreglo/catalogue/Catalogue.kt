@@ -36,6 +36,9 @@ data class PublicProfile(
     @SerialName("review_count") val reviewCount: Int = 0,
     @SerialName("business_address") val businessAddress: String? = null,
     @SerialName("cover_path") val coverPath: String? = null,
+    /** Point of the approved commercial address (#17); null when there is none. */
+    @SerialName("business_lat") val businessLat: Double? = null,
+    @SerialName("business_lng") val businessLng: Double? = null,
 )
 
 /** Read-only approved public snapshot. Missing/unpublished details return null. */

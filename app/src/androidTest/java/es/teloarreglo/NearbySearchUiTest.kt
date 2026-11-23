@@ -10,6 +10,9 @@ import es.teloarreglo.catalogue.Catalogue
 import es.teloarreglo.catalogue.Coverage
 import es.teloarreglo.catalogue.PublicProfile
 import es.teloarreglo.search.Concejo
+import es.teloarreglo.search.ConcejoAnchor
+import es.teloarreglo.search.ConcejoDirectory
+import es.teloarreglo.search.MapAvailability
 import es.teloarreglo.search.Located
 import es.teloarreglo.search.NearbyResult
 import es.teloarreglo.search.ProfessionalSearch
@@ -37,18 +40,25 @@ class NearbySearchUiTest {
     private class FakeSearch(vararg outcomes: SearchOutcome) : ProfessionalSearch {
         private val queue = ArrayDeque(outcomes.toList())
         val sentConcejos = mutableListOf<String?>()
+        val sentPoints = mutableListOf<Pair<Double, Double>>()
         override suspend fun search(lat: Double, lng: Double, trade: String?, ineCode: String?, limit: Int): SearchOutcome {
             sentConcejos += ineCode
+            sentPoints += lat to lng
             return queue.removeFirst()
         }
     }
 
     private val oviedo = Located.Position(43.3625, -5.8434, 20f)
 
+    private val concejos = object : ConcejoDirectory {
+        override suspend fun anchors() = listOf(ConcejoAnchor("33044", "Oviedo", 43.36, -5.85), ConcejoAnchor("33024", "Gijón", 43.53, -5.66))
+    }
+
+    // The map is never composed here (no key in tests): the manual choice must work without it.
     private fun show(search: ProfessionalSearch, granted: Boolean = true, located: Located = oviedo, opened: MutableList<String> = mutableListOf()) {
         compose.setContent {
             NearbySearchScreen(search, catalogue, ensurePermission = { granted }, locate = { located },
-                onBack = {}, onOpenProfile = { opened += it })
+                onBack = {}, onOpenProfile = { opened += it }, concejos = concejos, map = MapAvailability.NO_KEY)
         }
     }
 
@@ -113,5 +123,40 @@ class NearbySearchUiTest {
         scrollTo("nearby_retry")
         compose.onNodeWithTag("nearby_retry").assertIsDisplayed()
         assertNull(compose.onAllNodes(hasTestTag("nearby_concejo")).fetchSemanticsNodes().firstOrNull())
+    }
+
+    @Test fun withoutPermissionTheManualConcejoSearchesFromInsideThatConcejo() {
+        val search = FakeSearch(SearchOutcome.Found(Concejo("33024", "Gijón"), listOf(NearbyResult("near", 1000))))
+        show(search, granted = false)
+        compose.onNodeWithTag("nearby_locate").performClick()
+        waitFor("map_manual_panel")
+        waitFor("map_concejo")
+        scrollTo("map_concejo")
+        compose.onNodeWithTag("map_concejo").performClick()
+        compose.onNodeWithTag("map_concejo_33024").performClick()
+        scrollTo("map_no_map_anchor")
+        compose.onNodeWithTag("map_no_map_anchor").assertIsDisplayed()
+        scrollTo("map_search_here")
+        compose.onNodeWithTag("map_search_here").performClick()
+        waitFor("nearby_concejo")
+        assertEquals(listOf<String?>("33024"), search.sentConcejos)
+        assertEquals(listOf(43.53 to -5.66), search.sentPoints)
+    }
+
+    @Test fun mapViewWithoutAMapExplainsItAndKeepsTheSameList() {
+        val opened = mutableListOf<String>()
+        show(FakeSearch(SearchOutcome.Found(Concejo("33044", "Oviedo"),
+            listOf(NearbyResult("near", 500), NearbyResult("far", 12500)))), opened = opened)
+        compose.onNodeWithTag("nearby_locate").performClick()
+        waitFor("nearby_concejo")
+        scrollTo("map_toggle_map")
+        compose.onNodeWithTag("map_toggle_map").performClick()
+        scrollTo("map_unavailable")
+        compose.onNodeWithTag("map_unavailable").assertIsDisplayed()
+        scrollTo("map_coverage")
+        compose.onNodeWithTag("map_coverage").assertIsDisplayed()
+        scrollTo("nearby_far")
+        compose.onNodeWithTag("nearby_far").assertIsDisplayed().performClick()
+        assertEquals(listOf("far"), opened)
     }
 }

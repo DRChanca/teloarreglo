@@ -76,7 +76,8 @@ class MainActivity : AppCompatActivity() {
                         },
                         appointmentsSlot = app.appointments?.let { appointments -> { conversation ->
                             AppointmentsPanel(appointments, access.account!!.userId, conversation, app.applicationScope,
-                                PinSource({ ensureLocationPermission() }, { currentLocation(this@MainActivity) }))
+                                PinSource({ ensureLocationPermission() }, { currentLocation(this@MainActivity) },
+                                    mapsReady = deviceMapAvailability(this@MainActivity) == es.teloarreglo.search.MapAvailability.READY))
                         } },
                         attachments = app.chatAttachments)
                 }
@@ -96,7 +97,8 @@ class MainActivity : AppCompatActivity() {
                     ensurePermission = { ensureLocationPermission() },
                     locate = { currentLocation(this@MainActivity) },
                     onBack = { nearby = false },
-                    onOpenProfile = { ownProfile = it; nearby = false })
+                    onOpenProfile = { ownProfile = it; nearby = false },
+                    concejos = app.concejos, map = remember { deviceMapAvailability(this@MainActivity) })
             } else {
                 CatalogueScreen(app.catalogue, onAccount = { ownProfile = null; account = true }, onLanguageChange = changeLanguage,
                     initialProfileId = ownProfile, covers = app.covers, ownedProfileId = owner,

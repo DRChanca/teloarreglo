@@ -13,6 +13,8 @@
         android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"
         android:usesCleartextTraffic="false">
+        <!-- Google Maps SDK key from GOOGLE_MAPS_API (.env); the app hides the map when it is empty. -->
+        <meta-data android:name="com.google.android.geo.API_KEY" android:value="${MAPS_API_KEY}" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

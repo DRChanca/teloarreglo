@@ -106,8 +106,9 @@ respuesta perdida conserva la clave en `rememberSaveable` y bloquea el
 formulario hasta reintentar o encontrar esa clave en el historial. A diferencia
 del chat, esta clave no se cifra en disco: si el sistema mata el proceso
 durante un envío incierto, el usuario verá el historial real del servidor al
-volver y no se duplicará nada ya registrado. El selector de punto en mapa queda
-para #17; hoy la alternativa al GPS es escribir las coordenadas.
+volver y no se duplicará nada ya registrado. El selector de punto en mapa llegó con #17
+(«Elegir el punto en el mapa» cuando hay mapa; sin mapa, coordenadas escritas). Ver
+[mapa-contrato.md](mapa-contrato.md).
 
 ## Comprobación reproducible
 
