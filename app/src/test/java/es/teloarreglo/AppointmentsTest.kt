@@ -80,7 +80,7 @@ class AppointmentsTest {
         val appointments = withClient({ request ->
             if (request.url.encodedPath == "/rest/v1/appointments") {
                 assertEquals("eq.conv", request.url.parameters["conversation_id"])
-                assertTrue(request.url.parameters["select"]!!.endsWith(",appointment_proposals(*),appointment_payments(*),appointment_changes(*)"))
+                assertTrue(request.url.parameters["select"]!!.contains(",appointment_proposals(*),appointment_payments(*),appointment_changes(*)"))
             }
             listing(request, "${proposalJson(2, "pending")},${proposalJson(1, "rejected")}")
         }) { it.list("conv") }

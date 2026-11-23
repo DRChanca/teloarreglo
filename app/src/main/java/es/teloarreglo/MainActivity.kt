@@ -122,7 +122,8 @@ class MainActivity : AppCompatActivity() {
                             AppointmentsPanel(appointments, access.account!!.userId, conversation, app.applicationScope,
                                 PinSource({ ensureLocationPermission() }, { currentLocation(this@MainActivity) },
                                     mapsReady = deviceMapAvailability(this@MainActivity) == es.teloarreglo.search.MapAvailability.READY,
-                                    home = home))
+                                    home = home),
+                                incidentTools = app.incidents?.let { IncidentTools(it, app.chat!!::messages, app.chatAttachments) })
                         } },
                         attachments = app.chatAttachments)
                 }

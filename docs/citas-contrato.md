@@ -573,7 +573,7 @@ Invariante compartida para #26, #27 y #31 (no hay una segunda implementación de
   `private.delivery_blocked(id)` → `PT409 incident_blocking`. En integrado con pendiente > 0 añade el movimiento
   `delivered` por todo lo pendiente (`pending = 0`, `delivered += pendiente`); en directo o gratuita, ninguno. Pone
   `completed`, `completed_at`, `completion`, `version + 1` y los avisos.
-- `private.delivery_blocked(p_appointment_id uuid) returns boolean`: hoy siempre `false`. #26 lo redefine con
+- `private.delivery_blocked(p_appointment_id uuid) returns boolean`: `false` en #25. #26 (ver más abajo) lo redefine con
   `create or replace` para que una incidencia abierta bloquee la entrega, también la del reloj.
 - `private.completion_deadlines(p_done_at)`: 24 h y 48 h. El intervalo corto de pruebas de #27 debe aislarse; no hay
   parámetro de usuario que cambie los plazos.
@@ -602,3 +602,73 @@ ES/EN/FR/DE.
 ```
 
 Resultados: [comprobación de realizado](comprobacion-realizado.md).
+
+## Incidencias y pruebas privadas — #26
+
+Migración nueva: `20261123012700_incidents.sql`. No edita migraciones anteriores ni cambia firmas de RPC existentes; solo
+redefine con `create or replace` el punto de extensión `private.delivery_blocked` de #25. No se ha desplegado ni escrito en
+la base alojada. El dinero sigue siendo simulado.
+
+Regla: una incidencia nunca mueve dinero ni cambia la etapa de la cita; espera la revisión administrativa (#31). Abierta antes
+de la finalización bloquea la entrega (confirmación del cliente, reloj #27 y cualquier llamada a
+`private.complete_appointment`). Abierta después del cierre es una comunicación: no bloquea ni revierte nada. Etapa de la
+cita, realización reconocida o discutida, revisión de la incidencia y saldo se guardan por separado.
+
+Esquema:
+
+- `public.incidents` (RLS: lectura para cliente y profesional de la cita y para administradores; sin escritura directa).
+  `kind` `cancellation` (petición de cancelación con el trabajo comenzado; solo con la cita `started`) | `quality` (el servicio
+  ocurrió, se discute la calidad) | `not_performed` (se discute si ocurrió). `performance` generada: `acknowledged` solo para
+  `quality`, `disputed` para las demás. `status` `open` | `resolved` (la resolución y sus columnas las añade #31). Contexto al
+  abrir, inmutable: `appointment_stage`, `payment_mode`, `pending_cents`, `delivered_cents` (nulos si la cita es gratuita) y
+  `blocks_delivery` (`stage <> 'completed'`). `description` 1–2000. Una sola abierta por cita (`incidents_one_open`); clave
+  `(opened_by, request_id)`. El disparador `incidents_keep_history` impide cambiar o borrar todo salvo `status`
+  (`42501 incident_history_locked`), también con SQL de confianza.
+- `public.incident_evidence` (misma lectura). Solo inserción (`incident_evidence_append_only` → `42501 evidence_locked`).
+  `kind` `message` (copia del mensaje aportado: `message_id`, `message_author_id`, `message_body`, `message_created_at`,
+  `attachment_kind`, `attachment_path`, `attachment_type`) | `note` (`note` 1–2000). Únicos `(incident_id, author_id,
+  request_id)` y `(incident_id, message_id)`.
+- `appointment_events_kind_check` + `incident_opened` e `incident_evidence` (a la otra parte). #32 debe conservar estos tipos
+  si redefine la restricción.
+- `private.delivery_blocked(id)` = existe una incidencia `open` con `blocks_delivery`.
+
+RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo):
+
+- `open_incident(p_appointment_id uuid, p_request_id uuid, p_kind text, p_description text, p_visibility_acknowledged boolean)`
+  → fila de `incidents`. Cliente o profesional de la cita (`42501 permission_denied`, también si no existe o para un
+  administrador). Sin el aviso aceptado → `22023 visibility_not_acknowledged`. Tipo o descripción inválidos →
+  `22023 invalid_incident`. Misma clave → mismo resultado; con otro contenido → `22023 retry_conflict`. Etapa distinta de
+  `started`/`done`/`completed`, o `cancellation` fuera de `started` → `PT409 incompatible_state` (antes del inicio se cancela con
+  devolución, #24). Ya hay una abierta → `PT409 incident_open` (se aportan pruebas a esa). Avisa a la otra parte.
+- `add_incident_evidence(p_incident_id uuid, p_request_id uuid, p_message_id uuid, p_note text, p_visibility_acknowledged boolean)`
+  → fila de `incident_evidence`. Solo participantes (`42501`). Exactamente uno de mensaje o nota → si no `22023 invalid_evidence`.
+  Un mensaje de otra conversación → `42501`. Incidencia no abierta → `PT409 incident_closed`. Aportar un mensaje ya aportado
+  devuelve esa prueba. Misma clave → mismo resultado; otro contenido → `retry_conflict`. Avisa a la otra parte.
+- `can_read_incident(p_incident_id)` y `can_read_incident_evidence(p_path)`: comprobaciones usadas por RLS y Storage.
+
+Storage: política nueva `incident_evidence_read` en `storage.objects` (bucket `chat-attachments`, solo SELECT): un archivo del chat
+es legible por la revisión solo si se aportó a una incidencia que puede leer. `can_read_chat_attachment` no cambia: el
+administrador sigue sin acceso al chat ni a los adjuntos no aportados.
+
+Carreras: `open_incident`, `add_incident_evidence`, `confirm_done` y el reloj bloquean primero la fila de la cita. Una incidencia
+confirmada antes impide la entrega posterior; si la confirmación llega primero, la incidencia queda como comunicación tras el
+cierre (`appointment_stage = completed`, `blocks_delivery = false`).
+
+Para #31: lectura administrativa ya disponible para `incidents` e `incident_evidence` (y sus archivos). La cita, condiciones y
+movimientos para el administrador siguen sin concederse aquí. La resolución debe cambiar `status` (único campo modificable) y
+entregar/devolver con la invariante de #25, no con lógica propia.
+
+Android: `appointments/Incidents.kt` (`Incidents.open`, `addEvidence(EvidenceDraft.Message|Note)`, `Incident`,
+`IncidentEvidence`, `IncidentFailure`). `Appointments.list` embebe `incidents(*,incident_evidence(*))`; `Appointment.incidents`,
+`openIncident`, `blockingIncident`, `canOpenIncident`, `incidentKinds`, `canAddEvidence`. Con incidencia bloqueante
+`canConfirmDone` es falso y el aviso es `INCIDENT_OPEN`. Interfaz `AppointmentIncidentUi.kt` dentro de la tarjeta: «Comunicar
+una incidencia» (tipo, descripción, efecto económico y aviso de visibilidad con casilla obligatoria) y, por incidencia, estado,
+realización reconocida/discutida, efecto, pruebas (notas, mensajes, fotos y vídeos) y «Añadir prueba» (elegir un mensaje concreto
+del chat o escribir una nota, con el mismo aviso). Textos `incident_*` en ES/EN/FR/DE.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_incidents.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.IncidentsTest'
+```
+
+Resultados: [comprobación de incidencias](comprobacion-incidencias.md).
