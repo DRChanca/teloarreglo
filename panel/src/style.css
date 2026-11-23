@@ -33,3 +33,4 @@ dd { margin: 0; overflow-wrap: anywhere; }
 .ok { color: var(--green); font-weight: 600; }
 .decide { border-top: 1px solid var(--line); padding-top: 12px; }
 @media (max-width: 520px) { dl { grid-template-columns: 1fr; } dt { margin-top: 6px; } }
+mark.changed { background: #fde9b8; color: #5b4300; border-radius: 4px; padding: 0 6px; font-size: 0.8em; font-weight: 600; }

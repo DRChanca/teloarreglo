@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity() {
             var contactProfile by rememberSaveable { mutableStateOf<String?>(null) }
             var conversationJson by rememberSaveable { mutableStateOf<String?>(null) }
             var nearby by rememberSaveable { mutableStateOf(false) }
+            var profileEditor by rememberSaveable { mutableStateOf(false) }
             val app = application as TeloarregloApplication
             val access by app.identity.state.collectAsStateWithLifecycle()
             var knownOwner by rememberSaveable { mutableStateOf<String?>(null) }
@@ -62,10 +63,15 @@ class MainActivity : AppCompatActivity() {
             val changeLanguage: (String) -> Unit = { tag ->
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
             }
-            BackHandler(enabled = account || nearby || (chatVisible && access.stage != AccessStage.CONNECTED)) {
+            BackHandler(enabled = profileEditor) { profileEditor = false; account = true }
+            BackHandler(enabled = !profileEditor && (account || nearby || (chatVisible && access.stage != AccessStage.CONNECTED))) {
                 account = false; nearby = false; chatVisible = false; contactProfile = null; conversationJson = null
             }
-            if (chatVisible && access.stage == AccessStage.CONNECTED && app.chat != null) {
+            if (profileEditor && app.professionalProfiles != null) {
+                ProfileEditorScreen(app.professionalProfiles!!, app.concejos, app.applicationScope,
+                    onBack = { profileEditor = false; account = true },
+                    onStarted = { app.identity.restore() })
+            } else if (chatVisible && access.stage == AccessStage.CONNECTED && app.chat != null) {
                 key(access.account!!.userId) {
                     ChatRoute(app.chat!!, access.account!!.userId, contactProfile,
                         conversationJson?.let { Json.decodeFromString<Conversation>(it) },
@@ -91,7 +97,8 @@ class MainActivity : AppCompatActivity() {
                     onProfile = { ownProfile = it; account = false; chatVisible = false; conversationJson = null },
                     operationScope = app.applicationScope,
                     googleAuth = app.googleAuth, profileReviews = app.profileReviews,
-                    subscriptions = app.subscriptions, agenda = app.agenda)
+                    subscriptions = app.subscriptions, agenda = app.agenda,
+                    onEditProfile = app.professionalProfiles?.let { { profileEditor = true; account = false } })
             } else if (nearby && app.search != null) {
                 NearbySearchScreen(app.search!!, app.catalogue,
                     ensurePermission = { ensureLocationPermission() },

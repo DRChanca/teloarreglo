@@ -85,6 +85,7 @@ fun AccessScreen(
     profileReviews: es.teloarreglo.catalogue.ProfileReviews? = null,
     subscriptions: es.teloarreglo.subscription.Subscriptions? = null,
     agenda: es.teloarreglo.appointments.Agenda? = null,
+    onEditProfile: (() -> Unit)? = null,
 ) {
     val state by identity.state.collectAsStateWithLifecycle()
     val scope = operationScope
@@ -188,6 +189,12 @@ fun AccessScreen(
                                     )
                                     Text(stringResource(R.string.account_hint))
                                     Text(stringResource(R.string.catalogue_can_hire))
+                                    if (onEditProfile != null) {
+                                        Button(onClick = onEditProfile, modifier = Modifier.fillMaxWidth().testTag("profile_edit_open")) {
+                                            Text(stringResource(if (state.account?.professionalProfileId == null) R.string.profile_edit_offer
+                                                else R.string.profile_edit_open))
+                                        }
+                                    }
                                     if (state.account?.professionalProfileId != null && profileReviews != null) {
                                         ProfileReviewCard(profileReviews)
                                     }
