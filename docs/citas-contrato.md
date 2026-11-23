@@ -121,3 +121,64 @@ python3 scripts/android.py ui-test --serial SERIAL_DESECHABLE   # incluye Appoin
 ```
 
 Resultados: [comprobación](comprobacion-citas.md).
+
+## Agenda y confirmación gratuita — #21
+
+Migración nueva: `20261123002100_agenda_confirmation.sql`. Amplía por nombre
+`appointments_stage_check` (+`confirmed`), `appointment_proposals_status_check`
+(+`accepted`) y `appointment_events_kind_check` (+`accepted`). Activa `btree_gist`.
+
+Tablas (RLS, lectura solo para el profesional dueño, sin escritura directa):
+
+- `public.agenda_settings`: una agenda por perfil; `default_duration_minutes`
+  (15–1440) y `timezone` fijo `Europe/Madrid`.
+- `public.availability_windows`: franjas semanales `weekday` ISO 1–7,
+  `start_time` < `end_time` (hora local de Madrid, como mucho hasta 23:59).
+- `public.agenda_reservations`: todo lo que ocupa la agenda, `kind`
+  `appointment` (con `appointment_id` único y `proposal_id`) o `block` (con
+  `request_id`). `during tstzrange` semiabierto `[inicio, fin)` y restricción
+  `agenda_reservations_no_overlap exclude using gist (profile_id with =, during with &&)`:
+  citas confirmadas y bloqueos no se solapan entre sí; contiguos sí se tocan.
+  Pago integrado (#22) y cambios (#23) deben reservar por esta tabla.
+
+RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo):
+
+- `my_agenda()` → `{profile_id, timezone, default_duration_minutes, windows[{weekday,start,end}],
+  blocks[{id,start_at,end_at,reason}], bookings[{appointment_id,start_at,end_at}]}` (bloqueos y
+  citas futuros). Sin perfil profesional → `42501 permission_denied`.
+- `save_agenda(p_default_duration_minutes integer, p_windows jsonb)` → igual que `my_agenda`.
+  Sustituye todo el horario semanal (reintento idempotente). Errores `22023 invalid_agenda`.
+  Las citas ya confirmadas conservan su reserva aunque cambie el horario.
+- `add_agenda_block(p_request_id uuid, p_start, p_end, p_reason text)` → fila de reserva.
+  Máximo 31 días; misma clave y datos → mismo bloqueo; otros datos → `retry_conflict`;
+  solape → `PT409 slot_unavailable`; datos no válidos → `22023 invalid_block`.
+- `remove_agenda_block(p_block_id uuid)` → `{id, removed: true}`. Idempotente; solo
+  borra bloqueos propios.
+- `accept_proposal(p_proposal_id uuid)` → propuesta `accepted`. Solo el cliente de la
+  cita. Requiere propuesta vigente (`pending`; si no, `PT409 stale_version`), cita
+  `pending` (`incompatible_state`), importe 0 y sin coste de visita (`22023 payment_required`),
+  inicio futuro (`PT409 proposal_expired`) e intervalo dentro de una franja de
+  disponibilidad y sin solapes (`PT409 slot_unavailable`). Bloquea la cita
+  (`for update`) y la configuración de la agenda (`for share`); propuesta, etapa
+  `confirmed`, `version + 1`, reserva y evento `accepted` al profesional se aplican
+  juntos o nada. Aceptar de nuevo devuelve el mismo resultado sin duplicar avisos.
+  Las demás solicitudes siguen `pending` y pueden recibir otra versión.
+
+Android (`AppointmentFailure`): `slot_unavailable` → `SLOT_UNAVAILABLE`;
+`proposal_expired` → `STALE`; `payment_required` → `INVALID` (la app no ofrece aceptar
+propuestas con coste). Frontera nueva `es.teloarreglo.appointments.Agenda`
+(`load`, `save`, `addBlock`, `removeBlock`) con `AgendaFailure`
+(`ACCESS`, `INVALID`, `SLOT_UNAVAILABLE`, `RETRY_CONFLICT`).
+
+Interfaz: `AgendaCard` en la pantalla de cuenta del profesional (duración habitual,
+una franja por día de la semana, bloqueos con clave de reintento y citas confirmadas).
+En `AppointmentsPanel` el cliente ve «Aceptar y confirmar la visita» solo en propuestas
+gratuitas, con diálogo que explica que se reservará el horario; ambas cuentas ven
+«Cita confirmada» y «Confirmada: fecha, min. El horario está reservado.».
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> python3 scripts/contract_agenda.py --local
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AgendaTest'
+```
+
+Resultados: [comprobación de agenda](comprobacion-agenda.md).

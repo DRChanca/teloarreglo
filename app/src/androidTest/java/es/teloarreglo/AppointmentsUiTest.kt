@@ -53,6 +53,19 @@ private class FakeAppointments : Appointments {
         items[index] = items[index].copy(version = items[index].version + 1)
         return history[i]
     }
+
+    /** When true, the agenda is taken: like the server, nothing changes and SLOT_UNAVAILABLE is raised. */
+    var slotTaken = false
+    override suspend fun accept(proposalId: String): AppointmentProposal {
+        val (appointmentId, history) = proposals.entries.first { (_, list) -> list.any { it.id == proposalId } }
+        val i = history.indexOfFirst { it.id == proposalId }
+        if (history[i].status == ProposalStatus.ACCEPTED) return history[i]
+        if (slotTaken) throw AppointmentException(AppointmentFailure.SLOT_UNAVAILABLE, Exception())
+        history[i] = history[i].copy(status = ProposalStatus.ACCEPTED)
+        val index = items.indexOfFirst { it.id == appointmentId }
+        items[index] = items[index].copy(version = items[index].version + 1, stage = AppointmentStage.CONFIRMED)
+        return history[i]
+    }
 }
 
 class AppointmentsUiTest {
@@ -121,5 +134,40 @@ class AppointmentsUiTest {
         val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
         assertEquals(listOf(ProposalStatus.REJECTED), appointment.proposals.map { it.status })
         assertEquals(AppointmentStage.PENDING, appointment.stage)
+    }
+
+    private fun withFreeProposal(fake: FakeAppointments) = fake.apply {
+        kotlinx.coroutines.runBlocking {
+            propose("a1", 1, "free-key", ProposalDraft("Visita gratuita", Instant.now().plusSeconds(90_000), 60, 0,
+                null, materialsIncluded = false, travelIncluded = true))
+        }
+    }
+
+    @Test fun clientAcceptsAFreeProposalAndBothSidesSeeItConfirmed() {
+        val fake = withFreeProposal(seeded())
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("appointment_accept").performScrollTo().performClick()
+        compose.onNodeWithTag("appointment_accept_confirm").performClick()
+        waitForTag("appointment_confirmed_a1")
+        compose.onAllNodesWithTag("appointment_accept").assertCountEquals(0)
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.CONFIRMED, appointment.stage)
+        assertEquals(AppointmentNotice.CONFIRMED, appointment.notice("pro"))
+    }
+
+    @Test fun aTakenSlotIsExplainedAndTheRequestStaysPending() {
+        val fake = withFreeProposal(seeded()).apply { slotTaken = true }
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("appointment_accept").performScrollTo().performClick()
+        compose.onNodeWithTag("appointment_accept_confirm").performClick()
+        waitForTag("appointment_decision_error")
+        compose.onAllNodesWithTag("appointment_confirmed_a1").assertCountEquals(0)
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.PENDING, appointment.stage)
+        assertEquals(ProposalStatus.PENDING, appointment.currentProposal?.status)
     }
 }

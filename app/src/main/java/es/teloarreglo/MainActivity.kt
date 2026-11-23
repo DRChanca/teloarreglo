@@ -91,7 +91,7 @@ class MainActivity : AppCompatActivity() {
                     onProfile = { ownProfile = it; account = false; chatVisible = false; conversationJson = null },
                     operationScope = app.applicationScope,
                     googleAuth = app.googleAuth, profileReviews = app.profileReviews,
-                    subscriptions = app.subscriptions)
+                    subscriptions = app.subscriptions, agenda = app.agenda)
             } else if (nearby && app.search != null) {
                 NearbySearchScreen(app.search!!, app.catalogue,
                     ensurePermission = { ensureLocationPermission() },

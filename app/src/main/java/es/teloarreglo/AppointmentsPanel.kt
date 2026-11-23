@@ -83,7 +83,7 @@ fun AppointmentsPanel(
             ElevatedCard(onClick = { sheet = "list" }, modifier = Modifier.fillMaxWidth().testTag("appointment_card")) {
                 Column(Modifier.padding(12.dp)) {
                     Text(noticeText(latest, accountId), style = MaterialTheme.typography.bodyMedium)
-                    Text(stringResource(R.string.appointment_unreserved), style = MaterialTheme.typography.labelSmall)
+                    ReservationLine(latest)
                     Text(stringResource(R.string.appointment_view_all, current.size), color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.labelLarge)
                 }
@@ -133,11 +133,23 @@ private fun noticeText(appointment: Appointment, accountId: String): String {
         AppointmentNotice.AWAITING_CLIENT -> stringResource(R.string.appointment_notice_awaiting_client, version)
         AppointmentNotice.AWAITING_NEW_PROPOSAL -> stringResource(R.string.appointment_notice_awaiting_new)
         AppointmentNotice.SEND_NEW_PROPOSAL -> stringResource(R.string.appointment_notice_send_new)
+        AppointmentNotice.CONFIRMED -> stringResource(R.string.appointment_notice_confirmed)
     }
 }
 
+/** States plainly whether the interval is reserved: only a confirmed appointment occupies the agenda. */
 @Composable
-private fun dateTimeFormat(): DateTimeFormatter {
+private fun ReservationLine(appointment: Appointment) {
+    val confirmed = appointment.confirmedProposal
+    if (appointment.stage == AppointmentStage.CONFIRMED && confirmed != null) {
+        Text(stringResource(R.string.appointment_confirmed_reserved, dateTimeFormat().format(confirmed.startAt),
+            confirmed.durationMinutes), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.testTag("appointment_confirmed_${appointment.id}"))
+    } else Text(stringResource(R.string.appointment_unreserved), style = MaterialTheme.typography.labelSmall)
+}
+
+@Composable
+internal fun dateTimeFormat(): DateTimeFormatter {
     val locale = LocalConfiguration.current.locales[0]
     return remember(locale) {
         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT).withLocale(locale).withZone(ZoneId.systemDefault())
@@ -158,6 +170,7 @@ private fun failureText(failure: AppointmentFailure?): String = stringResource(w
     AppointmentFailure.OUT_OF_COVERAGE -> R.string.appointment_error_coverage
     AppointmentFailure.STALE -> R.string.appointment_error_stale
     AppointmentFailure.RETRY_CONFLICT -> R.string.appointment_error_conflict
+    AppointmentFailure.SLOT_UNAVAILABLE -> R.string.appointment_error_slot
     null -> R.string.appointment_error_network
 })
 
@@ -169,6 +182,7 @@ private fun AppointmentDetails(
     val format = dateTimeFormat()
     val professional = appointment.professionalId == accountId
     var confirmReject by remember { mutableStateOf<AppointmentProposal?>(null) }
+    var confirmAccept by remember { mutableStateOf<AppointmentProposal?>(null) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var failure by remember { mutableStateOf<AppointmentFailure?>(null) }
@@ -190,20 +204,47 @@ private fun AppointmentDetails(
                 style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("map_no_app"))
             Text(noticeText(appointment, accountId), style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.testTag("appointment_notice_${appointment.id}"))
-            Text(stringResource(R.string.appointment_unreserved), style = MaterialTheme.typography.labelSmall)
+            ReservationLine(appointment)
             if (appointment.proposals.isNotEmpty()) {
                 Text(stringResource(R.string.appointment_history), style = MaterialTheme.typography.titleSmall)
                 appointment.proposals.asReversed().forEach { ProposalCard(it, format) }
             }
             val pending = appointment.currentProposal
-            if (professional) Button(onClick = onPropose, modifier = Modifier.testTag("appointment_propose")) {
+            val confirmed = appointment.stage == AppointmentStage.CONFIRMED
+            if (professional && !confirmed) Button(onClick = onPropose, modifier = Modifier.testTag("appointment_propose")) {
                 Text(stringResource(if (appointment.proposals.isEmpty()) R.string.appointment_propose else R.string.appointment_propose_new))
+            }
+            if (!professional && pending != null) {
+                if (pending.isFree) Button(onClick = { confirmAccept = pending }, enabled = !busy,
+                    modifier = Modifier.testTag("appointment_accept")) { Text(stringResource(R.string.appointment_accept)) }
+                else Text(stringResource(R.string.appointment_paid_later), style = MaterialTheme.typography.bodySmall)
             }
             if (!professional && pending != null) OutlinedButton(onClick = { confirmReject = pending }, enabled = !busy,
                 modifier = Modifier.testTag("appointment_reject")) { Text(stringResource(R.string.appointment_reject)) }
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-            if (error != null) Text(failureText(failure), color = MaterialTheme.colorScheme.error)
+            if (error != null) Text(failureText(failure), color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.testTag("appointment_decision_error"))
         }
+    }
+    confirmAccept?.let { proposal ->
+        AlertDialog(onDismissRequest = { confirmAccept = null },
+            text = { Text(stringResource(R.string.appointment_accept_confirm, proposal.version)) },
+            dismissButton = { TextButton(onClick = { confirmAccept = null }) { Text(stringResource(R.string.cancel)) } },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmAccept = null
+                    busy = true; error = null
+                    // Accepting a given version is idempotent on the server: a lost answer is retried safely.
+                    scope.launch {
+                        try { appointments.accept(proposal.id); onChanged() }
+                        catch (e: Exception) {
+                            if (e is CancellationException) throw e
+                            failure = (e as? AppointmentException)?.failure; error = e.message.orEmpty()
+                            if (failure == AppointmentFailure.STALE || failure == AppointmentFailure.SLOT_UNAVAILABLE) onChanged()
+                        } finally { busy = false }
+                    }
+                }, modifier = Modifier.testTag("appointment_accept_confirm")) { Text(stringResource(R.string.appointment_accept)) }
+            })
     }
     confirmReject?.let { proposal ->
         AlertDialog(onDismissRequest = { confirmReject = null },
@@ -229,7 +270,7 @@ private fun AppointmentDetails(
 
 @Composable
 private fun ProposalCard(proposal: AppointmentProposal, format: DateTimeFormatter) {
-    val current = proposal.status == ProposalStatus.PENDING
+    val current = proposal.status == ProposalStatus.PENDING || proposal.status == ProposalStatus.ACCEPTED
     Surface(color = if (current) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
         shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth().testTag("proposal_${proposal.version}")) {
         Column(Modifier.padding(10.dp)) {
@@ -237,6 +278,7 @@ private fun ProposalCard(proposal: AppointmentProposal, format: DateTimeFormatte
                 ProposalStatus.PENDING -> R.string.appointment_status_pending
                 ProposalStatus.REJECTED -> R.string.appointment_status_rejected
                 ProposalStatus.SUPERSEDED -> R.string.appointment_status_superseded
+                ProposalStatus.ACCEPTED -> R.string.appointment_status_accepted
             }), style = MaterialTheme.typography.labelLarge)
             Text(proposal.scope)
             Text(stringResource(R.string.appointment_proposal_when, format.format(proposal.startAt), proposal.durationMinutes))
@@ -250,13 +292,13 @@ private fun ProposalCard(proposal: AppointmentProposal, format: DateTimeFormatte
     }
 }
 
-private fun localInstant(date: LocalDate?, time: String): Instant? = try {
+internal fun localInstant(date: LocalDate?, time: String): Instant? = try {
     date?.let { LocalDateTime.of(it, LocalTime.parse(time.trim())).atZone(ZoneId.systemDefault()).toInstant() }
 } catch (_: Exception) { null }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DateField(date: LocalDate?, enabled: Boolean, onDate: (LocalDate) -> Unit) {
+internal fun DateField(date: LocalDate?, enabled: Boolean, onDate: (LocalDate) -> Unit) {
     var picking by remember { mutableStateOf(false) }
     val locale = LocalConfiguration.current.locales[0]
     OutlinedButton(onClick = { picking = true }, enabled = enabled, modifier = Modifier.testTag("appointment_date")) {
