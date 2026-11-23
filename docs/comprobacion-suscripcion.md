@@ -5,7 +5,7 @@ Fecha: 23 de noviembre de 2026. Contrato: [suscripcion-contrato.md](suscripcion-
 ## Ejecutado localmente
 
 - **pgTAP** `supabase/tests/subscription.test.sql`: 22 comprobaciones, todas correctas (suite completa
-  200/200 tras `supabase db reset --local`). Cubre: tabla sin columnas bancarias, de factura o de
+  203/203 tras `supabase db reset --local`). Cubre: tabla sin columnas bancarias, de factura o de
   renovación; visitante sin acceso; cliente sin escena y sin poder simular; tabla privada ilegible;
   profesional empieza gratis; precio 500 céntimos, EUR, mensual; `charged` siempre falso; zonas
   «Destacado» iguales a la cobertura aprobada; elección nula rechazada; activar es idempotente;
@@ -16,7 +16,7 @@ Fecha: 23 de noviembre de 2026. Contrato: [suscripcion-contrato.md](suscripcion-
   PostgREST locales reales y cuentas desechables en loopback. Visitante 401/403; cliente recibe
   `null` y 401/403 al simular; lectura directa de la tabla rechazada; el profesional activa y cancela
   sin cobro; la fila pública del perfil es idéntica antes, durante y después. Limpia sus datos.
-- **Android** `python3 scripts/android.py check` (pruebas y presentación): compilación, lint y 75
+- **Android** `python3 scripts/android.py check` (pruebas y presentación): compilación, lint y 77
   pruebas unitarias. 5 son nuevas en `SubscriptionTest`: precio como propuesta sin cobro, cuenta sin
   perfil, el cuerpo enviado es solo `{"p_active":true}`, un permiso denegado no se confunde con un
   fallo de red, y un error del servidor se informa como no confirmado.
