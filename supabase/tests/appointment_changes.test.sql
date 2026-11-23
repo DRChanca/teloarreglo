@@ -2,7 +2,7 @@
 -- Fixtures use the ...2301NN range. 2030-01-15 is a Tuesday; Madrid is UTC+1 then (09:00–14:00 local = 08:00–13:00Z).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(45);
+select plan(46);
 
 insert into public.concejos(ine_code, name, boundary) values
  ('33923', 'Prueba Cambios', 'SRID=4326;MULTIPOLYGON(((-6.0 43.0,-5.9 43.0,-5.9 43.1,-6.0 43.1,-6.0 43.0)))'::extensions.geography);
@@ -102,12 +102,19 @@ select is((select array_agg(kind || ':' || amount_cents order by created_at) fro
 select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000230102","role":"authenticated"}',true);
 select is((select upper(during) - lower(during) from public.agenda_reservations where appointment_id = (select repair from ids)),
  interval '90 minutes', 'the reservation follows the accepted duration');
+-- Since the agenda fix (20261123012610) the occupied hour is refused when the change is proposed.
+select throws_ok($$select public.propose_change((select repair from ids), (select version from public.appointments
+ where id = (select repair from ids)), '60000000-0000-0000-0000-000000230196', 'Repair overlapping', '2030-01-15 10:45Z',
+ 90, 12000, null, true, true)$$, 'PT409', 'slot_unavailable', 'a change to an occupied hour is refused when proposed');
+-- Race: the hour was free when proposed, a block takes it before the acceptance.
 select public.propose_change((select repair from ids), (select version from public.appointments where id = (select repair from ids)),
- '60000000-0000-0000-0000-000000230104', 'Repair later', '2030-01-15 10:45Z', 90, 12000, null, true, true);
+ '60000000-0000-0000-0000-000000230104', 'Repair later', '2030-01-15 09:30Z', 90, 12000, null, true, true);
+select public.add_agenda_block('60000000-0000-0000-0000-000000230195', '2030-01-15 10:00Z', '2030-01-15 10:30Z', 'Errand');
 select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000230101","role":"authenticated"}',true);
 select throws_ok($$select public.accept_change((select id from public.appointment_changes where scope = 'Repair later'))$$,
- 'PT409', 'slot_unavailable', 'a change to an occupied hour is refused');
+ 'PT409', 'slot_unavailable', 'a change to an hour taken meanwhile is refused at acceptance');
 select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000230102","role":"authenticated"}',true);
+select public.remove_agenda_block((select id from public.agenda_reservations where reason = 'Errand'));
 select is((select lower(during) || '/' || (select status from public.appointment_changes where scope = 'Repair later')
  from public.agenda_reservations where appointment_id = (select repair from ids)), '2030-01-15 08:00:00+00/pending',
  'the failed acceptance keeps the reservation and leaves the change pending');
