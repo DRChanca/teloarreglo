@@ -35,6 +35,7 @@ data class AppointmentProposal(
     @SerialName("appointment_id") val appointmentId: String,
     @SerialName("author_id") val authorId: String,
     val version: Int,
+    @SerialName("request_id") val requestId: String,
     val scope: String,
     @SerialName("start_at") @Serializable(ServerInstant::class) val startAt: Instant,
     @SerialName("end_at") @Serializable(ServerInstant::class) val endAt: Instant,
@@ -54,6 +55,7 @@ data class Appointment(
     @SerialName("conversation_id") val conversationId: String,
     @SerialName("client_id") val clientId: String,
     @SerialName("professional_id") val professionalId: String,
+    @SerialName("request_id") val requestId: String,
     val problem: String,
     @SerialName("requested_start") @Serializable(ServerInstant::class) val requestedStart: Instant,
     @SerialName("requested_end") @Serializable(ServerInstant::class) val requestedEnd: Instant,
@@ -69,6 +71,20 @@ data class Appointment(
     val proposals get() = rawProposals.sortedBy { it.version }
     /** The version the client may still decide on, if any. */
     val currentProposal get() = rawProposals.filter { it.status == ProposalStatus.PENDING }.maxByOrNull { it.version }
+
+    /** What this account should know or do next. Every state here is unconfirmed and unreserved. */
+    fun notice(accountId: String): AppointmentNotice {
+        val professional = accountId == professionalId
+        return when {
+            currentProposal != null -> if (professional) AppointmentNotice.AWAITING_CLIENT else AppointmentNotice.DECIDE_PROPOSAL
+            rawProposals.isEmpty() -> if (professional) AppointmentNotice.SEND_PROPOSAL else AppointmentNotice.AWAITING_PROPOSAL
+            else -> if (professional) AppointmentNotice.SEND_NEW_PROPOSAL else AppointmentNotice.AWAITING_NEW_PROPOSAL
+        }
+    }
+}
+
+enum class AppointmentNotice {
+    AWAITING_PROPOSAL, SEND_PROPOSAL, DECIDE_PROPOSAL, AWAITING_CLIENT, AWAITING_NEW_PROPOSAL, SEND_NEW_PROPOSAL
 }
 
 data class AppointmentRequest(

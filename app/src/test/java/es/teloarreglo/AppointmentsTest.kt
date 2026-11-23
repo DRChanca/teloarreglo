@@ -132,6 +132,18 @@ class AppointmentsTest {
         }
     }
 
+    @Test fun eachAccountSeesTheNoticeThatMatchesItsRole() = runTest {
+        suspend fun noticeFor(proposals: String, account: String) = withClient({
+            json("[" + appointmentJson.dropLast(1) + ""","appointment_proposals":[$proposals]}]""")
+        }) { it.list("conv") }.single().notice(account)
+        assertEquals(AppointmentNotice.AWAITING_PROPOSAL, noticeFor("", "client"))
+        assertEquals(AppointmentNotice.SEND_PROPOSAL, noticeFor("", "pro"))
+        assertEquals(AppointmentNotice.DECIDE_PROPOSAL, noticeFor(proposalJson(1, "pending"), "client"))
+        assertEquals(AppointmentNotice.AWAITING_CLIENT, noticeFor(proposalJson(1, "pending"), "pro"))
+        assertEquals(AppointmentNotice.AWAITING_NEW_PROPOSAL, noticeFor(proposalJson(1, "rejected"), "client"))
+        assertEquals(AppointmentNotice.SEND_NEW_PROPOSAL, noticeFor(proposalJson(1, "rejected"), "pro"))
+    }
+
     @Test fun euroInputIsParsedToExactCentsWithoutFloatingPoint() {
         assertEquals(8550, parseEuroCents("85,5"))
         assertEquals(8550, parseEuroCents("85.50"))
