@@ -1,0 +1,30 @@
+# Gradle / Android
+.gradle/
+build/
+**/build/
+.kotlin/
+local.properties
+*.apk
+*.aab
+captures/
+.externalNativeBuild/
+.cxx/
+
+# IDE
+.idea/
+*.iml
+
+# Secretos y entorno
+.env
+.env.*
+!.env.example
+
+# Wrangler / Cloudflare
+.wrangler/
+.dev.vars
+
+# Node
+node_modules/
+
+# SO
+.DS_Store

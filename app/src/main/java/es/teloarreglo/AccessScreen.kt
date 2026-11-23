@@ -276,6 +276,14 @@ fun AccessScreen(
                                         PrimaryButton(state.busy, R.string.create_account, "signUp") {
                                             submit { identity.signUp(email.trim(), it) }
                                         }
+                                        if (google != null) {
+                                            Text(stringResource(R.string.or), Modifier.align(Alignment.CenterHorizontally))
+                                            OutlinedButton(
+                                                enabled = !state.busy,
+                                                onClick = { google.startFlow() },
+                                                modifier = Modifier.fillMaxWidth().testTag("google"),
+                                            ) { Text(stringResource(R.string.google)) }
+                                        }
                                         FormLinks(R.string.have_account to "toSignIn", enabled = !state.busy) {
                                             identity.dismiss(); form = Form.SIGN_IN
                                         }
