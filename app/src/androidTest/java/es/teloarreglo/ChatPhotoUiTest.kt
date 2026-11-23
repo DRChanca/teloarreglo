@@ -26,7 +26,7 @@ class ChatPhotoUiTest {
                 bytes: ByteArray) = emptyFlow<AttachmentProgress>()
             override suspend fun url(path: String): String { requested.add(path); return "file:///missing.jpg" }
         }
-        compose.setContent { ChatScreen(chat, "pro", conversation, {}, {}, attachments) }
+        compose.setContent { ChatScreen(chat, "pro", conversation, {}, {}, attachments = attachments) }
         compose.waitUntil(5_000) { requested.isNotEmpty() }
         compose.onNodeWithTag("photo_attach").assertIsDisplayed()
         compose.onNodeWithTag("message_message").assertExists()
