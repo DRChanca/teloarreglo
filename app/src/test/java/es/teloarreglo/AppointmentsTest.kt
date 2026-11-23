@@ -1,6 +1,7 @@
 package es.teloarreglo
 
 import es.teloarreglo.appointments.*
+import es.teloarreglo.search.GeoPoint
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.ktor.client.engine.mock.MockEngine
@@ -18,8 +19,8 @@ import java.time.Instant
 class AppointmentsTest {
     private val appointmentJson = """{"id":"appt","conversation_id":"conv","profile_id":"profile","client_id":"client",
         "professional_id":"pro","request_id":"key","problem":"Fuga","requested_start":"2030-01-15T10:00:00+00:00",
-        "requested_end":"2030-01-15T12:00:00+00:00","address":"Calle 1","latitude":43.05,"longitude":-5.95,
-        "version":1,"stage":"pending","created_at":"2026-11-23T10:00:00+00:00"}"""
+        "requested_end":"2030-01-15T12:00:00+00:00","area_lat":43.051,"area_lng":-5.948,"area_radius_m":400,
+        "area_ine_code":"33044","location_shared_at":null,"version":1,"stage":"pending","created_at":"2026-11-23T10:00:00+00:00"}"""
     private fun proposalJson(version: Int, status: String) = """{"id":"p$version","appointment_id":"appt",
         "author_id":"pro","version":$version,"request_id":"k$version","scope":"Sifón","start_at":"2030-01-15T10:30:00+00:00",
         "end_at":"2030-01-15T12:00:00+00:00","duration_minutes":90,"amount_cents":8500,"visit_fee_cents":null,
@@ -39,6 +40,17 @@ class AppointmentsTest {
 
     private fun MockRequestHandleScope.json(body: String, status: HttpStatusCode = HttpStatusCode.OK) =
         respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
+
+    private fun placeJson(exact: Boolean) = if (exact)
+        """{"appointment_id":"appt","exact":true,"address":"Calle 1","latitude":43.05,"longitude":-5.95,
+        "area_lat":43.051,"area_lng":-5.948,"area_radius_m":400,"ine_code":"33044","concejo_name":"Oviedo"}"""
+    else """{"appointment_id":"appt","exact":false,"address":null,"latitude":null,"longitude":null,
+        "area_lat":43.051,"area_lng":-5.948,"area_radius_m":400,"ine_code":"33044","concejo_name":"Oviedo"}"""
+
+    /** The list reads the table and then the places; [places] answers the second call. */
+    private fun MockRequestHandleScope.listing(request: HttpRequestData, proposals: String, places: String = "[]") =
+        if (request.url.encodedPath == "/rest/v1/rpc/appointment_places") json(places)
+        else json("[" + appointmentJson.dropLast(1) + ""","appointment_proposals":[$proposals]}]""")
 
     private fun error(code: String, message: String) =
         """{"code":"$code","message":"$message","details":null,"hint":null}"""
@@ -64,11 +76,9 @@ class AppointmentsTest {
 
     @Test fun historyKeepsRejectedVersionsAndShowsLatestPendingAsCurrent() = runTest {
         val appointments = withClient({ request ->
-            assertEquals("/rest/v1/appointments", request.url.encodedPath)
-            assertEquals("eq.conv", request.url.parameters["conversation_id"])
-            assertEquals("*,appointment_proposals(*)", request.url.parameters["select"])
-            json("[" + appointmentJson.dropLast(1) +
-                ""","appointment_proposals":[${proposalJson(2, "pending")},${proposalJson(1, "rejected")}]}]""")
+            if (request.url.encodedPath == "/rest/v1/appointments")
+                assertEquals("eq.conv", request.url.parameters["conversation_id"])
+            listing(request, "${proposalJson(2, "pending")},${proposalJson(1, "rejected")}")
         }) { it.list("conv") }
         val appointment = appointments.single()
         assertEquals(listOf(1, 2), appointment.proposals.map { it.version })
@@ -76,9 +86,37 @@ class AppointmentsTest {
         assertEquals(ProposalStatus.REJECTED, appointment.proposals.first().status)
     }
 
+    @Test fun listNeverAsksTheTableForTheExactPlaceAndReadsItThroughThePlaceFunction() = runTest {
+        var placesBody: JsonObject? = null
+        val appointment = withClient({ request ->
+            if (request.url.encodedPath == "/rest/v1/appointments") {
+                val select = request.url.parameters["select"]!!
+                // The server refuses these columns to every account (#38); asking for them fails the whole read.
+                assertFalse(select, Regex("""(^|,)(\*|address|latitude|longitude)(,|$)""").containsMatchIn(select))
+                assertTrue(select.contains("appointment_proposals(*)"))
+            } else placesBody = Json.parseToJsonElement((request.body as TextContent).text).jsonObject
+            listing(request, "", "[${placeJson(exact = false)}]")
+        }) { it.list("conv") }.single()
+        assertEquals("conv", placesBody!!["p_conversation_id"]!!.jsonPrimitive.content)
+        assertEquals(AppointmentLocation.Approximate(GeoPoint(43.051, -5.948), 400, "Oviedo"), appointment.location)
+    }
+
+    @Test fun confirmedPlaceGivesTheExactAddressAndPin() = runTest {
+        val appointment = withClient({ listing(it, "", "[${placeJson(exact = true)}]") }) { it.list("conv") }.single()
+        assertEquals(AppointmentLocation.Exact("Calle 1", GeoPoint(43.05, -5.95)), appointment.location)
+    }
+
+    @Test fun locationIsUnknownUntilThePlaceArrivesAndNeverExactWithoutAnAddress() = runTest {
+        val missing = withClient({ listing(it, "") }) { it.list("conv") }.single()
+        assertNull(missing.location)
+        val incomplete = withClient({
+            listing(it, "", "[" + placeJson(exact = true).replace(""""address":"Calle 1"""", """"address":null""") + "]")
+        }) { it.list("conv") }.single()
+        assertTrue(incomplete.location is AppointmentLocation.Approximate)
+    }
+
     @Test fun noCurrentProposalAfterTheOnlyOneIsRejected() = runTest {
-        val appointment = withClient({ json("[" + appointmentJson.dropLast(1) +
-            ""","appointment_proposals":[${proposalJson(1, "rejected")}]}]""") }) { it.list("conv") }.single()
+        val appointment = withClient({ listing(it, proposalJson(1, "rejected")) }) { it.list("conv") }.single()
         assertNull(appointment.currentProposal)
         assertEquals(AppointmentStage.PENDING, appointment.stage)
     }
@@ -133,9 +171,9 @@ class AppointmentsTest {
     }
 
     @Test fun eachAccountSeesTheNoticeThatMatchesItsRole() = runTest {
-        suspend fun noticeFor(proposals: String, account: String) = withClient({
-            json("[" + appointmentJson.dropLast(1) + ""","appointment_proposals":[$proposals]}]""")
-        }) { it.list("conv") }.single().notice(account)
+        suspend fun noticeFor(proposals: String, account: String) = withClient({ listing(it, proposals) }) {
+            it.list("conv")
+        }.single().notice(account)
         assertEquals(AppointmentNotice.AWAITING_PROPOSAL, noticeFor("", "client"))
         assertEquals(AppointmentNotice.SEND_PROPOSAL, noticeFor("", "pro"))
         assertEquals(AppointmentNotice.DECIDE_PROPOSAL, noticeFor(proposalJson(1, "pending"), "client"))

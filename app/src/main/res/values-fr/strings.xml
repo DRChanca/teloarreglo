@@ -75,7 +75,7 @@
     <string name="appointment_from">De (HH:MM)</string>
     <string name="appointment_to">À (HH:MM)</string>
     <string name="appointment_address">Adresse exacte de l’intervention</string>
-    <string name="appointment_address_privacy">Seul ce professionnel la verra après l’envoi de la demande. Elle n’apparaît ni dans les recherches ni dans le chat.</string>
+    <string name="appointment_address_privacy">Jusqu’à la confirmation du rendez-vous, ce professionnel ne voit qu’une zone approximative de 400 m ; une fois confirmé, il verra l’adresse exacte. Elle n’apparaît ni dans les recherches ni dans le chat.</string>
     <string name="appointment_latitude">Latitude</string>
     <string name="appointment_longitude">Longitude</string>
     <string name="appointment_use_location">Utiliser ma position actuelle</string>
@@ -194,7 +194,7 @@
     <string name="map_no_map_anchor">Sans carte, la distance est mesurée depuis un point situé dans la commune choisie.</string>
     <string name="map_search_here">Rechercher dans cette commune</string>
     <string name="map_directions">Itinéraire avec Google Maps</string>
-    <string name="map_open_appointment">Ouvrir le point dans Google Maps</string>
+    <string name="map_open_appointment">Itinéraire</string>
     <string name="map_no_app">Aucune application ne peut ouvrir Google Maps. Installez Google Maps ou un navigateur.</string>
     <string name="map_pick_on_map">Choisir le point sur la carte</string>
     <string name="map_pick_confirm">Utiliser ce point</string>
@@ -258,4 +258,9 @@
     <string name="home_search_from_home">Chercher près de chez moi</string>
     <string name="home_searching_from">Depuis le domicile : %1$s</string>
     <string name="home_appointment_prefilled">Nous avons indiqué votre adresse. Modifiez-la si le travail a lieu ailleurs.</string>
+    <string name="area_approximate">Zone approximative de %1$d m à %2$s</string>
+    <string name="area_approximate_no_concejo">Zone approximative de %1$d m</string>
+    <string name="area_exact_after_confirmation">L’adresse exacte s’affichera une fois le rendez-vous confirmé.</string>
+    <string name="area_client_notice">Jusqu’à la confirmation du rendez-vous, le professionnel ne voit qu’une zone approximative de %1$d m.</string>
+    <string name="area_loading">Chargement de l’emplacement…</string>
 </resources>

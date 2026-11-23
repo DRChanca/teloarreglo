@@ -74,7 +74,9 @@ muestra la operación como enviada.
 
 ### Lectura desde Android
 
-`GET appointments?select=*,appointment_proposals(*)&conversation_id=eq.UUID&order=created_at.desc`.
+`GET appointments?select=<columnas legibles>,appointment_proposals(*)&conversation_id=eq.UUID&order=created_at.desc`
+y después `rpc/appointment_places` para el lugar. Desde #38, `select=*` responde 403 porque `address`,
+`latitude` y `longitude` no son columnas legibles (ver «Zona aproximada — #38»).
 La frontera Kotlin es `es.teloarreglo.appointments.Appointments`
 (`list`, `request`, `propose`, `reject`), con `Appointment.currentProposal` y
 `Appointment.notice(accountId)` para el estado que corresponde a cada rol.
@@ -83,7 +85,7 @@ La frontera Kotlin es `es.teloarreglo.appointments.Appointments`
 ## Privacidad de la dirección
 
 La dirección exacta y las coordenadas solo existen en `appointments`, creada al
-solicitar. `conversations`, `approved_profiles`, la búsqueda y la Edge Function
+solicitar, y desde #38 solo se leen con `appointment_places` (abajo). `conversations`, `approved_profiles`, la búsqueda y la Edge Function
 no la contienen ni la consultan. El rol administrativo no tiene excepción: la
 revisión de incidencias (#26/#30) deberá añadir su propia frontera explícita.
 
@@ -183,3 +185,70 @@ gratuitas, con diálogo que explica que se reservará el horario; ambas cuentas 
 ```
 
 Resultados: [comprobación de agenda](comprobacion-agenda.md).
+
+## Zona aproximada — #38
+
+Migración nueva: `20261123003800_approximate_appointment_area.sql`.
+No modifica migraciones anteriores ni carga, borra o reinicia datos preparados.
+No se ha desplegado ni escrito en la base alojada.
+
+Regla: mientras la cita no está confirmada, el profesional solo conoce un círculo de 400 m y el concejo.
+La dirección y las coordenadas exactas se le entregan cuando la etapa pasa a `confirmed`.
+
+Columnas nuevas de `public.appointments` (legibles por los dos participantes):
+
+| Columna | Notas |
+| --- | --- |
+| `area_lat`, `area_lng` | Centro desplazado al azar, uniforme en un disco de 300 m alrededor de `latitude/longitude` (`private.approximate_center`, `st_project` sobre el esferoide). La casa queda siempre dentro del círculo |
+| `area_radius_m` | Siempre 400 |
+| `area_ine_code` | Concejo del punto: el cubierto por el perfil que admitió la solicitud o, si no, el más cercano a ≤ 250 m |
+| `location_shared_at` | Primera vez que la etapa fue `confirmed`. No se borra en etapas posteriores |
+
+El disparador `appointments_area` (`before insert or update`) calcula el centro una sola vez al crear la
+fila. Lo conserva en cualquier actualización, aunque se intente sobrescribir, y solo lo recalcula si
+cambian `latitude/longitude`, por ejemplo con un cambio de dirección aceptado (#23). También fija
+`location_shared_at` con la primera confirmación. Una confirmación pagada (#22) que ponga
+`stage = 'confirmed'` revela el lugar sin más cambios. Una etapa previa nueva, como «pendiente de
+pago», no lo revela.
+
+Privilegios de columna: `authenticated` ya no tiene `select` sobre la tabla entera, sino sobre todas
+las columnas salvo `address`, `latitude` y `longitude`. La política `participants_read` no cambia.
+Por eso `select *`, `to_jsonb(fila)` y los filtros sobre esas columnas responden `42501` (HTTP 403)
+para cualquier cuenta, también para el cliente y también tras confirmar. Las funciones
+`security definer` (#20–#25) siguen leyéndolas sin cambios.
+
+- `appointment_places(p_conversation_id uuid)` → filas `appointment_id, exact, address, latitude,
+  longitude, area_lat, area_lng, area_radius_m, ine_code, concejo_name`, de las citas de esa
+  conversación en las que participa quien llama (las más recientes primero). `exact` es verdadero para
+  el cliente y, con `location_shared_at`, para el profesional. Si es falso, `address`, `latitude` y
+  `longitude` son `null`. Una tercera cuenta recibe 0 filas; `anon` no puede llamarla (`42501`).
+
+Vías revisadas (pgTAP `appointment_area.test.sql`): tabla `appointments` (columnas, `*`, fila
+completa, filtros), `request_appointment` (solo el cliente), `propose_appointment`,
+`appointment_proposals`, `appointment_events` (incluido el aviso `accepted`), `conversations`,
+`chat_messages`, `conversation_inbox()`, `my_notices()`, `my_agenda()`, `agenda_reservations` y
+`home_addresses`. Ninguna contiene la dirección ni las coordenadas exactas para el profesional antes
+de confirmar.
+
+Para otros tickets: cualquier vista, RPC o evento nuevo que devuelva datos de la cita al profesional
+no debe incluir `address/latitude/longitude` si `location_shared_at` es nulo. Puede usar
+`appointment_places` o las columnas `area_*`. La revisión administrativa de incidencias (#26/#30)
+sigue sin excepción y debe añadir su propia frontera.
+
+Android: `Appointments.list` pide las columnas legibles y después `appointment_places`, y rellena
+`Appointment.place` (`AppointmentPlace`) y `Appointment.location`:
+`AppointmentLocation.Exact(address, point)` o `Approximate(center, radiusMeters, concejoName)`.
+`AppointmentLocationBlock` muestra:
+
+- si es exacta, la dirección, las coordenadas y «Cómo llegar». El cliente, mientras la cita está
+  pendiente, ve además «Hasta confirmar la cita, el profesional solo ve una zona aproximada de 400 m».
+- si es aproximada, «Zona aproximada de 400 m en <concejo>», el círculo en Google Maps
+  (`ApproximateAreaMap`, sin marcador) cuando hay mapa, y «La dirección exacta se mostrará cuando se
+  confirme la cita». No ofrece «Cómo llegar».
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_appointments.py --local && python3 contract_agenda.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AppointmentsTest'
+```
+
+Resultados: [comprobación de la zona aproximada](comprobacion-zona-aproximada.md).

@@ -120,7 +120,7 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 
 **Privacidad, multimedia y conservación**
 
-- Solo las dos personas implicadas pueden leer la conversación y sus adjuntos privados. La excepción administrativa del apartado 14 permite revisar los datos necesarios de una cita con incidencia y las pruebas aportadas expresamente, sin acceso general al chat. El domicilio exacto no aparece en la búsqueda ni al abrir el chat: se comparte al solicitar la cita.
+- Solo las dos personas implicadas pueden leer la conversación y sus adjuntos privados. La excepción administrativa del apartado 14 permite revisar los datos necesarios de una cita con incidencia y las pruebas aportadas expresamente, sin acceso general al chat. El domicilio exacto no aparece en la búsqueda ni al abrir el chat. Al solicitar la cita, el profesional solo ve una zona aproximada de 400 m y el concejo; la dirección y las coordenadas exactas las ve cuando la cita se confirma (#38).
 - Cada persona actúa en su nombre. El profesional propone condiciones, comienza y marca realizado; el cliente acepta las condiciones y confirma la realización. Los permisos deben comprobarse realmente, no solo ocultar botones.
 - Fotos y vídeos se pueden enviar y abrir desde el primer contacto, antes de cualquier respuesta o aceptación del profesional.
 - Compresión integrada automática con progreso y posibilidad de cancelar, sin modificar el original del teléfono. Si falla o el resultado supera los límites, se explica y no se envía silenciosamente el original.
@@ -238,7 +238,7 @@ Se recogerá una dirección para obtener su concejo o municipio. Los profesional
 
 El profesional seleccionará los municipios o concejos donde presta servicio.
 
-La dirección exacta del cliente nunca será pública: se comparte con el profesional al solicitar una cita. Para buscar bastará con una zona o localidad. La dirección de casa del cliente (#37) se guarda de forma privada, solo legible por su propietario, y únicamente se comparte si el cliente la deja en una solicitud de cita.
+La dirección exacta del cliente nunca será pública. Decisión de 2026-11-23 (#38): mientras la cita está solicitada o propuesta, el profesional solo ve un círculo de 400 m y el concejo; la dirección y las coordenadas exactas, con «Cómo llegar», se le muestran cuando la cita se confirma. El centro del círculo lo calcula el servidor una sola vez al crear la solicitud, desplazado al azar hasta 300 m de la casa (distribución uniforme en el disco), de modo que la casa queda siempre dentro del círculo pero no necesariamente en su centro, y repetir la consulta no permite deducirla. La protección está en el servidor: las cuentas de la app no pueden leer las columnas de dirección y coordenadas de la cita, y la única vía es una función que solo las entrega al cliente y, tras la confirmación, al profesional. Sin clave de Google Maps, la app muestra el texto «zona aproximada de 400 m en <concejo>». Para buscar bastará con una zona o localidad. La dirección de casa del cliente (#37) se guarda de forma privada, solo legible por su propietario, y únicamente se comparte si el cliente la deja en una solicitud de cita.
 
 ## 6. Revisión y verificación de profesionales
 
@@ -293,7 +293,7 @@ Una cita es una cita: no se crean tipos separados para «valoración» y «reali
 ### Solicitud y confirmación
 
 - El cliente consulta disponibilidad y solicita una hora de inicio.
-- Aporta descripción del problema y dirección del trabajo.
+- Aporta descripción del problema y dirección del trabajo. Hasta la confirmación, el profesional solo ve una zona aproximada de 400 m y el concejo (#38).
 - La solicitud aparece como «Pendiente de confirmación».
 - Solicitar una hora no la reserva definitivamente.
 - El profesional configura una duración habitual y puede ajustarla al revisar la solicitud.

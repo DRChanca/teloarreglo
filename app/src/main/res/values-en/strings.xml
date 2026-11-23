@@ -75,7 +75,7 @@
     <string name="appointment_from">From (HH:MM)</string>
     <string name="appointment_to">Until (HH:MM)</string>
     <string name="appointment_address">Exact address of the job</string>
-    <string name="appointment_address_privacy">Only this professional will see it once you send the request. It never appears in searches or in the chat.</string>
+    <string name="appointment_address_privacy">Until you confirm the appointment, this professional only sees an approximate 400 m area; once confirmed, they see the exact address. It never appears in searches or in the chat.</string>
     <string name="appointment_latitude">Latitude</string>
     <string name="appointment_longitude">Longitude</string>
     <string name="appointment_use_location">Use my current location</string>
@@ -194,7 +194,7 @@
     <string name="map_no_map_anchor">Without a map, distance is measured from a point inside the chosen municipality.</string>
     <string name="map_search_here">Search in this municipality</string>
     <string name="map_directions">Directions with Google Maps</string>
-    <string name="map_open_appointment">Open the point in Google Maps</string>
+    <string name="map_open_appointment">Get directions</string>
     <string name="map_no_app">No app can open Google Maps. Install Google Maps or a browser.</string>
     <string name="map_pick_on_map">Choose the point on the map</string>
     <string name="map_pick_confirm">Use this point</string>
@@ -258,4 +258,9 @@
     <string name="home_search_from_home">Search near home</string>
     <string name="home_searching_from">From home: %1$s</string>
     <string name="home_appointment_prefilled">We filled in your home address. Change it if the job is somewhere else.</string>
+    <string name="area_approximate">Approximate %1$d m area in %2$s</string>
+    <string name="area_approximate_no_concejo">Approximate %1$d m area</string>
+    <string name="area_exact_after_confirmation">The exact address will be shown once the appointment is confirmed.</string>
+    <string name="area_client_notice">Until the appointment is confirmed, the professional only sees an approximate %1$d m area.</string>
+    <string name="area_loading">Loading the location…</string>
 </resources>
