@@ -159,7 +159,8 @@ RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo):
   `pending` (`incompatible_state`), importe 0 y sin coste de visita (`22023 payment_required`),
   inicio futuro (`PT409 proposal_expired`) e intervalo dentro de una franja de
   disponibilidad y sin solapes (`PT409 slot_unavailable`). Bloquea la cita
-  (`for update`) y la configuración de la agenda (`for share`); propuesta, etapa
+  (`for update`) y después la agenda del perfil (`private.lock_agenda`, bloqueo consultivo
+  de transacción que también toman `save_agenda` y los bloqueos); propuesta, etapa
   `confirmed`, `version + 1`, reserva y evento `accepted` al profesional se aplican
   juntos o nada. Aceptar de nuevo devuelve el mismo resultado sin duplicar avisos.
   Las demás solicitudes siguen `pending` y pueden recibir otra versión.
