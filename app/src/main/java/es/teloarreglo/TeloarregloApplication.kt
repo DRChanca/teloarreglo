@@ -85,6 +85,8 @@ class TeloarregloApplication : Application() {
     val covers: ProfessionalCovers? by lazy { client?.let(::SupabaseProfessionalCovers) }
     val chat: Chat? by lazy { client?.let(::SupabaseChat) }
     val appointments: Appointments? by lazy { client?.let(::SupabaseAppointments) }
+    /** The professional's single agenda (#21); confirmations reserve through it on the server. */
+    val agenda: es.teloarreglo.appointments.Agenda? by lazy { client?.let { es.teloarreglo.appointments.SupabaseAgenda(it) } }
     val chatAttachments: ChatAttachments? by lazy { client?.let(::SupabaseChatAttachments) }
     /** Owner's profile review result decided in the private panel (#29). */
     val profileReviews: ProfileReviews? by lazy { client?.let(::SupabaseProfileReviews) }
@@ -97,6 +99,16 @@ class TeloarregloApplication : Application() {
 
     /** Concejos for the manual job location (#17); null without configuration. */
     val concejos: ConcejoDirectory? by lazy { client?.let(::SupabaseConcejoDirectory) }
+
+    /** Private home address of the signed-in account (#37); null without configuration. */
+    val homeSession: es.teloarreglo.home.HomeSession? by lazy {
+        client?.let { es.teloarreglo.home.HomeSession(es.teloarreglo.home.SupabaseHomeAddresses(it)) }
+    }
+
+    /** Google Places (New) autocomplete with the Maps key; null without key (pin/GPS fallback). */
+    val addressAutocomplete: es.teloarreglo.home.AddressAutocomplete? by lazy {
+        es.teloarreglo.home.GooglePlacesAutocomplete.create(this, BuildConfig.MAPS_API_KEY)
+    }
 
     /** Native Google sign-in, only when its public web client ID is configured for this build. */
     val googleAuth: ComposeAuth?

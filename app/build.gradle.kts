@@ -20,6 +20,8 @@ val publicNames = setOf(
     "GOOGLE_WEB_CLIENT_ID",
     // Google Maps SDK key (#17): public by design (ships in the APK), protected by its
     // Android app + SHA-1 and API restrictions in Google Cloud. Empty hides the map.
+    // The same key serves Places (New) autocomplete for the home address (#37); without it,
+    // or with Places not enabled on the key, the app falls back to pin/GPS + typed address.
     "GOOGLE_MAPS_API",
 )
 fun dotenvValue(raw: String, lineNumber: Int): String {
@@ -157,6 +159,8 @@ dependencies {
     implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("io.ktor:ktor-client-okhttp:3.1.3")
     implementation("com.google.maps.android:maps-compose:6.6.0")
+    implementation("com.google.android.libraries.places:places:4.4.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
     implementation("androidx.media3:media3-transformer:1.6.1")
     implementation("androidx.media3:media3-effect:1.6.1")
     implementation("androidx.media3:media3-common:1.6.1")

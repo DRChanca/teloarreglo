@@ -84,6 +84,9 @@ fun AccessScreen(
     googleAuth: ComposeAuth? = null,
     profileReviews: es.teloarreglo.catalogue.ProfileReviews? = null,
     subscriptions: es.teloarreglo.subscription.Subscriptions? = null,
+    agenda: es.teloarreglo.appointments.Agenda? = null,
+    /** Home address summary and its change action (#37), shown to a connected account. */
+    homeSlot: (@Composable () -> Unit)? = null,
 ) {
     val state by identity.state.collectAsStateWithLifecycle()
     val scope = operationScope
@@ -187,11 +190,15 @@ fun AccessScreen(
                                     )
                                     Text(stringResource(R.string.account_hint))
                                     Text(stringResource(R.string.catalogue_can_hire))
+                                    homeSlot?.invoke()
                                     if (state.account?.professionalProfileId != null && profileReviews != null) {
                                         ProfileReviewCard(profileReviews)
                                     }
                                     if (state.account?.professionalProfileId != null && subscriptions != null) {
                                         SubscriptionCard(subscriptions, scope)
+                                    }
+                                    if (state.account?.professionalProfileId != null && agenda != null) {
+                                        AgendaCard(agenda, scope)
                                     }
                                     state.account?.professionalProfileId?.let { id ->
                                         if (onProfile != null) {

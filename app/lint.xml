@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Places SDK (#37) bundles Glide, whose unused NotificationTarget triggers this check. Only that
+         library usage is ignored; any notification posted by app code is still checked (#32). -->
+    <issue id="NotificationPermission">
+        <ignore regexp="com\.bumptech\.glide" />
+    </issue>
+</lint>

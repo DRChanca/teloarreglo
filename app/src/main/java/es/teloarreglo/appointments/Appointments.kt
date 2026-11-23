@@ -24,9 +24,10 @@ object ServerInstant : KSerializer<Instant> {
     override fun serialize(encoder: Encoder, value: Instant) = encoder.encodeString(value.toString())
 }
 
-@Serializable enum class AppointmentStage { @SerialName("pending") PENDING }
+@Serializable enum class AppointmentStage { @SerialName("pending") PENDING, @SerialName("confirmed") CONFIRMED }
 @Serializable enum class ProposalStatus {
-    @SerialName("pending") PENDING, @SerialName("rejected") REJECTED, @SerialName("superseded") SUPERSEDED
+    @SerialName("pending") PENDING, @SerialName("rejected") REJECTED, @SerialName("superseded") SUPERSEDED,
+    @SerialName("accepted") ACCEPTED,
 }
 
 @Serializable
@@ -46,7 +47,10 @@ data class AppointmentProposal(
     @SerialName("travel_included") val travelIncluded: Boolean,
     val status: ProposalStatus,
     @SerialName("created_at") @Serializable(ServerInstant::class) val createdAt: Instant,
-)
+) {
+    /** Free visits are confirmed by acceptance alone; any cost goes through payment (#22). */
+    val isFree get() = amountCents == 0 && (visitFeeCents ?: 0) == 0
+}
 
 /** Readable only by its client and professional; the exact address is shared on request. */
 @Serializable
@@ -71,11 +75,14 @@ data class Appointment(
     val proposals get() = rawProposals.sortedBy { it.version }
     /** The version the client may still decide on, if any. */
     val currentProposal get() = rawProposals.filter { it.status == ProposalStatus.PENDING }.maxByOrNull { it.version }
+    /** The accepted version whose interval the agenda reserves, once confirmed. */
+    val confirmedProposal get() = rawProposals.firstOrNull { it.status == ProposalStatus.ACCEPTED }
 
-    /** What this account should know or do next. Every state here is unconfirmed and unreserved. */
+    /** What this account should know or do next. Only CONFIRMED means the interval is reserved. */
     fun notice(accountId: String): AppointmentNotice {
         val professional = accountId == professionalId
         return when {
+            stage == AppointmentStage.CONFIRMED -> AppointmentNotice.CONFIRMED
             currentProposal != null -> if (professional) AppointmentNotice.AWAITING_CLIENT else AppointmentNotice.DECIDE_PROPOSAL
             rawProposals.isEmpty() -> if (professional) AppointmentNotice.SEND_PROPOSAL else AppointmentNotice.AWAITING_PROPOSAL
             else -> if (professional) AppointmentNotice.SEND_NEW_PROPOSAL else AppointmentNotice.AWAITING_NEW_PROPOSAL
@@ -84,7 +91,7 @@ data class Appointment(
 }
 
 enum class AppointmentNotice {
-    AWAITING_PROPOSAL, SEND_PROPOSAL, DECIDE_PROPOSAL, AWAITING_CLIENT, AWAITING_NEW_PROPOSAL, SEND_NEW_PROPOSAL
+    AWAITING_PROPOSAL, SEND_PROPOSAL, DECIDE_PROPOSAL, AWAITING_CLIENT, AWAITING_NEW_PROPOSAL, SEND_NEW_PROPOSAL, CONFIRMED
 }
 
 data class AppointmentRequest(
@@ -98,18 +105,21 @@ data class ProposalDraft(
 )
 
 /** Server rejections, kept apart from network uncertainty (which is rethrown as is). */
-enum class AppointmentFailure { ACCESS, INVALID, OUT_OF_COVERAGE, STALE, RETRY_CONFLICT }
+/** SLOT_UNAVAILABLE: the interval overlaps the agenda or leaves its availability; nothing was confirmed. */
+enum class AppointmentFailure { ACCESS, INVALID, OUT_OF_COVERAGE, STALE, RETRY_CONFLICT, SLOT_UNAVAILABLE }
 class AppointmentException(val failure: AppointmentFailure, cause: Exception) : Exception(failure.name, cause)
 
 /**
- * Requests and versioned proposals. Nothing here reserves time: pending requests and
- * proposals may overlap. Reuse the same requestId after an uncertain result.
+ * Requests and versioned proposals. Pending requests and proposals may overlap and reserve nothing;
+ * only [accept] of a free proposal confirms and reserves, atomically on the server.
+ * Reuse the same requestId after an uncertain result; accepting the same proposal again is safe.
  */
 interface Appointments {
     suspend fun list(conversationId: String): List<Appointment>
     suspend fun request(conversationId: String, requestId: String, request: AppointmentRequest): Appointment
     suspend fun propose(appointmentId: String, expectedVersion: Int, requestId: String, draft: ProposalDraft): AppointmentProposal
     suspend fun reject(proposalId: String): AppointmentProposal
+    suspend fun accept(proposalId: String): AppointmentProposal
 }
 
 class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
@@ -153,14 +163,22 @@ class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
             .decodeAs<AppointmentProposal>()
     }
 
+    override suspend fun accept(proposalId: String) = mapped {
+        client.postgrest.rpc("accept_proposal", buildJsonObject { put("p_proposal_id", proposalId) })
+            .decodeAs<AppointmentProposal>()
+    }
+
     private inline fun <T> mapped(block: () -> T): T = try { block() } catch (error: RestException) {
         val message = error.message.orEmpty()
         val failure = when {
             error.statusCode == 401 || error.statusCode == 403 -> AppointmentFailure.ACCESS
-            "stale_version" in message || "incompatible_state" in message -> AppointmentFailure.STALE
+            "slot_unavailable" in message -> AppointmentFailure.SLOT_UNAVAILABLE
+            "stale_version" in message || "incompatible_state" in message || "proposal_expired" in message ->
+                AppointmentFailure.STALE
             "out_of_coverage" in message -> AppointmentFailure.OUT_OF_COVERAGE
             "retry_conflict" in message -> AppointmentFailure.RETRY_CONFLICT
-            "invalid_appointment" in message || "invalid_proposal" in message -> AppointmentFailure.INVALID
+            "invalid_appointment" in message || "invalid_proposal" in message || "payment_required" in message ->
+                AppointmentFailure.INVALID
             else -> null
         }
         throw if (failure != null) AppointmentException(failure, error) else error
