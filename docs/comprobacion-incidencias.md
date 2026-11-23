@@ -49,7 +49,7 @@ servidor real es pgTAP y el contrato HTTP local.
 ## Rediseño de la selección de pruebas — 23 de noviembre de 2026
 
 Ejecutado localmente: `MessageSelectionTest` (5), `MessageSearchTest` (4) y `MessageEvidenceTest` (4), lógica pura y servicio
-simulado; suite unitaria completa `presentacion` 215/215; `python3 scripts/android.py check --environment presentacion` correcto.
+simulado; suite unitaria completa `presentacion` 220/220 (tras unir `spec/11-demo`); `python3 scripts/android.py check --environment presentacion` correcto.
 `ChatEvidenceUiTest` (selección por pulsación larga, búsqueda y entrada desde la tarjeta) y el `AppointmentsUiTest` ajustado
 compilan, pero **no se han ejecutado**: necesitan un emulador desechable asignado. Sin cambios en el servidor; no se ha desplegado
 ni escrito en la base alojada.

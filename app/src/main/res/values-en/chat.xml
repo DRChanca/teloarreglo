@@ -19,4 +19,6 @@
     <string name="chat_other">Other account</string>
     <string name="chat_client">Client · %1$s</string>
     <string name="chat_access">Sign in to contact this professional.</string>
+    <string name="chat_tick_delivered">Delivered to the other phone</string>
+    <string name="chat_tick_read">Read</string>
 </resources>

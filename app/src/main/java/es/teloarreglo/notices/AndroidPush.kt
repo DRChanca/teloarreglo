@@ -20,7 +20,13 @@ import es.teloarreglo.BuildConfig
 import es.teloarreglo.MainActivity
 import es.teloarreglo.R
 import es.teloarreglo.TeloarregloApplication
+import es.teloarreglo.chat.OpenConversation
+import es.teloarreglo.chat.showsNotification
+import es.teloarreglo.identity.AccessStage
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
@@ -95,7 +101,28 @@ class TeloMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         val data = message.data
-        if (app.push?.accepts(data["recipient_id"]) != true || !notificationPermissionGranted(this)) return
+        if (app.push?.accepts(data["recipient_id"]) != true) return
+        val conversation = data["conversation_id"]?.takeIf { data["kind"] == "message" && it.isNotEmpty() }
+        // The chat on screen for this conversation refreshes at once instead of showing a notification.
+        conversation?.let { OpenConversation.pushes.tryEmit(it) }
+        if (showsNotification(data["kind"], conversation, OpenConversation.id) && notificationPermissionGranted(this)) {
+            notify(data, conversation)
+        }
+        // The message reached this phone: the sender sees two ticks. Runs on FCM's worker thread, bounded in time.
+        if (conversation != null) runBlocking { withTimeoutOrNull(10_000) { markDelivered(conversation) } }
+    }
+
+    private suspend fun markDelivered(conversation: String) {
+        val chat = app.chat ?: return
+        try {
+            if (app.identity.state.value.stage != AccessStage.CONNECTED) app.identity.restore()
+            if (app.identity.state.value.stage == AccessStage.CONNECTED) chat.markDelivered(conversation)
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+        }
+    }
+
+    private fun notify(data: Map<String, String>, conversation: String?) {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(NotificationChannel(CHANNEL, getString(R.string.notices_channel),
             NotificationManager.IMPORTANCE_DEFAULT))
@@ -112,7 +139,7 @@ class TeloMessagingService : FirebaseMessagingService() {
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .build()
         // Tag = conversation or notice: a retried push replaces the same notification instead of adding another.
-        val tag = data["conversation_id"]?.takeIf { data["kind"] == "message" && it.isNotEmpty() } ?: data["notice_id"]
+        val tag = conversation ?: data["notice_id"]
         try { manager.notify(tag, 0, notification) } catch (_: SecurityException) { }
     }
 }

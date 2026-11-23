@@ -97,3 +97,31 @@ nueva. Comprobación: [comprobacion-no-leidos.md](comprobacion-no-leidos.md).
 **Actualización #40:** `client_name` ya no se lee de los metadatos de Auth en cada
 consulta. Sale de `public.account_names`, que se rellena desde esos metadatos y que
 la app pide al registrarse con correo. Ver [nombre-contrato.md](nombre-contrato.md).
+
+## Doble check: entregado y leído
+
+Migración `20261123013300_chat_receipts.sql`. Los mensajes propios muestran marcas como en WhatsApp:
+
+| Marca | Significado |
+| --- | --- |
+| Un check gris | Guardado en el servidor. |
+| Dos checks grises | Entregado en el teléfono de la otra persona. |
+| Dos checks azules | Leído por la otra persona. |
+
+Las marcas siguen siendo por participante y conversación, nunca por mensaje. Un mensaje está entregado o leído
+si su `created_at` es anterior o igual a la marca de la otra persona. Leído implica entregado. Las marcas nunca
+retroceden.
+
+- `conversation_reads.last_delivered_at` (nueva) y `last_read_at` (ahora admite nulo: una fila solo con
+  entrega aún no tiene lectura).
+- `mark_conversation_delivered(p_conversation_id uuid)` → sin cuerpo. Solo participantes (`42501
+  permission_denied`). Marca la entrega hasta el mensaje más reciente ya persistido.
+- `mark_conversations_delivered()` → sin cuerpo. Marca la entrega en todas las conversaciones del llamante.
+- `conversation_receipts(p_conversation_id uuid)` → `{delivered_at, read_at}` de la **otra** persona, `null`
+  si no existen. Solo participantes (`42501 permission_denied`). `conversation_reads` sigue devolviendo por RLS
+  solo las marcas propias.
+
+La app marca la entrega al leer la bandeja, al abrir la app con la cuenta conectada y al recibir el push de un
+mensaje (`TeloMessagingService`). Abrir la conversación la marca leída. El chat abierto consulta
+`conversation_receipts` en cada refresco (cada 2,5 s, o al momento si llega un push de esa conversación).
+Kotlin: `Chat.markDelivered`, `Chat.markAllDelivered`, `Chat.receipts`, `Receipts.tickOf`.
