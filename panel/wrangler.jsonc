@@ -1,0 +1,12 @@
+{
+  // Private administration panel (#29, #31): static React build served by Cloudflare Workers assets.
+  // Build first with the public Supabase values (see docs/revision-perfiles-contrato.md), then:
+  //   npx wrangler@4.158.0 deploy -c panel/wrangler.jsonc
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "teloarreglo-panel",
+  "compatibility_date": "2026-11-04",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
