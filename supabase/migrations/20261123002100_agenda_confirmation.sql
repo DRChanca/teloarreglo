@@ -77,6 +77,13 @@ end;
 $$;
 revoke all on function private.own_profile_id() from public, anon, authenticated;
 
+-- Serializes every write to one profile's agenda (schedule, blocks, confirmations) until commit.
+-- Concurrent inserts checked by the exclusion constraint can otherwise deadlock (40P01 → HTTP 500)
+-- instead of one of them failing cleanly with slot_unavailable.
+create function private.lock_agenda(p_profile_id uuid) returns void language sql security definer set search_path = ''
+as $$ select pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('agenda:' || p_profile_id::text, 0)) $$;
+revoke all on function private.lock_agenda(uuid) from public, anon, authenticated;
+
 create function public.my_agenda() returns jsonb language plpgsql security definer set search_path = ''
 as $$
 declare
@@ -126,7 +133,8 @@ begin
             raise exception using errcode = '22023', message = 'invalid_agenda';
         end if;
     end loop;
-    -- Locks the agenda row so a concurrent confirmation sees either the old or the new schedule.
+    -- A concurrent confirmation sees either the old or the new schedule, never a mix.
+    perform private.lock_agenda(profile);
     insert into public.agenda_settings(profile_id, professional_id, default_duration_minutes)
       values (profile, auth.uid(), p_default_duration_minutes)
       on conflict (profile_id) do update set default_duration_minutes = excluded.default_duration_minutes,
@@ -153,6 +161,8 @@ begin
        or p_end - p_start > interval '31 days' or length(coalesce(reason, '')) > 200 then
         raise exception using errcode = '22023', message = 'invalid_block';
     end if;
+    -- Also serializes simultaneous retries of the same key, which then find the first result.
+    perform private.lock_agenda(profile);
     select * into result from public.agenda_reservations r
       where r.professional_id = auth.uid() and r.request_id = p_request_id;
     if result.id is not null then
@@ -184,6 +194,7 @@ as $$
 declare
     profile uuid := private.own_profile_id();
 begin
+    perform private.lock_agenda(profile);
     delete from public.agenda_reservations r
       where r.id = p_block_id and r.profile_id = profile and r.kind = 'block';
     return jsonb_build_object('id', p_block_id, 'removed', true);
@@ -193,7 +204,8 @@ revoke all on function public.remove_agenda_block(uuid) from public, anon;
 grant execute on function public.remove_agenda_block(uuid) to authenticated;
 
 -- The client accepts the current free proposal: proposal, stage, reservation and notice change together
--- or not at all. The exclusion constraint decides between simultaneous confirmations.
+-- or not at all. Confirmations of one professional are serialized by lock_agenda; the exclusion
+-- constraint remains the final guarantee against overlaps.
 create function public.accept_proposal(p_proposal_id uuid)
 returns jsonb language plpgsql security definer set search_path = ''
 as $$
@@ -211,6 +223,8 @@ begin
     if appt.id is null or appt.client_id <> actor then
         raise exception using errcode = '42501', message = 'permission_denied';
     end if;
+    -- Always taken after the appointment row lock and never the other way round, so no lock cycle.
+    perform private.lock_agenda(appt.profile_id);
     select * into result from public.appointment_proposals p where p.id = p_proposal_id;
     if result.status = 'accepted' then
         return to_jsonb(result);
@@ -227,8 +241,6 @@ begin
     if result.start_at <= now() then
         raise exception using errcode = 'PT409', message = 'proposal_expired';
     end if;
-    -- Shared lock: a concurrent save_agenda waits, so the check below sees a stable schedule.
-    perform 1 from public.agenda_settings s where s.profile_id = appt.profile_id for share;
     local_start := result.start_at at time zone 'Europe/Madrid';
     local_end := result.end_at at time zone 'Europe/Madrid';
     if not exists (select 1 from public.availability_windows w
