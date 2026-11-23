@@ -84,6 +84,7 @@ fun AccessScreen(
     googleAuth: ComposeAuth? = null,
     profileReviews: es.teloarreglo.catalogue.ProfileReviews? = null,
     subscriptions: es.teloarreglo.subscription.Subscriptions? = null,
+    agenda: es.teloarreglo.appointments.Agenda? = null,
 ) {
     val state by identity.state.collectAsStateWithLifecycle()
     val scope = operationScope
@@ -192,6 +193,9 @@ fun AccessScreen(
                                     }
                                     if (state.account?.professionalProfileId != null && subscriptions != null) {
                                         SubscriptionCard(subscriptions, scope)
+                                    }
+                                    if (state.account?.professionalProfileId != null && agenda != null) {
+                                        AgendaCard(agenda, scope)
                                     }
                                     state.account?.professionalProfileId?.let { id ->
                                         if (onProfile != null) {

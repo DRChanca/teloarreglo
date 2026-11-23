@@ -85,6 +85,8 @@ class TeloarregloApplication : Application() {
     val covers: ProfessionalCovers? by lazy { client?.let(::SupabaseProfessionalCovers) }
     val chat: Chat? by lazy { client?.let(::SupabaseChat) }
     val appointments: Appointments? by lazy { client?.let(::SupabaseAppointments) }
+    /** The professional's single agenda (#21); confirmations reserve through it on the server. */
+    val agenda: es.teloarreglo.appointments.Agenda? by lazy { client?.let { es.teloarreglo.appointments.SupabaseAgenda(it) } }
     val chatAttachments: ChatAttachments? by lazy { client?.let(::SupabaseChatAttachments) }
     /** Owner's profile review result decided in the private panel (#29). */
     val profileReviews: ProfileReviews? by lazy { client?.let(::SupabaseProfileReviews) }
