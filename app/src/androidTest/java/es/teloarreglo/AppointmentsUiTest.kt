@@ -26,7 +26,9 @@ private class FakeAppointments : Appointments {
         requestKeys += requestId
         val result = items.firstOrNull { it.requestId == requestId } ?: Appointment(
             "a${items.size + 1}", conversationId, "client", "pro", requestId, request.problem, request.start, request.end,
-            request.address, request.latitude, request.longitude, 1, AppointmentStage.PENDING, Instant.now(),
+            1, AppointmentStage.PENDING, Instant.now(),
+            place = AppointmentPlace("a${items.size + 1}", true, request.address, request.latitude, request.longitude,
+                request.latitude, request.longitude, 400, "Oviedo"),
         ).also { items.add(0, it) }
         if (loseNextResponse) { loseNextResponse = false; throw java.io.IOException("response lost") }
         return result

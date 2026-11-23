@@ -138,6 +138,16 @@ class AgendaContract(unittest.TestCase):
             code, rows = api.request(f"/rest/v1/appointments?select=stage&id=eq.{contiguous['appointment_id']}",
                                      token=token, method="GET")
             self.assertEqual(rows, [{"stage": "confirmed"}])
+        # Confirmation reveals the exact place to the professional (#38); pending requests stay approximate.
+        code, places = self.rpc("appointment_places", {"p_conversation_id": conversations[0]}, tokens[1])
+        self.assertEqual(code, 200)
+        revealed = {p["appointment_id"]: p for p in places}
+        self.assertEqual(revealed[contiguous["appointment_id"]]["exact"], True)
+        self.assertIsNotNone(revealed[contiguous["appointment_id"]]["address"])
+        code, pending = api.request(f"/rest/v1/appointments?select=id&stage=eq.pending"
+                                    f"&conversation_id=eq.{conversations[0]}", token=tokens[1], method="GET")
+        for row in pending:
+            self.assertEqual((revealed[row["id"]]["exact"], revealed[row["id"]]["address"]), (False, None))
 
         # Outside availability, blocks and paid proposals are refused without partial effects.
         _, late = self.free_proposal(tokens[0], conversations[0], f"{DAY}T19:00:00Z", f"{DAY}T20:00:00Z")

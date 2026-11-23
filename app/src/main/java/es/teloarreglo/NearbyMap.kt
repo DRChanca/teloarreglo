@@ -33,6 +33,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
+import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
@@ -135,6 +136,25 @@ fun MapPointPicker(center: GeoPoint, pin: GeoPoint?, onPin: (GeoPoint) -> Unit, 
             onMapClick = { onPin(GeoPoint(it.latitude, it.longitude)) },
         ) {
             if (pin != null) Marker(state = rememberUpdatedMarkerState(position = pin.latLng()))
+        }
+        Box(Modifier.align(Alignment.TopCenter)) { LoadWatch(loaded) }
+    }
+}
+
+/** The approximate area of a pending appointment (#38): only the circle, no marker, since the centre is not the home. */
+@Composable
+fun ApproximateAreaMap(center: GeoPoint, radiusMeters: Int, modifier: Modifier = Modifier) {
+    var loaded by remember { mutableStateOf(false) }
+    val camera = rememberCameraPositionState { position = CameraPosition.fromLatLngZoom(center.latLng(), 14f) }
+    val color = MaterialTheme.colorScheme.primary
+    Box(modifier.fillMaxWidth().height(220.dp).testTag("area_map")) {
+        GoogleMap(
+            cameraPositionState = camera,
+            uiSettings = MapUiSettings(zoomControlsEnabled = true, mapToolbarEnabled = false),
+            onMapLoaded = { loaded = true },
+        ) {
+            Circle(center = center.latLng(), radius = radiusMeters.toDouble(), strokeColor = color,
+                strokeWidth = 4f, fillColor = color.copy(alpha = 0.18f))
         }
         Box(Modifier.align(Alignment.TopCenter)) { LoadWatch(loaded) }
     }
