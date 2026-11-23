@@ -315,6 +315,15 @@
     <string name="video_message">Video in der Unterhaltung gesendet</string>
     <string name="video_play">Video abspielen</string>
     <string name="video_open_error">Das Video konnte nicht abgespielt werden. Tippe, um es erneut zu versuchen.</string>
+    <string name="account_name_label">Name</string>
+    <string name="account_name_title">Wie heißt du?</string>
+    <string name="account_name_intro">Fachleute, mit denen du schreibst, sehen diesen Namen. Deine E-Mail-Adresse wird nicht angezeigt.</string>
+    <string name="account_name_save">Namen speichern</string>
+    <string name="account_name_change">Namen ändern</string>
+    <string name="account_name_none">Du hast deinen Namen noch nicht angegeben.</string>
+    <string name="account_name_invalid">Gib deinen Namen ein, 1 bis 80 Zeichen.</string>
+    <string name="account_name_access">Deine Sitzung ist abgelaufen. Melde dich erneut an.</string>
+    <string name="account_name_network">Der Name konnte nicht gespeichert werden. Prüfe die Verbindung und versuche es erneut.</string>
     <string name="payment_integrated">%1$s zahlen und bestätigen</string>
     <string name="payment_direct">Ich zahle %1$s direkt an die Fachkraft</string>
     <string name="payment_retry">Bestätigung erneut senden (%1$s)</string>
