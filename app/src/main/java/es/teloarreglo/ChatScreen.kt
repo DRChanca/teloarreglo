@@ -33,6 +33,7 @@ fun ChatRoute(
     chat: Chat, accountId: String, profileId: String?, conversation: Conversation?,
     onOpened: (Conversation) -> Unit, onBack: () -> Unit,
     appointmentsSlot: (@Composable (Conversation) -> Unit)? = null,
+    attachments: ChatAttachments? = null,
 ) {
     var failed by remember(profileId) { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
@@ -46,7 +47,7 @@ fun ChatRoute(
             }
         }
     }
-    if (profileId == null) ChatScreen(chat, accountId, conversation, onOpened, onBack, appointmentsSlot)
+    if (profileId == null) ChatScreen(chat, accountId, conversation, onOpened, onBack, appointmentsSlot, attachments)
     else {
         BackHandler(onBack = onBack)
         TeloTheme {
@@ -69,6 +70,7 @@ fun ChatScreen(
     chat: Chat, accountId: String, conversation: Conversation?,
     onSelect: (Conversation) -> Unit, onBack: () -> Unit,
     appointmentsSlot: (@Composable (Conversation) -> Unit)? = null,
+    attachments: ChatAttachments? = null,
 ) {
     BackHandler(onBack = onBack)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -218,7 +220,11 @@ fun ChatScreen(
                                     Column(Modifier.widthIn(max = 300.dp).padding(12.dp).testTag("message_${message.id}")) {
                                         Text(stringResource(if (message.authorId == accountId) R.string.chat_you else R.string.chat_other),
                                             style = MaterialTheme.typography.labelSmall)
-                                        Text(message.body)
+                                        message.attachmentPath?.let { path ->
+                                            if (attachments != null) ChatPhotoBubble(path, attachments)
+                                            else Text(stringResource(R.string.photo_message))
+                                        }
+                                        if (message.body.isNotEmpty()) Text(message.body)
                                         Text(timestampFormat.format(Instant.parse(message.createdAt)),
                                             style = MaterialTheme.typography.labelSmall)
                                         if (message.authorId == accountId) Text(stringResource(R.string.chat_sent),
@@ -241,6 +247,9 @@ fun ChatScreen(
                             modifier = Modifier.testTag("chat_retry_send")) {
                             Text(stringResource(R.string.chat_retry_send))
                         }
+                    }
+                    if (attachments != null) ChatPhotoControls(attachments, accountId, conversation.id, outboxReady) { sent ->
+                        messages = (messages + sent).distinctBy { it.id }.sortedWith(compareBy({ it.createdAt }, { it.id }))
                     }
                     OutlinedTextField(text, { if (it.length <= 4000) text = it },
                         enabled = outboxReady && requestId == null && !sending,

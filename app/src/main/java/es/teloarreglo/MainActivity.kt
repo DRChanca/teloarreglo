@@ -77,7 +77,8 @@ class MainActivity : AppCompatActivity() {
                         appointmentsSlot = app.appointments?.let { appointments -> { conversation ->
                             AppointmentsPanel(appointments, access.account!!.userId, conversation, app.applicationScope,
                                 PinSource({ ensureLocationPermission() }, { currentLocation(this@MainActivity) }))
-                        } })
+                        } },
+                        attachments = app.chatAttachments)
                 }
             } else if (account || chatVisible || emailLinkPending) {
                 AccessScreen(app.identity, changeLanguage,

@@ -118,4 +118,18 @@
     <string name="appointment_load_error">Termine konnten nicht geladen werden.</string>
     <string name="appointment_address_label">Adresse (privat): %1$s</string>
     <string name="appointment_pin">Koordinaten: %1$s, %2$s</string>
+    <string name="photo_attach">Foto senden</string>
+    <string name="photo_limits">JPEG oder PNG. Gesendet wird eine Kopie mit höchstens 1600 px und 2 MB; dein Original bleibt unverändert.</string>
+    <string name="photo_preparing">Foto wird komprimiert…</string>
+    <string name="photo_uploading">Foto wird gesendet… %1$d %%</string>
+    <string name="photo_discard">Verwerfen</string>
+    <string name="photo_error_unsupported">Es können nur JPEG- oder PNG-Fotos gesendet werden. Das Foto wurde nicht gesendet; wähle ein anderes.</string>
+    <string name="photo_error_too_large">Das Foto passt auch komprimiert nicht in 2 MB. Es wurde nicht gesendet; wähle ein anderes.</string>
+    <string name="photo_error_quota">Der Fotospeicher ist voll. Das Foto wurde nicht gesendet; versuche es später erneut.</string>
+    <string name="photo_error_access">Du darfst hier keine Fotos senden oder deine Sitzung ist abgelaufen. Das Foto wurde nicht gesendet.</string>
+    <string name="photo_error_conflict">Dieses Foto passt nicht zu einem früheren Versand. Es wurde nicht gesendet; wähle es erneut.</string>
+    <string name="photo_error_network">Der Versand des Fotos konnte nicht bestätigt werden. Erneut versuchen: Es wird nicht doppelt gesendet.</string>
+    <string name="photo_message">Foto in der Unterhaltung gesendet</string>
+    <string name="photo_open_error">Das Foto konnte nicht geöffnet werden. Zum erneuten Versuch tippen.</string>
+    <string name="photo_close">Schließen</string>
 </resources>

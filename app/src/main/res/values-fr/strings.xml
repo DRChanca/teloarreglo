@@ -118,4 +118,18 @@
     <string name="appointment_load_error">Impossible de charger les rendez-vous.</string>
     <string name="appointment_address_label">Adresse (privée) : %1$s</string>
     <string name="appointment_pin">Coordonnées : %1$s, %2$s</string>
+    <string name="photo_attach">Envoyer une photo</string>
+    <string name="photo_limits">JPEG ou PNG. Une copie de 1600 px et 2 Mo maximum est envoyée ; votre original reste intact.</string>
+    <string name="photo_preparing">Compression de la photo…</string>
+    <string name="photo_uploading">Envoi de la photo… %1$d %%</string>
+    <string name="photo_discard">Abandonner</string>
+    <string name="photo_error_unsupported">Seules les photos JPEG ou PNG peuvent être envoyées. La photo n’a pas été envoyée ; choisissez-en une autre.</string>
+    <string name="photo_error_too_large">La photo dépasse 2 Mo même compressée. Elle n’a pas été envoyée ; choisissez-en une autre.</string>
+    <string name="photo_error_quota">L’espace des photos est plein. La photo n’a pas été envoyée ; réessayez plus tard.</string>
+    <string name="photo_error_access">Vous n’êtes pas autorisé à envoyer des photos ici ou votre session a expiré. La photo n’a pas été envoyée.</string>
+    <string name="photo_error_conflict">Cette photo ne correspond pas à un envoi précédent. Elle n’a pas été envoyée ; choisissez-la à nouveau.</string>
+    <string name="photo_error_network">L’envoi de la photo n’a pas pu être confirmé. Réessayez : elle ne sera pas dupliquée.</string>
+    <string name="photo_message">Photo envoyée dans la conversation</string>
+    <string name="photo_open_error">Impossible d’ouvrir la photo. Touchez pour réessayer.</string>
+    <string name="photo_close">Fermer</string>
 </resources>

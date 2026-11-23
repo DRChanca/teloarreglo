@@ -118,4 +118,18 @@
     <string name="appointment_load_error">No se pudieron cargar las citas.</string>
     <string name="appointment_address_label">Dirección (privada): %1$s</string>
     <string name="appointment_pin">Coordenadas: %1$s, %2$s</string>
+    <string name="photo_attach">Enviar foto</string>
+    <string name="photo_limits">JPEG o PNG. Se envía una copia de hasta 1600 px y 2 MB; tu original no cambia.</string>
+    <string name="photo_preparing">Comprimiendo la foto…</string>
+    <string name="photo_uploading">Enviando foto… %1$d %%</string>
+    <string name="photo_discard">Descartar</string>
+    <string name="photo_error_unsupported">Solo se pueden enviar fotos JPEG o PNG. La foto no se ha enviado; elige otra.</string>
+    <string name="photo_error_too_large">La foto no cabe en 2 MB ni siquiera comprimida. No se ha enviado; elige otra.</string>
+    <string name="photo_error_quota">El espacio para fotos está lleno. La foto no se ha enviado; inténtalo más tarde.</string>
+    <string name="photo_error_access">No tienes permiso para enviar fotos aquí o tu sesión ha caducado. La foto no se ha enviado.</string>
+    <string name="photo_error_conflict">Esta foto no coincide con un envío anterior. No se ha enviado; vuelve a elegirla.</string>
+    <string name="photo_error_network">No se pudo confirmar el envío de la foto. Reintenta: no se duplicará.</string>
+    <string name="photo_message">Foto enviada en la conversación</string>
+    <string name="photo_open_error">No se pudo abrir la foto. Toca para reintentar.</string>
+    <string name="photo_close">Cerrar</string>
 </resources>

@@ -118,4 +118,18 @@
     <string name="appointment_load_error">Appointments could not be loaded.</string>
     <string name="appointment_address_label">Address (private): %1$s</string>
     <string name="appointment_pin">Coordinates: %1$s, %2$s</string>
+    <string name="photo_attach">Send photo</string>
+    <string name="photo_limits">JPEG or PNG. A copy of up to 1600 px and 2 MB is sent; your original is not changed.</string>
+    <string name="photo_preparing">Compressing the photo…</string>
+    <string name="photo_uploading">Sending photo… %1$d %%</string>
+    <string name="photo_discard">Discard</string>
+    <string name="photo_error_unsupported">Only JPEG or PNG photos can be sent. The photo was not sent; choose another one.</string>
+    <string name="photo_error_too_large">The photo does not fit in 2 MB even compressed. It was not sent; choose another one.</string>
+    <string name="photo_error_quota">Photo storage is full. The photo was not sent; try again later.</string>
+    <string name="photo_error_access">You are not allowed to send photos here or your session has expired. The photo was not sent.</string>
+    <string name="photo_error_conflict">This photo does not match an earlier send. It was not sent; choose it again.</string>
+    <string name="photo_error_network">The photo could not be confirmed. Retry: it will not be duplicated.</string>
+    <string name="photo_message">Photo sent in the conversation</string>
+    <string name="photo_open_error">The photo could not be opened. Tap to retry.</string>
+    <string name="photo_close">Close</string>
 </resources>
