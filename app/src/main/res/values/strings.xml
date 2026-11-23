@@ -201,7 +201,7 @@
     <string name="map_pin_not_address">El punto no sustituye la dirección: escribe la calle y el número.</string>
     <string name="appointment_accept">Aceptar y confirmar la visita</string>
     <string name="appointment_accept_confirm">Vas a aceptar la versión %1$d, gratuita. La cita quedará confirmada y ese horario se reservará en la agenda del profesional.</string>
-    <string name="appointment_paid_later">Esta versión tiene coste. Su confirmación con pago aún no está disponible: puedes rechazarla o pedir otra versión por el chat.</string>
+    <string name="appointment_paid_later">Esta versión tiene coste. Elige cómo confirmarla: pago dentro de la app o pago directo al profesional.</string>
     <string name="appointment_notice_confirmed">Cita confirmada</string>
     <string name="appointment_confirmed_reserved">Confirmada: %1$s, %2$d min. El horario está reservado.</string>
     <string name="appointment_status_accepted">Aceptada · confirmada</string>
@@ -315,4 +315,15 @@
     <string name="video_message">Vídeo enviado en la conversación</string>
     <string name="video_play">Reproducir vídeo</string>
     <string name="video_open_error">No se pudo reproducir el vídeo. Toca para reintentar.</string>
+    <string name="payment_integrated">Pagar %1$s y confirmar</string>
+    <string name="payment_direct">Pagaré %1$s directamente al profesional</string>
+    <string name="payment_retry">Reintentar la confirmación (%1$s)</string>
+    <string name="payment_integrated_title">Pagar y confirmar la cita</string>
+    <string name="payment_direct_title">Confirmar con pago directo</string>
+    <string name="payment_integrated_explain">Aceptas la versión %1$d y pagas el total dentro de la app. El importe queda pendiente de entrega al profesional hasta que confirmes que el trabajo se ha realizado. Si el horario ya está ocupado, no se cobra nada.</string>
+    <string name="payment_direct_explain">Aceptas la versión %1$d y acuerdas pagar ese importe directamente al profesional. Teloarreglo no cobra ese pago ni certifica que se haya hecho.</string>
+    <string name="payment_integrated_confirm">Pagar y confirmar</string>
+    <string name="payment_direct_confirm">Confirmar el acuerdo</string>
+    <string name="payment_integrated_summary">Pagado: %1$s · Pendiente de entrega: %2$s · Devuelto: %3$s · Entregado: %4$s</string>
+    <string name="payment_direct_summary">Pago directo acordado: %1$s. Se paga al profesional fuera de la app; Teloarreglo no lo cobra ni lo certifica.</string>
 </resources>

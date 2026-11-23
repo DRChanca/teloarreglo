@@ -201,7 +201,7 @@
     <string name="map_pin_not_address">Der Punkt ersetzt nicht die Adresse: Gib Straße und Hausnummer ein.</string>
     <string name="appointment_accept">Besuch annehmen und bestätigen</string>
     <string name="appointment_accept_confirm">Du nimmst die kostenlose Version %1$d an. Der Termin wird bestätigt und diese Zeit im Kalender der Fachkraft reserviert.</string>
-    <string name="appointment_paid_later">Diese Version ist kostenpflichtig. Die Bestätigung mit Zahlung ist noch nicht verfügbar: Du kannst sie ablehnen oder im Chat um eine andere Version bitten.</string>
+    <string name="appointment_paid_later">Diese Version ist kostenpflichtig. Wähle, wie du sie bestätigst: Zahlung in der App oder direkt an die Fachkraft.</string>
     <string name="appointment_notice_confirmed">Termin bestätigt</string>
     <string name="appointment_confirmed_reserved">Bestätigt: %1$s, %2$d Min. Die Zeit ist reserviert.</string>
     <string name="appointment_status_accepted">Angenommen · bestätigt</string>
@@ -315,4 +315,15 @@
     <string name="video_message">Video in der Unterhaltung gesendet</string>
     <string name="video_play">Video abspielen</string>
     <string name="video_open_error">Das Video konnte nicht abgespielt werden. Tippe, um es erneut zu versuchen.</string>
+    <string name="payment_integrated">%1$s zahlen und bestätigen</string>
+    <string name="payment_direct">Ich zahle %1$s direkt an die Fachkraft</string>
+    <string name="payment_retry">Bestätigung erneut senden (%1$s)</string>
+    <string name="payment_integrated_title">Zahlen und Termin bestätigen</string>
+    <string name="payment_direct_title">Mit Direktzahlung bestätigen</string>
+    <string name="payment_integrated_explain">Du nimmst Version %1$d an und zahlst den Gesamtbetrag in der App. Der Betrag wird erst an die Fachkraft ausgezahlt, wenn du bestätigst, dass die Arbeit erledigt ist. Ist die Zeit schon belegt, wird nichts abgebucht.</string>
+    <string name="payment_direct_explain">Du nimmst Version %1$d an und vereinbarst, diesen Betrag direkt an die Fachkraft zu zahlen. Teloarreglo zieht diese Zahlung nicht ein und bestätigt sie nicht.</string>
+    <string name="payment_integrated_confirm">Zahlen und bestätigen</string>
+    <string name="payment_direct_confirm">Vereinbarung bestätigen</string>
+    <string name="payment_integrated_summary">Bezahlt: %1$s · Auszahlung ausstehend: %2$s · Erstattet: %3$s · Ausgezahlt: %4$s</string>
+    <string name="payment_direct_summary">Direktzahlung vereinbart: %1$s. Wird außerhalb der App an die Fachkraft gezahlt; Teloarreglo zieht sie nicht ein und bestätigt sie nicht.</string>
 </resources>

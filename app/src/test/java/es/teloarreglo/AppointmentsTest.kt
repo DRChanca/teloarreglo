@@ -48,9 +48,11 @@ class AppointmentsTest {
         "area_lat":43.051,"area_lng":-5.948,"area_radius_m":400,"ine_code":"33044","concejo_name":"Oviedo"}"""
 
     /** The list reads the table and then the places; [places] answers the second call. */
-    private fun MockRequestHandleScope.listing(request: HttpRequestData, proposals: String, places: String = "[]") =
+    private fun MockRequestHandleScope.listing(request: HttpRequestData, proposals: String, places: String = "[]",
+                                               payment: String = "null", stage: String = "pending") =
         if (request.url.encodedPath == "/rest/v1/rpc/appointment_places") json(places)
-        else json("[" + appointmentJson.dropLast(1) + ""","appointment_proposals":[$proposals]}]""")
+        else json("[" + appointmentJson.dropLast(1).replace("\"stage\":\"pending\"", "\"stage\":\"$stage\"") +
+            ""","appointment_proposals":[$proposals],"appointment_payments":$payment}]""")
 
     private fun error(code: String, message: String) =
         """{"code":"$code","message":"$message","details":null,"hint":null}"""
@@ -76,8 +78,10 @@ class AppointmentsTest {
 
     @Test fun historyKeepsRejectedVersionsAndShowsLatestPendingAsCurrent() = runTest {
         val appointments = withClient({ request ->
-            if (request.url.encodedPath == "/rest/v1/appointments")
+            if (request.url.encodedPath == "/rest/v1/appointments") {
                 assertEquals("eq.conv", request.url.parameters["conversation_id"])
+                assertTrue(request.url.parameters["select"]!!.endsWith(",appointment_proposals(*),appointment_payments(*)"))
+            }
             listing(request, "${proposalJson(2, "pending")},${proposalJson(1, "rejected")}")
         }) { it.list("conv") }
         val appointment = appointments.single()
@@ -180,6 +184,71 @@ class AppointmentsTest {
         assertEquals(AppointmentNotice.AWAITING_CLIENT, noticeFor(proposalJson(1, "pending"), "pro"))
         assertEquals(AppointmentNotice.AWAITING_NEW_PROPOSAL, noticeFor(proposalJson(1, "rejected"), "client"))
         assertEquals(AppointmentNotice.SEND_NEW_PROPOSAL, noticeFor(proposalJson(1, "rejected"), "pro"))
+    }
+
+    private val paymentJson = """{"appointment_id":"appt","proposal_id":"p1","client_id":"client","professional_id":"pro",
+        "request_id":"pay-key","mode":"integrated","agreed_cents":8500,"paid_cents":8500,"pending_cents":8500,
+        "refunded_cents":0,"delivered_cents":0,"simulated":true,"created_at":"2026-11-23T10:10:00+00:00"}"""
+
+    @Test fun integratedConfirmationSendsModeAndKeyAndReturnsTheSimulatedBalance() = runTest {
+        var body: JsonObject? = null
+        val payment = withClient({ request ->
+            assertEquals("/rest/v1/rpc/confirm_proposal", request.url.encodedPath)
+            body = Json.parseToJsonElement((request.body as TextContent).text).jsonObject
+            json(paymentJson)
+        }) { it.confirm("p1", "pay-key", PaymentMode.INTEGRATED) }
+        assertEquals("p1", body!!["p_proposal_id"]!!.jsonPrimitive.content)
+        assertEquals("pay-key", body!!["p_request_id"]!!.jsonPrimitive.content)
+        assertEquals("integrated", body!!["p_mode"]!!.jsonPrimitive.content)
+        assertEquals(PaymentMode.INTEGRATED, payment.mode)
+        assertEquals(8500, payment.pendingCents)
+        assertEquals(0, payment.deliveredCents)
+    }
+
+    @Test fun directConfirmationIsSentAsDirect() = runTest {
+        var mode: String? = null
+        withClient({ request ->
+            mode = Json.parseToJsonElement((request.body as TextContent).text).jsonObject["p_mode"]!!.jsonPrimitive.content
+            json(paymentJson.replace("\"integrated\"", "\"direct\"").replace("8500,\"pending", "0,\"pending")
+                .replace("\"pending_cents\":8500", "\"pending_cents\":0"))
+        }) { it.confirm("p1", "pay-key", PaymentMode.DIRECT) }
+        assertEquals("direct", mode)
+    }
+
+    @Test fun confirmedAppointmentCarriesItsPaymentAndFreeOnesHaveNone() = runTest {
+        val paid = withClient({ listing(it, proposalJson(1, "accepted"), payment = paymentJson, stage = "confirmed") }) {
+            it.list("conv") }.single()
+        assertEquals(8500, paid.payment?.paidCents)
+        assertEquals(AppointmentNotice.CONFIRMED, paid.notice("client"))
+        val free = withClient({ listing(it, "") }) { it.list("conv") }.single()
+        assertNull(free.payment)
+    }
+
+    @Test fun amountPaidUpFrontIsThePriceOrTheVisitFeeAlone() = runTest {
+        val proposals = withClient({ listing(it,
+            proposalJson(1, "superseded").replace("\"visit_fee_cents\":null", "\"visit_fee_cents\":3000") + "," +
+            proposalJson(2, "pending").replace("\"amount_cents\":8500", "\"amount_cents\":0")
+                .replace("\"visit_fee_cents\":null", "\"visit_fee_cents\":2500")) }) { it.list("conv") }
+            .single().proposals
+        assertEquals(8500, proposals[0].payableCents)
+        assertEquals(2500, proposals[1].payableCents)
+        assertFalse(proposals[1].isFree)
+    }
+
+    @Test fun paymentRejectionsMapToStableFailures() = runTest {
+        val cases = listOf(
+            Triple(HttpStatusCode.Conflict, error("PT409", "slot_unavailable"), AppointmentFailure.SLOT_UNAVAILABLE),
+            Triple(HttpStatusCode.BadRequest, error("22023", "retry_conflict"), AppointmentFailure.RETRY_CONFLICT),
+            Triple(HttpStatusCode.BadRequest, error("22023", "payment_not_required"), AppointmentFailure.INVALID),
+            Triple(HttpStatusCode.BadRequest, error("22023", "invalid_payment"), AppointmentFailure.INVALID),
+            Triple(HttpStatusCode.Conflict, error("PT409", "incompatible_state"), AppointmentFailure.STALE),
+        )
+        for ((status, body, expected) in cases) {
+            val failure = withClient({ json(body, status) }) {
+                try { it.confirm("p1", "k", PaymentMode.INTEGRATED); null } catch (e: AppointmentException) { e.failure }
+            }
+            assertEquals(expected, failure)
+        }
     }
 
     @Test fun euroInputIsParsedToExactCentsWithoutFloatingPoint() {

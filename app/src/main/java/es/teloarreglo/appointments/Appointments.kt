@@ -52,7 +52,30 @@ data class AppointmentProposal(
 ) {
     /** Free visits are confirmed by acceptance alone; any cost goes through payment (#22). */
     val isFree get() = amountCents == 0 && (visitFeeCents ?: 0) == 0
+    /** What confirming with payment charges (#22): the agreed price, or the visit fee when only that was proposed. */
+    val payableCents get() = maxOf(amountCents, visitFeeCents ?: 0)
 }
+
+/** INTEGRATED: the client pays the total (simulated) to confirm. DIRECT: paid to the professional outside the app. */
+@Serializable enum class PaymentMode { @SerialName("integrated") INTEGRATED, @SerialName("direct") DIRECT }
+
+/**
+ * Simulated money of one confirmed appointment, in euro cents. paid = pending + refunded + delivered.
+ * A direct agreement records [agreedCents] only: the app neither charges nor certifies external money.
+ */
+@Serializable
+data class AppointmentPayment(
+    @SerialName("appointment_id") val appointmentId: String,
+    @SerialName("proposal_id") val proposalId: String,
+    @SerialName("request_id") val requestId: String,
+    val mode: PaymentMode,
+    @SerialName("agreed_cents") val agreedCents: Int,
+    @SerialName("paid_cents") val paidCents: Int,
+    @SerialName("pending_cents") val pendingCents: Int,
+    @SerialName("refunded_cents") val refundedCents: Int,
+    @SerialName("delivered_cents") val deliveredCents: Int,
+    val simulated: Boolean = true,
+)
 
 /**
  * Where the job is, as the server lets this account see it (`appointment_places`, #38). The client always
@@ -99,6 +122,8 @@ data class Appointment(
     val stage: AppointmentStage,
     @SerialName("created_at") @Serializable(ServerInstant::class) val createdAt: Instant,
     @SerialName("appointment_proposals") private val rawProposals: List<AppointmentProposal> = emptyList(),
+    /** Present once a proposal with a cost is confirmed; free visits have none. */
+    @SerialName("appointment_payments") val payment: AppointmentPayment? = null,
     /** Filled by [Appointments.list] from `appointment_places`; null until the server has answered. */
     @Transient val place: AppointmentPlace? = null,
 ) {
@@ -144,7 +169,7 @@ class AppointmentException(val failure: AppointmentFailure, cause: Exception) : 
 
 /**
  * Requests and versioned proposals. Pending requests and proposals may overlap and reserve nothing;
- * only [accept] of a free proposal confirms and reserves, atomically on the server.
+ * only [accept] of a free proposal or [confirm] of one with a cost confirms and reserves, atomically on the server.
  * Reuse the same requestId after an uncertain result; accepting the same proposal again is safe.
  */
 interface Appointments {
@@ -153,6 +178,11 @@ interface Appointments {
     suspend fun propose(appointmentId: String, expectedVersion: Int, requestId: String, draft: ProposalDraft): AppointmentProposal
     suspend fun reject(proposalId: String): AppointmentProposal
     suspend fun accept(proposalId: String): AppointmentProposal
+    /**
+     * Confirms a proposal with a cost: acceptance, reservation and the simulated payment happen together
+     * or not at all. Reuse [requestId] after an uncertain result; it is bound to this proposal and mode.
+     */
+    suspend fun confirm(proposalId: String, requestId: String, mode: PaymentMode): AppointmentPayment
 }
 
 /** Every column the server lets app accounts read; `*`, address, latitude or longitude would be refused (#38). */
@@ -161,7 +191,7 @@ private const val READABLE_COLUMNS = "id,conversation_id,profile_id,client_id,pr
 
 class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
     override suspend fun list(conversationId: String): List<Appointment> = mapped {
-        val rows = client.postgrest["appointments"].select(Columns.raw("$READABLE_COLUMNS,appointment_proposals(*)")) {
+        val rows = client.postgrest["appointments"].select(Columns.raw("$READABLE_COLUMNS,appointment_proposals(*),appointment_payments(*)")) {
             filter { eq("conversation_id", conversationId) }
             order("created_at", Order.DESCENDING)
         }.decodeList<Appointment>()
@@ -208,6 +238,14 @@ class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
             .decodeAs<AppointmentProposal>()
     }
 
+    override suspend fun confirm(proposalId: String, requestId: String, mode: PaymentMode) = mapped {
+        client.postgrest.rpc("confirm_proposal", buildJsonObject {
+            put("p_proposal_id", proposalId)
+            put("p_request_id", requestId)
+            put("p_mode", if (mode == PaymentMode.INTEGRATED) "integrated" else "direct")
+        }).decodeAs<AppointmentPayment>()
+    }
+
     private inline fun <T> mapped(block: () -> T): T = try { block() } catch (error: RestException) {
         val message = error.message.orEmpty()
         val failure = when {
@@ -217,7 +255,8 @@ class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
                 AppointmentFailure.STALE
             "out_of_coverage" in message -> AppointmentFailure.OUT_OF_COVERAGE
             "retry_conflict" in message -> AppointmentFailure.RETRY_CONFLICT
-            "invalid_appointment" in message || "invalid_proposal" in message || "payment_required" in message ->
+            "invalid_appointment" in message || "invalid_proposal" in message || "payment_required" in message ||
+                "payment_not_required" in message || "invalid_payment" in message ->
                 AppointmentFailure.INVALID
             else -> null
         }

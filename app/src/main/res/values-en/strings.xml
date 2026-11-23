@@ -201,7 +201,7 @@
     <string name="map_pin_not_address">The point does not replace the address: type the street and number.</string>
     <string name="appointment_accept">Accept and confirm the visit</string>
     <string name="appointment_accept_confirm">You are accepting version %1$d, free of charge. The appointment will be confirmed and that time reserved in the professional\'s agenda.</string>
-    <string name="appointment_paid_later">This version has a cost. Confirming it with payment is not available yet: you can reject it or ask for another version in the chat.</string>
+    <string name="appointment_paid_later">This version has a cost. Choose how to confirm it: pay in the app or pay the professional directly.</string>
     <string name="appointment_notice_confirmed">Appointment confirmed</string>
     <string name="appointment_confirmed_reserved">Confirmed: %1$s, %2$d min. The time is reserved.</string>
     <string name="appointment_status_accepted">Accepted · confirmed</string>
@@ -315,4 +315,15 @@
     <string name="video_message">Video sent in the conversation</string>
     <string name="video_play">Play video</string>
     <string name="video_open_error">The video could not be played. Tap to retry.</string>
+    <string name="payment_integrated">Pay %1$s and confirm</string>
+    <string name="payment_direct">I will pay %1$s directly to the professional</string>
+    <string name="payment_retry">Retry the confirmation (%1$s)</string>
+    <string name="payment_integrated_title">Pay and confirm the appointment</string>
+    <string name="payment_direct_title">Confirm with direct payment</string>
+    <string name="payment_integrated_explain">You accept version %1$d and pay the total in the app. The amount is held for the professional until you confirm the work was done. If the time is already taken, nothing is charged.</string>
+    <string name="payment_direct_explain">You accept version %1$d and agree to pay that amount directly to the professional. Teloarreglo does not collect that payment or certify that it was made.</string>
+    <string name="payment_integrated_confirm">Pay and confirm</string>
+    <string name="payment_direct_confirm">Confirm the agreement</string>
+    <string name="payment_integrated_summary">Paid: %1$s · Awaiting release: %2$s · Refunded: %3$s · Released: %4$s</string>
+    <string name="payment_direct_summary">Direct payment agreed: %1$s. Paid to the professional outside the app; Teloarreglo does not collect or certify it.</string>
 </resources>
