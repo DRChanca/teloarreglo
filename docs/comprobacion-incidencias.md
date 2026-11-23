@@ -36,9 +36,20 @@ servidor real es pgTAP y el contrato HTTP local.
 2. Con dos emuladores y una cita pagada (integrado) y comenzada: el cliente pulsa «Comunicar una incidencia», elige «Pedir la
    cancelación tras el inicio», lee que no hay devolución automática y el aviso de visibilidad, marca «Entiendo quién lo verá» y
    envía. Ambas cuentas ven la incidencia abierta, el saldo aún pendiente y el aviso «Hay una incidencia abierta».
-3. El profesional pulsa «Añadir prueba», elige una foto concreta del chat y la aporta; después añade una nota. El cliente ve las
-   dos pruebas; ninguno puede editarlas ni borrarlas.
+3. El profesional pulsa «Elegir mensajes del chat»: el panel se cierra y el chat entra en modo selección. Busca «caldera» con la
+   lupa, marca ese texto y una foto, pulsa «Añadir a la incidencia», acepta el aviso y confirma; después añade una nota desde la
+   tarjeta. Los mensajes aportados aparecen como «En la incidencia» y ya no se pueden marcar. El cliente ve las tres pruebas,
+   rotuladas «Mensaje del chat» (con autor y hora) o «Nota»; ninguno puede editarlas ni borrarlas. Repetir entrando por pulsación
+   larga sobre un mensaje y cortando la red al confirmar: el reintento no duplica pruebas.
 4. El profesional marca realizado: el cliente no ve «Confirmar que se ha realizado» mientras la incidencia esté abierta.
 5. Repetir con una cita finalizada (queja tras el cierre: «no revierte lo ya entregado»), con pago directo y con una visita
    gratuita.
 6. Revisar los textos `incident_*` en ES/EN/FR/DE y los diálogos a 320×640 dp.
+
+## Rediseño de la selección de pruebas — 23 de noviembre de 2026
+
+Ejecutado localmente: `MessageSelectionTest` (5), `MessageSearchTest` (4) y `MessageEvidenceTest` (4), lógica pura y servicio
+simulado; suite unitaria completa `presentacion` 220/220 (tras unir `spec/11-demo`); `python3 scripts/android.py check --environment presentacion` correcto.
+`ChatEvidenceUiTest` (selección por pulsación larga, búsqueda y entrada desde la tarjeta) y el `AppointmentsUiTest` ajustado
+compilan, pero **no se han ejecutado**: necesitan un emulador desechable asignado. Sin cambios en el servidor; no se ha desplegado
+ni escrito en la base alojada.

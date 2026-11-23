@@ -177,10 +177,11 @@ class MainActivity : AppCompatActivity() {
                                 PinSource({ ensureLocationPermission() }, { currentLocation(this@MainActivity) },
                                     mapsReady = deviceMapAvailability(this@MainActivity) == es.teloarreglo.search.MapAvailability.READY,
                                     home = home),
-                                incidentTools = app.incidents?.let { IncidentTools(it, app.chat!!::messages, app.chatAttachments) },
+                                incidentTools = app.incidents?.let { IncidentTools(it, app.chatAttachments) },
                                 reviews = app.reviews)
                         } },
-                        attachments = app.chatAttachments)
+                        attachments = app.chatAttachments,
+                        evidence = app.incidents?.let { remember(it) { ChatEvidenceLink(it, app.applicationScope) } })
                 }
             } else if (account || chatVisible || emailLinkPending) {
                 AccessScreen(app.identity, changeLanguage,

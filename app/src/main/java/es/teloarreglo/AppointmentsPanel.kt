@@ -79,6 +79,12 @@ fun AppointmentsPanel(
     }
     val isClient = conversation.clientId == accountId
     val current = list.orEmpty()
+    // The chat behind (if any) learns where its messages can be added as incident evidence (#26).
+    val evidence = LocalChatEvidence.current?.takeIf { incidentTools != null }
+    LaunchedEffect(evidence, list, accountId) {
+        if (evidence != null && list != null) evidence.targets = evidenceTargets(conversation.id, current, accountId)
+    }
+    val chooseMessages: ((String) -> Unit)? = evidence?.let { link -> { incidentId -> link.requested = incidentId; sheet = null } }
     Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("appointments_summary")) {
         if (loadFailed) Text(stringResource(R.string.appointment_load_error), color = MaterialTheme.colorScheme.error,
             style = MaterialTheme.typography.bodySmall)
@@ -130,7 +136,8 @@ fun AppointmentsPanel(
                                     onPropose = { sheet = "propose:${appointment.id}" }, onChanged = { refresh++ },
                                     onChange = { sheet = "change:${appointment.id}" },
                                     onCorrection = { sheet = "correction:${appointment.id}" }, incidentTools = incidentTools,
-                                    reviews = reviews, reviewState = reviewStates[appointment.id])
+                                    reviews = reviews, reviewState = reviewStates[appointment.id],
+                                    onChooseMessages = chooseMessages)
                             }
                         }
                     }
@@ -247,6 +254,7 @@ private fun AppointmentDetails(
     mapsReady: Boolean, onPropose: () -> Unit, onChanged: () -> Unit,
     onChange: () -> Unit = {}, onCorrection: () -> Unit = {}, incidentTools: IncidentTools? = null,
     reviews: Reviews? = null, reviewState: AppointmentReviewState? = null,
+    onChooseMessages: ((String) -> Unit)? = null,
 ) {
     val format = dateTimeFormat()
     val professional = appointment.professionalId == accountId
@@ -282,7 +290,7 @@ private fun AppointmentDetails(
             if (appointment.canProposeChange(accountId)) ChangeSection(appointment, accountId, appointments, scope, onChange, onCorrection, onChanged)
             StartCancelSection(appointment, accountId, appointments, scope, onChanged)
             CompletionSection(appointment, accountId, appointments, scope, onChanged)
-            IncidentSection(appointment, accountId, incidentTools, scope, onChanged)
+            IncidentSection(appointment, accountId, incidentTools, scope, onChanged, onChooseMessages)
             ReviewSection(appointment, accountId, reviewState, reviews, scope, onChanged)
             if (professional && appointment.stage == AppointmentStage.PENDING) Button(onClick = onPropose, modifier = Modifier.testTag("appointment_propose")) {
                 Text(stringResource(if (appointment.proposals.isEmpty()) R.string.appointment_propose else R.string.appointment_propose_new))

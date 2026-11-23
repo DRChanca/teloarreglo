@@ -505,8 +505,7 @@ class AppointmentsUiTest {
             override suspend fun list(conversationId: String) =
                 fake.list(conversationId).map { a -> a.copy(rawIncidents = incidents.items.filter { it.appointmentId == a.id }) }
         }
-        val message = es.teloarreglo.chat.ChatMessage("m1", "conversation", "pro", "k", "Llego a las 10", "2030-01-15T09:00:00Z")
-        val tools = IncidentTools(incidents, { listOf(message) })
+        val tools = IncidentTools(incidents)
         var account by mutableStateOf("client")
         compose.setContent { AppointmentsPanel(withIncidents, account, conversation, rememberCoroutineScope(), noPin, tools) }
         waitForTag("appointment_card")
@@ -522,14 +521,17 @@ class AppointmentsUiTest {
         compose.onAllNodesWithTag("incident_open").assertCountEquals(0)
         assertEquals(8550, kotlinx.coroutines.runBlocking { withIncidents.list("conversation") }.single().payment?.pendingCents)
         account = "pro"
-        waitForTag("incident_add_evidence")
-        compose.onNodeWithTag("incident_add_evidence").performScrollTo().performClick()
-        compose.onNodeWithTag("evidence_pick_m1").performClick()
+        // Outside a chat only a note can be written; messages are selected in the chat (ChatEvidenceUiTest).
+        waitForTag("incident_add_note")
+        compose.onAllNodesWithTag("incident_add_evidence").assertCountEquals(0)
+        compose.onNodeWithTag("incident_add_note").performScrollTo().performClick()
+        compose.onNodeWithTag("evidence_note").performTextInput("Llegó a las 12")
         compose.onNodeWithTag("evidence_send").assertIsNotEnabled()
         compose.onNodeWithTag("incident_visibility_accept").performClick()
         compose.onNodeWithTag("evidence_send").performClick()
         waitForTag("evidence_e1")
-        assertEquals(listOf("m1"), incidents.items.single().evidence.map { it.messageId })
+        compose.onNodeWithTag("evidence_kind_e1").assertTextEquals("Nota")
+        assertEquals(listOf("Llegó a las 12"), incidents.items.single().evidence.map { it.note })
     }
 }
 
@@ -548,7 +550,7 @@ private class FakeIncidents : Incidents {
         val incident = items.first { it.id == incidentId }
         val evidence = IncidentEvidence("e${incident.evidence.size + 1}", incidentId, "pro", requestId,
             if (draft is EvidenceDraft.Note) EvidenceKind.NOTE else EvidenceKind.MESSAGE, (draft as? EvidenceDraft.Note)?.text,
-            (draft as? EvidenceDraft.Message)?.messageId, "pro", "Llego a las 10", null, null, Instant.now())
+            (draft as? EvidenceDraft.Message)?.messageId, "pro", "Llego a las 10", createdAt = Instant.now())
         items = items.map { if (it.id == incidentId) it.copy(rawEvidence = it.evidence + evidence) else it }
         return evidence
     }
