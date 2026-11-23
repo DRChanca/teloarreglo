@@ -253,14 +253,76 @@ Android: `Appointments.list` pide las columnas legibles y después `appointment_
 
 Resultados: [comprobación de la zona aproximada](comprobacion-zona-aproximada.md).
 
+## Confirmación con pago simulado o pago directo — #22
+
+Migración nueva: `20261123002200_paid_confirmation.sql`. El pago es **simulado**: no hay pasarela,
+proveedor, tarjeta, banco ni dinero real. No se ha desplegado ni escrito en la base alojada.
+
+Tablas (RLS, lectura para cliente y profesional de la cita, sin escritura directa):
+
+- `public.appointment_payments`: una fila por cita confirmada con coste. `appointment_id` (PK),
+  `proposal_id`, `client_id`, `professional_id`, `request_id` (clave de reintento, única por cliente),
+  `mode` (`integrated` | `direct`), y en céntimos `agreed_cents`, `paid_cents`, `pending_cents`,
+  `refunded_cents`, `delivered_cents`; `simulated` siempre `true`; `created_at`. Restricciones:
+  `paid = pending + refunded + delivered` (`appointment_payments_balance`) y en `direct` todo el
+  dinero integrado es 0 (`appointment_payments_direct_check`). Sin columnas de tarjeta, banco o factura
+  (pgTAP `columns_are`).
+- `public.payment_movements`: historial solo de inserción. `kind` `paid` | `refunded` | `delivered`
+  (`payment_movements_kind_check`), `amount_cents > 0`, `actor_id`, `created_at`. #22 solo escribe
+  `paid`; devoluciones (#23/#24/#26) y entregas (#25/#27) deben actualizar el saldo y añadir su
+  movimiento en la misma transacción.
+
+RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo):
+
+- `confirm_proposal(p_proposal_id uuid, p_request_id uuid, p_mode text)` → fila de
+  `appointment_payments`. Solo el cliente de la cita, sobre la versión vigente. Toma el bloqueo de la
+  cita y después `private.lock_agenda`, como `accept_proposal`. Aceptación (`accepted`), etapa
+  `confirmed`, `version + 1`, reserva en `agenda_reservations`, aviso `accepted` al profesional, fila
+  de pago y, en `integrated`, el movimiento `paid` se aplican juntos o nada.
+  - Importe: `greatest(amount_cents, visit_fee_cents)`, es decir, el precio acordado o el coste de
+    visita si solo se propuso ese. `integrated`: `paid = pending = importe`, nada entregado ni devuelto.
+    `direct`: se registra `agreed_cents` y ningún movimiento; la app no cobra ni certifica el pago.
+  - Idempotencia: la clave identifica una intención (propuesta + modalidad). Misma clave → mismo
+    resultado; misma clave con otra propuesta o modalidad → `22023 retry_conflict`. Una clave nueva
+    para la misma propuesta ya confirmada con la misma modalidad recupera el resultado original (una
+    respuesta perdida nunca crea un segundo pago); con otra modalidad → `PT409 incompatible_state`.
+  - Errores: `22023 invalid_payment` (modalidad o clave nulas o desconocidas),
+    `22023 payment_not_required` (propuesta gratuita: usar `accept_proposal`),
+    `PT409 stale_version`, `incompatible_state`, `proposal_expired`, `slot_unavailable`,
+    `42501 permission_denied`. Un conflicto no cobra ni deja efectos parciales.
+
+`accept_proposal` se redefine con el mismo comportamiento; la comprobación de agenda y la reserva
+pasan a `private.reserve_proposal(appointments, appointment_proposals)`, que también usa #22 y deben
+usar los cambios de #23. Al pasar a `confirmed`, el disparador de #38 comparte la dirección exacta con
+el profesional igual que en la confirmación gratuita.
+
+Android: `Appointments.confirm(proposalId, requestId, PaymentMode)` → `AppointmentPayment`.
+`list` añade `appointment_payments(*)` y rellena `Appointment.payment`. `AppointmentProposal.payableCents`
+da el importe que se paga. `payment_not_required` e `invalid_payment` → `INVALID`.
+Interfaz (`AppointmentsPanel`): ante una versión con coste, el cliente ve «Pagar X y confirmar» y
+«Pagaré X directamente al profesional». El diálogo muestra alcance, fecha, duración e importe vigentes
+y explica la modalidad antes de aceptar. La clave se guarda en `rememberSaveable` y, si la respuesta se
+pierde, solo se puede reintentar la misma modalidad; la siguiente consulta que vea la cita confirmada
+libera la clave. Ambas cuentas ven el saldo («Pagado · Pendiente de entrega · Devuelto · Entregado») o
+«Pago directo acordado». Textos `payment_*` en ES/EN/FR/DE. No hay banner global de demo: la
+simulación se explica por voz.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_payments.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AppointmentsTest'
+```
+
+Resultados: [comprobación de pagos](comprobacion-pagos.md).
+
 ## Precio guardado en la cita — decisión del 23 de noviembre de 2026
 
 Regla: un precio pactado con un cliente no cambia para ese cliente. Migración nueva
 `20261123004300_appointment_kept_prices.sql`; no edita las anteriores ni cambia firmas de RPC.
 
-Revisión del estado anterior (#20, #21): ninguna RPC de citas leía el precio del perfil en vivo.
+Revisión del estado anterior (#20, #21, #22): ninguna RPC de citas leía el precio del perfil en vivo.
 `request_appointment` no guardaba precio y `propose_appointment` guarda `amount_cents` y
-`visit_fee_cents` en la propia propuesta; `accept_proposal` solo lee la propuesta.
+`visit_fee_cents` en la propia propuesta; `accept_proposal` y `confirm_proposal` (#22) solo leen la
+propuesta (`greatest(amount_cents, visit_fee_cents)`) y guardan el importe en `appointment_payments`.
 
 - `public.appointments.reference_prices jsonb` (columna nueva, legible por los dos participantes, como
   las demás salvo el lugar exacto): copia de los precios orientativos publicados del perfil **en el
@@ -275,7 +337,8 @@ Revisión del estado anterior (#20, #21): ninguna RPC de citas leía el precio d
   propuestas.
 
 **Para #22 (pago simulado) y siguientes:** el cobro usa el importe guardado en la propuesta aceptada
-(`appointment_proposals.amount_cents` y `visit_fee_cents`), nunca `approved_profiles.prices`. Cuando el
+(`appointment_proposals.amount_cents` y `visit_fee_cents`, copiado a `appointment_payments.agreed_cents`),
+nunca `approved_profiles.prices`. Así lo hace ya `confirm_proposal`; #23–#27 deben seguir igual. Cuando el
 cliente pide sin propuesta, la referencia es `appointments.reference_prices`. Un movimiento simulado no
 debe leer el precio del perfil.
 

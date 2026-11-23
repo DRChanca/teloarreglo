@@ -21,6 +21,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /**
  * @param authLink Base of the links that return from emails to this app, e.g.
@@ -117,7 +119,12 @@ class SupabaseIdentity(
         }
     }
 
-    override suspend fun signUp(email: String, password: String) = mutex.withLock {
+    override suspend fun signUp(email: String, password: String, name: String) = mutex.withLock {
+        val cleanName = cleanAccountName(name)
+        if (cleanName == null) {
+            mutableState.value = AccessState(AccessStage.SIGNED_OUT, error = AccessError.NAME)
+            return@withLock
+        }
         if (email.isBlank() || password.isEmpty()) {
             mutableState.value = AccessState(AccessStage.SIGNED_OUT, error = AccessError.INPUT)
             return@withLock
@@ -128,6 +135,8 @@ class SupabaseIdentity(
             client.auth.signUpWith(Email, redirectUrl = linkFor(FLOW_SIGNUP)) {
                 this.email = email
                 this.password = password
+                // Stored server-side as the person's name (account_names); never a capability.
+                data = buildJsonObject { put("full_name", cleanName) }
             }
             if (client.auth.currentSessionOrNull() != null) {
                 // Only possible if Auth stops requiring confirmation; still verify on the server.

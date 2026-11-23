@@ -148,6 +148,18 @@ private fun ReservationLine(appointment: Appointment) {
             confirmed.durationMinutes), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.testTag("appointment_confirmed_${appointment.id}"))
     } else Text(stringResource(R.string.appointment_unreserved), style = MaterialTheme.typography.labelSmall)
+    appointment.payment?.let { PaymentLine(it, appointment.id) }
+}
+
+/** The simulated balance (integrated) or the bare agreement (direct): the app never certifies external money. */
+@Composable
+private fun PaymentLine(payment: AppointmentPayment, appointmentId: String) {
+    val text = when (payment.mode) {
+        PaymentMode.INTEGRATED -> stringResource(R.string.payment_integrated_summary, euros(payment.paidCents),
+            euros(payment.pendingCents), euros(payment.refundedCents), euros(payment.deliveredCents))
+        PaymentMode.DIRECT -> stringResource(R.string.payment_direct_summary, euros(payment.agreedCents))
+    }
+    Text(text, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("payment_summary_$appointmentId"))
 }
 
 @Composable
@@ -185,6 +197,14 @@ private fun AppointmentDetails(
     val professional = appointment.professionalId == accountId
     var confirmReject by remember { mutableStateOf<AppointmentProposal?>(null) }
     var confirmAccept by remember { mutableStateOf<AppointmentProposal?>(null) }
+    // Paid confirmation (#22): the chosen mode and, while its result is uncertain, the retry key.
+    var payChoice by remember { mutableStateOf<PaymentMode?>(null) }
+    var payKey by rememberSaveable(appointment.id) { mutableStateOf<String?>(null) }
+    var payMode by rememberSaveable(appointment.id) { mutableStateOf<String?>(null) }
+    // A confirmation whose answer was lost is recognised by the next poll; the key is then released.
+    LaunchedEffect(appointment.stage, appointment.payment) {
+        if (payKey != null && appointment.stage == AppointmentStage.CONFIRMED) { payKey = null; payMode = null }
+    }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var failure by remember { mutableStateOf<AppointmentFailure?>(null) }
@@ -209,7 +229,21 @@ private fun AppointmentDetails(
             if (!professional && pending != null) {
                 if (pending.isFree) Button(onClick = { confirmAccept = pending }, enabled = !busy,
                     modifier = Modifier.testTag("appointment_accept")) { Text(stringResource(R.string.appointment_accept)) }
-                else Text(stringResource(R.string.appointment_paid_later), style = MaterialTheme.typography.bodySmall)
+                else {
+                    Text(stringResource(R.string.appointment_paid_later), style = MaterialTheme.typography.bodySmall)
+                    // While a key is pending only that same intention can be retried.
+                    val locked = payMode?.let(PaymentMode::valueOf)
+                    Button(onClick = { payChoice = PaymentMode.INTEGRATED }, enabled = !busy && locked != PaymentMode.DIRECT,
+                        modifier = Modifier.testTag("payment_integrated")) {
+                        Text(stringResource(if (locked == PaymentMode.INTEGRATED) R.string.payment_retry
+                            else R.string.payment_integrated, euros(pending.payableCents)))
+                    }
+                    OutlinedButton(onClick = { payChoice = PaymentMode.DIRECT }, enabled = !busy && locked != PaymentMode.INTEGRATED,
+                        modifier = Modifier.testTag("payment_direct")) {
+                        Text(stringResource(if (locked == PaymentMode.DIRECT) R.string.payment_retry
+                            else R.string.payment_direct, euros(pending.payableCents)))
+                    }
+                }
             }
             if (!professional && pending != null) OutlinedButton(onClick = { confirmReject = pending }, enabled = !busy,
                 modifier = Modifier.testTag("appointment_reject")) { Text(stringResource(R.string.appointment_reject)) }
@@ -236,6 +270,45 @@ private fun AppointmentDetails(
                         } finally { busy = false }
                     }
                 }, modifier = Modifier.testTag("appointment_accept_confirm")) { Text(stringResource(R.string.appointment_accept)) }
+            })
+    }
+    val payable = appointment.currentProposal
+    val mode = payChoice
+    if (mode != null && payable != null) {
+        AlertDialog(onDismissRequest = { payChoice = null },
+            title = { Text(stringResource(if (mode == PaymentMode.INTEGRATED) R.string.payment_integrated_title
+                else R.string.payment_direct_title)) },
+            text = {
+                // Scope, interval and amount in force are shown before the client agrees.
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("payment_terms")) {
+                    Text(payable.scope)
+                    Text(stringResource(R.string.appointment_proposal_when, format.format(payable.startAt), payable.durationMinutes))
+                    Text(stringResource(R.string.appointment_amount, euros(payable.payableCents)),
+                        style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(if (mode == PaymentMode.INTEGRATED) R.string.payment_integrated_explain
+                        else R.string.payment_direct_explain, payable.version))
+                }
+            },
+            dismissButton = { TextButton(onClick = { payChoice = null }) { Text(stringResource(R.string.cancel)) } },
+            confirmButton = {
+                TextButton(onClick = {
+                    payChoice = null
+                    val key = payKey ?: UUID.randomUUID().toString().also { payKey = it; payMode = mode.name }
+                    busy = true; error = null
+                    scope.launch {
+                        try { appointments.confirm(payable.id, key, mode); payKey = null; payMode = null; onChanged() }
+                        catch (e: Exception) {
+                            if (e is CancellationException) throw e
+                            failure = (e as? AppointmentException)?.failure; error = e.message.orEmpty()
+                            // A definitive answer frees the key; uncertainty keeps it so a retry cannot pay twice.
+                            if (failure != null) { payKey = null; payMode = null }
+                            if (failure == AppointmentFailure.STALE || failure == AppointmentFailure.SLOT_UNAVAILABLE) onChanged()
+                        } finally { busy = false }
+                    }
+                }, modifier = Modifier.testTag("payment_confirm")) {
+                    Text(stringResource(if (mode == PaymentMode.INTEGRATED) R.string.payment_integrated_confirm
+                        else R.string.payment_direct_confirm))
+                }
             })
     }
     confirmReject?.let { proposal ->
