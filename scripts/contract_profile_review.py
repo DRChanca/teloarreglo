@@ -31,6 +31,17 @@ def rpc(name, body, token=None):
     return api.request(f"/rest/v1/rpc/{name}", body, token)
 
 
+def panel(decision, submission, reason):
+    """Runs the panel's own Supabase adapter (panel/src/review.local.test.ts) as the administrator."""
+    env = dict(os.environ, PANEL_LOCAL_URL=config["API_URL"], PANEL_LOCAL_KEY=config["PUBLISHABLE_KEY"],
+               PANEL_ADMIN_EMAIL=emails[2], PANEL_ADMIN_PASSWORD=passwords[2],
+               PANEL_OTHER_EMAIL=emails[1], PANEL_OTHER_PASSWORD=passwords[1],
+               PANEL_SUBMISSION=str(submission), PANEL_DECISION=decision, PANEL_REASON=reason)
+    run = subprocess.run(["npx", "--no-install", "vitest", "run", "src/review.local.test.ts"],
+                         cwd=ROOT / "panel", env=env, text=True, capture_output=True)
+    return run.returncode == 0 and "2 passed" in run.stdout
+
+
 class ProfileReviewContract(unittest.TestCase):
     def test_panel_review_reaches_owner_and_catalogue(self):
         owner, other, administrator = tokens
@@ -53,8 +64,7 @@ class ProfileReviewContract(unittest.TestCase):
         self.assertEqual(mine[0]["content"]["name"], TEST_CONTENT["name"])
         self.assertNotIn("owner", json.dumps(mine))
 
-        code, rejected = rpc("review_professional_profile", reject, administrator)
-        self.assertEqual((code, rejected["status"]), (200, "rejected"))
+        self.assertTrue(panel("reject", TEST_SUBMISSION, reject["p_reason"]), "panel adapter must reject")
         self.assertEqual(rpc("review_professional_profile", reject, administrator)[0], 200)
         self.assertNotEqual(rpc("review_professional_profile", dict(reject, p_approve=True), administrator)[0], 200)
         self.assertEqual(api.request(catalogue, method="GET"), (200, []))
@@ -68,6 +78,7 @@ class ProfileReviewContract(unittest.TestCase):
         sql(f"select private.submit_profile_version('{TEST_PROFILE}','{CORRECTED}',"
             f"'{json.dumps(corrected, ensure_ascii=False)}'::jsonb);")
         approve = {"p_submission": CORRECTED, "p_approve": True, "p_reason": "Datos coherentes"}
+        self.assertTrue(panel("approve", CORRECTED, approve["p_reason"]), "panel adapter must approve")
         code, approved = rpc("review_professional_profile", approve, administrator)
         self.assertEqual((code, approved["status"], approved["published"]), (200, "approved", True))
         self.assertEqual(api.request(catalogue, method="GET"),
@@ -89,7 +100,7 @@ if __name__ == "__main__":
         raise SystemExit("Review fixtures require loopback; remote writes are not supported")
     api = Api(config["API_URL"], config["PUBLISHABLE_KEY"])
     admin = Api(config["API_URL"], config["SERVICE_ROLE_KEY"])
-    users, tokens, emails = [], [], []
+    users, tokens, emails, passwords = [], [], [], []
     result = None
     try:
         for role in ("owner", "other", "administrator"):
@@ -101,6 +112,7 @@ if __name__ == "__main__":
                 raise SystemExit("Could not create local review fixture")
             users.append(user["id"])
             emails.append(credentials["email"])
+            passwords.append(credentials["password"])
             code, session = api.request("/auth/v1/token?grant_type=password", credentials)
             if code != 200:
                 raise SystemExit("Could not sign in local review fixture")
