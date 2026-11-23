@@ -151,6 +151,19 @@ class IncidentsTest {
         assertTrue(appointment("done").canConfirmDone("client"))
     }
 
+    @Test fun theSilentCloseIsAnnouncedOnlyWhileTheServerClockWillApplyIt() {
+        val marks = ""","done_at":"2026-11-23T10:00:00+00:00","reminder_due_at":"2026-11-24T10:00:00+00:00",
+            "close_due_at":"2026-11-25T10:00:00+00:00""""
+        fun withMarks(stage: String, incidents: String = "") = Json { ignoreUnknownKeys = true }.decodeFromString<Appointment>(
+            """{"id":"appt","conversation_id":"conv","client_id":"client","professional_id":"pro","request_id":"key",
+            "problem":"Fuga","requested_start":"2030-01-15T10:00:00+00:00","requested_end":"2030-01-15T12:00:00+00:00",
+            "version":3,"stage":"$stage","created_at":"2026-11-23T10:00:00+00:00","appointment_payments":null,
+            "incidents":[$incidents]$marks}""")
+        assertEquals("2026-11-25T10:00:00Z", withMarks("done").silentCloseAt.toString())
+        assertNull("a blocking incident stops the clock (#27)", withMarks("done", incidentJson("done", "quality")).silentCloseAt)
+        assertNull("already closed", withMarks("completed").silentCloseAt)
+    }
+
     @Test fun anOpenIncidentAcceptsEvidenceOnlyFromTheParticipants() {
         val open = appointment("started", incidentJson())
         assertTrue(open.canAddEvidence("client"))

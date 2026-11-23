@@ -219,6 +219,8 @@ data class Appointment(
     val openIncident get() = rawIncidents.firstOrNull { it.isOpen }
     /** The open incident that stops the delivery, if any (opened before the completion). */
     val blockingIncident get() = openIncident?.takeIf { it.blocksDelivery }
+    /** When the server clock will close the job without the client's answer (#27); null if it will not (#26 incident). */
+    val silentCloseAt get() = closeDueAt?.takeIf { stage == AppointmentStage.DONE && blockingIncident == null }
     /**
      * Either participant opens an incident once the work started: before the start a problem is a cancellation with a
      * refund (#24). After the close it is a communication that reverts nothing. One open incident at a time.

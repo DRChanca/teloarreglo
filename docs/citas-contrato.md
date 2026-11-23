@@ -672,3 +672,88 @@ del chat o escribir una nota, con el mismo aviso). Textos `incident_*` en ES/EN/
 ```
 
 Resultados: [comprobación de incidencias](comprobacion-incidencias.md).
+
+## Cierre automático y recordatorios desde el servidor — #27
+
+Migración nueva: `20261123012900_completion_clock.sql`. No edita migraciones anteriores. Redefine `public.mark_done`
+con la misma firma y el mismo resultado; solo cambia de dónde salen los vencimientos.
+
+El reloj es `private.run_completion_clock(p_limit integer default 200) returns jsonb`. Lo ejecuta Supabase Cron
+(`pg_cron`) cada minuto como SQL dentro de la base. No hay ninguna función esperando ni ningún reloj de Android. Ninguna
+cuenta de la app puede llamarlo (no tiene permisos para `public`, `anon`, `authenticated` ni `service_role`). Cada
+ejecución hace lo siguiente:
+
+1. **Cierre sin respuesta.** Toma las citas `done` con `close_due_at <= now()` y sin incidencia bloqueante
+   (`private.delivery_blocked`). Usa `for update skip locked` y llama a `private.complete_appointment(id, null,
+   'no_answer')` (#25). Esa es la única lógica que entrega lo pendiente del pago integrado simulado, y lo hace una sola
+   vez. Directo y gratuito cierran sin movimientos. Avisa con `completed` a las dos partes. Un fallo en una cita se
+   deshace solo para esa cita, queda registrado como `failed` y no detiene las demás.
+2. **Recordatorio.** Toma las citas `done` con `reminder_due_at <= now() < close_due_at`, sin `reminded_at` y sin
+   incidencia bloqueante. Inserta un único evento `reminder` (actor nulo, destinatario el cliente) y fija
+   `appointments.reminded_at`. Un índice único impide un segundo recordatorio por cita. Por #32, el evento se convierte
+   en aviso persistido y en push sin más código. Android ya muestra «Recordatorio: confirma el trabajo realizado o
+   comunica una incidencia».
+3. Devuelve `{reminded, closed, failed, blocked}`. `blocked` cuenta las citas vencidas que espera una incidencia.
+
+Recuperación: cada ejecución trata todo lo ya vencido, así que la siguiente ejecución, tras una caída de Cron o de la base,
+recupera lo atrasado. Una cita que ha superado los dos vencimientos se cierra sin recordatorio tardío. Repetir una
+ejecución no duplica eventos ni entregas.
+
+Carreras: el reloj bloquea la fila de la cita igual que `confirm_done`, `open_incident` y la futura administración (#31).
+Si una confirmación o una incidencia está en curso, `skip locked` salta la cita y la ejecución del minuto siguiente
+la ve ya resuelta. Si el reloj llega primero, la confirmación tardía devuelve el cierre `no_answer` ya hecho, y la
+incidencia tardía queda como comunicación posterior al cierre (`blocks_delivery = false`).
+
+Tablas privadas, sin acceso de cliente:
+
+- `private.completion_clock_log(id, ran_at, appointment_id, action in ('reminded','closed','failed'), detail)`: registro
+  de lo que ha hecho el reloj. Sirve de evidencia de una ejecución real y no guarda nombres, direcciones ni importes. Se
+  conservan 30 días.
+- `private.completion_trial_accounts(user_id, added_at)`: prueba aislada del intervalo corto. Solo una cita cuyo cliente
+  **y** profesional figuren aquí recibe el recordatorio a los 2 min y el cierre a los 5 min de «Realizado». En el resto
+  se mantienen 24 h y 48 h (`private.completion_deadlines`). Lo cambia David con SQL de confianza para cuentas de
+  prueba desechables. No hay botón, parámetro de la app ni RPC que acelere el reloj.
+- `private.appointment_completion_deadlines(p_appointment_id, p_done_at)`: vencimientos de una cita (prueba o 24/48 h).
+  Lo usa `mark_done`.
+
+Eventos: `appointment_events.kind` admite `reminder`, que se añade a la lista existente sin quitar otros tipos.
+`actor_id` admite nulo para `completed` y `reminder`.
+
+Android no cambia de interfaz. `Appointment.silentCloseAt` devuelve el `close_due_at` solo mientras el reloj vaya a
+aplicarlo: cita `done` y sin incidencia bloqueante. Con una incidencia ya no se anuncia el cierre automático. Al reabrir
+la app, la lista muestra «Finalizada sin confirmación del cliente el …» (`COMPLETED_NO_ANSWER`, #25), y los avisos
+`reminder` y `completed` siguen en «Avisos».
+
+### Programación (paso manual de David, por proyecto)
+
+No está en migraciones porque activa una extensión y un trabajo del proyecto alojado. Hay que hacerlo una vez, después
+de desplegar la migración, con el SQL Editor o con *Integrations → Cron* del panel:
+
+```sql
+create extension if not exists pg_cron;   -- o activar «Cron» en Integrations
+select cron.schedule('completion-clock', '* * * * *', 'select private.run_completion_clock()');
+-- Comprobación:
+select jobid, schedule, active from cron.job where jobname = 'completion-clock';
+select status, return_message, start_time from cron.job_run_details
+ where jobid = (select jobid from cron.job where jobname = 'completion-clock') order by start_time desc limit 5;
+-- Lo que ha hecho el reloj:
+select ran_at, appointment_id, action, detail from private.completion_clock_log order by id desc limit 20;
+```
+
+Prueba real aislada con el intervalo corto, con cuentas desechables y nunca con las cuentas preparadas:
+
+```sql
+insert into private.completion_trial_accounts(user_id) values ('<cliente de prueba>'), ('<profesional de prueba>');
+-- … recorrido en las apps y cierre de ambas …
+delete from private.completion_trial_accounts;   -- al terminar
+```
+
+`pg_cron` aparece como disponible en Supabase Free. Ni este documento ni la prueba local garantizan su disponibilidad
+ni su puntualidad en el plan gratuito.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'python3 scripts/contract_clock.py --local'
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'python3 scripts/contract_clock.py --local --real'
+```
+
+Resultados: [comprobación del cierre automático](comprobacion-cierre-automatico.md).
