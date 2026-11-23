@@ -5,7 +5,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { type Candidate, distanceBand, searchByRings } from "./search.ts";
 
-const TRADES = ["plumbing", "electrical", "carpentry", "painting", "masonry", "general"];
+const TRADES = ["plumbing", "electrical", "carpentry", "painting", "masonry", "general", "cleaning"];
 const MAX_LIMIT = 50;
 
 /**
