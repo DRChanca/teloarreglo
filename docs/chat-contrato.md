@@ -65,3 +65,31 @@ exclusivamente sus fixtures en loopback. No escribe en la base compartida ni
 acepta credenciales administrativas alojadas. CI ejecuta este contrato junto
 a identidad, catálogo y portadas. Resultados y recorrido pendiente:
 [comprobación](comprobacion-chat.md).
+
+## Bandeja con nombre del cliente y no leídos — #39
+
+Migración nueva: `20261123003900_chat_unread.sql`. No modifica migraciones
+anteriores ni datos preparados. Sustituye la regla anterior de la bandeja
+profesional (sufijo del identificador): ahora se muestra el **nombre declarado
+del cliente** y el sufijo queda como alternativa.
+
+- `conversation_inbox()` → array JSON de conversaciones del llamante, de la
+  actividad más reciente a la más antigua. Cada elemento: `id`, `profile_id`,
+  `client_id`, `professional_id`, `name` (negocio), `created_at`,
+  `client_name`, `unread_count`, `last_message_at`.
+  - `client_name`: `full_name` (o `name`) de los metadatos de Auth del cliente,
+    recortado y hasta 80 caracteres; `null` si no declaró ninguno. **Nunca** el
+    correo. Con cuenta de Google lo rellena Google; con correo y contraseña la
+    app aún no lo pide, así que se ve «Cliente · últimos 8 del identificador».
+  - `unread_count`: mensajes (texto o adjunto) de la **otra** persona posteriores
+    a la marca de lectura del llamante. Lo calcula el servidor.
+- `mark_conversation_read(p_conversation_id uuid)` → sin cuerpo. Solo
+  participantes (`42501 permission_denied` en otro caso). Guarda la marca del
+  llamante en el mensaje más reciente ya persistido y nunca retrocede.
+- `GET conversation_reads`: RLS devuelve solo las marcas propias. Sin
+  INSERT/UPDATE/DELETE directos ni acceso anónimo o administrativo.
+
+La app marca la conversación al abrirla y con cada mensaje nuevo visto mientras
+está abierta. Si falla la marca, el indicador sigue visible hasta la siguiente.
+`Chat.conversations()` usa `conversation_inbox`; `Chat.markRead` es la frontera
+nueva. Comprobación: [comprobacion-no-leidos.md](comprobacion-no-leidos.md).

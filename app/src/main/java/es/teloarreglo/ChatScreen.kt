@@ -144,6 +144,14 @@ fun ChatScreen(
             }
         }
     }
+    // Opening, and every newly seen message while open, marks the conversation read (#39).
+    val newest = messages.lastOrNull()?.id
+    LaunchedEffect(chat, accountId, conversation?.id, newest, loading) {
+        if (conversation != null && !loading) {
+            try { chat.markRead(conversation.id) }
+            catch (error: Exception) { if (error is CancellationException) throw error }
+        }
+    }
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) list.animateScrollToItem(messages.lastIndex)
     }
@@ -185,7 +193,8 @@ fun ChatScreen(
             Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding().padding(horizontal = 16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = onBack) { Text(stringResource(R.string.catalogue_back)) }
-                    Text(conversation?.name ?: stringResource(R.string.chat_title), style = MaterialTheme.typography.titleLarge)
+                    Text(conversation?.let { conversationTitle(it, accountId) } ?: stringResource(R.string.chat_title),
+                        style = MaterialTheme.typography.titleLarge)
                 }
                 if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
                 if (failed || outboxFailed) {
@@ -196,14 +205,7 @@ fun ChatScreen(
                     if (!loading && !failed && conversations.isEmpty()) Text(stringResource(R.string.chat_empty))
                     LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(conversations, key = { it.id }) { item ->
-                            OutlinedCard(onClick = { onSelect(item) }, modifier = Modifier.fillMaxWidth().testTag("conversation_${item.id}")) {
-                                Column(Modifier.padding(16.dp)) {
-                                    Text(item.name, style = MaterialTheme.typography.titleMedium)
-                                    if (item.professionalId == accountId) {
-                                        Text(stringResource(R.string.chat_client, item.clientId.takeLast(8)))
-                                    }
-                                }
-                            }
+                            ConversationRow(item, accountId) { onSelect(item) }
                         }
                     }
                 } else {

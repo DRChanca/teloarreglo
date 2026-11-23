@@ -78,4 +78,37 @@ class ChatTest {
         try { assertEquals("conversation", SupabaseChat(client).open("profile").id) }
         finally { client.close() }
     }
+
+    @Test fun inboxComesFromServerWithClientNameAndOwnUnreadCount() = runTest {
+        val client = createSupabaseClient("https://chat.example.org", "public-key") {
+            install(Postgrest)
+            httpEngine = MockEngine { request ->
+                assertEquals("/rest/v1/rpc/conversation_inbox", request.url.encodedPath)
+                respond("""[{"id":"c1","profile_id":"profile","client_id":"client","professional_id":"pro","name":"Fontanería","client_name":"Lucía","unread_count":3,"created_at":"2026-11-20T18:00:00Z","last_message_at":null},
+                    {"id":"c2","profile_id":"profile","client_id":"other","professional_id":"pro","name":"Fontanería","client_name":null,"unread_count":0}]""",
+                    HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            }
+        }
+        try {
+            val inbox = SupabaseChat(client).conversations()
+            assertEquals(listOf("Lucía", null), inbox.map { it.clientName })
+            assertEquals(listOf(3, 0), inbox.map { it.unreadCount })
+        } finally { client.close() }
+    }
+
+    @Test fun openingConversationMarksItReadOnTheServer() = runTest {
+        var body = ""
+        val client = createSupabaseClient("https://chat.example.org", "public-key") {
+            install(Postgrest)
+            httpEngine = MockEngine { request ->
+                assertEquals("/rest/v1/rpc/mark_conversation_read", request.url.encodedPath)
+                body = (request.body as io.ktor.http.content.TextContent).text
+                respond("", HttpStatusCode.NoContent)
+            }
+        }
+        try {
+            SupabaseChat(client).markRead("c1")
+            assertEquals("""{"p_conversation_id":"c1"}""", body)
+        } finally { client.close() }
+    }
 }
