@@ -19,7 +19,8 @@ private class FakeAppointments : Appointments {
     var loseNextResponse = false
     private val proposals = mutableMapOf<String, MutableList<AppointmentProposal>>()
 
-    private fun withHistory(a: Appointment) = a.copy(rawProposals = proposals[a.id].orEmpty().toList())
+    private fun withHistory(a: Appointment) = a.copy(rawProposals = proposals[a.id].orEmpty().toList(),
+        rawChanges = changes[a.id].orEmpty().toList())
     override suspend fun list(conversationId: String) = items.map(::withHistory)
 
     override suspend fun request(conversationId: String, requestId: String, request: AppointmentRequest): Appointment {
@@ -85,6 +86,59 @@ private class FakeAppointments : Appointments {
         items[index] = items[index].copy(version = items[index].version + 1, stage = AppointmentStage.CONFIRMED, payment = payment)
         if (loseNextResponse) { loseNextResponse = false; throw java.io.IOException("response lost") }
         return payment
+    }
+
+    private val changes = mutableMapOf<String, MutableList<AppointmentChange>>()
+    private fun change(id: String) = changes.entries.first { (_, list) -> list.any { it.id == id } }
+
+    /** Like the server (#23): a change never touches the conditions in force until accepted. */
+    override suspend fun proposeChange(appointmentId: String, expectedVersion: Int, requestId: String, draft: ChangeDraft): AppointmentChange {
+        val index = items.indexOfFirst { it.id == appointmentId }
+        if (items[index].version != expectedVersion) throw AppointmentException(AppointmentFailure.STALE, Exception())
+        val history = changes.getOrPut(appointmentId) { mutableListOf() }
+        history.replaceAll { if (it.status == ChangeStatus.PENDING) it.copy(status = ChangeStatus.SUPERSEDED) else it }
+        val base = withHistory(items[index]).confirmedProposal!!
+        val result = AppointmentChange("c${history.size + 1}", appointmentId, "pro", history.size + 1, requestId, ChangeKind.CHANGE,
+            base.id, draft.scope, draft.start, draft.start.plus(Duration.ofMinutes(draft.durationMinutes.toLong())),
+            draft.durationMinutes, draft.amountCents, draft.visitFeeCents, draft.materialsIncluded, draft.travelIncluded,
+            status = ChangeStatus.PENDING, createdAt = Instant.now())
+        history += result
+        items[index] = items[index].copy(version = expectedVersion + 1)
+        return result
+    }
+
+    override suspend fun requestAddressCorrection(appointmentId: String, expectedVersion: Int, requestId: String, note: String) =
+        throw UnsupportedOperationException()
+
+    override suspend fun acceptChange(changeId: String, mode: PaymentMode?): AppointmentChange {
+        val (appointmentId, history) = change(changeId)
+        val i = history.indexOfFirst { it.id == changeId }
+        if (history[i].status == ChangeStatus.ACCEPTED) return history[i]
+        if (slotTaken) throw AppointmentException(AppointmentFailure.SLOT_UNAVAILABLE, Exception())
+        val c = history[i]
+        val list = proposals.getValue(appointmentId)
+        list.replaceAll { if (it.status == ProposalStatus.ACCEPTED) it.copy(status = ProposalStatus.REPLACED) else it }
+        list += AppointmentProposal("p${list.size + 1}", appointmentId, c.authorId, list.size + 1, c.id, c.scope!!, c.startAt!!,
+            c.endAt!!, c.durationMinutes!!, c.amountCents!!, c.visitFeeCents, c.materialsIncluded!!, c.travelIncluded!!,
+            ProposalStatus.ACCEPTED, Instant.now())
+        val index = items.indexOfFirst { it.id == appointmentId }
+        val payment = items[index].payment?.let { p ->
+            val diff = c.payableCents!! - p.agreedCents
+            p.copy(agreedCents = c.payableCents!!, paidCents = p.paidCents + maxOf(diff, 0), pendingCents = p.pendingCents + diff,
+                refundedCents = p.refundedCents + maxOf(-diff, 0))
+        }
+        history[i] = c.copy(status = ChangeStatus.ACCEPTED)
+        items[index] = items[index].copy(version = items[index].version + 1, payment = payment)
+        return history[i]
+    }
+
+    override suspend fun rejectChange(changeId: String): AppointmentChange {
+        val (appointmentId, history) = change(changeId)
+        val i = history.indexOfFirst { it.id == changeId }
+        history[i] = history[i].copy(status = ChangeStatus.REJECTED)
+        val index = items.indexOfFirst { it.id == appointmentId }
+        items[index] = items[index].copy(version = items[index].version + 1)
+        return history[i]
     }
 }
 
@@ -239,5 +293,58 @@ class AppointmentsUiTest {
         val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
         assertEquals(AppointmentStage.PENDING, appointment.stage)
         assertEquals(null, appointment.payment)
+    }
+
+    /** A paid, confirmed appointment (85,50 €) with a pending change from the professional to 120 €, 90 min (#23). */
+    private fun withPendingChange() = withPaidProposal(seeded()).apply {
+        kotlinx.coroutines.runBlocking {
+            confirm("p1", "pay", PaymentMode.INTEGRATED)
+            val start = list("conversation").single().confirmedProposal!!.startAt
+            proposeChange("a1", list("conversation").single().version, "change-key", ChangeDraft("Sifón y llave de paso",
+                start, 90, 12000, null, materialsIncluded = true, travelIncluded = true))
+        }
+    }
+
+    @Test fun clientSeesBeforeAndAfterAndTheDifferenceBeforeAccepting() {
+        val fake = withPendingChange()
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("change_pending").performScrollTo().assertExists()
+        compose.onNodeWithTag("change_field_amount").assertExists()
+        compose.onNodeWithTag("change_field_when").assertExists()
+        compose.onAllNodesWithTag("change_field_address").assertCountEquals(0)
+        compose.onNodeWithTag("change_effect").assertExists()
+        // Still the agreed conditions until accepted.
+        assertEquals(8550, kotlinx.coroutines.runBlocking { fake.list("conversation") }.single().confirmedProposal?.amountCents)
+        compose.onNodeWithTag("change_accept").performScrollTo().performClick()
+        compose.onNodeWithTag("change_decision_confirm").performClick()
+        waitForTag("change_history_1")
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(12000, appointment.confirmedProposal?.amountCents)
+        assertEquals(12000, appointment.payment?.paidCents)
+    }
+
+    @Test fun professionalCannotDecideItsOwnChange() {
+        val fake = withPendingChange()
+        compose.setContent { AppointmentsPanel(fake, "pro", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("change_pending").performScrollTo().assertExists()
+        compose.onAllNodesWithTag("change_accept").assertCountEquals(0)
+        compose.onAllNodesWithTag("change_reject").assertCountEquals(0)
+    }
+
+    @Test fun aTakenSlotKeepsTheWholePreviousAppointment() {
+        val fake = withPendingChange().apply { slotTaken = true }
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("change_accept").performScrollTo().performClick()
+        compose.onNodeWithTag("change_decision_confirm").performClick()
+        waitForTag("change_error")
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(8550, appointment.confirmedProposal?.amountCents)
+        assertEquals(ChangeStatus.PENDING, appointment.pendingChange?.status)
     }
 }

@@ -30,6 +30,8 @@ object ServerInstant : KSerializer<Instant> {
 @Serializable enum class ProposalStatus {
     @SerialName("pending") PENDING, @SerialName("rejected") REJECTED, @SerialName("superseded") SUPERSEDED,
     @SerialName("accepted") ACCEPTED,
+    /** Was the agreement in force until an accepted change replaced it (#23). */
+    @SerialName("replaced") REPLACED,
 }
 
 @Serializable
@@ -124,6 +126,8 @@ data class Appointment(
     @SerialName("appointment_proposals") private val rawProposals: List<AppointmentProposal> = emptyList(),
     /** Present once a proposal with a cost is confirmed; free visits have none. */
     @SerialName("appointment_payments") val payment: AppointmentPayment? = null,
+    /** Versioned changes to the confirmed conditions (#23), as the server keeps them. */
+    @SerialName("appointment_changes") private val rawChanges: List<AppointmentChange> = emptyList(),
     /** Filled by [Appointments.list] from `appointment_places`; null until the server has answered. */
     @Transient val place: AppointmentPlace? = null,
 ) {
@@ -136,10 +140,36 @@ data class Appointment(
     /** The accepted version whose interval the agenda reserves, once confirmed. */
     val confirmedProposal get() = rawProposals.firstOrNull { it.status == ProposalStatus.ACCEPTED }
 
+    /** Every change version, oldest first; decided ones are kept as history. */
+    val changes get() = rawChanges.sortedBy { it.version }
+    /** The change awaiting a decision, if any. The conditions in force are still [confirmedProposal]. */
+    val pendingChange get() = rawChanges.firstOrNull { it.status == ChangeStatus.PENDING }
+
+    /** What accepting [change] would do with the money, shown before the decision. */
+    fun changeEffect(change: AppointmentChange): ChangeEffect {
+        val total = change.payableCents ?: return ChangeEffect.None
+        val current = payment
+        return when {
+            current == null && total == 0 -> ChangeEffect.None
+            current == null -> change.paymentMode?.let { ChangeEffect.NewPayment(it, total) } ?: ChangeEffect.ChooseMode(total)
+            current.mode == PaymentMode.DIRECT ->
+                if (total == current.agreedCents) ChangeEffect.None else ChangeEffect.DirectAgreement(total)
+            total > current.agreedCents -> ChangeEffect.PayDifference(total - current.agreedCents)
+            total < current.agreedCents -> ChangeEffect.Refund(current.agreedCents - total)
+            else -> ChangeEffect.None
+        }
+    }
+
     /** What this account should know or do next. Only CONFIRMED means the interval is reserved. */
     fun notice(accountId: String): AppointmentNotice {
         val professional = accountId == professionalId
+        val change = pendingChange
         return when {
+            stage == AppointmentStage.CONFIRMED && change != null -> when {
+                change.authorId == accountId -> AppointmentNotice.AWAITING_CHANGE
+                change.kind == ChangeKind.ADDRESS_CORRECTION -> AppointmentNotice.CORRECT_ADDRESS
+                else -> AppointmentNotice.DECIDE_CHANGE
+            }
             stage == AppointmentStage.CONFIRMED -> AppointmentNotice.CONFIRMED
             currentProposal != null -> if (professional) AppointmentNotice.AWAITING_CLIENT else AppointmentNotice.DECIDE_PROPOSAL
             rawProposals.isEmpty() -> if (professional) AppointmentNotice.SEND_PROPOSAL else AppointmentNotice.AWAITING_PROPOSAL
@@ -149,8 +179,79 @@ data class Appointment(
 }
 
 enum class AppointmentNotice {
-    AWAITING_PROPOSAL, SEND_PROPOSAL, DECIDE_PROPOSAL, AWAITING_CLIENT, AWAITING_NEW_PROPOSAL, SEND_NEW_PROPOSAL, CONFIRMED
+    AWAITING_PROPOSAL, SEND_PROPOSAL, DECIDE_PROPOSAL, AWAITING_CLIENT, AWAITING_NEW_PROPOSAL, SEND_NEW_PROPOSAL, CONFIRMED,
+    /** Confirmed, with a change from the other participant to accept or reject (#23). */
+    DECIDE_CHANGE,
+    /** Confirmed, with this account's own change or correction request awaiting the other participant. */
+    AWAITING_CHANGE,
+    /** Confirmed; the professional asks the client to correct the address. */
+    CORRECT_ADDRESS,
 }
+
+@Serializable enum class ChangeKind { @SerialName("change") CHANGE, @SerialName("address_correction") ADDRESS_CORRECTION }
+@Serializable enum class ChangeStatus {
+    @SerialName("pending") PENDING, @SerialName("accepted") ACCEPTED, @SerialName("rejected") REJECTED,
+    @SerialName("superseded") SUPERSEDED,
+}
+
+/**
+ * A proposed change to a confirmed appointment (#23). A CHANGE carries the full new conditions; [address] is set only
+ * when the client changes it ([previousAddress] keeps the old one). An ADDRESS_CORRECTION is the professional's request,
+ * with a [note] and no conditions. Nothing applies until the other participant accepts this exact version.
+ */
+@Serializable
+data class AppointmentChange(
+    val id: String,
+    @SerialName("appointment_id") val appointmentId: String,
+    @SerialName("author_id") val authorId: String,
+    val version: Int,
+    @SerialName("request_id") val requestId: String,
+    val kind: ChangeKind,
+    @SerialName("base_proposal_id") val baseProposalId: String,
+    val scope: String? = null,
+    @SerialName("start_at") @Serializable(ServerInstant::class) val startAt: Instant? = null,
+    @SerialName("end_at") @Serializable(ServerInstant::class) val endAt: Instant? = null,
+    @SerialName("duration_minutes") val durationMinutes: Int? = null,
+    @SerialName("amount_cents") val amountCents: Int? = null,
+    @SerialName("visit_fee_cents") val visitFeeCents: Int? = null,
+    @SerialName("materials_included") val materialsIncluded: Boolean? = null,
+    @SerialName("travel_included") val travelIncluded: Boolean? = null,
+    val address: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    @SerialName("previous_address") val previousAddress: String? = null,
+    val note: String? = null,
+    @SerialName("payment_mode") val paymentMode: PaymentMode? = null,
+    val status: ChangeStatus,
+    @SerialName("created_at") @Serializable(ServerInstant::class) val createdAt: Instant,
+) {
+    /** Same rule as [AppointmentProposal.payableCents]; null for a correction request. */
+    val payableCents get() = amountCents?.let { maxOf(it, visitFeeCents ?: 0) }
+}
+
+/** What accepting a change does with the (simulated) money. */
+sealed interface ChangeEffect {
+    data object None : ChangeEffect
+    /** Integrated: the difference is paid (simulated) on acceptance, before the extra work. */
+    data class PayDifference(val cents: Int) : ChangeEffect
+    /** Integrated: the difference is refunded (simulated) on acceptance. */
+    data class Refund(val cents: Int) : ChangeEffect
+    /** Direct: only the new agreed amount is recorded; the app neither charges nor certifies it. */
+    data class DirectAgreement(val agreedCents: Int) : ChangeEffect
+    /** A free appointment gains a cost and the client must choose how to pay it when accepting. */
+    data class ChooseMode(val cents: Int) : ChangeEffect
+    /** A free appointment gains a cost, with the mode the client already chose in its own change. */
+    data class NewPayment(val mode: PaymentMode, val cents: Int) : ChangeEffect
+}
+
+data class ChangedAddress(val address: String, val latitude: Double, val longitude: Double)
+
+/** New conditions for a confirmed appointment; [address] only from the client, [mode] only if no payment exists yet. */
+data class ChangeDraft(
+    val scope: String, val start: Instant, val durationMinutes: Int, val amountCents: Int, val visitFeeCents: Int?,
+    val materialsIncluded: Boolean, val travelIncluded: Boolean,
+    val address: ChangedAddress? = null, val note: String? = null, val mode: PaymentMode? = null,
+)
 
 data class AppointmentRequest(
     val problem: String, val start: Instant, val end: Instant,
@@ -183,6 +284,21 @@ interface Appointments {
      * or not at all. Reuse [requestId] after an uncertain result; it is bound to this proposal and mode.
      */
     suspend fun confirm(proposalId: String, requestId: String, mode: PaymentMode): AppointmentPayment
+
+    /**
+     * Proposes new conditions for a confirmed appointment (#23), based on [expectedVersion]. The conditions,
+     * reservation, address and payment in force stay as they are until the other participant accepts.
+     */
+    suspend fun proposeChange(appointmentId: String, expectedVersion: Int, requestId: String, draft: ChangeDraft): AppointmentChange
+    /** Professional only: asks the client to correct the address, which only the client can change. */
+    suspend fun requestAddressCorrection(appointmentId: String, expectedVersion: Int, requestId: String, note: String): AppointmentChange
+    /**
+     * Accepts exactly this version. The server re-checks agenda and coverage and applies everything (including the
+     * simulated difference) or nothing. [mode] is the client's choice when a free appointment gains a cost.
+     * Accepting the same change again is safe.
+     */
+    suspend fun acceptChange(changeId: String, mode: PaymentMode?): AppointmentChange
+    suspend fun rejectChange(changeId: String): AppointmentChange
 }
 
 /** Every column the server lets app accounts read; `*`, address, latitude or longitude would be refused (#38). */
@@ -191,7 +307,7 @@ private const val READABLE_COLUMNS = "id,conversation_id,profile_id,client_id,pr
 
 class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
     override suspend fun list(conversationId: String): List<Appointment> = mapped {
-        val rows = client.postgrest["appointments"].select(Columns.raw("$READABLE_COLUMNS,appointment_proposals(*),appointment_payments(*)")) {
+        val rows = client.postgrest["appointments"].select(Columns.raw("$READABLE_COLUMNS,appointment_proposals(*),appointment_payments(*),appointment_changes(*)")) {
             filter { eq("conversation_id", conversationId) }
             order("created_at", Order.DESCENDING)
         }.decodeList<Appointment>()
@@ -246,6 +362,48 @@ class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
         }).decodeAs<AppointmentPayment>()
     }
 
+    override suspend fun proposeChange(appointmentId: String, expectedVersion: Int, requestId: String, draft: ChangeDraft) = mapped {
+        client.postgrest.rpc("propose_change", buildJsonObject {
+            put("p_appointment_id", appointmentId)
+            put("p_expected_version", expectedVersion)
+            put("p_request_id", requestId)
+            put("p_scope", draft.scope)
+            put("p_start", draft.start.toString())
+            put("p_duration_minutes", draft.durationMinutes)
+            put("p_amount_cents", draft.amountCents)
+            put("p_visit_fee_cents", draft.visitFeeCents)
+            put("p_materials_included", draft.materialsIncluded)
+            put("p_travel_included", draft.travelIncluded)
+            put("p_address", draft.address?.address)
+            put("p_lat", draft.address?.latitude)
+            put("p_lng", draft.address?.longitude)
+            put("p_note", draft.note)
+            put("p_mode", draft.mode?.wire)
+        }).decodeAs<AppointmentChange>()
+    }
+
+    override suspend fun requestAddressCorrection(appointmentId: String, expectedVersion: Int, requestId: String, note: String) = mapped {
+        client.postgrest.rpc("request_address_correction", buildJsonObject {
+            put("p_appointment_id", appointmentId)
+            put("p_expected_version", expectedVersion)
+            put("p_request_id", requestId)
+            put("p_note", note)
+        }).decodeAs<AppointmentChange>()
+    }
+
+    override suspend fun acceptChange(changeId: String, mode: PaymentMode?) = mapped {
+        client.postgrest.rpc("accept_change", buildJsonObject {
+            put("p_change_id", changeId)
+            put("p_mode", mode?.wire)
+        }).decodeAs<AppointmentChange>()
+    }
+
+    override suspend fun rejectChange(changeId: String) = mapped {
+        client.postgrest.rpc("reject_change", buildJsonObject { put("p_change_id", changeId) }).decodeAs<AppointmentChange>()
+    }
+
+    private val PaymentMode.wire get() = if (this == PaymentMode.INTEGRATED) "integrated" else "direct"
+
     private inline fun <T> mapped(block: () -> T): T = try { block() } catch (error: RestException) {
         val message = error.message.orEmpty()
         val failure = when {
@@ -256,7 +414,7 @@ class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
             "out_of_coverage" in message -> AppointmentFailure.OUT_OF_COVERAGE
             "retry_conflict" in message -> AppointmentFailure.RETRY_CONFLICT
             "invalid_appointment" in message || "invalid_proposal" in message || "payment_required" in message ||
-                "payment_not_required" in message || "invalid_payment" in message ->
+                "payment_not_required" in message || "invalid_payment" in message || "invalid_change" in message || "no_change" in message ->
                 AppointmentFailure.INVALID
             else -> null
         }
