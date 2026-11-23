@@ -16,11 +16,21 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.time.Duration.Companion.minutes
 
-/** #19 adds VIDEO here and enables it server-side in `private.chat_attachment_limit`. */
-enum class AttachmentKind(val wire: String) { PHOTO("photo") }
+/** Each kind is enabled server-side in `private.chat_attachment_limit`. */
+enum class AttachmentKind(val wire: String) { PHOTO("photo"), VIDEO("video") }
 
-/** Definitive refusals. Anything else (network, 5xx) is uncertain: retry with the same request id. */
-enum class AttachmentFailure { ACCESS, TOO_LARGE, UNSUPPORTED, QUOTA, CONFLICT }
+/**
+ * Definitive refusals. Anything else (network, 5xx) is uncertain: retry with the same request id.
+ * TOO_LONG is only raised on the device (video over one minute), never by the server.
+ */
+enum class AttachmentFailure { ACCESS, TOO_LARGE, TOO_LONG, UNSUPPORTED, QUOTA, CONFLICT }
+
+/** A new compressed copy ready to send; the picked original is only read, never written. */
+interface PreparedAttachment {
+    val kind: AttachmentKind
+    val mime: String
+    val bytes: ByteArray
+}
 class ChatAttachmentException(val failure: AttachmentFailure, cause: Exception? = null) : Exception(failure.name, cause)
 
 sealed interface AttachmentProgress {

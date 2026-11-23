@@ -20,8 +20,9 @@ const val PHOTO_MAX_SIDE = 1600
 const val PHOTO_MAX_BYTES = 2 * 1024 * 1024
 
 /** A new compressed copy; the picked original is only read, never written. */
-class PreparedPhoto(val bytes: ByteArray, val width: Int, val height: Int) {
-    val mime get() = "image/jpeg"
+class PreparedPhoto(override val bytes: ByteArray, val width: Int, val height: Int) : PreparedAttachment {
+    override val kind get() = AttachmentKind.PHOTO
+    override val mime get() = "image/jpeg"
 }
 
 /** Detects JPEG/PNG from content, not from the name or the picker's MIME claim. */

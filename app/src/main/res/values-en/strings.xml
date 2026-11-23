@@ -199,4 +199,19 @@
     <string name="map_pick_on_map">Choose the point on the map</string>
     <string name="map_pick_confirm">Use this point</string>
     <string name="map_pin_not_address">The point does not replace the address: type the street and number.</string>
+    <string name="video_attach">Send video</string>
+    <string name="video_limits">Video up to 1 minute. The app sends an MP4 copy of up to 720p and 20 MB; your original is not changed.</string>
+    <string name="video_preparing">Compressing the video…</string>
+    <string name="video_preparing_percent">Compressing the video… %1$d %%</string>
+    <string name="video_uploading">Sending video… %1$d %%</string>
+    <string name="video_error_unsupported">This video cannot be converted to a compatible MP4 on this phone. It was not sent; choose another one.</string>
+    <string name="video_error_too_long">The video is longer than one minute. It was not sent; trim it in your gallery or choose another one.</string>
+    <string name="video_error_too_large">Even compressed, the video does not fit in 20 MB. It was not sent; choose a shorter one.</string>
+    <string name="video_error_quota">The storage for videos is full. The video was not sent; try again later.</string>
+    <string name="video_error_access">You are not allowed to send videos here or your session has expired. The video was not sent.</string>
+    <string name="video_error_conflict">This video does not match an earlier send. It was not sent; choose it again.</string>
+    <string name="video_error_network">The video could not be confirmed. Retry: it will not be duplicated.</string>
+    <string name="video_message">Video sent in the conversation</string>
+    <string name="video_play">Play video</string>
+    <string name="video_open_error">The video could not be played. Tap to retry.</string>
 </resources>

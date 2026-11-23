@@ -65,3 +65,34 @@ python3 scripts/android.py check
 ```
 
 Resultados y recorrido pendiente: [comprobación](comprobacion-fotos.md).
+
+## Vídeos — #19
+
+Migración nueva: `20261123001900_chat_videos.sql`. No modifica migraciones
+aplicadas ni datos preparados. Reutiliza la frontera de #18 sin cambios de
+RPC, tabla, políticas ni bucket:
+
+- `private.chat_attachment_limit` (con `create or replace`) añade
+  `('video','video/mp4') → 20971520` (20 MiB). Fotos siguen en 2 MiB.
+- Bucket `chat-attachments`: `file_size_limit` 20 MiB y
+  `allowed_mime_types` `image/jpeg`, `image/png`, `video/mp4`. Storage rechaza
+  más de 20 MiB (413) y otros tipos (415); el límite de 2 MiB de las fotos se
+  impone al confirmar (`attachment_too_large`), así que una foto grande que
+  Storage acepte nunca llega a ser mensaje.
+- El servidor no puede comprobar duración ni resolución: un minuto y 720p los
+  garantiza la compresión de la app y su comprobación del resultado.
+- Lectura igual que las fotos: URL firmada de 10 minutos pedida al abrir el
+  vídeo, nunca URL pública; sin acceso de terceros ni administrativo.
+
+Kotlin: `AttachmentKind.VIDEO`, `AttachmentFailure.TOO_LONG` (solo en el
+dispositivo), `PreparedAttachment` (foto o vídeo) y `ChatAttachmentSender`
+(antes `ChatPhotoSender`; estados `AttachmentSendState` con tipo y progreso de
+compresión). `chat/ChatVideo.kt` comprime con Media3 Transformer
+(`prepareVideo`). La interfaz está en `ChatAttachmentUi.kt`.
+
+```bash
+supabase test db                       # incluye chat_videos.test.sql
+python3 scripts/contract_chat_videos.py --local
+```
+
+Resultados y recorrido pendiente: [comprobación](comprobacion-videos.md).

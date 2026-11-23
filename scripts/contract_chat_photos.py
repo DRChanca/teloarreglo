@@ -49,8 +49,10 @@ class ChatPhotoContract(unittest.TestCase):
         self.assertNotIn(users["client"], path, "object paths must not reveal Auth identity")
         self.assertNotIn(binary(BUCKET + path, photo, outsider, "POST")[0], (200, 201), "outsider cannot upload")
         self.assertNotIn(binary(BUCKET + path, photo, professional, "POST")[0], (200, 201), "peer cannot upload")
-        code, body = binary(BUCKET + path, b"x" * 2097153, client, "POST")
-        self.assertNotIn(code, (200, 201), "Storage enforces 2 MiB")
+        # Since #19 the shared bucket admits 20 MiB; the 2 MiB photo limit is
+        # enforced at confirmation (contract_chat_videos.py checks it over HTTP).
+        code, body = binary(BUCKET + path, b"x" * 20971521, client, "POST")
+        self.assertNotIn(code, (200, 201), "Storage enforces the 20 MiB bucket limit")
         print(f"\n  oversize upload -> HTTP {code} {body[:160]!r}")
         code, body = binary(BUCKET + path, photo, client, "POST", "image/gif")
         self.assertNotIn(code, (200, 201), "Storage enforces JPEG/PNG")
