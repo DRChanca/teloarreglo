@@ -5,6 +5,7 @@ import es.teloarreglo.catalogue.ProfileEditException
 import es.teloarreglo.catalogue.ProfileEditFailure
 import es.teloarreglo.catalogue.ProfileField
 import es.teloarreglo.catalogue.ProfileContent
+import es.teloarreglo.catalogue.ReferencePrice
 import es.teloarreglo.catalogue.ReviewStatus
 import es.teloarreglo.catalogue.SupabaseProfessionalProfiles
 import es.teloarreglo.catalogue.missingFields
@@ -118,6 +119,31 @@ class ProfessionalProfilesTest {
         assertEquals(ProfileEditFailure.NO_PROFILE, failureOf(HttpStatusCode.BadRequest, "22023", "profile_not_found"))
         assertEquals(ProfileEditFailure.ACCESS, failureOf(HttpStatusCode.Unauthorized, "28000", "authentication_required"))
         assertNull("an unavailable service is not a refusal", failureOf(HttpStatusCode.ServiceUnavailable, "x", "Unavailable"))
+    }
+
+    @Test fun servicesAndPricesArePublishedDirectlyApartFromTheReviewedVersion() = runTest {
+        val client = client(HttpStatusCode.OK, own)
+        try {
+            val price = ReferencePrice("Reparación de fuga", "Una hora", "hour", 3500, "IVA", "")
+            val profile = SupabaseProfessionalProfiles(client).saveOffer(listOf("Fugas", "Grifería"), listOf(price))
+            val (path, body) = requests.single()
+            assertEquals("/rest/v1/rpc/save_professional_offer", path)
+            val json = Json.parseToJsonElement(body).jsonObject
+            assertEquals(listOf("Fugas", "Grifería"), json["p_services"]!!.jsonArray.map { it.jsonPrimitive.content })
+            val sent = json["p_prices"]!!.jsonArray.single().jsonObject
+            assertEquals(setOf("service", "scope", "unit", "amount_cents", "includes", "excludes"), sent.keys)
+            assertEquals(3500, sent["amount_cents"]!!.jsonPrimitive.content.toInt())
+            assertEquals(4000, profile.editable.prices.single().amountCents)
+        } finally { client.close() }
+    }
+
+    @Test fun aRefusedOfferIsInvalidNotUncertain() = runTest {
+        val client = client(HttpStatusCode.BadRequest, """{"code":"22023","message":"invalid_profile_offer"}""")
+        try {
+            val failure = try { SupabaseProfessionalProfiles(client).saveOffer(listOf(""), emptyList()); null }
+                catch (e: ProfileEditException) { e.failure }
+            assertEquals(ProfileEditFailure.INVALID, failure)
+        } finally { client.close() }
     }
 
     @Test fun thePrivateAddressIsSavedApartFromTheReviewedVersion() = runTest {

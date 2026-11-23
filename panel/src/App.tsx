@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { AdminError, type Account, type AdminApi, type Failure, type ProfileContent, type Submission } from "./api";
+import { AdminError, type Account, type AdminApi, type Failure, type Submission } from "./api";
 import { initialLanguage, languageNames, languages, translate, type Language, type MessageKey } from "./i18n";
 
 type View = "pending" | "all";
@@ -131,6 +131,7 @@ function SubmissionCard({ submission: s, t, date, api, onDecided }: {
     finally { setBusy(false); }
   }
   // A change to a published profile is compared with what visitors see now; the admin decides, never rewrites.
+  // Services, reference prices and covers are published by the owner without review (2026-11-23): not shown here.
   const p = s.public_content ?? null;
   const field = (label: MessageKey, value: string | undefined | null, published?: string | null) => {
     const changed = p !== null && (published ?? "") !== (value ?? "");
@@ -140,8 +141,6 @@ function SubmissionCard({ submission: s, t, date, api, onDecided }: {
       <dd>{value || "—"}{changed && published && <div className="muted">{t("publicValue", { value: published })}</div>}</dd>
     </>;
   };
-  const prices = (x: ProfileContent | null) => x && (x.prices ?? []).map((r) =>
-    r.amount_cents == null ? r.service : `${r.service}: ${(r.amount_cents / 100).toFixed(2)} €`).join(" · ");
   return (
     <article className="card">
       <h2>{c.name}</h2>
@@ -152,12 +151,10 @@ function SubmissionCard({ submission: s, t, date, api, onDecided }: {
         {p && field("name", c.name, p.name)}
         {field("description", c.description, p?.description)}
         {field("trades", c.trades.join(", "), p?.trades.join(", "))}
-        {field("services", c.services.join(", "), p?.services.join(", "))}
         {field("coverage", c.coverage.map((z) => z.name).join(", "), p?.coverage.map((z) => z.name).join(", "))}
         {field("languages", c.languages.join(", "), p?.languages.join(", "))}
         {field("phone", c.phone, p?.phone)}
         {field("businessAddress", c.business_address, p?.business_address)}
-        {field("prices", prices(c), prices(p))}
       </dl>
       {s.decision ? (
         <p className={s.decision.approved ? "ok" : "error"}>{t("decision", {

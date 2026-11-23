@@ -19,8 +19,19 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import es.teloarreglo.appointments.parseEuroCents
 import es.teloarreglo.catalogue.Coverage
+import es.teloarreglo.catalogue.MAX_PRICES
 import es.teloarreglo.catalogue.OwnProfile
+import es.teloarreglo.catalogue.PRICE_UNITS
+import es.teloarreglo.catalogue.PriceDraft
+import es.teloarreglo.catalogue.ProfessionalCovers
+import es.teloarreglo.catalogue.PublicProfile
+import es.teloarreglo.catalogue.ReferencePrice
+import es.teloarreglo.catalogue.parseServices
+import es.teloarreglo.catalogue.toDraft
+import es.teloarreglo.catalogue.toPrices
+import kotlinx.serialization.builtins.ListSerializer
 import es.teloarreglo.catalogue.ProfessionalProfiles
 import es.teloarreglo.catalogue.ProfileContent
 import es.teloarreglo.catalogue.ProfileEditException
@@ -45,11 +56,14 @@ private val LANGUAGES = listOf("es", "en", "fr", "de", "pt", "it")
 @kotlinx.serialization.Serializable
 private data class PendingSubmission(val requestId: String, val content: ProfileContent)
 
+private enum class EditorSection { REVIEW, OFFER, ADDRESS }
+
 /**
- * The owner creates, corrects or changes their professional profile (#30). Every public change is
- * presented for review; until administration approves it, the catalogue keeps the approved version.
- * The private address is saved apart and is never part of what is reviewed or published. The agenda
- * is changed from the account screen and needs no review.
+ * The owner creates, corrects or changes their professional profile (#30). Public data is presented
+ * for review; until administration approves it, the catalogue keeps the approved version. Services,
+ * reference prices and the cover are published directly, without review (David, 2026-11-23); an
+ * unapproved profile shows them once it is published. The private address is saved apart and is
+ * never reviewed or published. The agenda is changed from the account screen and needs no review.
  */
 @Composable
 fun ProfileEditorScreen(
@@ -58,6 +72,7 @@ fun ProfileEditorScreen(
     scope: CoroutineScope,
     onBack: () -> Unit,
     onStarted: suspend () -> Unit,
+    covers: ProfessionalCovers? = null,
 ) {
     var attempt by remember { mutableIntStateOf(0) }
     var own by remember { mutableStateOf<OwnProfile?>(null) }
@@ -70,6 +85,10 @@ fun ProfileEditorScreen(
     var outcome by remember { mutableStateOf<Int?>(null) }
     var failure by remember { mutableStateOf<Int?>(null) }
     var showMissing by remember { mutableStateOf(false) }
+    var section by remember { mutableStateOf(EditorSection.REVIEW) }
+    var servicesText by rememberSaveable { mutableStateOf<String?>(null) }
+    var pricesJson by rememberSaveable { mutableStateOf<String?>(null) }
+    var editingCover by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(attempt) {
         loadFailed = false
@@ -79,15 +98,24 @@ fun ProfileEditorScreen(
             if (result != null) {
                 if (draftJson == null) draftJson = Json.encodeToString(ProfileContent.serializer(), result.editable)
                 if (privateAddress == null) privateAddress = result.privateAddress.orEmpty()
+                if (servicesText == null) servicesText = result.editable.services.joinToString("\n")
+                if (pricesJson == null) pricesJson = Json.encodeToString(PRICE_DRAFTS, result.editable.prices.map { it.toDraft() })
             }
         } catch (e: CancellationException) { throw e } catch (_: Exception) { loadFailed = true }
+    }
+    val current = own
+    if (editingCover && covers != null && current != null) {
+        val content = draftJson?.let { Json.decodeFromString(ProfileContent.serializer(), it) } ?: current.editable
+        CoverEditorRoute(content.asCoverTarget(current.profileId), covers, onBack = { editingCover = false })
+        return
     }
     val draft = draftJson?.let { Json.decodeFromString(ProfileContent.serializer(), it) }
     fun edit(change: (ProfileContent) -> ProfileContent) {
         draft?.let { draftJson = Json.encodeToString(ProfileContent.serializer(), change(it)) }
         outcome = null
     }
-    fun perform(action: suspend () -> Int) {
+    fun perform(at: EditorSection, action: suspend () -> Int) {
+        section = at
         busy = true; outcome = null; failure = null
         scope.launch {
             try { outcome = action() }
@@ -113,7 +141,6 @@ fun ProfileEditorScreen(
                 TextButton(onClick = onBack, Modifier.testTag("profile_edit_back")) { Text(stringResource(R.string.catalogue_back)) }
                 Text(stringResource(R.string.profile_edit_title), style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
-                val current = own
                 when {
                     loadFailed -> {
                         Text(stringResource(R.string.profile_edit_load_error), color = MaterialTheme.colorScheme.error)
@@ -121,10 +148,16 @@ fun ProfileEditorScreen(
                     }
                     !loaded -> LinearProgressIndicator(Modifier.fillMaxWidth())
                     current == null -> StartProfile(busy) {
-                        perform { profiles.start(); onStarted(); attempt++; R.string.profile_edit_started }
+                        perform(EditorSection.REVIEW) { profiles.start(); onStarted(); attempt++; R.string.profile_edit_started }
                     }
                     draft != null -> {
                         ReviewState(current)
+                        if (covers != null) {
+                            OutlinedButton(onClick = { editingCover = true }, enabled = !busy,
+                                modifier = Modifier.fillMaxWidth().testTag("profile_edit_cover")) {
+                                Text(stringResource(R.string.profile_edit_cover))
+                            }
+                        }
                         ContentForm(draft, !busy, concejos, ::edit, showMissing)
                         val missing = draft.missingFields()
                         if (showMissing && missing.isNotEmpty()) {
@@ -139,17 +172,30 @@ fun ProfileEditorScreen(
                             val previous = pendingJson?.let { Json.decodeFromString(PendingSubmission.serializer(), it) }
                             val pending = previous?.takeIf { it.content == draft } ?: PendingSubmission(UUID.randomUUID().toString(), draft)
                             pendingJson = Json.encodeToString(PendingSubmission.serializer(), pending)
-                            perform {
+                            perform(EditorSection.REVIEW) {
                                 profiles.submit(pending.requestId, pending.content)
                                 pendingJson = null; attempt++
                                 R.string.profile_edit_submitted
                             }
                         }) { Text(stringResource(if (busy) R.string.working else R.string.profile_edit_submit)) }
-                        Status(busy, outcome, failure)
+                        if (section == EditorSection.REVIEW) Status(busy, outcome, failure)
+                        HorizontalDivider()
+                        val drafts = pricesJson?.let { Json.decodeFromString(PRICE_DRAFTS, it) } ?: emptyList()
+                        OfferSection(servicesText.orEmpty(), drafts, current.review.published, !busy,
+                            onServices = { servicesText = it; outcome = null },
+                            onPrices = { pricesJson = Json.encodeToString(PRICE_DRAFTS, it); outcome = null },
+                            onSave = { prices ->
+                                perform(EditorSection.OFFER) {
+                                    own = profiles.saveOffer(parseServices(servicesText.orEmpty()), prices)
+                                    R.string.profile_offer_saved
+                                }
+                            })
+                        if (section == EditorSection.OFFER) Status(busy, outcome, failure)
                         HorizontalDivider()
                         PrivateAddress(privateAddress.orEmpty(), !busy, { privateAddress = it; outcome = null }) {
-                            perform { profiles.savePrivateAddress(privateAddress); R.string.profile_edit_private_saved }
+                            perform(EditorSection.ADDRESS) { profiles.savePrivateAddress(privateAddress); R.string.profile_edit_private_saved }
                         }
+                        if (section == EditorSection.ADDRESS) Status(busy, outcome, failure)
                         Text(stringResource(R.string.profile_edit_agenda_note), style = MaterialTheme.typography.bodySmall)
                     }
                 }
@@ -223,14 +269,6 @@ private fun ContentForm(
                 label = { Text(stringResource(tradeLabel(key))) })
         }
     }
-    var services by rememberSaveable { mutableStateOf(draft.services.joinToString("\n")) }
-    OutlinedTextField(services, { v ->
-        services = v
-        edit { it.copy(services = v.lines().map(String::trim).filter(String::isNotEmpty).map { s -> s.take(120) }.take(30)) }
-    }, enabled = enabled, minLines = 2, label = { Text(stringResource(R.string.profile_edit_services)) },
-        supportingText = { Text(stringResource(R.string.profile_edit_services_hint)) },
-        modifier = Modifier.fillMaxWidth().testTag("profile_edit_services"))
-
     Label(R.string.profile_edit_coverage, ProfileField.COVERAGE in missing)
     CoveragePicker(draft.coverage, enabled, concejos) { coverage -> edit { it.copy(coverage = coverage) } }
 
@@ -296,6 +334,74 @@ private fun CoveragePicker(selected: List<Coverage>, enabled: Boolean, concejos:
             }
         }
     }
+}
+
+private val PRICE_DRAFTS = ListSerializer(PriceDraft.serializer())
+
+/** What the profile editor hands to the cover editor; the cover is shown once the profile is public. */
+private fun ProfileContent.asCoverTarget(profileId: String) = PublicProfile(profileId, name, description, trades,
+    services, coverage, languages, phone, images, prices, businessAddress = businessAddress)
+
+/** Services and reference prices: published at once, without review (David, 2026-11-23). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun OfferSection(
+    services: String, prices: List<PriceDraft>, published: Boolean, enabled: Boolean,
+    onServices: (String) -> Unit, onPrices: (List<PriceDraft>) -> Unit, onSave: (List<ReferencePrice>) -> Unit,
+) {
+    var showInvalid by rememberSaveable { mutableStateOf(false) }
+    Text(stringResource(R.string.profile_offer_title), style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.semantics { heading() })
+    Text(stringResource(R.string.profile_offer_hint), style = MaterialTheme.typography.bodySmall)
+    if (!published) Text(stringResource(R.string.profile_offer_unpublished_hint), style = MaterialTheme.typography.bodySmall)
+    OutlinedTextField(services, { onServices(it) }, enabled = enabled, minLines = 2,
+        label = { Text(stringResource(R.string.profile_edit_services)) },
+        supportingText = { Text(stringResource(R.string.profile_edit_services_hint)) },
+        modifier = Modifier.fillMaxWidth().testTag("profile_edit_services"))
+    prices.forEachIndexed { index, price ->
+        fun change(update: (PriceDraft) -> PriceDraft) = onPrices(prices.toMutableList().also { it[index] = update(price) })
+        Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF4F1)), modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(12.dp).testTag("profile_offer_price_$index"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.profile_offer_price, index + 1), style = MaterialTheme.typography.titleSmall)
+                OutlinedTextField(price.service, { v -> change { it.copy(service = v.take(120)) } }, enabled = enabled,
+                    singleLine = true, isError = showInvalid && price.service.isBlank(),
+                    label = { Text(stringResource(R.string.profile_offer_service)) },
+                    modifier = Modifier.fillMaxWidth().testTag("profile_offer_service_$index"))
+                OutlinedTextField(price.scope, { v -> change { it.copy(scope = v.take(300)) } }, enabled = enabled,
+                    label = { Text(stringResource(R.string.profile_offer_scope)) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(price.amount, { v -> change { it.copy(amount = v.filter { c -> c.isDigit() || c == ',' || c == '.' }.take(10)) } },
+                    enabled = enabled, singleLine = true, isError = showInvalid && parseEuroCents(price.amount) == null,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    label = { Text(stringResource(R.string.profile_offer_amount)) },
+                    modifier = Modifier.fillMaxWidth().testTag("profile_offer_amount_$index"))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PRICE_UNITS.forEach { unit ->
+                        FilterChip(selected = price.unit == unit, enabled = enabled, onClick = { change { it.copy(unit = unit) } },
+                            label = { Text(stringResource(unitLabel(unit))) }, modifier = Modifier.testTag("profile_offer_unit_${index}_$unit"))
+                    }
+                }
+                OutlinedTextField(price.includes, { v -> change { it.copy(includes = v.take(300)) } }, enabled = enabled,
+                    label = { Text(stringResource(R.string.profile_offer_includes)) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(price.excludes, { v -> change { it.copy(excludes = v.take(300)) } }, enabled = enabled,
+                    label = { Text(stringResource(R.string.profile_offer_excludes)) }, modifier = Modifier.fillMaxWidth())
+                TextButton(onClick = { onPrices(prices.filterIndexed { i, _ -> i != index }) }, enabled = enabled,
+                    modifier = Modifier.testTag("profile_offer_remove_$index")) { Text(stringResource(R.string.profile_offer_remove_price)) }
+            }
+        }
+    }
+    if (prices.size < MAX_PRICES) {
+        OutlinedButton(onClick = { onPrices(prices + PriceDraft()) }, enabled = enabled,
+            modifier = Modifier.testTag("profile_offer_add")) { Text(stringResource(R.string.profile_offer_add_price)) }
+    }
+    val valid = prices.toPrices()
+    if (showInvalid && valid == null) {
+        Text(stringResource(R.string.profile_offer_invalid), color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.testTag("profile_offer_invalid"))
+    }
+    Button(enabled = enabled, modifier = Modifier.fillMaxWidth().testTag("profile_offer_save"), onClick = {
+        showInvalid = valid == null
+        valid?.let(onSave)
+    }) { Text(stringResource(if (enabled) R.string.profile_offer_save else R.string.working)) }
 }
 
 @Composable

@@ -11,8 +11,9 @@ class ChatVideoTest {
 
     private val mp4 = byteArrayOf(0, 0, 0, 0x1c) + "ftypmp42".toByteArray()
 
-    @Test fun limitsAreOneMinute720pAnd20MiB() {
-        assertEquals(60_000L, VIDEO_MAX_DURATION_MS)
+    @Test fun limitsAreFortySeconds720pAnd20MiB() {
+        assertEquals(40_000L, VIDEO_MAX_DURATION_MS)
+        assertEquals(499L, VIDEO_DURATION_TOLERANCE_MS)
         assertEquals(720, VIDEO_MAX_SHORT_SIDE)
         assertEquals(20L * 1024 * 1024, VIDEO_MAX_BYTES)
         assertEquals("video/mp4", PreparedVideo(byteArrayOf(1), 1_000, 2, 2).mime)
@@ -20,11 +21,12 @@ class ChatVideoTest {
         assertEquals("video", AttachmentKind.VIDEO.wire)
     }
 
-    @Test fun aVideoUpToOneMinuteIsAcceptedAndLongerIsRefusedBeforeCompressing() {
-        assertNull(failureOf { checkVideoSource(VideoSource(60_000, 1920, 1080, 0, null)) })
-        // A clip shown as «1:00» by the gallery can be a few milliseconds longer.
-        assertNull(failureOf { checkVideoSource(VideoSource(60_400, 1920, 1080, 0, null)) })
-        assertEquals(AttachmentFailure.TOO_LONG, failureOf { checkVideoSource(VideoSource(61_000, 1920, 1080, 0, null)) })
+    @Test fun aVideoUpToFortySecondsIsAcceptedAndLongerIsRefusedBeforeCompressing() {
+        assertNull(failureOf { checkVideoSource(VideoSource(40_000, 1920, 1080, 0, null)) })
+        // A clip shown as «0:40» by the gallery can be a few milliseconds longer.
+        assertNull(failureOf { checkVideoSource(VideoSource(40_499, 1920, 1080, 0, null)) })
+        assertEquals(AttachmentFailure.TOO_LONG, failureOf { checkVideoSource(VideoSource(40_500, 1920, 1080, 0, null)) })
+        assertEquals(AttachmentFailure.TOO_LONG, failureOf { checkVideoSource(VideoSource(60_000, 1920, 1080, 0, null)) })
     }
 
     @Test fun somethingThatIsNotAReadableVideoIsUnsupported() {
@@ -51,10 +53,10 @@ class ChatVideoTest {
         assertNull(videoTargetSize(720, 720, 0))
     }
 
-    @Test fun bitrateFitsAFullMinuteIn20MiBAndNeverExceedsTheSource() {
-        val full = videoBitrate(60_000, null)
-        val bytesPerMinute = (full + VIDEO_AUDIO_BITRATE).toLong() * 60 / 8
-        assertTrue("a minute fits with margin: $bytesPerMinute", bytesPerMinute <= VIDEO_MAX_BYTES * 9 / 10)
+    @Test fun bitrateFitsTheLongestClipIn20MiBAndNeverExceedsTheSource() {
+        val full = videoBitrate(40_499, null)
+        val bytes = (full + VIDEO_AUDIO_BITRATE).toLong() * 40_499 / 8_000
+        assertTrue("the longest clip fits with margin: $bytes", bytes <= VIDEO_MAX_BYTES * 9 / 10)
         assertTrue("short clips keep 720p quality", videoBitrate(10_000, null) <= VIDEO_MAX_BITRATE)
         assertEquals(VIDEO_MAX_BITRATE, videoBitrate(10_000, null))
         assertEquals(800_000, videoBitrate(10_000, 800_000))
@@ -79,16 +81,17 @@ class ChatVideoTest {
     }
 
     @Test fun theCompressedResultIsCheckedBeforeUploading() {
-        assertNull(failureOf { checkVideoResult(mp4, 5_000_000, 42_000, 1280, 720, sourceShortSide = 1080) })
+        assertNull(failureOf { checkVideoResult(mp4, 5_000_000, 32_000, 1280, 720, sourceShortSide = 1080) })
         // The stored size may be coded with rotation (720×1280): orientation does not matter.
-        assertNull(failureOf { checkVideoResult(mp4, 5_000_000, 42_000, 720, 1280, sourceShortSide = 1080) })
+        assertNull(failureOf { checkVideoResult(mp4, 5_000_000, 32_000, 720, 1280, sourceShortSide = 1080) })
         assertEquals(AttachmentFailure.UNSUPPORTED,
-            failureOf { checkVideoResult("not a video".toByteArray(), 5_000, 42_000, 1280, 720, 1080) })
+            failureOf { checkVideoResult("not a video".toByteArray(), 5_000, 32_000, 1280, 720, 1080) })
         assertEquals(AttachmentFailure.TOO_LARGE,
-            failureOf { checkVideoResult(mp4, VIDEO_MAX_BYTES + 1, 42_000, 1280, 720, 1080) })
-        assertEquals(AttachmentFailure.UNSUPPORTED, failureOf { checkVideoResult(mp4, 5_000, 42_000, 1920, 1080, 1080) })
-        assertEquals(AttachmentFailure.UNSUPPORTED, failureOf { checkVideoResult(mp4, 5_000, 42_000, 1280, 720, 480) })
-        assertEquals(AttachmentFailure.TOO_LONG, failureOf { checkVideoResult(mp4, 5_000, 61_000, 1280, 720, 1080) })
-        assertEquals(AttachmentFailure.UNSUPPORTED, failureOf { checkVideoResult(mp4, 0, 42_000, 1280, 720, 1080) })
+            failureOf { checkVideoResult(mp4, VIDEO_MAX_BYTES + 1, 32_000, 1280, 720, 1080) })
+        assertEquals(AttachmentFailure.UNSUPPORTED, failureOf { checkVideoResult(mp4, 5_000, 32_000, 1920, 1080, 1080) })
+        assertEquals(AttachmentFailure.UNSUPPORTED, failureOf { checkVideoResult(mp4, 5_000, 32_000, 1280, 720, 480) })
+        assertNull(failureOf { checkVideoResult(mp4, 5_000, 40_499, 1280, 720, 1080) })
+        assertEquals(AttachmentFailure.TOO_LONG, failureOf { checkVideoResult(mp4, 5_000, 40_500, 1280, 720, 1080) })
+        assertEquals(AttachmentFailure.UNSUPPORTED, failureOf { checkVideoResult(mp4, 0, 32_000, 1280, 720, 1080) })
     }
 }

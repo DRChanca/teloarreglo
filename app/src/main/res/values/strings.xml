@@ -301,12 +301,12 @@
     <string name="area_client_notice">Hasta confirmar la cita, el profesional solo ve una zona aproximada de %1$d m.</string>
     <string name="area_loading">Cargando la ubicación…</string>
     <string name="video_attach">Enviar vídeo</string>
-    <string name="video_limits">Vídeo de hasta 1 minuto. La app envía una copia MP4 de hasta 720p y 20 MB; tu original no cambia.</string>
+    <string name="video_limits">Vídeo de hasta 40 segundos. La app envía una copia MP4 de hasta 720p y 20 MB; tu original no cambia.</string>
     <string name="video_preparing">Comprimiendo el vídeo…</string>
     <string name="video_preparing_percent">Comprimiendo el vídeo… %1$d %%</string>
     <string name="video_uploading">Enviando vídeo… %1$d %%</string>
     <string name="video_error_unsupported">Este vídeo no se puede convertir a un MP4 compatible en este teléfono. No se ha enviado; elige otro.</string>
-    <string name="video_error_too_long">El vídeo dura más de un minuto. No se ha enviado; recórtalo en la galería o elige otro.</string>
+    <string name="video_error_too_long">El vídeo dura más de 40 segundos. No se ha enviado; recórtalo en la galería o elige otro.</string>
     <string name="video_error_too_large">El vídeo no cabe en 20 MB ni comprimido. No se ha enviado; elige uno más corto.</string>
     <string name="video_error_quota">El espacio para vídeos está lleno. El vídeo no se ha enviado; inténtalo más tarde.</string>
     <string name="video_error_access">No tienes permiso para enviar vídeos aquí o tu sesión ha caducado. El vídeo no se ha enviado.</string>
@@ -315,4 +315,19 @@
     <string name="video_message">Vídeo enviado en la conversación</string>
     <string name="video_play">Reproducir vídeo</string>
     <string name="video_open_error">No se pudo reproducir el vídeo. Toca para reintentar.</string>
+    <string name="profile_offer_title">Servicios y precios orientativos</string>
+    <string name="profile_offer_hint">Se publican en cuanto los guardas, sin revisión. Las citas, solicitudes y propuestas que ya existen conservan su precio.</string>
+    <string name="profile_offer_unpublished_hint">Se mostrarán en el catálogo cuando se apruebe tu perfil.</string>
+    <string name="profile_offer_price">Precio %1$d</string>
+    <string name="profile_offer_service">Servicio</string>
+    <string name="profile_offer_scope">Qué incluye el trabajo</string>
+    <string name="profile_offer_amount">Importe (€, IVA incluido)</string>
+    <string name="profile_offer_includes">Incluye</string>
+    <string name="profile_offer_excludes">No incluye</string>
+    <string name="profile_offer_add_price">Añadir precio</string>
+    <string name="profile_offer_remove_price">Quitar este precio</string>
+    <string name="profile_offer_save">Guardar y publicar servicios y precios</string>
+    <string name="profile_offer_saved">Servicios y precios publicados.</string>
+    <string name="profile_offer_invalid">Revisa los precios: cada uno necesita un servicio y un importe en euros, por ejemplo 35 o 35,50.</string>
+    <string name="profile_edit_cover">Cambiar foto de portada</string>
 </resources>

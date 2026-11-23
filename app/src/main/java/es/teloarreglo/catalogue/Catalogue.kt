@@ -16,8 +16,8 @@ data class ReferencePrice(
     val scope: String,
     val unit: String,
     @SerialName("amount_cents") val amountCents: Int,
-    val includes: String,
-    val excludes: String,
+    val includes: String = "",
+    val excludes: String = "",
 )
 
 @Serializable

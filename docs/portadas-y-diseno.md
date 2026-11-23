@@ -175,3 +175,40 @@ Comprobación final de esta corrección: cinco casos JVM de portadas, suite JVM
 completa, lint y ambas APK correctos; 18 pruebas instrumentadas API 35 correctas,
 incluida apertura del editor con respuesta JSON `null` usando el SDK. El contrato
 real local de Storage también pasó, con un caso inicial explícito sin historial.
+
+## Publicación directa desde el 23 de noviembre de 2026
+
+Decisión de David: cuando el propietario cambia la portada, se publica directamente, sin revisión del
+administrador. Sustituye lo dicho arriba sobre revisión de portadas. Migración nueva
+`20261123004200_direct_covers.sql`; no edita las anteriores.
+
+Se mantiene:
+
+- Bucket privado `professional-covers`, solo JPEG de hasta 2 MiB, objetos inmutables (sin UPDATE/DELETE).
+- Compresión en la app (1600 px, JPEG ≤ 2 MB, sin EXIF/GPS) y comprobación en el servidor del objeto, MIME
+  y tamaño antes de publicar (`upload_not_complete`).
+- Permisos: solo el propietario actual pide y publica la portada de su perfil (`42501 permission_denied`);
+  idempotencia por UUID de petición (`request_conflict`); `cover_changed` si ya hay una petición posterior.
+
+Cambia:
+
+- `submit_professional_cover(p_request)` publica: estado nuevo **`published`**, guarda la ruta en
+  `private.professional_profiles.cover_path` (columna nueva) y en `approved_profiles.cover_path` si el
+  perfil está aprobado.
+- `request_professional_cover(p_profile, p_request)` sin hash vuelve a la imagen del oficio al momento
+  (`published`, `cover_path = null`).
+- Perfil sin aprobar: la foto queda guardada (el propietario la ve con URL firmada) y el disparador
+  `approved_profiles_cover` la copia a la instantánea pública cuando el perfil se aprueba por primera vez.
+- `review_professional_cover` ya no se puede ejecutar (`revoke` a `authenticated`): la función y
+  `private.professional_cover_decisions` quedan como historial. El panel no muestra ni mostraba portadas.
+- Al aplicar la migración, la última propuesta `pending` de cada perfil se publica (como si se enviara hoy).
+  Las anteriores quedan como historial. **Decisión a confirmar por David antes de desplegar.**
+- `can_read_professional_cover` no cambia: el público lee la portada a la que apunta la instantánea
+  aprobada; el propietario y la lista de administradores leen las peticiones.
+
+Android: `CoverStatus.PUBLISHED`, texto «Portada publicada.», botón «Publicar portada» y ayuda nueva en
+ES/EN/FR/DE. La portada se cambia desde el detalle del perfil publicado y, nuevo, desde el editor de perfil
+(«Cambiar foto de portada»), también antes de la aprobación.
+
+Comprobación: [comprobación de ajustes #19/#30](comprobacion-ajustes-19-30.md).
+

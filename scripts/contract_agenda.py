@@ -130,7 +130,7 @@ class AgendaContract(unittest.TestCase):
         results = simultaneously(*[lambda: self.rpc("accept_proposal", {"p_proposal_id": contiguous["id"]}, tokens[0])] * 2)
         self.assertEqual([code for code, _ in results], [200, 200])
         self.assertEqual({body["status"] for _, body in results}, {"accepted"})
-        code, notices = api.request(f"/rest/v1/appointment_events?select=kind&proposal_id=eq.{contiguous['id']}",
+        code, notices = api.request(f"/rest/v1/appointment_events?select=kind&proposal_id=eq.{contiguous['id']}&order=created_at.asc",
                                     token=tokens[1], method="GET")
         self.assertEqual([n["kind"] for n in notices], ["proposed", "accepted"])
         # Both accounts see the confirmed appointment.

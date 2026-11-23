@@ -21,7 +21,7 @@ enum class AttachmentKind(val wire: String) { PHOTO("photo"), VIDEO("video") }
 
 /**
  * Definitive refusals. Anything else (network, 5xx) is uncertain: retry with the same request id.
- * TOO_LONG is only raised on the device (video over one minute), never by the server.
+ * TOO_LONG is only raised on the device (video over 40 seconds), never by the server.
  */
 enum class AttachmentFailure { ACCESS, TOO_LARGE, TOO_LONG, UNSUPPORTED, QUOTA, CONFLICT }
 

@@ -34,18 +34,18 @@ class ProfessionalCoversTest {
         finally { client.close() }
     }
 
-    @Test fun anExistingCoverSubmissionStillLoadsItsReviewState() = runTest {
+    @Test fun anExistingCoverSubmissionLoadsItsPublishedState() = runTest {
         val client = createSupabaseClient("https://covers.example.org", "public-key") {
             defaultLogLevel = LogLevel.NONE
             install(Postgrest)
             httpEngine = MockEngine {
-                respond("""{"id":"request","status":"pending","object_path":"profile/request.jpg","reason":null}""",
+                respond("""{"id":"request","status":"published","object_path":"profile/request.jpg","reason":null}""",
                     HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
             }
         }
         try {
             val state = SupabaseProfessionalCovers(client).state("profile")
-            assertEquals(CoverStatus.PENDING, state?.status)
+            assertEquals(CoverStatus.PUBLISHED, state?.status)
             assertEquals("request", state?.id)
         } finally { client.close() }
     }
@@ -85,14 +85,14 @@ class ProfessionalCoversTest {
                     path.contains("/storage/v1/object/") -> respond(
                         """{"statusCode":"409","error":"Duplicate","message":"already exists"}""",
                         HttpStatusCode.Conflict, headers)
-                    else -> respond("""{"id":"request","status":"pending","object_path":"profile/request.jpg"}""",
+                    else -> respond("""{"id":"request","status":"published","object_path":"profile/request.jpg"}""",
                         HttpStatusCode.OK, headers)
                 }
             }
         }
         try {
             val result = SupabaseProfessionalCovers(client).photo("profile", "request", byteArrayOf(1, 2, 3))
-            assertEquals(CoverStatus.PENDING, result.status)
+            assertEquals(CoverStatus.PUBLISHED, result.status)
             assertEquals(listOf("/rest/v1/rpc/request_professional_cover",
                 "/storage/v1/object/professional-covers/profile/request.jpg",
                 "/rest/v1/rpc/submit_professional_cover"), calls)
