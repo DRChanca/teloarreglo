@@ -529,3 +529,76 @@ cambian; el formulario muestra el inicio fijo, sin campos de fecha, hora ni dire
 ```
 
 Resultados: [comprobación de cambios en curso](comprobacion-cambios-en-curso.md).
+
+## Marcar realizado y confirmar la entrega manual — #25
+
+Migración nueva: `20261123012600_appointment_completion.sql`. No edita migraciones anteriores ni cambia firmas de RPC
+existentes. No se ha desplegado ni escrito en la base alojada. El dinero sigue siendo simulado.
+
+Regla: «Realizado» del profesional fija en servidor el origen de los plazos y no entrega nada. Solo el cliente confirma;
+la confirmación entrega una sola vez lo pendiente del pago integrado si no hay incidencia bloqueante. Directo y gratuito
+finalizan igual, sin inventar dinero gestionado por la app.
+
+Cambios en el esquema:
+
+- `appointments_stage_check` + `done` (marcado realizado, esperando al cliente) y `completed` (finalizada). Columnas
+  nuevas legibles por los dos participantes (privilegio de columna, como #38): `done_at` (instante de servidor de la
+  marca), `reminder_due_at` (`done_at + 24 h`), `close_due_at` (`done_at + 48 h`), `completed_at` y `completion`
+  (`client_confirmed` | `no_answer`). Restricciones `appointments_done_mark` y `appointments_completed_mark`.
+- `appointment_events_kind_check` + `done` (al cliente) y `completed` (a la otra parte; con `actor_id` nulo y un aviso
+  a cada participante cuando cierra el reloj). `actor_id` admite nulo solo para `completed`
+  (`appointment_events_system_actor`).
+- `payment_movements_one_delivery`: índice único parcial, como mucho un movimiento `delivered` por cita, entregue quien
+  entregue (cliente, reloj o administración).
+
+RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo). Ambas devuelven
+`{id, stage, version, done_at, reminder_due_at, close_due_at, completed_at, completion, delivered_cents}` (nunca el lugar
+exacto):
+
+- `mark_done(p_appointment_id uuid)`. Solo el profesional de la cita (`42501 permission_denied`, también para citas
+  ajenas o inexistentes) y solo con la cita `started` (`PT409 incompatible_state`). Cierra como `superseded` un cambio
+  pendiente (las condiciones vigentes son las de la propuesta aceptada), pone `done`, `done_at`, los vencimientos,
+  `version + 1` y avisa al cliente (`done`). No mueve dinero. Repetirla (también tras finalizar) devuelve la misma marca
+  sin otro aviso.
+- `confirm_done(p_appointment_id uuid)`. Solo el cliente de la cita (`42501`). Con la cita `completed` devuelve el
+  primer resultado; si no está `done` → `PT409 incompatible_state` (confirmación prematura). Si no, delega en la
+  invariante compartida.
+
+Invariante compartida para #26, #27 y #31 (no hay una segunda implementación del saldo):
+
+- `private.complete_appointment(p_appointment_id uuid, p_actor uuid, p_completion text)` → mismas marcas. Solo
+  servidor (sin permiso para `authenticated`). `client_confirmed` exige `p_actor` = cliente; `no_answer` exige
+  `p_actor` nulo y `now() >= close_due_at` (`PT409 not_due`). Bloquea la fila de la cita y después la del pago. Si ya
+  está `completed` devuelve el primer resultado; si no está `done` → `incompatible_state`; si
+  `private.delivery_blocked(id)` → `PT409 incident_blocking`. En integrado con pendiente > 0 añade el movimiento
+  `delivered` por todo lo pendiente (`pending = 0`, `delivered += pendiente`); en directo o gratuita, ninguno. Pone
+  `completed`, `completed_at`, `completion`, `version + 1` y los avisos.
+- `private.delivery_blocked(p_appointment_id uuid) returns boolean`: hoy siempre `false`. #26 lo redefine con
+  `create or replace` para que una incidencia abierta bloquee la entrega, también la del reloj.
+- `private.completion_deadlines(p_done_at)`: 24 h y 48 h. El intervalo corto de pruebas de #27 debe aislarse; no hay
+  parámetro de usuario que cambie los plazos.
+
+Carreras: `mark_done`, `confirm_done`, cancelación, cambios y el futuro reloj bloquean primero la fila de la cita, así que
+se serializan; la segunda confirmación ve `completed` y devuelve el primer resultado, y el índice único impide una segunda
+entrega en cualquier caso. Tras la marca, `propose_change` y `cancel_appointment` responden
+`incompatible_state`, y el cambio que estuviera pendiente ya quedó cerrado.
+
+Android: `Appointments.markDone(appointmentId)` y `confirmDone(appointmentId)` → `CompletionMarks`. `AppointmentStage`
++ `DONE`, `COMPLETED`; `Completion` (`CLIENT_CONFIRMED`, `NO_ANSWER`); `Appointment.doneAt/reminderDueAt/closeDueAt/
+completedAt/completion`, `canMarkDone(account)`, `canConfirmDone(account)` y `completionEffect`
+(`CompletionEffect.Deliver`, `DirectNotHandled`, `None`). Avisos `CONFIRM_DONE`, `AWAITING_CONFIRMATION`, `COMPLETED`,
+`COMPLETED_NO_ANSWER`. `incident_blocking` → `AppointmentFailure.INCIDENT_BLOCKING`.
+
+Interfaz (`AppointmentCompletionUi.kt`, dentro de la tarjeta de la cita): el profesional ve «Marcar como realizado» con un
+diálogo que explica que el pago no se entrega todavía. Ambas cuentas ven «Marcado como realizado el …» y la fecha de
+cierre automático del servidor. El cliente ve «Confirmar que se ha realizado», con un diálogo que muestra lo que se
+entregará (o que el pago directo no pasa por la app, o que no hay dinero). Después ambas ven «Finalizada con tu
+confirmación / con la confirmación del cliente el …» y «Entregado al profesional: … (simulado)». Textos `completion_*` en
+ES/EN/FR/DE.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_completion.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AppointmentsTest'
+```
+
+Resultados: [comprobación de realizado](comprobacion-realizado.md).

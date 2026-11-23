@@ -33,7 +33,14 @@ object ServerInstant : KSerializer<Instant> {
     @SerialName("started") STARTED,
     /** Cancelled before the start (#24): reservation released, pending integrated money refunded (simulated). */
     @SerialName("cancelled") CANCELLED,
+    /** Its professional marked «Realizado» (#25): awaiting the client's confirmation; nothing delivered yet. */
+    @SerialName("done") DONE,
+    /** Finalised (#25): confirmed by the client, or closed without an answer after the deadline (#27). */
+    @SerialName("completed") COMPLETED,
 }
+
+/** How a job marked done was finalised. NO_ANSWER is the silent close at the deadline (#27). */
+@Serializable enum class Completion { @SerialName("client_confirmed") CLIENT_CONFIRMED, @SerialName("no_answer") NO_ANSWER }
 @Serializable enum class ProposalStatus {
     @SerialName("pending") PENDING, @SerialName("rejected") REJECTED, @SerialName("superseded") SUPERSEDED,
     @SerialName("accepted") ACCEPTED,
@@ -134,6 +141,12 @@ data class Appointment(
     @SerialName("started_at") @Serializable(ServerInstant::class) val startedAt: Instant? = null,
     @SerialName("cancelled_at") @Serializable(ServerInstant::class) val cancelledAt: Instant? = null,
     @SerialName("cancelled_by") val cancelledBy: String? = null,
+    /** Server marks (#25): «Realizado», the reminder and silent-close deadlines counted from it, and the completion. */
+    @SerialName("done_at") @Serializable(ServerInstant::class) val doneAt: Instant? = null,
+    @SerialName("reminder_due_at") @Serializable(ServerInstant::class) val reminderDueAt: Instant? = null,
+    @SerialName("close_due_at") @Serializable(ServerInstant::class) val closeDueAt: Instant? = null,
+    @SerialName("completed_at") @Serializable(ServerInstant::class) val completedAt: Instant? = null,
+    val completion: Completion? = null,
     /**
      * The profile's reference prices in force when the request was sent, kept by the server (2026-11-23). In this
      * chat they are shown instead of the live profile prices; later profile edits never change them.
@@ -193,6 +206,21 @@ data class Appointment(
     /** Either participant cancels before the start; afterwards it is an incident, not a cancellation (#24). */
     fun canCancel(accountId: String) = stage == AppointmentStage.CONFIRMED && accountId in setOf(clientId, professionalId)
 
+    /** Only its professional marks a started job as done (#25). */
+    fun canMarkDone(accountId: String) = stage == AppointmentStage.STARTED && accountId == professionalId
+    /** Only its client confirms a job marked done (#25). */
+    fun canConfirmDone(accountId: String) = stage == AppointmentStage.DONE && accountId == clientId
+
+    /** What confirming the job would do with the money, shown before the decision (#25). */
+    val completionEffect: CompletionEffect get() {
+        val current = payment ?: return CompletionEffect.None
+        return when {
+            current.mode == PaymentMode.DIRECT -> CompletionEffect.DirectNotHandled(current.agreedCents)
+            current.pendingCents > 0 -> CompletionEffect.Deliver(current.pendingCents)
+            else -> CompletionEffect.None
+        }
+    }
+
     /** What cancelling now would do with the money, shown before the decision. */
     val cancellationEffect: CancellationEffect get() {
         val current = payment ?: return CancellationEffect.None
@@ -209,6 +237,10 @@ data class Appointment(
         val change = pendingChange
         return when {
             stage == AppointmentStage.CANCELLED -> AppointmentNotice.CANCELLED
+            stage == AppointmentStage.COMPLETED ->
+                if (completion == Completion.NO_ANSWER) AppointmentNotice.COMPLETED_NO_ANSWER else AppointmentNotice.COMPLETED
+            stage == AppointmentStage.DONE ->
+                if (professional) AppointmentNotice.AWAITING_CONFIRMATION else AppointmentNotice.CONFIRM_DONE
             stage == AppointmentStage.STARTED && change == null -> AppointmentNotice.STARTED
             (stage == AppointmentStage.CONFIRMED || stage == AppointmentStage.STARTED) && change != null -> when {
                 change.authorId == accountId -> AppointmentNotice.AWAITING_CHANGE
@@ -235,7 +267,40 @@ enum class AppointmentNotice {
     STARTED,
     /** Cancelled before the start (#24). */
     CANCELLED,
+    /** Marked done: the client confirms (or reports a problem) before the deadline (#25). */
+    CONFIRM_DONE,
+    /** Marked done by this professional, awaiting the client (#25). */
+    AWAITING_CONFIRMATION,
+    /** Finalised with the client's confirmation (#25). */
+    COMPLETED,
+    /** Finalised without the client's answer after the deadline (#27). */
+    COMPLETED_NO_ANSWER,
 }
+
+/** What the client's confirmation does with the (simulated) money (#25). */
+sealed interface CompletionEffect {
+    /** Free appointment, or nothing integrated left pending. */
+    data object None : CompletionEffect
+    /** Integrated: everything still pending is delivered to the professional (simulated). */
+    data class Deliver(val cents: Int) : CompletionEffect
+    /** Direct: the app never handled that money, so it delivers nothing. */
+    data class DirectNotHandled(val agreedCents: Int) : CompletionEffect
+}
+
+/** What mark_done and confirm_done return: the server marks and the money delivered, never the place. */
+@Serializable
+data class CompletionMarks(
+    val id: String,
+    val stage: AppointmentStage,
+    val version: Int,
+    @SerialName("done_at") @Serializable(ServerInstant::class) val doneAt: Instant? = null,
+    @SerialName("reminder_due_at") @Serializable(ServerInstant::class) val reminderDueAt: Instant? = null,
+    @SerialName("close_due_at") @Serializable(ServerInstant::class) val closeDueAt: Instant? = null,
+    @SerialName("completed_at") @Serializable(ServerInstant::class) val completedAt: Instant? = null,
+    val completion: Completion? = null,
+    /** Simulated integrated money delivered to the professional; 0 for free and direct appointments. */
+    @SerialName("delivered_cents") val deliveredCents: Int = 0,
+)
 
 /** What a cancellation before the start does with the (simulated) money (#24). No penalty in any case. */
 sealed interface CancellationEffect {
@@ -338,7 +403,10 @@ data class ProposalDraft(
 /** Server rejections, kept apart from network uncertainty (which is rethrown as is). */
 /** SLOT_UNAVAILABLE: the interval overlaps the agenda or leaves its availability; nothing was confirmed. */
 /** ALREADY_STARTED: the work started first, so there is no cancellation with a refund (#24). */
-enum class AppointmentFailure { ACCESS, INVALID, OUT_OF_COVERAGE, STALE, RETRY_CONFLICT, SLOT_UNAVAILABLE, ALREADY_STARTED }
+/** INCIDENT_BLOCKING: an incident blocks the delivery; nothing was confirmed or delivered (#25/#26). */
+enum class AppointmentFailure {
+    ACCESS, INVALID, OUT_OF_COVERAGE, STALE, RETRY_CONFLICT, SLOT_UNAVAILABLE, ALREADY_STARTED, INCIDENT_BLOCKING,
+}
 class AppointmentException(val failure: AppointmentFailure, cause: Exception) : Exception(failure.name, cause)
 
 /**
@@ -380,11 +448,23 @@ interface Appointments {
      * integrated still pending, without penalty. Repeating, by either participant, returns the first cancellation.
      */
     suspend fun cancel(appointmentId: String): AppointmentMarks
+
+    /**
+     * Professional only, on a started job (#25): fixes the server instant the deadlines count from and tells the
+     * client. Delivers nothing; repeating returns the same mark.
+     */
+    suspend fun markDone(appointmentId: String): CompletionMarks
+    /**
+     * Client only, on a job marked done (#25): finalises it and delivers (simulated) everything integrated still
+     * pending, once. Repeating returns the first result; a blocking incident refuses it.
+     */
+    suspend fun confirmDone(appointmentId: String): CompletionMarks
 }
 
 /** Every column the server lets app accounts read; `*`, address, latitude or longitude would be refused (#38). */
 private const val READABLE_COLUMNS = "id,conversation_id,profile_id,client_id,professional_id,request_id,problem," +
-    "requested_start,requested_end,version,stage,created_at,started_at,cancelled_at,cancelled_by,reference_prices"
+    "requested_start,requested_end,version,stage,created_at,started_at,cancelled_at,cancelled_by," +
+    "done_at,reminder_due_at,close_due_at,completed_at,completion,reference_prices"
 
 class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
     override suspend fun list(conversationId: String): List<Appointment> = mapped {
@@ -492,6 +572,14 @@ class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
             .decodeAs<AppointmentMarks>()
     }
 
+    override suspend fun markDone(appointmentId: String) = mapped {
+        client.postgrest.rpc("mark_done", buildJsonObject { put("p_appointment_id", appointmentId) }).decodeAs<CompletionMarks>()
+    }
+
+    override suspend fun confirmDone(appointmentId: String) = mapped {
+        client.postgrest.rpc("confirm_done", buildJsonObject { put("p_appointment_id", appointmentId) }).decodeAs<CompletionMarks>()
+    }
+
     private val PaymentMode.wire get() = if (this == PaymentMode.INTEGRATED) "integrated" else "direct"
 
     private inline fun <T> mapped(block: () -> T): T = try { block() } catch (error: RestException) {
@@ -500,6 +588,7 @@ class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
             error.statusCode == 401 || error.statusCode == 403 -> AppointmentFailure.ACCESS
             "slot_unavailable" in message -> AppointmentFailure.SLOT_UNAVAILABLE
             "already_started" in message -> AppointmentFailure.ALREADY_STARTED
+            "incident_blocking" in message -> AppointmentFailure.INCIDENT_BLOCKING
             "stale_version" in message || "incompatible_state" in message || "proposal_expired" in message ->
                 AppointmentFailure.STALE
             "out_of_coverage" in message -> AppointmentFailure.OUT_OF_COVERAGE

@@ -424,4 +424,26 @@
     <string name="running_change_intro">Arbeit begonnen: Schlage einen anderen Preis, Umfang oder eine andere Dauer vor. Bei Zahlung in der App wird bei Annahme die Erhöhung belastet oder die Senkung erstattet (simuliert).</string>
     <string name="running_change_start_fixed">Beginn: %1$s (ändert sich nach Arbeitsbeginn nicht mehr).</string>
     <string name="running_change_error_started">Die Arbeit hat bereits begonnen: Startzeit und Adresse ändern sich nicht. Prüfe den Vorschlag.</string>
+    <string name="completion_notice_confirm">Arbeit als erledigt markiert: Bitte bestätigen, ob sie ausgeführt wurde</string>
+    <string name="completion_notice_awaiting">Erledigt: Warten auf die Bestätigung des Kunden</string>
+    <string name="completion_notice_completed">Termin abgeschlossen</string>
+    <string name="completion_notice_no_answer">Ohne Bestätigung des Kunden abgeschlossen</string>
+    <string name="completion_mark">Als erledigt markieren</string>
+    <string name="completion_mark_title">Arbeit als erledigt markieren?</string>
+    <string name="completion_mark_explain">Der Kunde wird gebeten, es zu bestätigen. Die ausstehende Zahlung wird jetzt nicht ausgezahlt: Sie wird ausgezahlt, wenn der Kunde bestätigt oder, falls er weder antwortet noch ein Problem meldet, 48 Stunden nach dieser Markierung.</string>
+    <string name="completion_done_at">Am %1$s als erledigt markiert.</string>
+    <string name="completion_deadline_client">Bestätige, ob die Arbeit ausgeführt wurde. Wenn du weder antwortest noch ein Problem meldest, wird der Termin ab %1$s automatisch abgeschlossen und die ausstehende Zahlung ausgezahlt.</string>
+    <string name="completion_deadline_pro">Warten auf die Bestätigung des Kunden. Wenn er weder antwortet noch ein Problem meldet, wird der Termin ab %1$s automatisch abgeschlossen.</string>
+    <string name="completion_confirm">Ausführung bestätigen</string>
+    <string name="completion_confirm_title">Bestätigen, dass die Arbeit ausgeführt wurde?</string>
+    <string name="completion_effect_deliver">Der ausstehende Betrag wird an den Profi ausgezahlt: %1$s (simuliert).</string>
+    <string name="completion_effect_direct">Die vereinbarte Direktzahlung (%1$s) läuft nicht über die App, daher zahlt die App nichts aus.</string>
+    <string name="completion_effect_none">Es gibt keinen ausstehenden Betrag zum Auszahlen.</string>
+    <string name="completion_final">Der Termin wird abgeschlossen. Bei einem Problem nicht bestätigen, sondern einen Vorfall melden.</string>
+    <string name="completion_not_yet">Noch nicht</string>
+    <string name="completion_completed_by_me">Am %1$s mit deiner Bestätigung abgeschlossen.</string>
+    <string name="completion_completed_by_client">Am %1$s mit der Bestätigung des Kunden abgeschlossen.</string>
+    <string name="completion_completed_no_answer">Am %1$s ohne Bestätigung des Kunden abgeschlossen.</string>
+    <string name="completion_delivered">An den Profi ausgezahlt: %1$s (simuliert).</string>
+    <string name="completion_error_incident">Es gibt einen offenen Vorfall: Bestätigung und Auszahlung sind erst nach seiner Klärung möglich.</string>
 </resources>

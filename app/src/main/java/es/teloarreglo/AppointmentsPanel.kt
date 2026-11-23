@@ -148,6 +148,10 @@ private fun noticeText(appointment: Appointment, accountId: String): String {
         AppointmentNotice.CORRECT_ADDRESS -> stringResource(R.string.change_notice_correct_address)
         AppointmentNotice.STARTED -> stringResource(R.string.start_cancel_notice_started)
         AppointmentNotice.CANCELLED -> stringResource(R.string.start_cancel_notice_cancelled)
+        AppointmentNotice.CONFIRM_DONE -> stringResource(R.string.completion_notice_confirm)
+        AppointmentNotice.AWAITING_CONFIRMATION -> stringResource(R.string.completion_notice_awaiting)
+        AppointmentNotice.COMPLETED -> stringResource(R.string.completion_notice_completed)
+        AppointmentNotice.COMPLETED_NO_ANSWER -> stringResource(R.string.completion_notice_no_answer)
     }
 }
 
@@ -155,14 +159,18 @@ private fun noticeText(appointment: Appointment, accountId: String): String {
 @Composable
 private fun ReservationLine(appointment: Appointment) {
     val confirmed = appointment.confirmedProposal
-    val reserved = appointment.stage == AppointmentStage.CONFIRMED || appointment.stage == AppointmentStage.STARTED
-    if (reserved && confirmed != null) {
-        Text(stringResource(R.string.appointment_confirmed_reserved, dateTimeFormat().format(confirmed.startAt),
-            confirmed.durationMinutes), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.testTag("appointment_confirmed_${appointment.id}"))
-    } else if (appointment.stage == AppointmentStage.CANCELLED) Text(stringResource(R.string.start_cancel_released),
-        style = MaterialTheme.typography.labelSmall)
-    else Text(stringResource(R.string.appointment_unreserved), style = MaterialTheme.typography.labelSmall)
+    val reserved = appointment.stage == AppointmentStage.CONFIRMED || appointment.stage == AppointmentStage.STARTED ||
+        appointment.stage == AppointmentStage.DONE
+    when {
+        // A completed appointment states its completion in CompletionSection; it is neither pending nor reserved.
+        appointment.stage == AppointmentStage.COMPLETED -> Unit
+        reserved && confirmed != null -> Text(stringResource(R.string.appointment_confirmed_reserved,
+            dateTimeFormat().format(confirmed.startAt), confirmed.durationMinutes), style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary, modifier = Modifier.testTag("appointment_confirmed_${appointment.id}"))
+        appointment.stage == AppointmentStage.CANCELLED -> Text(stringResource(R.string.start_cancel_released),
+            style = MaterialTheme.typography.labelSmall)
+        else -> Text(stringResource(R.string.appointment_unreserved), style = MaterialTheme.typography.labelSmall)
+    }
     appointment.payment?.let { PaymentLine(it, appointment.id) }
 }
 
@@ -201,6 +209,7 @@ internal fun failureText(failure: AppointmentFailure?): String = stringResource(
     AppointmentFailure.RETRY_CONFLICT -> R.string.appointment_error_conflict
     AppointmentFailure.SLOT_UNAVAILABLE -> R.string.appointment_error_slot
     AppointmentFailure.ALREADY_STARTED -> R.string.start_cancel_error_started
+    AppointmentFailure.INCIDENT_BLOCKING -> R.string.completion_error_incident
     null -> R.string.appointment_error_network
 })
 
@@ -243,6 +252,7 @@ private fun AppointmentDetails(
             // Changes are open while confirmed and during the job (price, scope, duration only once started).
             if (appointment.canProposeChange(accountId)) ChangeSection(appointment, accountId, appointments, scope, onChange, onCorrection, onChanged)
             StartCancelSection(appointment, accountId, appointments, scope, onChanged)
+            CompletionSection(appointment, accountId, appointments, scope, onChanged)
             if (professional && appointment.stage == AppointmentStage.PENDING) Button(onClick = onPropose, modifier = Modifier.testTag("appointment_propose")) {
                 Text(stringResource(if (appointment.proposals.isEmpty()) R.string.appointment_propose else R.string.appointment_propose_new))
             }

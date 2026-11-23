@@ -165,6 +165,32 @@ private class FakeAppointments : Appointments {
                 it.copy(pendingCents = it.pendingCents - refund, refundedCents = it.refundedCents + refund) })
         return marks(items[index], refund)
     }
+
+    private fun completionMarks(a: Appointment, delivered: Int = 0) = CompletionMarks(a.id, a.stage, a.version, a.doneAt,
+        a.reminderDueAt, a.closeDueAt, a.completedAt, a.completion, delivered)
+
+    override suspend fun markDone(appointmentId: String): CompletionMarks {
+        val index = items.indexOfFirst { it.id == appointmentId }
+        val a = items[index]
+        if (a.stage == AppointmentStage.DONE || a.stage == AppointmentStage.COMPLETED) return completionMarks(a)
+        if (a.stage != AppointmentStage.STARTED) throw AppointmentException(AppointmentFailure.STALE, Exception())
+        val now = Instant.now()
+        items[index] = a.copy(stage = AppointmentStage.DONE, doneAt = now, reminderDueAt = now.plusSeconds(24 * 3600),
+            closeDueAt = now.plusSeconds(48 * 3600), version = a.version + 1)
+        return completionMarks(items[index])
+    }
+
+    override suspend fun confirmDone(appointmentId: String): CompletionMarks {
+        val index = items.indexOfFirst { it.id == appointmentId }
+        val a = items[index]
+        if (a.stage == AppointmentStage.COMPLETED) return completionMarks(a, a.payment?.deliveredCents ?: 0)
+        if (a.stage != AppointmentStage.DONE) throw AppointmentException(AppointmentFailure.STALE, Exception())
+        val deliver = a.payment?.takeIf { it.mode == PaymentMode.INTEGRATED }?.pendingCents ?: 0
+        items[index] = a.copy(stage = AppointmentStage.COMPLETED, completedAt = Instant.now(),
+            completion = Completion.CLIENT_CONFIRMED, version = a.version + 1, payment = a.payment?.let {
+                it.copy(pendingCents = it.pendingCents - deliver, deliveredCents = it.deliveredCents + deliver) })
+        return completionMarks(items[index], deliver)
+    }
 }
 
 class AppointmentsUiTest {
@@ -426,6 +452,34 @@ class AppointmentsUiTest {
         assertEquals(9550, appointment.payment?.paidCents)
         // The new conditions keep the original start time.
         assertEquals(appointment.proposals.first().startAt, appointment.confirmedProposal?.startAt)
+    }
+
+    /** #25: the professional marks done, the client sees the deadline and the delivery before confirming. */
+    @Test fun professionalMarksDoneAndTheClientConfirmsTheSimulatedDelivery() {
+        val fake = withPaidConfirmation().apply { kotlinx.coroutines.runBlocking { startWork("a1") } }
+        var account by mutableStateOf("client")
+        compose.setContent { AppointmentsPanel(fake, account, conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onAllNodesWithTag("mark_done").assertCountEquals(0)
+        compose.onAllNodesWithTag("confirm_done").assertCountEquals(0)
+        account = "pro"
+        waitForTag("mark_done")
+        compose.onNodeWithTag("mark_done").performScrollTo().performClick()
+        compose.onNodeWithTag("mark_done_confirm").performClick()
+        waitForTag("done_deadline_a1")
+        compose.onAllNodesWithTag("confirm_done").assertCountEquals(0)
+        assertEquals(8550, kotlinx.coroutines.runBlocking { fake.list("conversation") }.single().payment?.pendingCents)
+        account = "client"
+        waitForTag("confirm_done")
+        compose.onNodeWithTag("confirm_done").performScrollTo().performClick()
+        compose.onNodeWithTag("completion_effect").assertExists()
+        compose.onNodeWithTag("confirm_done_confirm").performClick()
+        waitForTag("delivered_a1")
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.COMPLETED, appointment.stage)
+        assertEquals(8550, appointment.payment?.deliveredCents)
+        assertEquals(0, appointment.payment?.pendingCents)
     }
 
     @Test fun clientSeesTheFullRefundBeforeCancellingAndTheHourIsReleased() {
