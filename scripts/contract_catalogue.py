@@ -23,6 +23,24 @@ def local_sql(sql):
 
 
 class CatalogueContract(unittest.TestCase):
+    def test_cleaning_addition_loads_only_the_three_new_profiles_once(self):
+        if not args.local:
+            self.skipTest("loads are tested on loopback only")
+        self.assertIn("cleaning", TRADES)
+        cleaning = expected_ids[18:]
+        ids = ",".join(f"'{pid}'" for pid in cleaning)
+        # Arrange the hosted state before #36: the 18 original profiles only.
+        local_sql(f"delete from public.approved_profiles where profile_id in ({ids}); "
+                  f"delete from private.professional_profiles where id in ({ids});")
+        local_sql(preparation_sql(None, namespace, start=18))
+        code, rows = api.request("/rest/v1/rpc/catalogue", {"p_trade": "cleaning"})
+        self.assertEqual(code, 200)
+        self.assertEqual(sorted(r["profile_id"] for r in rows if r["profile_id"] in expected_ids), sorted(cleaning))
+        self.assertTrue(all(r["business_address"] and len(r["prices"]) == 3 for r in rows
+                            if r["profile_id"] in cleaning))
+        with self.assertRaises(subprocess.CalledProcessError):
+            local_sql(preparation_sql(None, namespace, start=18))
+
     def test_reviewed_update_preserves_prepared_data_and_aborts_on_concurrent_changes(self):
         if not args.local:
             self.skipTest("content updates are tested on loopback only")
@@ -84,7 +102,7 @@ class CatalogueContract(unittest.TestCase):
         code, rows = api.request("/rest/v1/rpc/catalogue", {})
         self.assertEqual(code, 200, "public catalogue RPC must exist")
         prepared = [row for row in rows if row["profile_id"] in expected_ids]
-        self.assertEqual(len(prepared), 18)
+        self.assertEqual(len(prepared), 21)
         for trade in TRADES:
             code, filtered = api.request("/rest/v1/rpc/catalogue", {"p_trade": trade})
             self.assertEqual(code, 200)
