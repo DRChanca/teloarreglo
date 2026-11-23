@@ -73,7 +73,11 @@ class MainActivity : AppCompatActivity() {
                         onBack = {
                             if (conversationJson != null && ownProfile == null) conversationJson = null
                             else { chatVisible = false; contactProfile = null; conversationJson = null }
-                        })
+                        },
+                        appointmentsSlot = app.appointments?.let { appointments -> { conversation ->
+                            AppointmentsPanel(appointments, access.account!!.userId, conversation, app.applicationScope,
+                                PinSource({ ensureLocationPermission() }, { currentLocation(this@MainActivity) }))
+                        } })
                 }
             } else if (account || chatVisible || emailLinkPending) {
                 AccessScreen(app.identity, changeLanguage,
