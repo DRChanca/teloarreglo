@@ -20,6 +20,7 @@ import es.teloarreglo.identity.AccessError
 import es.teloarreglo.identity.AccessStage
 import es.teloarreglo.chat.Conversation
 import es.teloarreglo.home.HomeStatus
+import es.teloarreglo.identity.AccountNameStatus
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 
@@ -70,6 +71,15 @@ class MainActivity : AppCompatActivity() {
             LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
                 if (access.stage != AccessStage.CHECKING) homeSession?.load(connectedUser)
             }
+            // Person's name (#40): asked once, before the home step, when the server confirms it is missing.
+            val nameSession = app.accountNameSession
+            val nameStatus by (nameSession?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(AccountNameStatus.Unknown) })
+                .collectAsStateWithLifecycle()
+            LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
+                if (access.stage != AccessStage.CHECKING) nameSession?.load(connectedUser)
+            }
+            val mustGiveName = connectedUser != null && nameStatus == AccountNameStatus.Missing &&
+                access.account?.isAdministrator != true && !emailLinkPending
             val home = (homeStatus as? HomeStatus.Present)?.home
             val mustGiveHome = connectedUser != null && homeStatus == HomeStatus.Missing &&
                 access.account?.isAdministrator != true && !emailLinkPending
@@ -81,7 +91,12 @@ class MainActivity : AppCompatActivity() {
             BackHandler(enabled = !editingHome && !profileEditor && (account || nearby || (chatVisible && access.stage != AccessStage.CONNECTED))) {
                 account = false; nearby = false; chatVisible = false; contactProfile = null; conversationJson = null
             }
-            if (homeSession != null && (mustGiveHome || (editingHome && connectedUser != null))) {
+            if (nameSession != null && mustGiveName) {
+                key(connectedUser) {
+                    AccountNameScreen(nameSession, app.applicationScope,
+                        onSignOut = { app.applicationScope.launch { app.identity.signOut() } })
+                }
+            } else if (homeSession != null && (mustGiveHome || (editingHome && connectedUser != null))) {
                 key(connectedUser) {
                     HomeAddressScreen(homeSession, app.addressAutocomplete,
                         PinSource({ ensureLocationPermission() }, { currentLocation(this@MainActivity) },
@@ -122,6 +137,7 @@ class MainActivity : AppCompatActivity() {
                     operationScope = app.applicationScope,
                     googleAuth = app.googleAuth, profileReviews = app.profileReviews,
                     subscriptions = app.subscriptions, agenda = app.agenda,
+                    nameSlot = nameSession?.let { session -> { AccountNameCard(session, app.applicationScope) } },
                     homeSlot = homeSession?.let { session -> { HomeSummaryCard(session, onChange = { editingHome = true }) } },
                     onEditProfile = app.professionalProfiles?.let { { profileEditor = true; account = false } })
             } else if (nearby && app.search != null) {
@@ -155,6 +171,8 @@ class MainActivity : AppCompatActivity() {
             app.identity.restore()
             // A home check that failed for lack of network is retried when the app comes back.
             app.homeSession?.takeIf { it.status.value == HomeStatus.Failed }
+                ?.load(app.identity.state.value.account?.userId)
+            app.accountNameSession?.takeIf { it.status.value == AccountNameStatus.Failed }
                 ?.load(app.identity.state.value.account?.userId)
         }
     }

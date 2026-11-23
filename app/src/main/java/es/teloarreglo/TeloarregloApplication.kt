@@ -109,6 +109,11 @@ class TeloarregloApplication : Application() {
         client?.let { es.teloarreglo.home.HomeSession(es.teloarreglo.home.SupabaseHomeAddresses(it)) }
     }
 
+    /** The person's own name (#40), asked once if the account has none; null without configuration. */
+    val accountNameSession: es.teloarreglo.identity.AccountNameSession? by lazy {
+        client?.let { es.teloarreglo.identity.AccountNameSession(es.teloarreglo.identity.SupabaseAccountNames(it)) }
+    }
+
     /** Google Places (New) autocomplete with the Maps key; null without key (pin/GPS fallback). */
     val addressAutocomplete: es.teloarreglo.home.AddressAutocomplete? by lazy {
         es.teloarreglo.home.GooglePlacesAutocomplete.create(this, BuildConfig.MAPS_API_KEY)
@@ -131,7 +136,7 @@ private class MissingConfiguration : Identity {
     override suspend fun restore() = Unit
     override suspend fun signIn(email: String, password: String) = Unit
     override suspend fun signOut() = Unit
-    override suspend fun signUp(email: String, password: String) = Unit
+    override suspend fun signUp(email: String, password: String, name: String) = Unit
     override suspend fun resendVerification(email: String) = Unit
     override suspend fun requestPasswordReset(email: String) = Unit
     override suspend fun handleAuthLink(link: String) = false

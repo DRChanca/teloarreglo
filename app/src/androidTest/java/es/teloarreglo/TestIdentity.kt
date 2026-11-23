@@ -36,12 +36,14 @@ class TestIdentity : Identity {
         savedAccount = null
         state.value = AccessState(AccessStage.SIGNED_OUT)
     }
-    override suspend fun signUp(email: String, password: String) {
+    var signedUpName: String? = null
+    override suspend fun signUp(email: String, password: String, name: String) {
+        signedUpName = name
         state.value = AccessState(
             AccessStage.AWAITING_VERIFICATION, pendingEmail = email, notice = AccessNotice.VERIFICATION_SENT,
         )
     }
-    override suspend fun resendVerification(email: String) = signUp(email, "")
+    override suspend fun resendVerification(email: String) = signUp(email, "", "")
     override suspend fun requestPasswordReset(email: String) {
         state.value = AccessState(AccessStage.SIGNED_OUT, notice = AccessNotice.RESET_SENT)
     }

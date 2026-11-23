@@ -86,7 +86,7 @@ class RegistrationTest {
         val client = client(fake) { _, seen -> service(seen) }
         try {
             val identity = SupabaseIdentity(client, backgroundScope, link)
-            identity.signUp("nuevo@example.org", "contraseña-larga")
+            identity.signUp("nuevo@example.org", "contraseña-larga", "Nuria Nueva")
             val state = identity.state.value
             assertEquals(AccessStage.AWAITING_VERIFICATION, state.stage)
             assertEquals("nuevo@example.org", state.pendingEmail)
@@ -100,11 +100,35 @@ class RegistrationTest {
         } finally { client.close() }
     }
 
+    @Test fun signingUpSendsTheTrimmedNameAsAuthMetadata() = runTest {
+        val fake = Fake()
+        val client = client(fake) { _, seen -> service(seen) }
+        try {
+            SupabaseIdentity(client, backgroundScope, link).signUp("nuevo@example.org", "contraseña-larga", "  Nuria Nueva  ")
+            val body = fake.seen.single { it.path == "/auth/v1/signup" }.body
+            assertTrue(body, body.contains("\"data\":{\"full_name\":\"Nuria Nueva\"}"))
+        } finally { client.close() }
+    }
+
+    @Test fun anAccountIsNeverCreatedWithoutAValidName() = runTest {
+        val fake = Fake()
+        val client = client(fake) { _, seen -> service(seen) }
+        try {
+            val identity = SupabaseIdentity(client, backgroundScope, link)
+            for (name in listOf("   ", "a".repeat(81))) {
+                identity.signUp("nuevo@example.org", "contraseña-larga", name)
+                assertEquals(AccessStage.SIGNED_OUT, identity.state.value.stage)
+                assertEquals(AccessError.NAME, identity.state.value.error)
+            }
+            assertTrue("nothing reaches Auth", fake.seen.isEmpty())
+        } finally { client.close() }
+    }
+
     @Test fun aWeakPasswordIsExplainedAndTheUserStaysOnTheForm() = runTest {
         val client = client(Fake()) { _, _ -> authError("weak_password", HttpStatusCode.UnprocessableEntity) }
         try {
             val identity = SupabaseIdentity(client, backgroundScope, link)
-            identity.signUp("nuevo@example.org", "corta")
+            identity.signUp("nuevo@example.org", "corta", "Nuria Nueva")
             assertEquals(AccessStage.SIGNED_OUT, identity.state.value.stage)
             assertEquals(AccessError.WEAK_PASSWORD, identity.state.value.error)
         } finally { client.close() }
@@ -118,7 +142,7 @@ class RegistrationTest {
         }
         try {
             val identity = SupabaseIdentity(client, backgroundScope, link)
-            identity.signUp("nuevo@example.org", "contraseña-larga")
+            identity.signUp("nuevo@example.org", "contraseña-larga", "Nuria Nueva")
             identity.resendVerification("nuevo@example.org")
             assertEquals(AccessStage.AWAITING_VERIFICATION, identity.state.value.stage)
             assertEquals(AccessError.RATE_LIMITED, identity.state.value.error)
@@ -141,7 +165,7 @@ class RegistrationTest {
         val client = client(fake) { _, seen -> service(seen) }
         try {
             val identity = SupabaseIdentity(client, backgroundScope, link)
-            identity.signUp("nuevo@example.org", "contraseña-larga")
+            identity.signUp("nuevo@example.org", "contraseña-larga", "Nuria Nueva")
             assertTrue(identity.handleAuthLink("$link?flow=signup&code=one-time-code"))
             assertEquals(AccessStage.CONNECTED, identity.state.value.stage)
             assertEquals("account-13", identity.state.value.account?.userId)

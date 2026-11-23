@@ -23,6 +23,8 @@ enum class AccessError {
     WEAK_PASSWORD,
     /** The Google sign-in could not be completed (configuration or provider failure). */
     GOOGLE,
+    /** Signup without a name, or longer than [ACCOUNT_NAME_MAX] characters (#40). */
+    NAME,
 }
 
 enum class AccessStage {
@@ -53,8 +55,11 @@ interface Identity {
     suspend fun signIn(email: String, password: String)
     suspend fun signOut()
 
-    /** Creates an account; it cannot sign in until the email is verified. */
-    suspend fun signUp(email: String, password: String)
+    /**
+     * Creates an account with the person's [name] (1–80 characters once trimmed); it cannot sign in
+     * until the email is verified.
+     */
+    suspend fun signUp(email: String, password: String, name: String)
     suspend fun resendVerification(email: String)
 
     /** Same visible result whether or not the account exists, so emails are not disclosed. */

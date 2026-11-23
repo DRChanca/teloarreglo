@@ -315,4 +315,13 @@
     <string name="video_message">Video sent in the conversation</string>
     <string name="video_play">Play video</string>
     <string name="video_open_error">The video could not be played. Tap to retry.</string>
+    <string name="account_name_label">Name</string>
+    <string name="account_name_title">What is your name?</string>
+    <string name="account_name_intro">Professionals you talk to will see this name. Your email is not shown.</string>
+    <string name="account_name_save">Save name</string>
+    <string name="account_name_change">Change name</string>
+    <string name="account_name_none">You have not entered your name yet.</string>
+    <string name="account_name_invalid">Enter your name, 1 to 80 characters.</string>
+    <string name="account_name_access">Your session has expired. Sign in again.</string>
+    <string name="account_name_network">The name could not be saved. Check your connection and try again.</string>
 </resources>

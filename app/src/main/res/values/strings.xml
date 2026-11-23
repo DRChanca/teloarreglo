@@ -315,4 +315,13 @@
     <string name="video_message">Vídeo enviado en la conversación</string>
     <string name="video_play">Reproducir vídeo</string>
     <string name="video_open_error">No se pudo reproducir el vídeo. Toca para reintentar.</string>
+    <string name="account_name_label">Nombre</string>
+    <string name="account_name_title">¿Cómo te llamas?</string>
+    <string name="account_name_intro">Los profesionales con los que hables verán este nombre. Tu correo no se muestra.</string>
+    <string name="account_name_save">Guardar nombre</string>
+    <string name="account_name_change">Cambiar nombre</string>
+    <string name="account_name_none">Aún no has indicado tu nombre.</string>
+    <string name="account_name_invalid">Escribe tu nombre, de 1 a 80 caracteres.</string>
+    <string name="account_name_access">Tu sesión ha caducado. Vuelve a entrar.</string>
+    <string name="account_name_network">No se pudo guardar el nombre. Comprueba la conexión y vuelve a intentarlo.</string>
 </resources>
