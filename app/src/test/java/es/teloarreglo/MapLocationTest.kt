@@ -58,6 +58,15 @@ class MapLocationTest {
         assertEquals("profiles without a public point stay in the list", 1, view.listOnly)
     }
 
+    @Test fun mapMarksTheFeaturedCandidatesTheServerPlacedFirst() {
+        val rows = listOf(
+            profile("sub", "Calle Uría 1, Oviedo", 43.36, -5.85) to 3000,
+            profile("a", "Calle Corrida 2, Gijón", 43.54, -5.66) to 500,
+        )
+        val view = mapView(rows, featured = setOf("sub"))
+        assertEquals(listOf("sub" to true, "a" to false), view.markers.map { it.profileId to it.featured })
+    }
+
     @Test fun aPointWithoutAnApprovedCommercialAddressIsNeverShown() {
         assertNull(profile("x", null, 43.36, -5.85).publicLocation())
         assertNull(profile("y", "  ", 43.36, -5.85).publicLocation())

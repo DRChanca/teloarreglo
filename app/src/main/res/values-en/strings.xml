@@ -446,6 +446,12 @@
     <string name="completion_completed_no_answer">Completed without the client\'s confirmation on %1$s.</string>
     <string name="completion_delivered">Released to the professional: %1$s (simulated).</string>
     <string name="completion_error_incident">There is an open incident: the job cannot be confirmed nor the payment released until it is resolved.</string>
+    <string name="appointment_error_hours">That time is outside the professional\'s working hours. Nothing was confirmed; the request stays open for another time.</string>
+    <string name="agenda_send_error_hours">That time is outside your working hours. Nothing was sent: choose another time or extend your hours in “My agenda”.</string>
+    <string name="agenda_send_error_slot">That time is already taken in your agenda by a confirmed appointment or a block. Nothing was sent: choose another time.</string>
+    <string name="agenda_send_error_hours_client">That time is outside the professional\'s working hours. The change was not sent.</string>
+    <string name="agenda_send_error_slot_client">That time is not free in the professional\'s agenda. The change was not sent.</string>
+    <string name="agenda_no_hours">You have not saved any hours yet: you can propose any time, and only overlaps with your appointments and blocks are prevented.</string>
     <string name="incident_started_hint">Want to cancel now that the work has started, or is there a problem? Report it as an incident: there is no automatic refund.</string>
     <string name="incident_open">Report an incident</string>
     <string name="incident_open_title">Report an incident</string>

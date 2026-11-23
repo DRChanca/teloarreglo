@@ -603,6 +603,40 @@ ES/EN/FR/DE.
 
 Resultados: [comprobación de realizado](comprobacion-realizado.md).
 
+## Agenda sin horario y comprobación al proponer (corrección, 23 de noviembre de 2026)
+
+Motivo: en la base alojada un cliente pagó una propuesta y recibió «Esa hora ya no está libre…»
+(`slot_unavailable`) porque el perfil profesional no tenía ninguna franja en `availability_windows`:
+la comprobación de franja fallaba siempre y solo se descubría al confirmar.
+
+Migración: `supabase/migrations/20261123012610_agenda_open_hours.sql`.
+
+- **Sin franjas, sin límite de horario.** Si el perfil no tiene ninguna fila en `availability_windows`
+  (nunca guardó horario o guardó `[]`), no se restringe la hora; solo cuentan las reservas y bloqueos
+  de `agenda_reservations`. En cuanto existe una franja, la cita debe caber entera en una franja como antes.
+- **Motivos distintos.** Fuera del horario configurado → `PT409 outside_hours`; solape con una cita
+  confirmada o un bloqueo → `PT409 slot_unavailable`. Regla única en `private.agenda_slot_problem`
+  / `private.check_agenda_slot(p_profile_id, p_start, p_end, p_appointment_id)` (el último parámetro
+  ignora la reserva de esa misma cita al moverla).
+- **Comprobación al enviar.** Un disparador `before insert` (`private.check_sent_interval`) comprueba
+  cada propuesta nueva `pending` (`propose_appointment`, #20) y cada cambio `kind = 'change'` cuyo
+  intervalo difiere del vigente (`propose_change`, #23, cualquiera de los dos participantes). El autor
+  recibe el error al momento y no se guarda nada. Las RPC de #20/#23 no se han redefinido.
+- **Comprobación al confirmar.** Se mantiene (carreras): `private.reserve_proposal` (usada por
+  `accept_proposal` y `confirm_proposal`) y `accept_change` usan la misma regla, además de la restricción
+  de exclusión. Un bloqueo o cita confirmada entre la propuesta y el pago sigue impidiendo confirmar sin cobrar.
+
+Android: `outside_hours` → `AppointmentFailure.OUTSIDE_HOURS`. Al enviar una propuesta o un cambio de
+hora, el profesional lee «fuera de tu horario» / «ocupada en tu agenda» (`agenda_send_error_*`); el
+cliente que cambia la hora lee la versión sobre la agenda del profesional (`agenda_send_error_*_client`).
+Al confirmar, el cliente distingue `appointment_error_hours` de `appointment_error_slot`. «Mi agenda»
+avisa (`agenda_no_hours`) de que sin horario guardado no se limita la hora.
+
+Aviso para ramas paralelas: si otra migración posterior redefine `accept_change` o `reserve_proposal`
+copiando el texto de 20261123012500/002200, debe conservar `private.check_agenda_slot` en lugar de la
+comprobación de franjas en línea.
+
+Resultados: [comprobación de agenda y Destacado](comprobacion-agenda-destacado.md).
 ## Incidencias y pruebas privadas — #26
 
 Migración nueva: `20261123012700_incidents.sql`. No edita migraciones anteriores ni cambia firmas de RPC existentes; solo

@@ -94,3 +94,17 @@ export async function searchByRings(
   const all = (await lookup(null)).map(rank).sort(compare);
   return { results: all.slice(0, target), method: "coverage", rings: k - 1, cells };
 }
+
+export interface Placed extends Ranked { featured: boolean }
+
+/**
+ * «Destacado» (#33): subscribed profiles covering the concejo go first, closest first, then the rest by
+ * proximity; each profile appears once and the page limit counts both. No fixed position is promised.
+ */
+export function featuredFirst(featured: Ranked[], ranked: Ranked[], limit: number): Placed[] {
+  const ids = new Set(featured.map((f) => f.profile_id));
+  return [
+    ...[...featured].sort(compare).map((r) => ({ ...r, featured: true })),
+    ...ranked.filter((r) => !ids.has(r.profile_id)).map((r) => ({ ...r, featured: false })),
+  ].slice(0, limit);
+}
