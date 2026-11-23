@@ -32,6 +32,7 @@ import java.time.format.FormatStyle
 fun ChatRoute(
     chat: Chat, accountId: String, profileId: String?, conversation: Conversation?,
     onOpened: (Conversation) -> Unit, onBack: () -> Unit,
+    appointmentsSlot: (@Composable (Conversation) -> Unit)? = null,
 ) {
     var failed by remember(profileId) { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
@@ -45,7 +46,7 @@ fun ChatRoute(
             }
         }
     }
-    if (profileId == null) ChatScreen(chat, accountId, conversation, onOpened, onBack)
+    if (profileId == null) ChatScreen(chat, accountId, conversation, onOpened, onBack, appointmentsSlot)
     else {
         BackHandler(onBack = onBack)
         TeloTheme {
@@ -67,6 +68,7 @@ fun ChatRoute(
 fun ChatScreen(
     chat: Chat, accountId: String, conversation: Conversation?,
     onSelect: (Conversation) -> Unit, onBack: () -> Unit,
+    appointmentsSlot: (@Composable (Conversation) -> Unit)? = null,
 ) {
     BackHandler(onBack = onBack)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -204,6 +206,7 @@ fun ChatScreen(
                     }
                 } else {
                     Text(stringResource(R.string.chat_privacy), style = MaterialTheme.typography.bodySmall)
+                    appointmentsSlot?.invoke(conversation)
                     if (!loading && !failed && messages.isEmpty()) Text(stringResource(R.string.chat_first))
                     LazyColumn(Modifier.weight(1f).testTag("chat_messages"), state = list,
                         contentPadding = PaddingValues(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
