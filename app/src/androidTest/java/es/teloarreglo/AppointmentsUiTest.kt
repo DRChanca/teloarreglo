@@ -68,6 +68,24 @@ private class FakeAppointments : Appointments {
         items[index] = items[index].copy(version = items[index].version + 1, stage = AppointmentStage.CONFIRMED)
         return history[i]
     }
+
+    val paymentKeys = mutableListOf<String>()
+    /** Like the server: one key binds one intention; a conflict or a lost answer never charges twice. */
+    override suspend fun confirm(proposalId: String, requestId: String, mode: PaymentMode): AppointmentPayment {
+        paymentKeys += requestId
+        val (appointmentId, history) = proposals.entries.first { (_, list) -> list.any { it.id == proposalId } }
+        val index = items.indexOfFirst { it.id == appointmentId }
+        items[index].payment?.let { return it }
+        if (slotTaken) throw AppointmentException(AppointmentFailure.SLOT_UNAVAILABLE, Exception())
+        val i = history.indexOfFirst { it.id == proposalId }
+        history[i] = history[i].copy(status = ProposalStatus.ACCEPTED)
+        val total = history[i].payableCents
+        val paid = if (mode == PaymentMode.INTEGRATED) total else 0
+        val payment = AppointmentPayment(appointmentId, proposalId, requestId, mode, total, paid, paid, 0, 0)
+        items[index] = items[index].copy(version = items[index].version + 1, stage = AppointmentStage.CONFIRMED, payment = payment)
+        if (loseNextResponse) { loseNextResponse = false; throw java.io.IOException("response lost") }
+        return payment
+    }
 }
 
 class AppointmentsUiTest {
@@ -171,5 +189,55 @@ class AppointmentsUiTest {
         val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
         assertEquals(AppointmentStage.PENDING, appointment.stage)
         assertEquals(ProposalStatus.PENDING, appointment.currentProposal?.status)
+    }
+
+    private fun withPaidProposal(fake: FakeAppointments) = fake.apply {
+        kotlinx.coroutines.runBlocking {
+            propose("a1", 1, "paid-key", ProposalDraft("Cambio de sifón", Instant.now().plusSeconds(90_000), 60, 8550,
+                null, materialsIncluded = true, travelIncluded = true))
+        }
+    }
+
+    @Test fun clientSeesTermsPaysAndALostAnswerIsNotChargedTwice() {
+        val fake = withPaidProposal(seeded()).apply { loseNextResponse = true }
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onAllNodesWithTag("appointment_accept").assertCountEquals(0)
+        compose.onNodeWithTag("payment_integrated").performScrollTo().performClick()
+        compose.onNodeWithTag("payment_terms").assertExists()
+        compose.onNodeWithText("Cambio de sifón", substring = true, useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("payment_confirm").performClick()
+        waitForTag("payment_summary_a1")
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.CONFIRMED, appointment.stage)
+        assertEquals(8550, appointment.payment?.pendingCents)
+        assertEquals(1, fake.paymentKeys.distinct().size)
+    }
+
+    @Test fun directPaymentConfirmsWithoutIntegratedMoney() {
+        val fake = withPaidProposal(seeded())
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("payment_direct").performScrollTo().performClick()
+        compose.onNodeWithTag("payment_confirm").performClick()
+        waitForTag("payment_summary_a1")
+        val payment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single().payment
+        assertEquals(PaymentMode.DIRECT, payment?.mode)
+        assertEquals(0, payment?.paidCents)
+    }
+
+    @Test fun aTakenSlotIsNotChargedAndStaysPending() {
+        val fake = withPaidProposal(seeded()).apply { slotTaken = true }
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("payment_integrated").performScrollTo().performClick()
+        compose.onNodeWithTag("payment_confirm").performClick()
+        waitForTag("appointment_decision_error")
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.PENDING, appointment.stage)
+        assertEquals(null, appointment.payment)
     }
 }
