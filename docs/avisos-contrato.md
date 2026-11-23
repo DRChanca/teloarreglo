@@ -102,3 +102,33 @@ $$);
     repetido sustituye al anterior.
 - `NoticesScreen.kt` contiene la lista persistida y los ajustes de notificación del dispositivo. Se abre con
   «Avisos (n)» en el catálogo o al tocar una notificación.
+
+## Envío inmediato y primer plano
+
+Migración `20261123013310_push_dispatch_now.sql`. Antes, las entregas solo salían con el cron de cada minuto. Ahora
+cada sentencia que encola entregas en `private.push_deliveries` llama al momento a `deliver-push` con
+`net.http_post`. La petición sale cuando se confirma la transacción. El cron sigue como respaldo.
+
+- La URL se lee del secreto de Vault `push_dispatch_url`. El portador sale de `push_dispatch_secret`, el mismo que
+  usa el cron.
+- Sin `push_dispatch_url` no se llama a nada. Es el caso de las bases locales y de prueba.
+- Cualquier error (sin `pg_net`, Vault no disponible) se ignora. Despertar al despachador nunca revierte un mensaje,
+  una cita ni un pago.
+- Llamadas simultáneas del disparador y del cron no duplican envíos: `claim_push_deliveries` reserva con
+  `for update skip locked`.
+
+Paso único en el proyecto alojado, pendiente de aprobación de David. `push_dispatch_secret` ya existe por el cron:
+
+```sql
+select vault.create_secret('https://<ref>.supabase.co/functions/v1/deliver-push', 'push_dispatch_url');
+```
+
+Para desactivarlo, se borra ese secreto (`delete from vault.secrets where name = 'push_dispatch_url'`).
+
+En Android, `TeloMessagingService`:
+
+- Si la conversación del push está abierta en pantalla (`OpenConversation`), no muestra notificación y refresca
+  el chat al momento.
+- En cualquier otro caso muestra la notificación, también con la app en primer plano.
+- Con un push de mensaje marca la conversación como entregada (`mark_conversation_delivered`), así quien escribe
+  ve el doble check gris.

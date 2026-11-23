@@ -11,6 +11,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
@@ -20,7 +24,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import es.teloarreglo.chat.*
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.launch
 import java.util.UUID
 import java.time.Instant
@@ -80,6 +85,7 @@ fun ChatScreen(
     var loading by remember(chat, accountId, conversation?.id) { mutableStateOf(true) }
     var failed by remember(chat, accountId, conversation?.id) { mutableStateOf(false) }
     var refresh by remember { mutableIntStateOf(0) }
+    var receipts by remember(chat, accountId, conversation?.id) { mutableStateOf(Receipts()) }
     var text by rememberSaveable(accountId, conversation?.id) { mutableStateOf("") }
     var requestId by rememberSaveable(accountId, conversation?.id) { mutableStateOf<String?>(null) }
     var sending by remember { mutableStateOf(false) }
@@ -127,20 +133,30 @@ fun ChatScreen(
     }
     LaunchedEffect(chat, accountId, conversation?.id, refresh) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            while (true) {
-                try {
-                    if (conversation == null) conversations = chat.conversations()
-                    else {
-                        val history = chat.messages(conversation.id)
-                        // A concurrent poll must not erase a just-confirmed send.
-                        messages = (history + messages).distinctBy { it.id }.sortedWith(compareBy({ it.createdAt }, { it.id }))
-                    }
-                    failed = false
-                } catch (error: Exception) {
-                    if (error is CancellationException) throw error
-                    failed = true
-                } finally { loading = false }
-                delay(2500)
+            // While visible, a message push for this conversation is not shown: it refreshes the chat instead.
+            if (conversation != null) OpenConversation.id = conversation.id
+            try {
+                while (true) {
+                    try {
+                        if (conversation == null) {
+                            conversations = chat.conversations()
+                            // Fetching the inbox delivers every conversation: the senders see two ticks.
+                            try { chat.markAllDelivered() } catch (error: Exception) { if (error is CancellationException) throw error }
+                        } else {
+                            val history = chat.messages(conversation.id)
+                            // A concurrent poll must not erase a just-confirmed send.
+                            messages = (history + messages).distinctBy { it.id }.sortedWith(compareBy({ it.createdAt }, { it.id }))
+                            receipts = chat.receipts(conversation.id)
+                        }
+                        failed = false
+                    } catch (error: Exception) {
+                        if (error is CancellationException) throw error
+                        failed = true
+                    } finally { loading = false }
+                    withTimeoutOrNull(2500) { OpenConversation.pushes.first { it == conversation?.id } }
+                }
+            } finally {
+                if (conversation != null && OpenConversation.id == conversation.id) OpenConversation.id = null
             }
         }
     }
@@ -230,8 +246,7 @@ fun ChatScreen(
                                         if (message.body.isNotEmpty()) Text(message.body)
                                         Text(timestampFormat.format(Instant.parse(message.createdAt)),
                                             style = MaterialTheme.typography.labelSmall)
-                                        if (message.authorId == accountId) Text(stringResource(R.string.chat_sent),
-                                            style = MaterialTheme.typography.labelSmall)
+                                        if (message.authorId == accountId) MessageTicks(receipts.tickOf(message))
                                     }
                                 }
                             }
@@ -266,4 +281,18 @@ fun ChatScreen(
             }
         }
     }
+}
+
+/** One grey tick = on the server, two grey = delivered to the other phone, two blue = read (described for TalkBack). */
+@Composable
+private fun ColumnScope.MessageTicks(tick: Tick) {
+    val description = stringResource(when (tick) {
+        Tick.SENT -> R.string.chat_sent
+        Tick.DELIVERED -> R.string.chat_tick_delivered
+        Tick.READ -> R.string.chat_tick_read
+    })
+    Text(if (tick == Tick.SENT) "\u2713" else "\u2713\u2713",
+        Modifier.align(Alignment.End).semantics { contentDescription = description }.testTag("tick_${tick.name.lowercase()}"),
+        color = if (tick == Tick.READ) Color(0xFF34B7F1) else MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
 }

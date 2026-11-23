@@ -4,7 +4,9 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.exceptions.RestException
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.serialization.SerialName
+import java.time.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -52,7 +54,45 @@ interface Chat {
     suspend fun send(conversationId: String, requestId: String, body: String): ChatMessage
     /** Marks read up to the newest persisted message, only for the caller. */
     suspend fun markRead(conversationId: String) {}
+    /** This device received the conversation up to its newest message (fetched or pushed): the sender's second tick. */
+    suspend fun markDelivered(conversationId: String) {}
+    /** The inbox was fetched: every conversation of the caller is delivered up to now. */
+    suspend fun markAllDelivered() {}
+    /** The other participant's marks, for the ticks on the caller's own messages. */
+    suspend fun receipts(conversationId: String): Receipts = Receipts()
 }
+
+/** The other participant's delivery and read marks; null until they exist. Read implies delivered. */
+@Serializable
+data class Receipts(
+    @SerialName("delivered_at") val deliveredAt: String? = null,
+    @SerialName("read_at") val readAt: String? = null,
+)
+
+/** WhatsApp ticks: one grey = stored on the server, two grey = delivered to the other phone, two blue = read. */
+enum class Tick { SENT, DELIVERED, READ }
+
+fun Receipts.tickOf(message: ChatMessage): Tick {
+    val sent = Instant.parse(message.createdAt)
+    fun covers(mark: String?) = mark != null && !Instant.parse(mark).isBefore(sent)
+    return when {
+        covers(readAt) -> Tick.READ
+        covers(deliveredAt) -> Tick.DELIVERED
+        else -> Tick.SENT
+    }
+}
+
+/**
+ * The conversation currently on screen, set by the chat while it is visible. A message push for it is not shown
+ * as a system notification; it only wakes the chat's refresh through [pushes].
+ */
+object OpenConversation {
+    @Volatile var id: String? = null
+    val pushes = MutableSharedFlow<String>(extraBufferCapacity = 8)
+}
+
+fun showsNotification(kind: String?, conversationId: String?, open: String?): Boolean =
+    !(kind == "message" && conversationId != null && conversationId == open)
 
 class SupabaseChat(private val client: SupabaseClient) : Chat {
     override suspend fun open(profileId: String): Conversation =
@@ -68,6 +108,21 @@ class SupabaseChat(private val client: SupabaseClient) : Chat {
             put("p_conversation_id", conversationId)
         })
     }
+
+    override suspend fun markDelivered(conversationId: String) {
+        client.postgrest.rpc("mark_conversation_delivered", buildJsonObject {
+            put("p_conversation_id", conversationId)
+        })
+    }
+
+    override suspend fun markAllDelivered() {
+        client.postgrest.rpc("mark_conversations_delivered")
+    }
+
+    override suspend fun receipts(conversationId: String): Receipts =
+        client.postgrest.rpc("conversation_receipts", buildJsonObject {
+            put("p_conversation_id", conversationId)
+        }).decodeAs()
 
     // Explicit pages avoid PostgREST's row cap silently dropping older messages.
     override suspend fun messages(conversationId: String): List<ChatMessage> = buildList {
