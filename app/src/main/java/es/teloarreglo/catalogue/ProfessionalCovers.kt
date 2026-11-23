@@ -18,6 +18,8 @@ enum class CoverStatus {
     @SerialName("pending") PENDING,
     @SerialName("approved") APPROVED,
     @SerialName("rejected") REJECTED,
+    /** Since 2026-11-23 the owner publishes a cover without review; the other states are history. */
+    @SerialName("published") PUBLISHED,
 }
 
 @Serializable

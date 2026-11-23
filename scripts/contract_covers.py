@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Real owner/admin/visitor + Storage contract. Writes ONLY to the loopback stack."""
+"""Real owner/admin/visitor + Storage contract (covers published without review). Writes ONLY to the loopback stack."""
 import argparse
 import hashlib
 import json
@@ -30,7 +30,7 @@ def binary(path, data=None, token=None, method="GET", mime="image/jpeg"):
 
 
 class CoverContract(unittest.TestCase):
-    def test_owner_upload_review_and_private_storage(self):
+    def test_owner_publishes_directly_with_private_storage(self):
         code, empty_state = api.request("/rest/v1/rpc/professional_cover", {"p_profile": profile_id}, tokens["owner"])
         self.assertEqual(code, 200)
         self.assertIsNone(empty_state, "a new owner has no prior cover request")
@@ -51,48 +51,34 @@ class CoverContract(unittest.TestCase):
         self.assertNotIn(binary(object_url, photo, tokens["owner"], "POST", "image/png")[0], (200, 201))
         self.assertIn(binary(object_url, photo, tokens["owner"], "POST")[0], (200, 201))
         self.assertNotIn(binary(object_url, photo, tokens["owner"], "PUT")[0], (200, 201))
-        code, submitted = api.request("/rest/v1/rpc/submit_professional_cover", {"p_request": request_id}, tokens["owner"])
-        self.assertEqual(code, 200)
-        self.assertEqual(submitted["status"], "pending")
-        self.assertEqual(api.request("/rest/v1/rpc/submit_professional_cover", {"p_request": request_id}, tokens["owner"])[0], 200)
+        # Before submitting, the upload is readable only by its owner.
         self.assertNotEqual(api.request("/storage/v1/object/sign/professional-covers/" + path, {"expiresIn": 60})[0], 200)
         self.assertNotEqual(api.request("/storage/v1/object/sign/professional-covers/" + path, {"expiresIn": 60}, tokens["other"])[0], 200)
         self.assertEqual(api.request("/storage/v1/object/sign/professional-covers/" + path, {"expiresIn": 60}, tokens["owner"])[0], 200)
-        review = {"p_request": request_id, "p_approve": False, "p_reason": "Choose an authorized image"}
-        self.assertEqual(api.request("/rest/v1/rpc/review_professional_cover", review, tokens["owner"])[0], 403)
-        self.assertEqual(api.request("/rest/v1/rpc/review_professional_cover", review, tokens["admin"])[0], 200)
-        code, state = api.request("/rest/v1/rpc/professional_cover", {"p_profile": profile_id}, tokens["owner"])
+        self.assertIn(api.request("/rest/v1/rpc/submit_professional_cover", {"p_request": request_id}, tokens["other"])[0], (401, 403))
+        # Submitting publishes at once: no administrative review (David, 2026-11-23).
+        code, submitted = api.request("/rest/v1/rpc/submit_professional_cover", {"p_request": request_id}, tokens["owner"])
         self.assertEqual(code, 200)
-        self.assertEqual(state["status"], "rejected")
-        self.assertEqual(state["reason"], "Choose an authorized image")
-        self.assertIsNone(api.request("/rest/v1/rpc/catalogue", {"p_id": profile_id})[1][0]["cover_path"])
-        # Submit a new immutable version, then approve that specific version.
-        payload["p_request"] = str(uuid.uuid4())
-        code, upload = api.request("/rest/v1/rpc/request_professional_cover", payload, tokens["owner"])
-        self.assertEqual(code, 200)
-        path = upload["object_path"]
-        object_paths.append(path)
-        self.assertIn(binary("/storage/v1/object/professional-covers/" + path, photo, tokens["owner"], "POST")[0], (200, 201))
-        self.assertEqual(api.request("/rest/v1/rpc/submit_professional_cover", {"p_request": payload["p_request"]}, tokens["owner"])[0], 200)
-        review = {"p_request": payload["p_request"], "p_approve": True, "p_reason": "Authorized test image"}
-        self.assertEqual(api.request("/rest/v1/rpc/review_professional_cover", review, tokens["admin"])[0], 200)
-        self.assertEqual(api.request("/rest/v1/rpc/review_professional_cover", review, tokens["admin"])[0], 200)
+        self.assertEqual(submitted["status"], "published")
+        code, retried = api.request("/rest/v1/rpc/submit_professional_cover", {"p_request": request_id}, tokens["owner"])
+        self.assertEqual((code, retried["status"]), (200, "published"))
         self.assertEqual(api.request("/rest/v1/rpc/catalogue", {"p_id": profile_id})[1][0]["cover_path"], path)
+        code, state = api.request("/rest/v1/rpc/professional_cover", {"p_profile": profile_id}, tokens["owner"])
+        self.assertEqual((code, state["status"]), (200, "published"))
+        review = {"p_request": request_id, "p_approve": False, "p_reason": "No review remains"}
+        for role in ("owner", "admin"):
+            self.assertIn(api.request("/rest/v1/rpc/review_professional_cover", review, tokens[role])[0], (401, 403, 404))
         code, signed = api.request("/storage/v1/object/sign/professional-covers/" + path, {"expiresIn": 60})
-        self.assertEqual(code, 200, "visitor can obtain only an approved image")
-        signed_path = signed["signedURL"]
-        code, downloaded = binary("/storage/v1" + signed_path)
+        self.assertEqual(code, 200, "a visitor can read the published image")
+        code, downloaded = binary("/storage/v1" + signed["signedURL"])
         self.assertEqual(code, 200)
         self.assertEqual(downloaded, photo)
-        # Restoring the generic cover also waits for approval.
+        # Back to the trade image, also at once; the previous photo is no longer public.
         generic = {"p_profile": profile_id, "p_request": str(uuid.uuid4())}
-        self.assertEqual(api.request("/rest/v1/rpc/request_professional_cover", generic, tokens["owner"])[0], 200)
-        self.assertEqual(api.request("/rest/v1/rpc/catalogue", {"p_id": profile_id})[1][0]["cover_path"], path)
-        self.assertEqual(api.request("/rest/v1/rpc/review_professional_cover",
-            {"p_request": generic["p_request"], "p_approve": True, "p_reason": "Restore trade image"}, tokens["admin"])[0], 200)
+        code, restored = api.request("/rest/v1/rpc/request_professional_cover", generic, tokens["owner"])
+        self.assertEqual((code, restored["status"]), (200, "published"))
         self.assertIsNone(api.request("/rest/v1/rpc/catalogue", {"p_id": profile_id})[1][0]["cover_path"])
         self.assertNotEqual(api.request("/storage/v1/object/sign/professional-covers/" + path, {"expiresIn": 60})[0], 200)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)

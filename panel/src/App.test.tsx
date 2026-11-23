@@ -46,6 +46,20 @@ describe("profile review panel", () => {
     expect(api.submissions).toHaveBeenCalledWith("pending");
   });
 
+  it("does not present services, prices or covers for review: owners publish them directly", async () => {
+    const withOffer: Submission = { ...pending, content: { ...pending.content,
+      prices: [{ service: "Reparación de fuga", scope: "Una hora", unit: "hour", amount_cents: 3500 }] } };
+    const api = fakeApi({ email: "admin@example.org", is_administrator: true },
+      { submissions: vi.fn(async () => [withOffer]) });
+    render(<App api={api} language="es" />);
+    await screen.findByText("Perfil de prueba");
+    expect(screen.queryByText(messages.es.services)).toBeNull();
+    expect(screen.queryByText(messages.es.prices)).toBeNull();
+    expect(screen.queryByText(/Fugas/)).toBeNull();
+    expect(screen.queryByText(/35\.00/)).toBeNull();
+    expect(screen.queryByText(/portada/i)).toBeNull();
+  });
+
   it("requires a reason and sends the rejection for that exact submission", async () => {
     const api = fakeApi({ email: "admin@example.org", is_administrator: true });
     render(<App api={api} language="es" />);

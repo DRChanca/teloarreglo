@@ -11,13 +11,14 @@ alojada. No se ha desplegado ni escrito en la base alojada.
 - Se acepta cualquier vídeo que el teléfono sepa leer; siempre se envía una
   **copia MP4 nueva** H.264/AAC hecha con Media3 Transformer 1.6.1: lado corto
   ≤ 720 px sin ampliar vídeos menores, proporción y orientación conservadas,
-  sin metadatos de ubicación y ≤ 20 MiB. Bitrate calculado para que un minuto
-  quepa con margen (≈ 2,2 Mbit/s de vídeo + 128 kbit/s de audio, máximo
+  sin metadatos de ubicación y ≤ 20 MiB. Bitrate calculado para que el clip más
+  largo quepa con margen (≈ 2,2 Mbit/s de vídeo + 128 kbit/s de audio, máximo
   2,5 Mbit/s y nunca por encima del original). Si el codificador se pasa, se
   repite una vez al 60 %; si aún no cabe, se avisa y no se envía nada.
-- Duración máxima un minuto, comprobada **antes** de comprimir. Se admiten
-  hasta 499 ms de más para que un clip que la galería muestra como «1:00» no
-  se rechace.
+- Duración máxima **40 segundos** (decisión de David del 2026-11-23; antes un
+  minuto), comprobada **antes** de comprimir y otra vez sobre la copia. Se
+  admiten hasta 499 ms de más para que un clip que la galería muestra como
+  «0:40» no se rechace.
 - El resultado se vuelve a leer antes de subirlo (contenedor MP4, tamaño,
   duración y resolución). Un fallo de compresión o un resultado incompatible
   se explica y **nunca** se sustituye por el original. El original solo se lee;
@@ -94,9 +95,27 @@ alojada. No se ha desplegado ni escrito en la base alojada.
    4. Cerrar y reabrir la app en ambas cuentas: el vídeo sigue y se reproduce.
    5. Modo avión durante la subida: aviso; reintentar con red y comprobar que
       aparece un solo vídeo.
-   6. Elegir un vídeo de más de un minuto: aviso de duración y nada enviado.
+   6. Elegir un vídeo de más de 40 segundos (por ejemplo de 45 s): aviso de
+      duración y nada enviado. Uno de 40 s se envía.
    7. Comprobar en la galería que el original no ha cambiado.
    8. Revisar textos y disposición en ES, EN, FR y DE (también a 320×640 dp:
       los dos botones se reparten en filas si no caben).
 4. Confirmar en un teléfono real (o grabación de cámara del emulador) que un
    vídeo vertical se envía y reproduce derecho.
+
+## Corrección del 23 de noviembre de 2026: máximo de 40 segundos
+
+David redujo la duración máxima a 40 segundos con el mismo margen de 499 ms.
+Solo cambia la app (`VIDEO_MAX_DURATION_MS = 40_000`): el servidor nunca validó
+la duración, así que no hay migración. Textos de límite y de error en ES, EN,
+FR y DE. Con 40 s el bitrate de vídeo queda en el máximo de 2,5 Mbit/s y el
+clip más largo ocupa unos 13 MB, por debajo de 20 MiB.
+
+- `ChatVideoTest` (JVM): 9 pruebas correctas; 40 000 y 40 499 ms se aceptan,
+  40 500 ms se rechaza antes de comprimir y en la copia comprimida.
+- `ChatVideoPrepareTest` (instrumentada) sigue usando el vídeo de 62 s y ahora
+  se llama `aVideoLongerThanFortySecondsIsRefusedBeforeCompressing`; compila,
+  **no ejecutada** (sin emulador desechable asignado).
+- Pendiente: repetir el paso 3.6 del recorrido con un vídeo de 45 s y otro de
+  40 s, y revisar los textos nuevos en los cuatro idiomas.
+

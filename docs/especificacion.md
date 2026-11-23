@@ -29,6 +29,18 @@ de separar pruebas y presentación en dos proyectos.
   sus citas preparadas. Su comprobación deberá aislarse sin exigir un segundo
   proyecto alojado, antes de desplegarla. Se mantienen 24/48 horas por defecto.
 
+## Actualización: decisiones de David del 23 de noviembre de 2026
+
+Estas decisiones sustituyen lo anterior incompatible en este documento, en los contratos y en las issues #19 y #30.
+
+- **Vídeos del chat (#19):** duración máxima de **40 segundos** (antes un minuto). Se mantiene el margen de 499 ms, así que se aceptan hasta 40,499 s. El servidor no puede leer la duración: la comprueba la app antes de comprimir y otra vez sobre la copia comprimida. El resto de límites no cambia (720p, 20 MB, MP4).
+- **Servicios y precios orientativos (#30):** los edita la cuenta propietaria del perfil profesional desde su editor y **se publican directamente, sin revisión** del administrador. Nombre, descripción, oficios, concejos, idiomas, teléfono y dirección comercial siguen el flujo de revisión de #30. Si el perfil aún no está aprobado, se guardan y aparecen cuando se publique. Aprobar después una versión antigua no devuelve precios anteriores.
+- **Foto de portada:** el propietario la cambia y **se publica directamente, sin revisión**. Se mantienen la compresión (1600 px, JPEG de hasta 2 MB, sin EXIF/GPS), la validación de formato y tamaño en Storage y en el servidor, y los permisos: solo el propietario cambia la portada de su perfil. Si el perfil aún no está aprobado, la foto se guarda y se muestra cuando el perfil se publique. El panel no revisa portadas.
+- **Precio pactado:** un precio pactado con un cliente no cambia para ese cliente. Cuando se genera una cita, la base de datos guarda el importe en el momento en que se fija:
+  - si lo pide el cliente, los precios orientativos vigentes cuando hace la solicitud;
+  - si lo ofrece el negocio, el importe de la propuesta.
+  Ninguna edición posterior del perfil cambia el importe de una cita, solicitud o propuesta que ya exista. El pago simulado (#22) cobra el importe guardado en la propuesta aceptada, nunca el precio del perfil.
+
 ## Actualización: objetivo inmediato de demostración universitaria
 
 Esta sección tiene prioridad sobre las referencias posteriores al alcance del primer lanzamiento. El resto del documento conserva la visión del producto futuro; no todo es requisito de la demostración.
@@ -124,7 +136,7 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 - Cada persona actúa en su nombre. El profesional propone condiciones, comienza y marca realizado; el cliente acepta las condiciones y confirma la realización. Los permisos deben comprobarse realmente, no solo ocultar botones.
 - Fotos y vídeos se pueden enviar y abrir desde el primer contacto, antes de cualquier respuesta o aceptación del profesional.
 - Compresión integrada automática con progreso y posibilidad de cancelar, sin modificar el original del teléfono. Si falla o el resultado supera los límites, se explica y no se envía silenciosamente el original.
-- Para la demo: vídeos de hasta un minuto; fotos de hasta 1600 píxeles en su lado mayor y vídeos de hasta 720p, sin ampliar archivos de menor resolución. Máximos tras comprimir: 2 MB por foto y 20 MB por vídeo. Formatos iniciales JPEG/PNG y MP4 compatible, compresión Android y Media3 Transformer; comprobar compatibilidad real según la arquitectura acordada.
+- Para la demo: vídeos de hasta 40 segundos (decisión de 2026-11-23; antes un minuto), con un margen de 499 ms para que un clip que la galería muestra como «0:40» no se rechace; fotos de hasta 1600 píxeles en su lado mayor y vídeos de hasta 720p, sin ampliar archivos de menor resolución. Máximos tras comprimir: 2 MB por foto y 20 MB por vídeo. Formatos iniciales JPEG/PNG y MP4 compatible, compresión Android y Media3 Transformer; comprobar compatibilidad real según la arquitectura acordada.
 - Se conservan entre sesiones los perfiles y operaciones preparados en la aplicación. No se añade una operación de reinicio ni borrado automático para la presentación.
 - Se utilizan cuentas, direcciones y contenidos ficticios o autorizados sin exponer información privada de terceros. El carácter ficticio de perfiles y las simulaciones de pagos, suscripción y comprobación comercial se explican por voz, sin exigir avisos globales de demo en la interfaz para la presentación universitaria.
 - Durante la preparación y presentación se conservan mensajes, adjuntos y propuestas sin edición ni borrado individual. No supone conservación indefinida en el producto final: la política de borrado comercial sigue pendiente.
@@ -279,6 +291,8 @@ Cada entrada debe explicar:
 - Precio con IVA incluido cuando corresponda para consumidores.
 
 Si una visita tiene coste aunque no se realice una reparación, debe comunicarse antes de confirmar la cita.
+
+Un precio pactado con un cliente no cambia para ese cliente (decisión de 2026-11-23): la cita guarda el importe en el momento en que se fija y ninguna edición posterior del perfil lo modifica.
 
 Las propuestas en el chat permiten dejar constancia del trabajo y del importe aceptados. Si aparece un coste adicional, el profesional debe comunicar el nuevo importe y obtener aceptación expresa antes de cobrarlo en la aplicación.
 
@@ -440,7 +454,7 @@ La aprobación exige funcionamiento real del panel y sus permisos; no significa 
 - El catálogo puede estar precargado y aprobado; se dispone además de un perfil de prueba para comprobar aprobación, rechazo y nueva presentación.
 - Un perfil pendiente o rechazado no aparece en búsquedas. El rechazo muestra un motivo al profesional y permite corregir el perfil y solicitar nueva revisión.
 - El administrador aprueba o rechaza, pero no reescribe los datos del profesional.
-- Los cambios de datos públicos de un perfil aprobado requieren nueva revisión. Hasta aprobarse sigue visible la última versión aprobada; si se rechazan, esa versión permanece.
+- Los cambios de datos públicos de un perfil aprobado requieren nueva revisión. Hasta aprobarse sigue visible la última versión aprobada; si se rechazan, esa versión permanece. Excepción de 2026-11-23: servicios, precios orientativos y foto de portada los publica el propietario sin revisión (ver «Actualización: decisiones de David del 23 de noviembre de 2026»).
 - Revisar un cambio de perfil no elimina citas ni conversaciones. Los cambios de agenda no necesitan revisión administrativa.
 - La comprobación comercial de estos perfiles es simulada y se explica por voz, sin exigir avisos globales de demo en la interfaz para la prueba universitaria. La narración no presenta una insignia como acreditación comercial auténtica. No se solicita documentación personal real.
 

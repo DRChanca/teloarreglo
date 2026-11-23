@@ -301,12 +301,12 @@
     <string name="area_client_notice">Until the appointment is confirmed, the professional only sees an approximate %1$d m area.</string>
     <string name="area_loading">Loading the location…</string>
     <string name="video_attach">Send video</string>
-    <string name="video_limits">Video up to 1 minute. The app sends an MP4 copy of up to 720p and 20 MB; your original is not changed.</string>
+    <string name="video_limits">Video up to 40 seconds. The app sends an MP4 copy of up to 720p and 20 MB; your original is not changed.</string>
     <string name="video_preparing">Compressing the video…</string>
     <string name="video_preparing_percent">Compressing the video… %1$d %%</string>
     <string name="video_uploading">Sending video… %1$d %%</string>
     <string name="video_error_unsupported">This video cannot be converted to a compatible MP4 on this phone. It was not sent; choose another one.</string>
-    <string name="video_error_too_long">The video is longer than one minute. It was not sent; trim it in your gallery or choose another one.</string>
+    <string name="video_error_too_long">The video is longer than 40 seconds. It was not sent; trim it in your gallery or choose another one.</string>
     <string name="video_error_too_large">Even compressed, the video does not fit in 20 MB. It was not sent; choose a shorter one.</string>
     <string name="video_error_quota">The storage for videos is full. The video was not sent; try again later.</string>
     <string name="video_error_access">You are not allowed to send videos here or your session has expired. The video was not sent.</string>
@@ -335,4 +335,19 @@
     <string name="payment_direct_confirm">Confirm the agreement</string>
     <string name="payment_integrated_summary">Paid: %1$s · Awaiting release: %2$s · Refunded: %3$s · Released: %4$s</string>
     <string name="payment_direct_summary">Direct payment agreed: %1$s. Paid to the professional outside the app; Teloarreglo does not collect or certify it.</string>
+    <string name="profile_offer_title">Services and indicative prices</string>
+    <string name="profile_offer_hint">They are published as soon as you save them, without review. Existing appointments, requests and proposals keep their price.</string>
+    <string name="profile_offer_unpublished_hint">They will show in the catalogue once your profile is approved.</string>
+    <string name="profile_offer_price">Price %1$d</string>
+    <string name="profile_offer_service">Service</string>
+    <string name="profile_offer_scope">What the job covers</string>
+    <string name="profile_offer_amount">Amount (€, VAT included)</string>
+    <string name="profile_offer_includes">Includes</string>
+    <string name="profile_offer_excludes">Does not include</string>
+    <string name="profile_offer_add_price">Add price</string>
+    <string name="profile_offer_remove_price">Remove this price</string>
+    <string name="profile_offer_save">Save and publish services and prices</string>
+    <string name="profile_offer_saved">Services and prices published.</string>
+    <string name="profile_offer_invalid">Check the prices: each one needs a service and an amount in euros, for example 35 or 35.50.</string>
+    <string name="profile_edit_cover">Change cover photo</string>
 </resources>

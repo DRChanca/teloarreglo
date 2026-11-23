@@ -301,12 +301,12 @@
     <string name="area_client_notice">Bis der Termin bestätigt ist, sieht die Fachkraft nur ein ungefähres Gebiet von %1$d m.</string>
     <string name="area_loading">Standort wird geladen…</string>
     <string name="video_attach">Video senden</string>
-    <string name="video_limits">Video bis 1 Minute. Die App sendet eine MP4-Kopie mit höchstens 720p und 20 MB; dein Original bleibt unverändert.</string>
+    <string name="video_limits">Video bis 40 Sekunden. Die App sendet eine MP4-Kopie mit höchstens 720p und 20 MB; dein Original bleibt unverändert.</string>
     <string name="video_preparing">Video wird komprimiert…</string>
     <string name="video_preparing_percent">Video wird komprimiert… %1$d %%</string>
     <string name="video_uploading">Video wird gesendet… %1$d %%</string>
     <string name="video_error_unsupported">Dieses Video kann auf diesem Telefon nicht in ein kompatibles MP4 umgewandelt werden. Es wurde nicht gesendet; wähle ein anderes.</string>
-    <string name="video_error_too_long">Das Video ist länger als eine Minute. Es wurde nicht gesendet; kürze es in der Galerie oder wähle ein anderes.</string>
+    <string name="video_error_too_long">Das Video ist länger als 40 Sekunden. Es wurde nicht gesendet; kürze es in der Galerie oder wähle ein anderes.</string>
     <string name="video_error_too_large">Auch komprimiert passt das Video nicht in 20 MB. Es wurde nicht gesendet; wähle ein kürzeres.</string>
     <string name="video_error_quota">Der Speicher für Videos ist voll. Das Video wurde nicht gesendet; versuche es später erneut.</string>
     <string name="video_error_access">Du darfst hier keine Videos senden oder deine Sitzung ist abgelaufen. Das Video wurde nicht gesendet.</string>
@@ -335,4 +335,19 @@
     <string name="payment_direct_confirm">Vereinbarung bestätigen</string>
     <string name="payment_integrated_summary">Bezahlt: %1$s · Auszahlung ausstehend: %2$s · Erstattet: %3$s · Ausgezahlt: %4$s</string>
     <string name="payment_direct_summary">Direktzahlung vereinbart: %1$s. Wird außerhalb der App an die Fachkraft gezahlt; Teloarreglo zieht sie nicht ein und bestätigt sie nicht.</string>
+    <string name="profile_offer_title">Leistungen und Richtpreise</string>
+    <string name="profile_offer_hint">Sie werden veröffentlicht, sobald du sie speicherst, ohne Prüfung. Bestehende Termine, Anfragen und Angebote behalten ihren Preis.</string>
+    <string name="profile_offer_unpublished_hint">Sie erscheinen im Katalog, sobald dein Profil freigegeben ist.</string>
+    <string name="profile_offer_price">Preis %1$d</string>
+    <string name="profile_offer_service">Leistung</string>
+    <string name="profile_offer_scope">Was die Arbeit umfasst</string>
+    <string name="profile_offer_amount">Betrag (€, inkl. MwSt.)</string>
+    <string name="profile_offer_includes">Enthalten</string>
+    <string name="profile_offer_excludes">Nicht enthalten</string>
+    <string name="profile_offer_add_price">Preis hinzufügen</string>
+    <string name="profile_offer_remove_price">Diesen Preis entfernen</string>
+    <string name="profile_offer_save">Leistungen und Preise speichern und veröffentlichen</string>
+    <string name="profile_offer_saved">Leistungen und Preise veröffentlicht.</string>
+    <string name="profile_offer_invalid">Prüfe die Preise: Jeder braucht eine Leistung und einen Betrag in Euro, zum Beispiel 35 oder 35,50.</string>
+    <string name="profile_edit_cover">Titelbild ändern</string>
 </resources>

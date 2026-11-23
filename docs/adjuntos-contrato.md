@@ -79,8 +79,9 @@ RPC, tabla, políticas ni bucket:
   más de 20 MiB (413) y otros tipos (415); el límite de 2 MiB de las fotos se
   impone al confirmar (`attachment_too_large`), así que una foto grande que
   Storage acepte nunca llega a ser mensaje.
-- El servidor no puede comprobar duración ni resolución: un minuto y 720p los
-  garantiza la compresión de la app y su comprobación del resultado.
+- El servidor no puede comprobar duración ni resolución: 40 segundos (más un
+  margen de 499 ms; antes un minuto, decisión de David del 2026-11-23) y 720p
+  los garantiza la compresión de la app y su comprobación del resultado.
 - Lectura igual que las fotos: URL firmada de 10 minutos pedida al abrir el
   vídeo, nunca URL pública; sin acceso de terceros ni administrativo.
 

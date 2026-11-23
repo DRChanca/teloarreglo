@@ -108,7 +108,7 @@ class MainActivity : AppCompatActivity() {
             } else if (profileEditor && app.professionalProfiles != null) {
                 ProfileEditorScreen(app.professionalProfiles!!, app.concejos, app.applicationScope,
                     onBack = { profileEditor = false; account = true },
-                    onStarted = { app.identity.restore() })
+                    onStarted = { app.identity.restore() }, covers = app.covers)
             } else if (chatVisible && access.stage == AccessStage.CONNECTED && app.chat != null) {
                 key(access.account!!.userId) {
                     ChatRoute(app.chat!!, access.account!!.userId, contactProfile,

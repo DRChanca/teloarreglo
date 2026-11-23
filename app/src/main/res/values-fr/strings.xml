@@ -301,12 +301,12 @@
     <string name="area_client_notice">Jusqu’à la confirmation du rendez-vous, le professionnel ne voit qu’une zone approximative de %1$d m.</string>
     <string name="area_loading">Chargement de l’emplacement…</string>
     <string name="video_attach">Envoyer une vidéo</string>
-    <string name="video_limits">Vidéo d’une minute maximum. L’app envoie une copie MP4 de 720p et 20 Mo maximum ; votre original reste intact.</string>
+    <string name="video_limits">Vidéo de 40 secondes maximum. L’app envoie une copie MP4 de 720p et 20 Mo maximum ; votre original reste intact.</string>
     <string name="video_preparing">Compression de la vidéo…</string>
     <string name="video_preparing_percent">Compression de la vidéo… %1$d %%</string>
     <string name="video_uploading">Envoi de la vidéo… %1$d %%</string>
     <string name="video_error_unsupported">Cette vidéo ne peut pas être convertie en MP4 compatible sur ce téléphone. Elle n’a pas été envoyée ; choisissez-en une autre.</string>
-    <string name="video_error_too_long">La vidéo dure plus d’une minute. Elle n’a pas été envoyée ; coupez-la dans la galerie ou choisissez-en une autre.</string>
+    <string name="video_error_too_long">La vidéo dure plus de 40 secondes. Elle n’a pas été envoyée ; coupez-la dans la galerie ou choisissez-en une autre.</string>
     <string name="video_error_too_large">Même compressée, la vidéo dépasse 20 Mo. Elle n’a pas été envoyée ; choisissez-en une plus courte.</string>
     <string name="video_error_quota">L’espace pour les vidéos est plein. La vidéo n’a pas été envoyée ; réessayez plus tard.</string>
     <string name="video_error_access">Vous n’avez pas le droit d’envoyer des vidéos ici ou votre session a expiré. La vidéo n’a pas été envoyée.</string>
@@ -335,4 +335,19 @@
     <string name="payment_direct_confirm">Confirmer l\'accord</string>
     <string name="payment_integrated_summary">Payé : %1$s · En attente de versement : %2$s · Remboursé : %3$s · Versé : %4$s</string>
     <string name="payment_direct_summary">Paiement direct convenu : %1$s. Payé au professionnel hors de l\'app ; Teloarreglo ne l\'encaisse ni ne le certifie.</string>
+    <string name="profile_offer_title">Services et prix indicatifs</string>
+    <string name="profile_offer_hint">Ils sont publiés dès que vous les enregistrez, sans examen. Les rendez-vous, demandes et propositions existants conservent leur prix.</string>
+    <string name="profile_offer_unpublished_hint">Ils apparaîtront dans le catalogue une fois votre profil approuvé.</string>
+    <string name="profile_offer_price">Prix %1$d</string>
+    <string name="profile_offer_service">Service</string>
+    <string name="profile_offer_scope">Ce que couvre le travail</string>
+    <string name="profile_offer_amount">Montant (€, TVA comprise)</string>
+    <string name="profile_offer_includes">Comprend</string>
+    <string name="profile_offer_excludes">Ne comprend pas</string>
+    <string name="profile_offer_add_price">Ajouter un prix</string>
+    <string name="profile_offer_remove_price">Retirer ce prix</string>
+    <string name="profile_offer_save">Enregistrer et publier services et prix</string>
+    <string name="profile_offer_saved">Services et prix publiés.</string>
+    <string name="profile_offer_invalid">Vérifiez les prix : chacun nécessite un service et un montant en euros, par exemple 35 ou 35,50.</string>
+    <string name="profile_edit_cover">Changer la photo de couverture</string>
 </resources>

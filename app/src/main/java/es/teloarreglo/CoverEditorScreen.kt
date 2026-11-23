@@ -24,6 +24,10 @@ import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
+/**
+ * The owner changes the cover of their own profile. Since 2026-11-23 it is published as soon as the
+ * server confirms the upload, without review; an unapproved profile shows it once it is published.
+ */
 @Composable
 internal fun CoverEditorRoute(profile: PublicProfile, covers: ProfessionalCovers, onBack: () -> Unit) {
     val context = LocalContext.current
@@ -113,6 +117,7 @@ internal fun CoverEditorScreen(
                         Column(Modifier.fillMaxWidth().padding(16.dp).testTag("cover_state")
                             .semantics { liveRegion = LiveRegionMode.Polite }) {
                             Text(stringResource(when (request?.status) {
+                                CoverStatus.PUBLISHED -> R.string.cover_published
                                 CoverStatus.PENDING -> R.string.cover_pending
                                 CoverStatus.APPROVED -> R.string.cover_approved
                                 CoverStatus.REJECTED -> R.string.cover_rejected
@@ -152,7 +157,7 @@ internal fun CoverEditorScreen(
                     },
                 ) { Text(stringResource(R.string.cover_submit)) }
                 TextButton(modifier = Modifier.testTag("cover_generic"), enabled = loaded && !busy && !preparing &&
-                    !(request?.status == CoverStatus.PENDING && request?.objectPath == null && !unsent), onClick = {
+                    !(request?.status in setOf(CoverStatus.PENDING, CoverStatus.PUBLISHED) && request?.objectPath == null && !unsent), onClick = {
                     val id = genericId ?: UUID.randomUUID().toString().also { genericId = it }
                     scope.launch {
                         busy = true; failed = false

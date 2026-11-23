@@ -30,8 +30,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
-const val VIDEO_MAX_DURATION_MS = 60_000L
-/** A clip the gallery shows as «1:00» may last a few milliseconds more. */
+const val VIDEO_MAX_DURATION_MS = 40_000L
+/** A clip the gallery shows as «0:40» may last a few milliseconds more. */
 const val VIDEO_DURATION_TOLERANCE_MS = 499L
 const val VIDEO_MAX_SHORT_SIDE = 720
 const val VIDEO_MAX_BYTES = 20L * 1024 * 1024
@@ -51,7 +51,7 @@ class VideoSource(val durationMs: Long?, val width: Int, val height: Int, val ro
 
 private fun refuse(failure: AttachmentFailure): Nothing = throw ChatAttachmentException(failure)
 
-/** Rejects early, before compressing: unreadable files and videos over one minute. */
+/** Rejects early, before compressing: unreadable files and videos over 40 seconds. */
 fun checkVideoSource(source: VideoSource?) {
     if (source == null || source.width <= 0 || source.height <= 0 || source.durationMs == null || source.durationMs <= 0) {
         refuse(AttachmentFailure.UNSUPPORTED)
@@ -122,7 +122,7 @@ private fun readVideo(read: MediaMetadataRetriever.() -> Unit): VideoSource? {
 
 /**
  * Compresses the picked video into a new H.264/AAC MP4 with Media3 Transformer: at most
- * one minute, 720p (never enlarged) and [VIDEO_MAX_BYTES], without location metadata.
+ * 40 seconds, 720p (never enlarged) and [VIDEO_MAX_BYTES], without location metadata.
  * Reports progress (0..1); cancelling the coroutine cancels the export. The temporary
  * copy lives in the app cache and is always deleted. Fails with UNSUPPORTED, TOO_LONG
  * or TOO_LARGE and never returns the original.

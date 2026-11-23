@@ -11,6 +11,7 @@ import es.teloarreglo.catalogue.OwnProfile
 import es.teloarreglo.catalogue.ProfessionalProfiles
 import es.teloarreglo.catalogue.ProfileContent
 import es.teloarreglo.catalogue.ProfileReview
+import es.teloarreglo.catalogue.ReferencePrice
 import es.teloarreglo.catalogue.ReviewStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +38,11 @@ class ProfileEditorUiTest {
             return ProfileReview("p", ReviewStatus.PENDING, published = own?.public != null)
         }
         override suspend fun savePrivateAddress(address: String?) = own!!.copy(privateAddress = address)
+        val offers = mutableListOf<Pair<List<String>, List<ReferencePrice>>>()
+        override suspend fun saveOffer(services: List<String>, prices: List<ReferencePrice>): OwnProfile {
+            offers += services to prices
+            return own!!.copy(editable = own!!.editable.copy(services = services, prices = prices)).also { own = it }
+        }
     }
 
     private fun show(fake: Fake) = compose.setContent {
@@ -65,6 +71,24 @@ class ProfileEditorUiTest {
         assertEquals(2, fake.submitted.size)
         assertEquals(fake.submitted[0].first, fake.submitted[1].first)
         assertEquals("Nueva descripción", fake.submitted[1].second.description)
+    }
+
+    @Test fun pricesArePublishedDirectlyAndAnIncompletePriceIsNotSent() {
+        val fake = Fake(OwnProfile("p", null, approved, approved, ProfileReview("p", ReviewStatus.APPROVED, published = true)))
+        show(fake)
+        compose.onNodeWithTag("profile_offer_add").performScrollTo().performClick()
+        compose.onNodeWithTag("profile_offer_service_0").performScrollTo().performTextReplacement("Reparación de fuga")
+        compose.onNodeWithTag("profile_offer_save").performScrollTo().performClick()
+        compose.onNodeWithTag("profile_offer_invalid").assertExists()
+        assertTrue("an incomplete price is never sent", fake.offers.isEmpty())
+        compose.onNodeWithTag("profile_offer_amount_0").performScrollTo().performTextReplacement("35,50")
+        compose.onNodeWithTag("profile_offer_unit_0_hour").performScrollTo().performClick()
+        compose.onNodeWithTag("profile_offer_save").performScrollTo().performClick()
+        compose.onNodeWithTag("profile_edit_outcome").assertExists()
+        val (services, prices) = fake.offers.single()
+        assertEquals(listOf("Fugas"), services)
+        assertEquals(ReferencePrice("Reparación de fuga", "", "hour", 3550, "", ""), prices.single())
+        assertTrue("publishing prices presents nothing for review", fake.submitted.isEmpty())
     }
 
     @Test fun incompleteDataIsNotPresented() {

@@ -59,7 +59,7 @@ class ChatVideoPrepareTest {
         assertEquals(360, shortSide(video.bytes))
     }
 
-    @Test fun aVideoLongerThanOneMinuteIsRefusedBeforeCompressing() = withAsset("video-62s.mp4") { file ->
+    @Test fun aVideoLongerThanFortySecondsIsRefusedBeforeCompressing() = withAsset("video-62s.mp4") { file ->
         assertEquals(AttachmentFailure.TOO_LONG, failureOf { prepareVideo(context, Uri.fromFile(file)) {} })
     }
 

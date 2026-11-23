@@ -129,7 +129,7 @@ Repetir una operación con la misma clave y datos devuelve su resultado sin repe
 - Primero filtrar cobertura de servicio; organizar candidatos mediante H3 y celdas vecinas y ordenar por distancia geográfica entre coordenadas originales. Comprobar bordes y expansión para no perder candidatos ni presentar un orden incorrecto.
 - H3 en servidor mediante h3-js, sujeto a prueba de importación y ejecución en Supabase Edge Functions. No asumir una extensión H3 nativa disponible en Postgres.
 - Google Maps representa resultados; un enlace de navegación abre Google Maps fuera de Teloarreglo. La aplicación no calcula rutas ni tiempos por carretera. Respetar privacidad de domicilio profesional y cliente.
-- Fotos JPEG/PNG, hasta 1600 píxeles en el lado mayor y 2 MB tras compresión; vídeo MP4 compatible, hasta un minuto, 720p y 20 MB. No ampliar archivos de menor resolución.
+- Fotos JPEG/PNG, hasta 1600 píxeles en el lado mayor y 2 MB tras compresión; vídeo MP4 compatible, hasta 40 segundos (decisión de 2026-11-23, con 499 ms de margen), 720p y 20 MB. No ampliar archivos de menor resolución.
 - Progreso, cancelación y original intacto. Si compresión o formato fallan, informar y no subir silenciosamente el original.
 - No declarar envío confirmado hasta recibir respuesta del servidor. Conexión necesaria para operaciones compartidas; no se promete modo completo sin internet.
 

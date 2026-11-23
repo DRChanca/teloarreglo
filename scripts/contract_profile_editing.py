@@ -99,6 +99,21 @@ class ProfileEditingContract(unittest.TestCase):
         self.assertNotIn(PRIVATE, json.dumps(public, ensure_ascii=False))
         self.assertIn(api.request(catalogue, {"description": "Forged"}, other, "PATCH")[0], (401, 403))
 
+        # Services and reference prices are published at once, without review (David, 2026-11-23).
+        prices = [{"service": "Reparación de fuga", "scope": "Una hora", "unit": "hour", "amount_cents": 3500,
+                   "includes": "Mano de obra e IVA", "excludes": "Materiales"}]
+        offer = {"p_services": ["Fugas", "Grifería"], "p_prices": prices}
+        for token in (None, other):
+            self.assertNotEqual(rpc("save_professional_offer", offer, token)[0], 200)
+        bad = dict(offer, p_prices=[dict(prices[0], unit="lightyear")])
+        self.assertEqual(rpc("save_professional_offer", bad, owner)[0], 400)
+        code, mine = rpc("save_professional_offer", offer, owner)
+        self.assertEqual((code, mine["editable"]["prices"]), (200, prices))
+        offered = f"/rest/v1/approved_profiles?profile_id=eq.{profile}&select=services,prices"
+        self.assertEqual(api.request(offered, method="GET"), (200, [{"services": ["Fugas", "Grifería"], "prices": prices}]))
+        code, listed = rpc("admin_profile_submissions", {}, administrator)
+        self.assertEqual([s for s in listed if s["profile_id"] == profile], [], "a price change creates no submission")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -5,14 +5,17 @@ import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 /**
- * Public fields the owner presents for review (#30). Photos and reference prices are not edited
- * here, so they travel back exactly as received; the private address is never part of it.
+ * Public fields of the owner's profile (#30). Name, description, trades, coverage, languages, phone
+ * and business address are presented for review. Services and reference prices are published
+ * directly with [ProfessionalProfiles.saveOffer] (David, 2026-11-23); the server replaces them in a
+ * presented version. Photos travel back as received; the private address is never part of it.
  */
 @Serializable
 data class ProfileContent(
@@ -24,7 +27,7 @@ data class ProfileContent(
     val languages: List<String> = listOf("es"),
     val phone: String = "",
     val images: List<String> = emptyList(),
-    val prices: JsonArray = JsonArray(emptyList()),
+    val prices: List<ReferencePrice> = emptyList(),
     /** Published only if the owner chooses to; a home-based professional can leave it empty. */
     @SerialName("business_address") val businessAddress: String? = null,
 )
@@ -67,6 +70,8 @@ interface ProfessionalProfiles {
     suspend fun start(): OwnProfile
     suspend fun submit(requestId: String, content: ProfileContent): ProfileReview
     suspend fun savePrivateAddress(address: String?): OwnProfile
+    /** Publishes services and reference prices at once, without review. Existing appointments keep their amounts. */
+    suspend fun saveOffer(services: List<String>, prices: List<ReferencePrice>): OwnProfile
 }
 
 private val contentJson = Json { encodeDefaults = true }
@@ -93,11 +98,19 @@ class SupabaseProfessionalProfiles(private val client: SupabaseClient) : Profess
             .decodeAs<OwnProfile>()
     }
 
+    override suspend fun saveOffer(services: List<String>, prices: List<ReferencePrice>): OwnProfile = mapped {
+        client.postgrest.rpc("save_professional_offer", buildJsonObject {
+            put("p_services", contentJson.encodeToJsonElement(ListSerializer(String.serializer()), services))
+            put("p_prices", contentJson.encodeToJsonElement(ListSerializer(ReferencePrice.serializer()), prices))
+        }).decodeAs<OwnProfile>()
+    }
+
     private inline fun <T> mapped(block: () -> T): T = try { block() } catch (error: RestException) {
         val message = error.message.orEmpty()
         val failure = when {
             error.statusCode == 401 || error.statusCode == 403 -> ProfileEditFailure.ACCESS
-            "invalid_profile_content" in message || "invalid_private_address" in message -> ProfileEditFailure.INVALID
+            "invalid_profile_content" in message || "invalid_profile_offer" in message ||
+                "invalid_private_address" in message -> ProfileEditFailure.INVALID
             "request_conflict" in message -> ProfileEditFailure.CONFLICT
             "profile_not_found" in message -> ProfileEditFailure.NO_PROFILE
             else -> null

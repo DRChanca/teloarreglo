@@ -108,6 +108,39 @@ Fronteras de cliente:
   La clave de envío se conserva mientras se reintenta el mismo contenido. Strings `profile_edit_*`.
 - Panel: `Submission.public_content`; cada campo que cambia se marca «Cambia» junto al valor publicado.
 
+## Ampliación del 23 de noviembre de 2026: servicios, precios y portada sin revisión
+
+Decisión de David: servicios, precios orientativos y foto de portada los publica el propietario
+directamente. El resto de campos sigue la revisión de #30. Migraciones nuevas
+`20261123004100_profile_offer_direct.sql` y `20261123004200_direct_covers.sql` (portadas: ver
+[portadas-y-diseno.md](portadas-y-diseno.md#publicación-directa-desde-el-23-de-noviembre-de-2026)).
+
+- `private.professional_profiles` gana `services text[]` y `prices jsonb`: lo que publicó el propietario.
+  `null` significa que aún no los gestiona (catálogo preparado, perfiles anteriores); entonces manda la
+  instantánea aprobada. `start_professional_profile()` crea los perfiles nuevos con `{}`/`[]`.
+- Disparador `approved_profiles_offer` (`before insert or update` en `approved_profiles`): si el perfil tiene
+  `services`/`prices` propios, la instantánea pública siempre los toma. Aprobar una versión (también una antigua)
+  nunca devuelve precios ni servicios anteriores. SQL de confianza que escriba precios en
+  `approved_profiles` de un perfil gestionado por su propietario queda sustituido por lo del propietario.
+
+| Operación | Quién | Resultado / errores |
+| --- | --- | --- |
+| `public.save_professional_offer(p_services jsonb, p_prices jsonb)` | `authenticated` propietario; el perfil sale de la sesión | Publica a la vez servicios y precios, sin revisión ni versión nueva: actualiza el perfil y, si está aprobado, `approved_profiles`. Devuelve `my_professional_profile()`. Servicios: ≤ 30 cadenas de 1–120. Precios: ≤ 20 objetos con exactamente `service` (1–120), `scope`, `includes`, `excludes` (≤ 300, pueden ir vacíos), `unit` (`hour`/`sqm`/`unit`/`job`) y `amount_cents` (entero 0–100 000 000). Errores: `22023 invalid_profile_offer`, `22023 profile_not_found` (sin perfil propio; también otra cuenta). Repetirla deja el mismo estado. |
+| `public.submit_professional_profile(...)` | igual que #30 | Sustituye `services` y `prices` del contenido presentado por los publicados (o, si el propietario aún no los gestiona, por los aprobados): una versión presentada nunca cambia precios ni servicios. |
+| `public.my_professional_profile()` | igual que #30 | `editable.services` y `editable.prices` son siempre los publicados por el propietario, si los gestiona. |
+
+Las citas, solicitudes y propuestas ya existentes conservan su importe: ver
+[citas-contrato.md](citas-contrato.md#precio-guardado-en-la-cita--decisión-del-23-de-noviembre-de-2026).
+
+Fronteras de cliente:
+
+- Android: `ProfessionalProfiles.saveOffer(services, prices)`; `ProfileContent.prices` es `List<ReferencePrice>`.
+  `catalogue/ProfileOffer.kt` (`PriceDraft`, `parseServices`, `toPrices`: importe en euros con `parseEuroCents`).
+  En `ProfileEditorScreen` la sección «Servicios y precios orientativos» tiene su propio botón «Guardar y
+  publicar» y explica que no se revisan; el formulario revisado ya no incluye servicios. Botón «Cambiar foto de
+  portada» abre el editor de portada también para perfiles sin aprobar. Strings `profile_offer_*`, `profile_edit_cover`.
+- Panel: la tarjeta de revisión ya no muestra servicios ni precios; nunca mostró portadas.
+
 ## Fuera de alcance
 
 Sin acceso general a chats, documentación real, sanciones, categorías ni estadísticas. El panel

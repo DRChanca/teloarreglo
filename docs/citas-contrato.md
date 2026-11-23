@@ -313,3 +313,38 @@ simulación se explica por voz.
 ```
 
 Resultados: [comprobación de pagos](comprobacion-pagos.md).
+
+## Precio guardado en la cita — decisión del 23 de noviembre de 2026
+
+Regla: un precio pactado con un cliente no cambia para ese cliente. Migración nueva
+`20261123004300_appointment_kept_prices.sql`; no edita las anteriores ni cambia firmas de RPC.
+
+Revisión del estado anterior (#20, #21, #22): ninguna RPC de citas leía el precio del perfil en vivo.
+`request_appointment` no guardaba precio y `propose_appointment` guarda `amount_cents` y
+`visit_fee_cents` en la propia propuesta; `accept_proposal` y `confirm_proposal` (#22) solo leen la
+propuesta (`greatest(amount_cents, visit_fee_cents)`) y guardan el importe en `appointment_payments`.
+
+- `public.appointments.reference_prices jsonb` (columna nueva, legible por los dos participantes, como
+  las demás salvo el lugar exacto): copia de los precios orientativos publicados del perfil **en el
+  momento de la solicitud**, la fija el disparador `appointments_kept_prices` al insertar. Las solicitudes
+  existentes reciben los precios aprobados actuales: hasta este cambio los propietarios no podían
+  editarlos, así que son los vigentes al solicitar. `request_appointment` la devuelve en su JSON.
+- Cambiarla después falla siempre, incluso con SQL de confianza: `42501 price_locked`.
+- Una propuesta decidida (`accepted`, `rejected`, `superseded`) no puede cambiar `amount_cents` ni
+  `visit_fee_cents` (`42501 price_locked`). Ninguna RPC reescribe importes: un cambio de precio es una
+  propuesta nueva con aceptación expresa (#23).
+- `save_professional_offer` y las versiones aprobadas solo tocan el perfil: nunca citas, solicitudes ni
+  propuestas.
+
+**Para #22 (pago simulado) y siguientes:** el cobro usa el importe guardado en la propuesta aceptada
+(`appointment_proposals.amount_cents` y `visit_fee_cents`, copiado a `appointment_payments.agreed_cents`),
+nunca `approved_profiles.prices`. Así lo hace ya `confirm_proposal`; #23–#27 deben seguir igual. Cuando el
+cliente pide sin propuesta, la referencia es `appointments.reference_prices`. Un movimiento simulado no
+debe leer el precio del perfil.
+
+Android no muestra todavía `reference_prices` (la consulta de `Appointments.list` no la pide).
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree>   # incluye appointment_prices.test.sql
+```
+

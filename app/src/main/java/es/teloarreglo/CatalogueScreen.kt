@@ -276,9 +276,10 @@ private fun ProfileDetail(profile: PublicProfile, covers: ProfessionalCovers?, o
                     Text(price.service, fontWeight = FontWeight.Bold)
                     Text(priceText(price),
                         style = MaterialTheme.typography.titleLarge, color = green)
-                    Text(price.scope)
-                    Text(stringResource(R.string.catalogue_includes, price.includes))
-                    Text(stringResource(R.string.catalogue_excludes, price.excludes))
+                    // Owners publish prices directly (2026-11-23); optional texts may be empty.
+                    if (price.scope.isNotBlank()) Text(price.scope)
+                    if (price.includes.isNotBlank()) Text(stringResource(R.string.catalogue_includes, price.includes))
+                    if (price.excludes.isNotBlank()) Text(stringResource(R.string.catalogue_excludes, price.excludes))
                 }
             }
         }
@@ -324,7 +325,7 @@ internal fun tradeLabel(key: String): Int = when (key) {
     else -> R.string.trade_general
 }
 
-private fun unitLabel(key: String): Int = when (key) {
+internal fun unitLabel(key: String): Int = when (key) {
     "hour" -> R.string.price_hour
     "sqm" -> R.string.price_sqm
     "unit" -> R.string.price_unit
