@@ -26,5 +26,8 @@ captures/
 # Node
 node_modules/
 
+# Worktrees de agentes de Claude Code
+.claude/
+
 # SO
 .DS_Store
