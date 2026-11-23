@@ -91,6 +91,9 @@ class MainActivity : AppCompatActivity() {
                 if (access.stage != AccessStage.CHECKING) app.push?.sync(connectedUser)
             }
             LaunchedEffect(connectedUser, noticesVisible, chatVisible, account) {
+                // The app is open on this account: its conversations reached this device (senders' second tick).
+                if (connectedUser != null) try { app.chat?.markAllDelivered() }
+                    catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
                 unreadNotices = if (connectedUser == null) 0 else try {
                     app.notices?.list()?.count { !it.read } ?: 0
                 } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { unreadNotices }

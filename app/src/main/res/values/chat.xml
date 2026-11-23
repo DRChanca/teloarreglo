@@ -19,4 +19,6 @@
     <string name="chat_other">Otra cuenta</string>
     <string name="chat_client">Cliente · %1$s</string>
     <string name="chat_access">Accede a tu cuenta para contactar.</string>
+    <string name="chat_tick_delivered">Entregado en el otro teléfono</string>
+    <string name="chat_tick_read">Leído</string>
 </resources>
