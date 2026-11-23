@@ -10,6 +10,7 @@ públicos. Contratos, carga explícita de los 18 perfiles y permisos:
 Portadas editables y revisión de usabilidad: [portadas y diseño](docs/portadas-y-diseno.md).
 Chat privado de texto: [contratos](docs/chat-contrato.md) y
 [comprobaciones y pendientes](docs/comprobacion-chat.md).
+Fotos en el chat: [contrato de adjuntos](docs/adjuntos-contrato.md) y [comprobación](docs/comprobacion-fotos.md).
 
 ## Decisión vigente: una sola base
 
