@@ -40,10 +40,26 @@ class MainActivity : AppCompatActivity() {
     }
     private val app get() = application as TeloarregloApplication
 
+    /** Notification permission (#32): asked from the notices screen; if refused before, opens system settings. */
+    private suspend fun ensureNotificationPermission() {
+        if (es.teloarreglo.notices.notificationPermissionGranted(this)) return
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            val answer = CompletableDeferred<Boolean>().also { permissionAnswer = it }
+            permissionLauncher.launch(arrayOf(Manifest.permission.POST_NOTIFICATIONS))
+            if (answer.await() && es.teloarreglo.notices.notificationPermissionGranted(this)) return
+        }
+        startActivity(Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName))
+    }
+
+    /** Set when the activity is opened from a push notification. */
+    private val openNotices = mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // After a configuration change the link was already handled; codes are single use.
         if (savedInstanceState == null) handleAuthLink(intent)
+        if (intent?.getBooleanExtra(es.teloarreglo.notices.EXTRA_OPEN_NOTICES, false) == true) openNotices.value = true
         setContent {
             var account by rememberSaveable { mutableStateOf(false) }
             var ownProfile by rememberSaveable { mutableStateOf<String?>(null) }
@@ -52,6 +68,8 @@ class MainActivity : AppCompatActivity() {
             var conversationJson by rememberSaveable { mutableStateOf<String?>(null) }
             var nearby by rememberSaveable { mutableStateOf(false) }
             var profileEditor by rememberSaveable { mutableStateOf(false) }
+            var noticesVisible by rememberSaveable { mutableStateOf(false) }
+            var unreadNotices by remember { mutableIntStateOf(0) }
             val app = application as TeloarregloApplication
             val access by app.identity.state.collectAsStateWithLifecycle()
             var knownOwner by rememberSaveable { mutableStateOf<String?>(null) }
@@ -68,6 +86,22 @@ class MainActivity : AppCompatActivity() {
             val homeStatus by (homeSession?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(HomeStatus.Unknown) })
                 .collectAsStateWithLifecycle()
             val connectedUser = access.account?.userId?.takeIf { access.stage == AccessStage.CONNECTED }
+            // Notices (#32): this device follows the signed-in account; the unread count is read from the server.
+            LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
+                if (access.stage != AccessStage.CHECKING) app.push?.sync(connectedUser)
+            }
+            LaunchedEffect(connectedUser, noticesVisible, chatVisible, account) {
+                unreadNotices = if (connectedUser == null) 0 else try {
+                    app.notices?.list()?.count { !it.read } ?: 0
+                } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { unreadNotices }
+            }
+            val openFromPush by openNotices
+            LaunchedEffect(openFromPush) {
+                if (openFromPush) {
+                    noticesVisible = true; account = false; nearby = false; chatVisible = false
+                    contactProfile = null; conversationJson = null; openNotices.value = false
+                }
+            }
             LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
                 if (access.stage != AccessStage.CHECKING) homeSession?.load(connectedUser)
             }
@@ -109,6 +143,23 @@ class MainActivity : AppCompatActivity() {
                 ProfileEditorScreen(app.professionalProfiles!!, app.concejos, app.applicationScope,
                     onBack = { profileEditor = false; account = true },
                     onStarted = { app.identity.restore() }, covers = app.covers)
+            } else if (noticesVisible && connectedUser != null && app.notices != null) {
+                key(connectedUser) {
+                    NoticesScreen(app.notices!!, app.push, connectedUser, app.applicationScope,
+                        askPermission = { ensureNotificationPermission() },
+                        onOpenConversation = { id ->
+                            app.applicationScope.launch {
+                                val conversation = try { app.chat?.conversations()?.find { it.id == id } }
+                                    catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { null }
+                                if (conversation != null) {
+                                    conversationJson = Json.encodeToString(conversation); contactProfile = null
+                                    chatVisible = true; noticesVisible = false
+                                }
+                            }
+                        },
+                        onOpenAccount = { noticesVisible = false; account = true },
+                        onBack = { noticesVisible = false })
+                }
             } else if (chatVisible && access.stage == AccessStage.CONNECTED && app.chat != null) {
                 key(access.account!!.userId) {
                     ChatRoute(app.chat!!, access.account!!.userId, contactProfile,
@@ -154,7 +205,9 @@ class MainActivity : AppCompatActivity() {
                     initialProfileId = ownProfile, covers = app.covers, ownedProfileId = owner,
                     onContact = { ownProfile = it; contactProfile = it; conversationJson = null; chatVisible = true; account = false },
                     onChats = { ownProfile = null; contactProfile = null; conversationJson = null; chatVisible = true; account = false },
-                    onNearby = if (app.search != null) ({ ownProfile = null; nearby = true }) else null)
+                    onNearby = if (app.search != null) ({ ownProfile = null; nearby = true }) else null,
+                    onNotices = if (connectedUser != null && app.notices != null) ({ ownProfile = null; noticesVisible = true }) else null,
+                    unreadNotices = unreadNotices)
             }
         }
     }
@@ -163,6 +216,7 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleAuthLink(intent)
+        if (intent.getBooleanExtra(es.teloarreglo.notices.EXTRA_OPEN_NOTICES, false)) openNotices.value = true
     }
 
     override fun onStart() {
