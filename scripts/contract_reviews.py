@@ -118,8 +118,10 @@ class ReviewContract(unittest.TestCase):
 
     def test_3_free_appointment_closed_by_the_clock(self):
         appt = self.done(13, amount=0)
-        sql(f"""update public.appointments set close_due_at = now() - interval '1 minute' where id = '{appt}';
-            select private.complete_appointment('{appt}', null, 'no_answer');""")
+        # Simulated time (trusted SQL), then the server clock of #27 itself closes it.
+        sql(f"""update public.appointments set reminder_due_at = now() - interval '2 minutes',
+            close_due_at = now() - interval '1 minute' where id = '{appt}';
+            select private.run_completion_clock();""")
         self.assertEqual(self.state(appt)["state"], "enabled")
         self.assertIsNone(self.state(appt)["review"], "the silent close never writes a review")
         self.assertEqual(self.publish(appt, client, 5, "Sin coste y bien")[0], 200)

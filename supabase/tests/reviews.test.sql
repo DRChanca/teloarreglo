@@ -58,10 +58,11 @@ select public.open_incident((select disputed from ids), '70000000-0000-0000-0000
 select public.open_incident((select ruled_out from ids), '70000000-0000-0000-0000-000000280106', 'not_performed',
  'No vino nadie', true);
 
--- The clock (#27) closes the free appointment without an answer through the shared invariant of #25.
+-- The server clock (#27) closes the free appointment without an answer.
 reset role;
-update public.appointments set close_due_at = now() - interval '1 minute' where id = (select silent from ids);
-select private.complete_appointment((select silent from ids), null, 'no_answer');
+update public.appointments set reminder_due_at = now() - interval '2 minutes', close_due_at = now() - interval '1 minute'
+ where id = (select silent from ids);
+select private.run_completion_clock();
 select is((select count(*) from public.reviews where profile_id = '10000000-0000-0000-0000-000000280101'), 0::bigint,
  'closing without an answer never generates a review');
 
