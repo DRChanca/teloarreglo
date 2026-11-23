@@ -72,7 +72,7 @@ select lives_ok($$select public.propose_appointment((select id from public.appoi
 select is((select count(*) from public.appointment_proposals), 1::bigint, 'retry does not duplicate the proposal');
 select throws_ok($$select public.propose_appointment((select id from public.appointments where request_id = '30000000-0000-0000-0000-000000200101'),
  1, '40000000-0000-0000-0000-000000200102', 'Based on an old version', '2030-01-15 10:30Z', 90, 9000, null, true, true)$$,
- '40001', 'stale_version', 'a proposal based on an outdated version is rejected');
+ 'PT409', 'stale_version', 'a proposal based on an outdated version is rejected');
 select lives_ok($$select public.propose_appointment((select id from public.appointments where request_id = '30000000-0000-0000-0000-000000200102'),
  1, '40000000-0000-0000-0000-000000200103', 'Free visit to assess', '2030-01-15 10:30Z', 30, 0, null, false, true)$$,
  'another pending proposal may use the same hour without reserving it');
@@ -107,7 +107,7 @@ select is(public.propose_appointment((select id from public.appointments where r
  '3', 'a pending proposal can be revised by a newer version');
 select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000200101","role":"authenticated"}',true);
 select throws_ok($$select public.reject_proposal((select id from public.appointment_proposals where version = 2
- and scope = 'Replace trap, labour only'))$$, '40001', 'stale_version', 'a superseded version cannot be decided');
+ and scope = 'Replace trap, labour only'))$$, 'PT409', 'stale_version', 'a superseded version cannot be decided');
 
 -- Third account, including an administrator, cannot read or act on the appointment.
 reset role;

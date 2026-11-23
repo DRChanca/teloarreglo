@@ -176,10 +176,10 @@ begin
         return to_jsonb(result);
     end if;
     if appt.version <> p_expected_version then
-        raise exception using errcode = '40001', message = 'stale_version';
+        raise exception using errcode = 'PT409', message = 'stale_version';
     end if;
     if appt.stage <> 'pending' then
-        raise exception using errcode = '55000', message = 'incompatible_state';
+        raise exception using errcode = 'PT409', message = 'incompatible_state';
     end if;
     if p_start <= now() then
         raise exception using errcode = '22023', message = 'invalid_proposal';
@@ -225,7 +225,7 @@ begin
         return to_jsonb(result);
     end if;
     if result.status <> 'pending' then
-        raise exception using errcode = '40001', message = 'stale_version';
+        raise exception using errcode = 'PT409', message = 'stale_version';
     end if;
     update public.appointment_proposals set status = 'rejected', decided_at = now()
       where id = p_proposal_id returning * into result;
