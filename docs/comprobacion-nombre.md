@@ -13,7 +13,7 @@ Todo se ejecutó contra la pila Supabase local compartida, con `spec11-notas/db-
   - Solo el propietario escribe, y siempre mediante RPC. Otra cuenta no ve la fila.
   - El profesional ve el nombre cambiado en `conversation_inbox()` y ningún correo.
   - Los metadatos nuevos de Google no sobrescriben un nombre elegido.
-- Suite pgTAP completa: 18 ficheros y 378 comprobaciones superadas.
+- Suite pgTAP completa tras unir `spec/11-demo`: 19 ficheros y 426 comprobaciones superadas.
 - `scripts/contract_account_names.py --local`: pasa contra Auth y PostgREST reales.
   - Un registro público con `data.full_name` deja el nombre guardado por el trigger.
   - Una cuenta con metadatos `name`, como las de Google, también lo guarda.
@@ -24,7 +24,8 @@ Todo se ejecutó contra la pila Supabase local compartida, con `spec11-notas/db-
   - `AccountNameTest`: 8 pruebas, con HTTP simulado y sesión falsa.
   - `RegistrationTest`: 12 pruebas, dos de ellas nuevas. Comprueban que se envía `full_name`
     recortado y que sin nombre válido no se llama a Auth.
-  - Total: 142 pruebas en 21 clases.
+  - Total tras unir `spec/11-demo`: 145 pruebas en 21 clases.
+- Los demás `contract_*.py --local` también pasan. `contract_identity.py` no se ejecutó porque necesita las credenciales de `.env`.
 - `python3 scripts/android.py check`: compilación, pruebas unitarias y lint correctos.
 - `AccountNameUiTest` (Compose, 3 pruebas) **compila pero no se ha ejecutado**: no había un
   emulador desechable asignado.
