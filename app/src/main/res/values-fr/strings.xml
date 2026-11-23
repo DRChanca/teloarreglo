@@ -536,4 +536,15 @@
         <item quantity="many">%1$d messages non lus</item>
         <item quantity="other">%1$d messages non lus</item>
     </plurals>
+    <string name="resolution_notice_completed">Clôturé par l’administration après examen de l’incident. Les décisions et leurs motifs figurent dans l’incident.</string>
+    <string name="resolution_completed_at">Clôturé par l’administration le %1$s</string>
+    <string name="resolution_settlement_deliver">Administration : le montant en attente (%1$s) a été versé au professionnel (simulé).</string>
+    <string name="resolution_settlement_refund">Administration : le montant en attente (%1$s) a été remboursé au client (simulé).</string>
+    <string name="resolution_settlement_split">Administration : %1$s ont été remboursés au client et %2$s versés au professionnel (simulé).</string>
+    <string name="resolution_reason">Motif : %1$s</string>
+    <string name="resolution_decided_at">Décidé le %1$s</string>
+    <string name="resolution_performance_performed">Administration : la réalisation du service est établie.</string>
+    <string name="resolution_performance_not_performed">Administration : la non-réalisation du service est établie.</string>
+    <string name="resolution_performance_missing_evidence">Administration : les preuves ne suffisent pas pour savoir si le service a eu lieu.</string>
+    <string name="resolution_partial">L’administration a enregistré une décision ; l’incident reste ouvert jusqu’à l’enregistrement de l’autre.</string>
 </resources>

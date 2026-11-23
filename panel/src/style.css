@@ -34,3 +34,14 @@ dd { margin: 0; overflow-wrap: anywhere; }
 .decide { border-top: 1px solid var(--line); padding-top: 12px; }
 @media (max-width: 520px) { dl { grid-template-columns: 1fr; } dt { margin-top: 6px; } }
 mark.changed { background: #fde9b8; color: #5b4300; border-radius: 4px; padding: 0 6px; font-size: 0.8em; font-weight: 600; }
+h3 { margin: 16px 0 4px; font-size: 1rem; }
+h4 { margin: 8px 0 4px; font-size: 0.95rem; color: var(--muted); }
+.small { font-size: 0.85em; }
+.quote { border-left: 3px solid var(--line); padding-left: 10px; white-space: pre-wrap; }
+fieldset.decide { border: 0; border-top: 1px solid var(--line); margin: 12px 0 0; padding: 12px 0 0; display: grid; gap: 8px; }
+fieldset.decide legend { font-weight: 700; padding: 0; }
+label.choice { display: flex; gap: 8px; align-items: center; font-weight: 400; }
+.confirm { background: #fff6e0; border-radius: 8px; padding: 8px 12px; }
+ul.evidence { list-style: none; padding: 0; display: grid; gap: 8px; }
+.media { display: block; max-width: 100%; max-height: 320px; border-radius: 8px; margin-top: 4px; }
+.sections { border-bottom: 1px solid var(--line); padding-bottom: 12px; }

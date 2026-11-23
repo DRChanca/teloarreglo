@@ -10,7 +10,7 @@ import kotlinx.serialization.json.put
 import java.time.Instant
 
 /**
- * Incidents and private evidence (#26). An incident never moves money and never changes the appointment's stage: it
+ * Incidents and private evidence (#26). An incident by itself never moves money and never changes the appointment's stage: it
  * waits for administrative review (#31). Opened before the completion it blocks the delivery (the client's confirmation
  * and the clock); opened after the close it is a communication and reverts nothing. Evidence is a concrete chat message
  * or a note, contributed only after the visibility notice: both participants and the review see it, never the rest
@@ -28,6 +28,13 @@ import java.time.Instant
 /** Whether the service is acknowledged or disputed; kept apart from the stage and the money. */
 @Serializable enum class Performance { @SerialName("acknowledged") ACKNOWLEDGED, @SerialName("disputed") DISPUTED }
 @Serializable enum class IncidentStatus { @SerialName("open") OPEN, @SerialName("resolved") RESOLVED }
+/** Administrative decision on whether the service took place (#31); it rules the review (#28), never the money. */
+@Serializable enum class PerformanceDecision {
+    @SerialName("performed") PERFORMED, @SerialName("not_performed") NOT_PERFORMED,
+    @SerialName("missing_evidence") MISSING_EVIDENCE,
+}
+/** How the review settled the simulated integrated balance still pending (#31). */
+@Serializable enum class Settlement { @SerialName("deliver") DELIVER, @SerialName("refund") REFUND, @SerialName("split") SPLIT }
 @Serializable enum class EvidenceKind { @SerialName("message") MESSAGE, @SerialName("note") NOTE }
 
 /** A piece of evidence, append-only. A message is the server's copy of what was contributed, never the whole chat. */
@@ -65,6 +72,16 @@ data class Incident(
     /** True when opened before the completion: no delivery happens while it is open. */
     @SerialName("blocks_delivery") val blocksDelivery: Boolean,
     @SerialName("created_at") @Serializable(ServerInstant::class) val createdAt: Instant,
+    /** Administrative resolution (#31): two independent decisions, each with its reason and server date. */
+    val settlement: Settlement? = null,
+    @SerialName("settlement_refunded_cents") val settlementRefundedCents: Int? = null,
+    @SerialName("settlement_delivered_cents") val settlementDeliveredCents: Int? = null,
+    @SerialName("settlement_reason") val settlementReason: String? = null,
+    @SerialName("settled_at") @Serializable(ServerInstant::class) val settledAt: Instant? = null,
+    @SerialName("performance_decision") val performanceDecision: PerformanceDecision? = null,
+    @SerialName("performance_reason") val performanceReason: String? = null,
+    @SerialName("performance_decided_at") @Serializable(ServerInstant::class) val performanceDecidedAt: Instant? = null,
+    @SerialName("resolved_at") @Serializable(ServerInstant::class) val resolvedAt: Instant? = null,
     @SerialName("incident_evidence") private val rawEvidence: List<IncidentEvidence> = emptyList(),
 ) {
     /** Oldest first; nothing is ever edited or removed. */

@@ -852,3 +852,90 @@ ni su puntualidad en el plan gratuito.
 ```
 
 Resultados: [comprobación del cierre automático](comprobacion-cierre-automatico.md).
+
+## Resolución administrativa de incidencias — #31
+
+Migración nueva: `20261123013100_incident_resolution.sql`. No edita migraciones anteriores. Redefine con `create or replace`
+`private.delivery_blocked` (#26) y `private.complete_appointment` (#25, mismas firmas). Añade el tipo de aviso
+`incident_decision` leyendo la restricción vigente, como #27, para conservar los tipos de otras ramas. Crea
+`incidents.performance_decision` solo si #28 no la creó ya, con la misma definición. No se ha desplegado ni escrito en la
+base alojada. El dinero sigue siendo simulado.
+
+Regla: el administrador toma dos decisiones independientes y definitivas, cada una con motivo obligatorio, actor y fecha
+de servidor. Ninguna se edita ni se borra después.
+
+- **Reparto** del saldo integrado pendiente: `deliver` (todo al profesional), `refund` (todo al cliente) o `split`
+  (una parte al cliente y el resto al profesional). Nunca supera el pendiente. Solo existe mientras la incidencia bloquea
+  la entrega y hay pago integrado con pendiente > 0 (`can_settle`). Tras la entrega, con pago directo o con visita
+  gratuita no hay saldo bajo control del panel ni botones de dinero.
+- **Realización**: `performed` | `not_performed` | `missing_evidence` en `incidents.performance_decision`. Decide la
+  reseña (#28) y nunca se deduce del dinero: una devolución total no significa «no realizado».
+
+La incidencia pasa a `resolved` (`resolved_at` lo pone el servidor) cuando consta la realización y no queda dinero
+pendiente por repartir. El orden de las decisiones es libre. Con la realización decidida y el dinero aún pendiente, la
+incidencia sigue abierta y sigue bloqueando la entrega.
+
+Esquema (columnas nuevas en `public.incidents`, legibles por los participantes y por administración con la RLS de #26):
+`performance_reason`, `performance_decided_by`, `performance_decided_at`, `settlement`, `settlement_refunded_cents`,
+`settlement_delivered_cents`, `settlement_reason`, `settled_by`, `settled_at` y `resolved_at`. El disparador
+`incidents_keep_resolution` impide cambiar una decisión ejecutada o reabrir una resuelta (`42501
+incident_resolution_locked`), también con SQL de confianza. `appointments.completion` admite `administration`, y una cita
+cerrada así puede no tener las marcas de «Realizado» porque se cierra desde `started`.
+
+Coordinación con la entrega y el reloj:
+
+- `admin_settle_incident` registra el reparto. Si hay devolución, añade el movimiento `refunded` con el administrador como
+  actor. Después llama a `private.complete_appointment(id, administrador, 'administration')`, que entrega el resto con un
+  único movimiento `delivered` y cierra la cita (`completed`) desde `started` o `done`. `delivery_blocked` ya no cuenta
+  una incidencia con reparto registrado. La entrega sigue pasando por un único punto.
+- Si una cita sigue `done` cuando la incidencia se resuelve sin dinero pendiente (directa o gratuita), la resolución la
+  cierra también como `administration`. Así el reloj (#27) no la cierra después como `no_answer`, porque el cliente sí
+  respondió. Con la incidencia abierta el reloj la sigue saltando.
+- Una cita `started` sin dinero que repartir sigue `started`. El profesional marca «Realizado» y empiezan 48 h nuevas.
+- Todas las operaciones toman primero el bloqueo de la fila de la cita y después el del pago, como `confirm_done`,
+  `open_incident` y el reloj. Dos repartos simultáneos terminan con uno aceptado y otro `decision_already_recorded`. Una
+  confirmación simultánea recibe `incident_blocking` o el resultado ya cerrado. En ningún caso hay movimientos duplicados.
+
+RPC (`security definer`, solo administradores según `private.administrators`, nunca sobre una cita propia):
+
+- `admin_incidents(p_status text default 'open')`: `open` | `resolved` | `all`. Devuelve un array con lo único que ve la
+  revisión:
+  - la incidencia, con el rol de quien la abrió y su contexto al abrirse;
+  - `can_settle`, las dos decisiones y el correo del administrador que tomó cada una;
+  - `appointment`: problema, perfil público, franja solicitada, etapa y marcas;
+  - `conditions`: la propuesta `accepted` vigente;
+  - `payment` y `movements`, con el actor expresado como rol;
+  - `evidence`: las pruebas aportadas, con su autor expresado como rol.
+  Nunca incluye dirección, coordenadas, otros mensajes del chat ni identificadores de cuenta de los participantes.
+- `admin_settle_incident(p_incident_id uuid, p_outcome text, p_refund_cents integer, p_expected_pending_cents integer,
+  p_reason text)`. `p_refund_cents` solo cuenta en `split` y debe ser > 0 y < pendiente. `p_expected_pending_cents` es el
+  saldo que vio el administrador; si ha cambiado, no se ejecuta nada.
+- `admin_decide_incident_performance(p_incident_id uuid, p_decision text, p_reason text)`.
+
+Las dos operaciones son idempotentes: repetir la misma decisión del mismo administrador devuelve la fila. Cada decisión
+avisa a ambos participantes con `incident_decision` en `appointment_events`, que #32 convierte en aviso y push
+(«Novedad en una incidencia»). Al cerrar también se emiten los `completed` de #25.
+
+Errores: `42501 permission_denied` (sin rol administrativo o participante de la cita), `22023 reason_required`,
+`invalid_settlement`, `invalid_decision`, `invalid_status` e `incident_not_found`. Con `PT409`:
+`decision_already_recorded`, `incident_closed`, `nothing_pending` y `balance_changed`.
+
+Panel (`panel/src/Incidents.tsx`, pestaña «Incidencias»): muestra la cita, las condiciones, el saldo, los movimientos y las
+pruebas. Las fotos y los vídeos se abren con una URL firmada de 5 min, y Storage solo firma archivos aportados. Para el
+reparto se elige una opción, se escribe el importe parcial en euros y el motivo, y se pasa por un resumen de confirmación
+antes de ejecutar. La realización tiene su propio formulario, con el mismo resumen. Las decisiones ejecutadas se muestran
+con actor, fecha y motivo, sin botones. Sin saldo se explica por qué: entregado antes, pago directo o gratuita. No se
+promete ningún plazo de atención. Textos en ES/EN/FR/DE.
+
+Android: `Incident` añade `settlement`, sus importes, motivo y fecha, `performanceDecision`, su motivo y fecha, y
+`resolvedAt`. `Completion.ADMINISTRATION` produce el aviso `COMPLETED_BY_ADMINISTRATION`. `blockingIncident` ignora una
+incidencia con reparto registrado. La tarjeta de la incidencia muestra cada decisión con su motivo y fecha, y si solo
+falta una, que la incidencia sigue abierta. Textos `resolution_*` en ES/EN/FR/DE.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_incident_resolution.py --local'
+cd panel && npm run check
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.IncidentsTest'
+```
+
+Resultados: [comprobación de la resolución de incidencias](comprobacion-resolucion-incidencias.md).

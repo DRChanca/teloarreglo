@@ -171,4 +171,38 @@ class IncidentsTest {
         assertFalse(open.canAddEvidence("other"))
         assertFalse(appointment("started", incidentJson(status = "resolved")).canAddEvidence("client"))
     }
+
+    private val resolution = ""","settlement":"split","settlement_refunded_cents":3000,"settlement_delivered_cents":5500,
+        "settlement_reason":"Trabajo incompleto","settled_by":"admin","settled_at":"2026-11-24T10:00:00+00:00",
+        "performance_decision":"performed","performance_reason":"Las fotos muestran el trabajo","performance_decided_by":"admin",
+        "performance_decided_at":"2026-11-24T11:00:00+00:00","resolved_at":"2026-11-24T11:00:00+00:00""""
+
+    @Test fun theResolutionKeepsTheMoneyAndThePerformanceDecisionApart() {
+        val closed = appointment("completed", incidentJson("done", "not_performed", "resolved", evidence = resolution))
+        val incident = closed.incidents.single()
+        assertEquals(Settlement.SPLIT, incident.settlement)
+        assertEquals(3000, incident.settlementRefundedCents)
+        assertEquals(5500, incident.settlementDeliveredCents)
+        assertEquals("Trabajo incompleto", incident.settlementReason)
+        assertEquals(PerformanceDecision.PERFORMED, incident.performanceDecision)
+        assertEquals("Las fotos muestran el trabajo", incident.performanceReason)
+        assertEquals("2026-11-24T11:00:00Z", incident.resolvedAt.toString())
+        assertNull("an open incident has no decision yet", appointment("done", incidentJson("done", "quality")).incidents.single().performanceDecision)
+    }
+
+    @Test fun aSettledIncidentNoLongerBlocksWhilePerformanceIsStillUnderReview() {
+        val settledOnly = ""","settlement":"deliver","settlement_refunded_cents":0,"settlement_delivered_cents":8500,
+            "settlement_reason":"Acuerdo","settled_at":"2026-11-24T10:00:00+00:00""""
+        val appt = Json { ignoreUnknownKeys = true }.decodeFromString<Appointment>("""{"id":"appt","conversation_id":"conv",
+            "client_id":"client","professional_id":"pro","request_id":"key","problem":"Fuga",
+            "requested_start":"2030-01-15T10:00:00+00:00","requested_end":"2030-01-15T12:00:00+00:00","version":5,
+            "stage":"completed","created_at":"2026-11-23T10:00:00+00:00","completed_at":"2026-11-24T10:00:00+00:00",
+            "completion":"administration","appointment_payments":null,
+            "incidents":[${incidentJson("done", "not_performed", evidence = settledOnly)}]}""")
+        assertNull(appt.blockingIncident)
+        assertEquals(Completion.ADMINISTRATION, appt.completion)
+        assertEquals(AppointmentNotice.COMPLETED_BY_ADMINISTRATION, appt.notice("client"))
+        assertEquals(AppointmentNotice.COMPLETED_BY_ADMINISTRATION, appt.notice("pro"))
+        assertTrue("evidence can still be added until performance is decided", appt.canAddEvidence("client"))
+    }
 }

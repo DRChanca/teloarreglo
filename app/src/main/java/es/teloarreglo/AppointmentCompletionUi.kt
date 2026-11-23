@@ -53,6 +53,7 @@ internal fun CompletionSection(
     appointment.completedAt?.let {
         Text(stringResource(when {
             appointment.completion == Completion.NO_ANSWER -> R.string.completion_completed_no_answer
+            appointment.completion == Completion.ADMINISTRATION -> R.string.resolution_completed_at
             accountId == appointment.clientId -> R.string.completion_completed_by_me
             else -> R.string.completion_completed_by_client
         }, format.format(it)), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
