@@ -119,12 +119,12 @@
     <string name="appointment_address_label">Address (private): %1$s</string>
     <string name="appointment_pin">Coordinates: %1$s, %2$s</string>
     <string name="photo_attach">Send photo</string>
-    <string name="photo_limits">JPEG or PNG. A copy of up to 1600 px and 2 MB is sent; your original is not changed.</string>
+    <string name="photo_limits">JPEG or PNG, any size. The app sends a compressed copy of up to 1600 px and 2 MB; your original is not changed.</string>
     <string name="photo_preparing">Compressing the photo…</string>
     <string name="photo_uploading">Sending photo… %1$d %%</string>
     <string name="photo_discard">Discard</string>
     <string name="photo_error_unsupported">Only JPEG or PNG photos can be sent. The photo was not sent; choose another one.</string>
-    <string name="photo_error_too_large">The photo does not fit in 2 MB even compressed. It was not sent; choose another one.</string>
+    <string name="photo_error_too_large">The server rejected the photo because of its size. It was not sent; try another one.</string>
     <string name="photo_error_quota">Photo storage is full. The photo was not sent; try again later.</string>
     <string name="photo_error_access">You are not allowed to send photos here or your session has expired. The photo was not sent.</string>
     <string name="photo_error_conflict">This photo does not match an earlier send. It was not sent; choose it again.</string>

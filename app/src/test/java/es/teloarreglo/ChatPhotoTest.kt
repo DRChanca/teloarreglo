@@ -26,19 +26,32 @@ class ChatPhotoTest {
     }
 
     @Test fun compressionLowersQualityUntilTheCopyFitsTwoMegabytes() {
-        val tried = mutableListOf<Int>()
-        val result = encodeWithinLimit { quality ->
-            tried.add(quality)
+        val tried = mutableListOf<Triple<Int, Int, Int>>()
+        val result = encodeWithinLimit(1600, 1200) { width, height, quality ->
+            tried.add(Triple(width, height, quality))
             ByteArray(if (quality > 70) 3 * 1024 * 1024 else 1024 * 1024)
         }
-        assertEquals(1024 * 1024, result.size)
-        assertEquals(listOf(85, 75, 65), tried)
+        assertEquals(1024 * 1024, result.bytes.size)
+        assertEquals(1600 to 1200, result.width to result.height)
+        assertEquals(listOf(Triple(1600, 1200, 85), Triple(1600, 1200, 75), Triple(1600, 1200, 65)), tried)
     }
 
-    @Test fun aCopyThatCannotFitIsRefusedInsteadOfSendingTheOriginal() {
-        var failure: AttachmentFailure? = null
-        try { encodeWithinLimit { ByteArray(2 * 1024 * 1024 + 1) } }
-        catch (error: ChatAttachmentException) { failure = error.failure }
-        assertEquals(AttachmentFailure.TOO_LARGE, failure)
+    @Test fun whenTheLowestQualityStillDoesNotFitTheDimensionsShrinkUntilItFits() {
+        val tried = mutableListOf<Pair<Int, Int>>()
+        val result = encodeWithinLimit(1600, 1200) { width, height, _ ->
+            tried.add(width to height)
+            ByteArray(if (width > 900) 2 * 1024 * 1024 + 1 else 1024 * 1024)
+        }
+        assertEquals(900 to 675, result.width to result.height)
+        assertEquals(1024 * 1024, result.bytes.size)
+        assertEquals(listOf(1600 to 1200, 1200 to 900, 900 to 675), tried.distinct())
+    }
+
+    @Test fun aHugeCopyNeverFailsAndNeverExceedsTwoMegabytes() {
+        // Fake encoder: about 4 bytes per pixel at any quality, so only shrinking can make it fit.
+        val result = encodeWithinLimit(1600, 1600) { width, height, _ -> ByteArray(width * height * 4) }
+        assertTrue(result.bytes.size <= PHOTO_MAX_BYTES)
+        assertTrue(result.width < 1600 && result.height < 1600)
+        assertEquals(result.width, result.height)
     }
 }
