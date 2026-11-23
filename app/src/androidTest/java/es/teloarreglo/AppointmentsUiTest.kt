@@ -496,4 +496,60 @@ class AppointmentsUiTest {
         assertEquals(8550, appointment.payment?.refundedCents)
         assertEquals(0, appointment.payment?.pendingCents)
     }
+
+    /** #26: after the start the client opens an incident only after the visibility notice; delivery stays pending. */
+    @Test fun clientOpensAnIncidentAfterTheStartAndBothAddEvidence() {
+        val fake = withPaidConfirmation().apply { kotlinx.coroutines.runBlocking { startWork("a1") } }
+        val incidents = FakeIncidents()
+        val withIncidents = object : Appointments by fake {
+            override suspend fun list(conversationId: String) =
+                fake.list(conversationId).map { a -> a.copy(rawIncidents = incidents.items.filter { it.appointmentId == a.id }) }
+        }
+        val message = es.teloarreglo.chat.ChatMessage("m1", "conversation", "pro", "k", "Llego a las 10", "2030-01-15T09:00:00Z")
+        val tools = IncidentTools(incidents, { listOf(message) })
+        var account by mutableStateOf("client")
+        compose.setContent { AppointmentsPanel(withIncidents, account, conversation, rememberCoroutineScope(), noPin, tools) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("incident_open").performScrollTo().performClick()
+        compose.onNodeWithTag("incident_kind_cancellation").performClick()
+        compose.onNodeWithTag("incident_description").performTextInput("Ya no puedo seguir")
+        compose.onNodeWithTag("incident_visibility").assertExists()
+        compose.onNodeWithTag("incident_open_confirm").assertIsNotEnabled()
+        compose.onNodeWithTag("incident_visibility_accept").performClick()
+        compose.onNodeWithTag("incident_open_confirm").performClick()
+        waitForTag("incident_i1")
+        compose.onAllNodesWithTag("incident_open").assertCountEquals(0)
+        assertEquals(8550, kotlinx.coroutines.runBlocking { withIncidents.list("conversation") }.single().payment?.pendingCents)
+        account = "pro"
+        waitForTag("incident_add_evidence")
+        compose.onNodeWithTag("incident_add_evidence").performScrollTo().performClick()
+        compose.onNodeWithTag("evidence_pick_m1").performClick()
+        compose.onNodeWithTag("evidence_send").assertIsNotEnabled()
+        compose.onNodeWithTag("incident_visibility_accept").performClick()
+        compose.onNodeWithTag("evidence_send").performClick()
+        waitForTag("evidence_e1")
+        assertEquals(listOf("m1"), incidents.items.single().evidence.map { it.messageId })
+    }
+}
+
+/** Like the server: one open incident per appointment, keys return the first result, evidence is append-only. */
+private class FakeIncidents : Incidents {
+    var items = listOf<Incident>()
+    override suspend fun open(appointmentId: String, requestId: String, kind: IncidentKind, description: String): Incident {
+        items.firstOrNull { it.requestId == requestId }?.let { return it }
+        if (items.any { it.appointmentId == appointmentId && it.isOpen })
+            throw IncidentException(IncidentFailure.ALREADY_OPEN, Exception())
+        return Incident("i${items.size + 1}", appointmentId, "client", requestId, kind, description,
+            if (kind == IncidentKind.QUALITY) Performance.ACKNOWLEDGED else Performance.DISPUTED, IncidentStatus.OPEN,
+            AppointmentStage.STARTED, PaymentMode.INTEGRATED, 8550, 0, true, Instant.now()).also { items = items + it }
+    }
+    override suspend fun addEvidence(incidentId: String, requestId: String, draft: EvidenceDraft): IncidentEvidence {
+        val incident = items.first { it.id == incidentId }
+        val evidence = IncidentEvidence("e${incident.evidence.size + 1}", incidentId, "pro", requestId,
+            if (draft is EvidenceDraft.Note) EvidenceKind.NOTE else EvidenceKind.MESSAGE, (draft as? EvidenceDraft.Note)?.text,
+            (draft as? EvidenceDraft.Message)?.messageId, "pro", "Llego a las 10", null, null, Instant.now())
+        items = items.map { if (it.id == incidentId) it.copy(rawEvidence = it.evidence + evidence) else it }
+        return evidence
+    }
 }

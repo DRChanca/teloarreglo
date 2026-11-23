@@ -54,6 +54,8 @@ class PinSource(
 fun AppointmentsPanel(
     appointments: Appointments, accountId: String, conversation: Conversation,
     scope: CoroutineScope, pins: PinSource,
+    /** Incidents and private evidence (#26); null hides the section. */
+    incidentTools: IncidentTools? = null,
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var list by remember(conversation.id) { mutableStateOf<List<Appointment>?>(null) }
@@ -122,7 +124,7 @@ fun AppointmentsPanel(
                                 AppointmentDetails(appointment, accountId, appointments, scope, pins.mapsReady,
                                     onPropose = { sheet = "propose:${appointment.id}" }, onChanged = { refresh++ },
                                     onChange = { sheet = "change:${appointment.id}" },
-                                    onCorrection = { sheet = "correction:${appointment.id}" })
+                                    onCorrection = { sheet = "correction:${appointment.id}" }, incidentTools = incidentTools)
                             }
                         }
                     }
@@ -152,6 +154,7 @@ private fun noticeText(appointment: Appointment, accountId: String): String {
         AppointmentNotice.AWAITING_CONFIRMATION -> stringResource(R.string.completion_notice_awaiting)
         AppointmentNotice.COMPLETED -> stringResource(R.string.completion_notice_completed)
         AppointmentNotice.COMPLETED_NO_ANSWER -> stringResource(R.string.completion_notice_no_answer)
+        AppointmentNotice.INCIDENT_OPEN -> stringResource(R.string.incident_notice_open)
     }
 }
 
@@ -217,7 +220,7 @@ internal fun failureText(failure: AppointmentFailure?): String = stringResource(
 private fun AppointmentDetails(
     appointment: Appointment, accountId: String, appointments: Appointments, scope: CoroutineScope,
     mapsReady: Boolean, onPropose: () -> Unit, onChanged: () -> Unit,
-    onChange: () -> Unit = {}, onCorrection: () -> Unit = {},
+    onChange: () -> Unit = {}, onCorrection: () -> Unit = {}, incidentTools: IncidentTools? = null,
 ) {
     val format = dateTimeFormat()
     val professional = appointment.professionalId == accountId
@@ -253,6 +256,7 @@ private fun AppointmentDetails(
             if (appointment.canProposeChange(accountId)) ChangeSection(appointment, accountId, appointments, scope, onChange, onCorrection, onChanged)
             StartCancelSection(appointment, accountId, appointments, scope, onChanged)
             CompletionSection(appointment, accountId, appointments, scope, onChanged)
+            IncidentSection(appointment, accountId, incidentTools, scope, onChanged)
             if (professional && appointment.stage == AppointmentStage.PENDING) Button(onClick = onPropose, modifier = Modifier.testTag("appointment_propose")) {
                 Text(stringResource(if (appointment.proposals.isEmpty()) R.string.appointment_propose else R.string.appointment_propose_new))
             }
