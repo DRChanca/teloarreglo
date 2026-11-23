@@ -18,6 +18,8 @@ CONCEJO = "33993"  # Synthetic code, never a real concejo.
 ROUNDS = 8
 # 2030-01-15 is a Tuesday; Madrid is UTC+1 then. The window 08:00–20:00 local is 07:00–19:00Z.
 DAY = "2030-01-15"
+RACE_DAY = "2030-01-22"  # Also a Tuesday; kept apart from DAY so both tests are independent.
+RACE_ROUNDS = 20
 
 
 def simultaneously(*calls):
@@ -41,17 +43,55 @@ class AgendaContract(unittest.TestCase):
     def rpc(self, name, body, token):
         return api.request(f"/rest/v1/rpc/{name}", body, token)
 
-    def free_proposal(self, client, conversation, start, end):
+    def free_proposal(self, client, conversation, start, end, minutes=60):
         code, appointment = self.rpc("request_appointment", {
             "p_conversation_id": conversation, "p_request_id": str(uuid.uuid4()), "p_problem": "Fuga",
             "p_start": start, "p_end": end, "p_address": "Calle Ficticia 1", "p_lat": 43.05, "p_lng": -5.95}, client)
         self.assertEqual(code, 200, appointment)
         code, proposal = self.rpc("propose_appointment", {
             "p_appointment_id": appointment["id"], "p_expected_version": 1, "p_request_id": str(uuid.uuid4()),
-            "p_scope": "Visita gratuita", "p_start": start, "p_duration_minutes": 60, "p_amount_cents": 0,
+            "p_scope": "Visita gratuita", "p_start": start, "p_duration_minutes": minutes, "p_amount_cents": 0,
             "p_visit_fee_cents": None, "p_materials_included": False, "p_travel_included": True}, tokens[1])
         self.assertEqual(code, 200, proposal)
         return appointment, proposal
+
+    def assertNoServerError(self, results, label):
+        codes = [code for code, _ in results]
+        self.assertFalse([c for c in codes if c >= 500], f"{label}: server error (e.g. deadlock 40P01) in {codes}")
+        return codes
+
+    def test_concurrent_agenda_writes_never_fail_with_a_server_error(self):
+        """Regression: simultaneous inserts checked by the exclusion constraint deadlocked (40P01 → 500)."""
+        conversations = [self.rpc("open_conversation", {"p_profile_id": profile_id}, t)[1]["id"]
+                         for t in (tokens[0], tokens[2])]
+        agenda = {"p_default_duration_minutes": 30, "p_windows": [{"weekday": 2, "start": "08:00", "end": "20:00"}]}
+        self.assertEqual(self.rpc("save_agenda", agenda, tokens[1])[0], 200)
+        for slot in range(RACE_ROUNDS):
+            minute = 7 * 60 + 30 * slot
+            start = f"{RACE_DAY}T{minute // 60:02d}:{minute % 60:02d}:00Z"
+            end = f"{RACE_DAY}T{(minute + 30) // 60:02d}:{(minute + 30) % 60:02d}:00Z"
+            _, pa = self.free_proposal(tokens[0], conversations[0], start, end, 30)
+            _, pb = self.free_proposal(tokens[2], conversations[1], start, end, 30)
+            block = {"p_request_id": str(uuid.uuid4()), "p_start": start, "p_end": end, "p_reason": None}
+            # Two confirmations, a block on the same slot and a schedule save, all at once.
+            results = simultaneously(
+                lambda: self.rpc("accept_proposal", {"p_proposal_id": pa["id"]}, tokens[0]),
+                lambda: self.rpc("accept_proposal", {"p_proposal_id": pb["id"]}, tokens[2]),
+                lambda: self.rpc("add_agenda_block", block, tokens[1]),
+                lambda: self.rpc("save_agenda", agenda, tokens[1]))
+            codes = self.assertNoServerError(results, f"slot {slot}")
+            self.assertEqual(codes[3], 200, f"slot {slot}: saving the schedule is never blocked")
+            self.assertEqual(sorted(codes[:3]), [200, 409, 409], f"slot {slot}: exactly one write occupies the slot")
+            # The same block key sent twice at once yields one block, not a unique-violation 500.
+            retry = {"p_request_id": str(uuid.uuid4()), "p_start": f"2030-02-{5 + slot % 20:02d}T10:00:00Z",
+                     "p_end": f"2030-02-{5 + slot % 20:02d}T10:15:00Z", "p_reason": "Reintento"}
+            twice = simultaneously(*[lambda: self.rpc("add_agenda_block", retry, tokens[1])] * 2)
+            self.assertNoServerError(twice, f"slot {slot} retry")
+            self.assertEqual([c for c, _ in twice], [200, 200])
+            self.assertEqual(twice[0][1]["id"], twice[1][1]["id"])
+        code, mine = self.rpc("my_agenda", {}, tokens[1])
+        race = [x for x in mine["bookings"] + mine["blocks"] if x["start_at"].startswith(RACE_DAY)]
+        self.assertEqual((code, len(race)), (200, RACE_ROUNDS), "one occupant per raced slot")
 
     def test_agenda_concurrency_permissions_and_retries(self):
         conversations = []

@@ -61,7 +61,8 @@ Las reglas de este apartado sustituyen las propuestas anteriores incompatibles s
 - Demostración con la aplicación Android funcionando en dos emuladores: uno para el cliente y otro para el profesional, con persistencia compartida. No basta una maqueta navegable.
 - Cuatro idiomas en la interfaz entregada; vídeo narrado en castellano y demostración breve del selector.
 - Escena de suscripción de 5 €/mes con sus ventajas; sin cobros reales.
-- Búsqueda por proximidad desde el GPS, con mapa y lista y alternativa de ubicación manual para denegación del permiso o trabajo en otra dirección.
+- Búsqueda por proximidad desde la dirección de casa guardada (o el GPS a petición), con mapa y lista y alternativa de ubicación manual para denegación del permiso o trabajo en otra dirección.
+- Dirección de casa (#37): tras entrar, si la cuenta no la tiene, se pide antes de continuar, con autocompletado de Google Places; sin Places, pin o GPS con la dirección escrita a mano. Es privada (solo su propietario). Si el GPS indica más de 5 km de distancia, se pregunta una vez por sesión si cambiarla o buscar desde donde se está. La solicitud de cita la propone y se puede editar.
 - Primero se filtra por cobertura del lugar del trabajo; después se ordena por distancia a la ubicación profesional registrada, no por seguimiento en directo.
 - Organización espacial H3 en servidor mediante h3-js, ampliando desde la celda de búsqueda a sus vecinas y calculando distancia geográfica entre coordenadas originales para ordenar; no distancia por carretera. Validar la integración en Supabase Edge Functions y los bordes de celda según la arquitectura acordada.
 - La propuesta del profesional especifica alcance, precio y hora. Para pago integrado, el cliente paga el total para confirmar la cita.
@@ -237,7 +238,7 @@ Se recogerá una dirección para obtener su concejo o municipio. Los profesional
 
 El profesional seleccionará los municipios o concejos donde presta servicio.
 
-La dirección exacta del cliente nunca será pública: se comparte con el profesional al solicitar una cita. Para buscar bastará con una zona o localidad.
+La dirección exacta del cliente nunca será pública: se comparte con el profesional al solicitar una cita. Para buscar bastará con una zona o localidad. La dirección de casa del cliente (#37) se guarda de forma privada, solo legible por su propietario, y únicamente se comparte si el cliente la deja en una solicitud de cita.
 
 ## 6. Revisión y verificación de profesionales
 
@@ -513,7 +514,7 @@ Fuera del alcance inicial:
 ### Tecnología y proveedores
 
 - Provisionar y comprobar la arquitectura elegida: Kotlin/Compose, Supabase Free, React/TypeScript y Cloudflare Pages Free; fijar versiones compatibles, sin dar por validada la implementación.
-- Configurar y comprobar Supabase Auth, SMTP Brevo, FCM y Google Maps. Concejo mediante GPS/pin y polígonos IGN/CNIG con PostGIS, con confirmación en fronteras; sin geocodificación de direcciones inicialmente.
+- Configurar y comprobar Supabase Auth, SMTP Brevo, FCM y Google Maps. Concejo mediante GPS/pin y polígonos IGN/CNIG con PostGIS, con confirmación en fronteras. Decisión de 2026-11-23 (#37): la dirección de casa se introduce con autocompletado de Google Places (API New, de pago por uso, con la misma clave de Maps); si Places no está disponible, pin o GPS con texto manual. El concejo se sigue obteniendo en servidor a partir del punto, no del texto.
 - Proveedor de pagos apto para plataforma de profesionales.
 - Flujo de liquidaciones, devoluciones, contracargos y costes asociados.
 - Facturación y gestión de suscripciones conforme a las reglas de distribución de Android.

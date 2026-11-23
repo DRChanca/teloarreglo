@@ -46,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import es.teloarreglo.catalogue.Catalogue
 import es.teloarreglo.catalogue.PublicProfile
+import es.teloarreglo.home.HomeAddress
 import es.teloarreglo.search.Concejo
 import es.teloarreglo.search.ConcejoAnchor
 import es.teloarreglo.search.ConcejoDirectory
@@ -81,6 +82,9 @@ private sealed interface NearbyState {
  * [ensurePermission] asks for location permission (true if granted); [locate] returns one fix.
  * Without GPS the user chooses a concejo from [concejos] and, when [map] is READY, a pin (#17).
  * The map and the list show the same server results; the map is optional and never required.
+ * With a [home] (#37) the search starts from it without asking for GPS; if a fix (only taken when
+ * permission was already granted, or when the user asks) is more than 5 km away, [askIfAway] decides
+ * whether to ask once per session: change the home, search from here, or keep home.
  */
 @Composable
 fun NearbySearchScreen(
@@ -92,6 +96,9 @@ fun NearbySearchScreen(
     onOpenProfile: (String) -> Unit,
     concejos: ConcejoDirectory? = null,
     map: MapAvailability = MapAvailability.NO_KEY,
+    home: HomeAddress? = null,
+    askIfAway: (GeoPoint) -> Boolean = { false },
+    onChangeHome: (() -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     var trade by rememberSaveable { mutableStateOf<String?>(null) }
@@ -100,6 +107,8 @@ fun NearbySearchScreen(
     var lastPosition by remember { mutableStateOf<GeoPoint?>(null) }
     var showMap by rememberSaveable { mutableStateOf(false) }
     var manual by rememberSaveable { mutableStateOf(false) }
+    // Position more than 5 km from home, waiting for the user's choice; never stored.
+    var away by remember { mutableStateOf<GeoPoint?>(null) }
     // Denied permission, no fix or an imprecise one: offer the manual choice right away.
     LaunchedEffect(state) {
         if (state == NearbyState.PermissionDenied || state == NearbyState.LocationUnavailable ||
@@ -122,6 +131,19 @@ fun NearbySearchScreen(
         }
     }
 
+    fun searchFromHome() = scope.launch { home?.let { runSearch(it.point, it.ineCode) } }
+
+    // From home by default; a silent fix (no permission prompt) only to notice being far away.
+    LaunchedEffect(home) {
+        if (home == null) return@LaunchedEffect
+        if (state == NearbyState.Idle) launch { runSearch(home.point, home.ineCode) }
+        val here = locate()
+        if (here is Located.Position && !here.isUncertain()) {
+            val point = GeoPoint(here.lat, here.lng)
+            if (askIfAway(point)) { lastPosition = point; away = point }
+        }
+    }
+
     fun start() = scope.launch {
         if (!ensurePermission()) { state = NearbyState.PermissionDenied; return@launch }
         state = NearbyState.Locating
@@ -132,12 +154,17 @@ fun NearbySearchScreen(
             } else {
                 val point = GeoPoint(located.lat, located.lng)
                 lastPosition = point
-                runSearch(point, null)
+                if (askIfAway(point)) { away = point; state = NearbyState.Idle } else runSearch(point, null)
             }
         }
     }
 
     TeloTheme {
+        val here = away
+        if (here != null && home != null) AwayFromHomeDialog(home.point, here,
+            onChangeHome = { away = null; onChangeHome?.invoke() ?: searchFromHome() },
+            onSearchHere = { away = null; scope.launch { runSearch(here, null) } },
+            onKeepHome = { away = null; searchFromHome() })
         Surface(Modifier.fillMaxSize(), color = Color(0xFFF7F8F5)) {
             // One scrollable list for header and results: on small screens results stay reachable.
             LazyColumn(
@@ -154,6 +181,18 @@ fun NearbySearchScreen(
                         catalogueTrades.forEach { key ->
                             FilterChip(selected = trade == key, onClick = { trade = key },
                                 modifier = Modifier.testTag("nearby_trade_$key"), label = { Text(stringResource(tradeLabel(key))) })
+                        }
+                    }
+                }
+                if (home != null) item {
+                    val busy = state == NearbyState.Locating || state == NearbyState.Searching
+                    Card(Modifier.fillMaxWidth().testTag("nearby_home")) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(stringResource(R.string.home_searching_from, home.address), style = MaterialTheme.typography.bodyMedium)
+                            OutlinedButton(onClick = { searchFromHome() }, enabled = !busy,
+                                modifier = Modifier.fillMaxWidth().testTag("nearby_from_home")) {
+                                Text(stringResource(R.string.home_search_from_home))
+                            }
                         }
                     }
                 }

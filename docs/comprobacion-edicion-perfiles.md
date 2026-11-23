@@ -5,7 +5,8 @@ Fecha: 23 de noviembre de 2026. Contrato: [revision-perfiles-contrato.md](revisi
 ## Ejecutado localmente
 
 - **pgTAP** `supabase/tests/profile_editing.test.sql`: 42 comprobaciones, todas correctas (suite completa
-  tras `supabase db reset --local`, ver cifras abajo). Cubre: visitante sin acceso; la misma cuenta crea su
+  339/339 en 16 ficheros tras `supabase db reset --local`, con `spec/11-demo` integrada; los 13 contratos
+  `contract_*.py --local` también pasan). Cubre: visitante sin acceso; la misma cuenta crea su
   perfil sin perder la contratación; perfil único e idempotente; validación del contenido (domicilio privado,
   nombre vacío, oficio desconocido, sin concejos, sin teléfono); dirección privada solo del propietario;
   presentación idempotente y `request_conflict`; pendiente fuera del catálogo; otra cuenta no ve ni presenta
@@ -23,7 +24,7 @@ Fecha: 23 de noviembre de 2026. Contrato: [revision-perfiles-contrato.md](revisi
   1 nueva: un cambio de un perfil publicado marca solo el campo que cambia junto al valor publicado. Claves
   `name/changed/publicValue` en ES/EN/FR/DE (lo comprueba la prueba de traducciones).
 - **Android** `python3 scripts/android.py check`: compilación, lint (traducciones completas en ES/EN/FR/DE)
-  y pruebas unitarias; 6 nuevas en `ProfessionalProfilesTest` (rutas y cuerpos RPC, versión aprobada frente a
+  y 118 pruebas unitarias; 6 nuevas en `ProfessionalProfilesTest` (rutas y cuerpos RPC, versión aprobada frente a
   editable, cuenta sin perfil, campos obligatorios, fotos y precios intactos, sin dirección privada en el
   contenido, rechazos distinguidos de la incertidumbre de red).
 - `ProfileEditorUiTest` (instrumentada, 3 pruebas) compila; **no ejecutada**: no se asignó emulador desechable.

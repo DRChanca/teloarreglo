@@ -19,6 +19,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.teloarreglo.identity.AccessError
 import es.teloarreglo.identity.AccessStage
 import es.teloarreglo.chat.Conversation
+import es.teloarreglo.home.HomeStatus
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 
@@ -60,14 +61,36 @@ class MainActivity : AppCompatActivity() {
             // An email link (new password or invalid link) must be answered on the account screen.
             val emailLinkPending = access.stage == AccessStage.RECOVERING_PASSWORD ||
                 access.error == AccessError.LINK_INVALID
+            // Home address (#37): mandatory once the server confirms a connected account has none.
+            var editingHome by rememberSaveable { mutableStateOf(false) }
+            val homeSession = app.homeSession
+            val homeStatus by (homeSession?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(HomeStatus.Unknown) })
+                .collectAsStateWithLifecycle()
+            val connectedUser = access.account?.userId?.takeIf { access.stage == AccessStage.CONNECTED }
+            LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
+                if (access.stage != AccessStage.CHECKING) homeSession?.load(connectedUser)
+            }
+            val home = (homeStatus as? HomeStatus.Present)?.home
+            val mustGiveHome = connectedUser != null && homeStatus == HomeStatus.Missing &&
+                access.account?.isAdministrator != true && !emailLinkPending
             val changeLanguage: (String) -> Unit = { tag ->
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
             }
-            BackHandler(enabled = profileEditor) { profileEditor = false; account = true }
-            BackHandler(enabled = !profileEditor && (account || nearby || (chatVisible && access.stage != AccessStage.CONNECTED))) {
+            BackHandler(enabled = editingHome && !mustGiveHome) { editingHome = false }
+            BackHandler(enabled = profileEditor && !editingHome && !mustGiveHome) { profileEditor = false; account = true }
+            BackHandler(enabled = !editingHome && !profileEditor && (account || nearby || (chatVisible && access.stage != AccessStage.CONNECTED))) {
                 account = false; nearby = false; chatVisible = false; contactProfile = null; conversationJson = null
             }
-            if (profileEditor && app.professionalProfiles != null) {
+            if (homeSession != null && (mustGiveHome || (editingHome && connectedUser != null))) {
+                key(connectedUser) {
+                    HomeAddressScreen(homeSession, app.addressAutocomplete,
+                        PinSource({ ensureLocationPermission() }, { currentLocation(this@MainActivity) },
+                            mapsReady = deviceMapAvailability(this@MainActivity) == es.teloarreglo.search.MapAvailability.READY),
+                        app.applicationScope, required = mustGiveHome,
+                        onDone = { editingHome = false },
+                        onSignOut = { editingHome = false; app.applicationScope.launch { app.identity.signOut() } })
+                }
+            } else if (profileEditor && app.professionalProfiles != null) {
                 ProfileEditorScreen(app.professionalProfiles!!, app.concejos, app.applicationScope,
                     onBack = { profileEditor = false; account = true },
                     onStarted = { app.identity.restore() })
@@ -83,7 +106,8 @@ class MainActivity : AppCompatActivity() {
                         appointmentsSlot = app.appointments?.let { appointments -> { conversation ->
                             AppointmentsPanel(appointments, access.account!!.userId, conversation, app.applicationScope,
                                 PinSource({ ensureLocationPermission() }, { currentLocation(this@MainActivity) },
-                                    mapsReady = deviceMapAvailability(this@MainActivity) == es.teloarreglo.search.MapAvailability.READY))
+                                    mapsReady = deviceMapAvailability(this@MainActivity) == es.teloarreglo.search.MapAvailability.READY,
+                                    home = home))
                         } },
                         attachments = app.chatAttachments)
                 }
@@ -98,6 +122,7 @@ class MainActivity : AppCompatActivity() {
                     operationScope = app.applicationScope,
                     googleAuth = app.googleAuth, profileReviews = app.profileReviews,
                     subscriptions = app.subscriptions, agenda = app.agenda,
+                    homeSlot = homeSession?.let { session -> { HomeSummaryCard(session, onChange = { editingHome = true }) } },
                     onEditProfile = app.professionalProfiles?.let { { profileEditor = true; account = false } })
             } else if (nearby && app.search != null) {
                 NearbySearchScreen(app.search!!, app.catalogue,
@@ -105,7 +130,9 @@ class MainActivity : AppCompatActivity() {
                     locate = { currentLocation(this@MainActivity) },
                     onBack = { nearby = false },
                     onOpenProfile = { ownProfile = it; nearby = false },
-                    concejos = app.concejos, map = remember { deviceMapAvailability(this@MainActivity) })
+                    concejos = app.concejos, map = remember { deviceMapAvailability(this@MainActivity) },
+                    home = home, askIfAway = { homeSession?.askIfAway(it) == true },
+                    onChangeHome = { editingHome = true })
             } else {
                 CatalogueScreen(app.catalogue, onAccount = { ownProfile = null; account = true }, onLanguageChange = changeLanguage,
                     initialProfileId = ownProfile, covers = app.covers, ownedProfileId = owner,
@@ -124,7 +151,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        app.applicationScope.launch { app.identity.restore() }
+        app.applicationScope.launch {
+            app.identity.restore()
+            // A home check that failed for lack of network is retried when the app comes back.
+            app.homeSession?.takeIf { it.status.value == HomeStatus.Failed }
+                ?.load(app.identity.state.value.account?.userId)
+        }
     }
 
     private fun handleAuthLink(intent: Intent?) {
