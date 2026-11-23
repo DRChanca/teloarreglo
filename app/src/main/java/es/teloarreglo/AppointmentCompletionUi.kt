@@ -46,8 +46,8 @@ internal fun CompletionSection(
         Text(stringResource(R.string.completion_done_at, format.format(it)), style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary, modifier = Modifier.testTag("done_mark_${appointment.id}"))
     }
-    val due = appointment.closeDueAt
-    if (appointment.stage == AppointmentStage.DONE && due != null) Text(
+    val due = appointment.silentCloseAt
+    if (due != null) Text(
         stringResource(if (accountId == appointment.clientId) R.string.completion_deadline_client else R.string.completion_deadline_pro,
             format.format(due)), style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("done_deadline_${appointment.id}"))
     appointment.completedAt?.let {
