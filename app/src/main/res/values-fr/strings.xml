@@ -310,4 +310,13 @@
     <string name="video_message">Vidéo envoyée dans la conversation</string>
     <string name="video_play">Lire la vidéo</string>
     <string name="video_open_error">La vidéo n’a pas pu être lue. Touchez pour réessayer.</string>
+    <string name="account_name_label">Nom</string>
+    <string name="account_name_title">Comment vous appelez-vous ?</string>
+    <string name="account_name_intro">Les professionnels avec qui vous échangez verront ce nom. Votre e-mail n\'est pas affiché.</string>
+    <string name="account_name_save">Enregistrer le nom</string>
+    <string name="account_name_change">Modifier le nom</string>
+    <string name="account_name_none">Vous n\'avez pas encore indiqué votre nom.</string>
+    <string name="account_name_invalid">Saisissez votre nom, de 1 à 80 caractères.</string>
+    <string name="account_name_access">Votre session a expiré. Reconnectez-vous.</string>
+    <string name="account_name_network">Le nom n\'a pas pu être enregistré. Vérifiez la connexion et réessayez.</string>
 </resources>

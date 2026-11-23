@@ -93,3 +93,7 @@ La app marca la conversación al abrirla y con cada mensaje nuevo visto mientras
 está abierta. Si falla la marca, el indicador sigue visible hasta la siguiente.
 `Chat.conversations()` usa `conversation_inbox`; `Chat.markRead` es la frontera
 nueva. Comprobación: [comprobacion-no-leidos.md](comprobacion-no-leidos.md).
+
+**Actualización #40:** `client_name` ya no se lee de los metadatos de Auth en cada
+consulta. Sale de `public.account_names`, que se rellena desde esos metadatos y que
+la app pide al registrarse con correo. Ver [nombre-contrato.md](nombre-contrato.md).
