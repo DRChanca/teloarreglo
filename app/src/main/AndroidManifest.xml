@@ -4,6 +4,8 @@
     <!-- One fix per search, in the foreground; never background or tracking. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Push notices (#32), asked from the notices screen on Android 13+. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
         android:name=".TeloarregloApplication"
         android:allowBackup="false"
@@ -31,6 +33,14 @@
                 <data android:scheme="${applicationId}" android:host="auth" />
             </intent-filter>
         </activity>
+        <!-- FCM data messages (#32); shown only to the account signed in on this device. -->
+        <service
+            android:name=".notices.TeloMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
             android:enabled="false"

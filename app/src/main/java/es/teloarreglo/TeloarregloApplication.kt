@@ -49,6 +49,12 @@ const val AUTH_LINK_HOST = "auth"
 class TeloarregloApplication : Application() {
     internal val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
+    override fun onCreate() {
+        super.onCreate()
+        // Firebase must exist before FCM wakes the messaging service with the app closed.
+        firebaseTokens
+    }
+
     /** Each variant has its own scheme so both APKs can be installed side by side. */
     val authLink = "${BuildConfig.APPLICATION_ID}://$AUTH_LINK_HOST"
 
@@ -79,7 +85,22 @@ class TeloarregloApplication : Application() {
     }
 
     val identity: Identity by lazy {
-        client?.let { SupabaseIdentity(it, applicationScope, authLink) } ?: MissingConfiguration()
+        client?.let { c -> SupabaseIdentity(c, applicationScope, authLink).let { inner -> push?.let { PushAwareIdentity(inner, it) } ?: inner } }
+            ?: MissingConfiguration()
+    }
+
+    /** Persisted notices of the signed-in account (#32); null without configuration. */
+    val notices: es.teloarreglo.notices.Notices? by lazy { client?.let { es.teloarreglo.notices.SupabaseNotices(it) } }
+    private val firebaseTokens by lazy { es.teloarreglo.notices.FirebasePushTokens(this) }
+    val pushPreferences by lazy { es.teloarreglo.notices.SharedPushPreferences(this) }
+    /** Push registration of this installation (#32); without Firebase configuration it reports NOT_CONFIGURED. */
+    val push: es.teloarreglo.notices.PushRegistration? by lazy {
+        client?.let {
+            es.teloarreglo.notices.PushRegistration(es.teloarreglo.notices.SupabaseNotices(it),
+                firebaseTokens, pushPreferences) {
+                es.teloarreglo.notices.notificationPermissionGranted(this)
+            }
+        }
     }
     val catalogue: Catalogue by lazy { client?.let(::SupabaseCatalogue) ?: MissingCatalogueConfiguration() }
     val covers: ProfessionalCovers? by lazy { client?.let(::SupabaseProfessionalCovers) }
@@ -124,6 +145,15 @@ class TeloarregloApplication : Application() {
     /** Native Google sign-in, only when its public web client ID is configured for this build. */
     val googleAuth: ComposeAuth?
         get() = client?.takeIf { BuildConfig.GOOGLE_WEB_CLIENT_ID.isNotEmpty() }?.composeAuth
+}
+
+/** Unregisters this device for push before the session ends, so the next account never sees these pushes. */
+private class PushAwareIdentity(private val inner: Identity, private val push: es.teloarreglo.notices.PushRegistration) :
+    Identity by inner {
+    override suspend fun signOut() {
+        push.beforeSignOut()
+        inner.signOut()
+    }
 }
 
 private class MissingCatalogueConfiguration : Catalogue {
