@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">Teloarreglo</string>
+    <string name="welcome">Record it.\nUpload it.\nGet it fixed.</string>
+    <string name="intro">Connect with professionals near you.</string>
+    <string name="sign_in_title">Welcome back</string>
+    <string name="sign_in_hint">Sign in to your account to continue.</string>
+    <string name="email">Email address</string>
+    <string name="password">Password</string>
+    <string name="show_password">Show password</string>
+    <string name="hide_password">Hide password</string>
+    <string name="sign_in">Sign in</string>
+    <string name="sign_out">Sign out</string>
+    <string name="language">Language</string>
+    <string name="language_system">Device language</string>
+    <string name="checking_session">Checking your session…</string>
+    <string name="working">Please wait…</string>
+    <string name="account_title">You are signed in</string>
+    <string name="account_hint">Your account is connected. You can close the app and resume your session when you return.</string>
+    <string name="connected_as">Signed in as %1$s</string>
+    <string name="retry">Try again</string>
+    <string name="error_credentials">The email address or password is incorrect.</string>
+    <string name="error_unverified">Verify your email before signing in.</string>
+    <string name="error_expired">Your session has expired. Please sign in again.</string>
+    <string name="error_network">Could not connect. Check your connection and try again.</string>
+    <string name="error_service">The service is currently unavailable. Please try again.</string>
+    <string name="error_configuration">The Supabase connection has not been configured for this environment.</string>
+    <string name="error_input">Enter your email address and password.</string>
+    <string name="environment_test">Test environment</string>
+    <string name="environment_presentation">Presentation environment</string>
+</resources>

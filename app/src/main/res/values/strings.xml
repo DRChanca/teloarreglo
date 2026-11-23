@@ -1,0 +1,30 @@
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="es">
+    <string name="app_name">Teloarreglo</string>
+    <string name="welcome">Grábalo.\nSúbelo.\nArréglalo.</string>
+    <string name="intro">Conecta con profesionales de tu zona.</string>
+    <string name="sign_in_title">Te damos la bienvenida</string>
+    <string name="sign_in_hint">Entra con tu cuenta para continuar.</string>
+    <string name="email">Correo electrónico</string>
+    <string name="password">Contraseña</string>
+    <string name="show_password">Mostrar contraseña</string>
+    <string name="hide_password">Ocultar contraseña</string>
+    <string name="sign_in">Entrar</string>
+    <string name="sign_out">Cerrar sesión</string>
+    <string name="language">Idioma</string>
+    <string name="language_system">Idioma del dispositivo</string>
+    <string name="checking_session">Comprobando tu sesión…</string>
+    <string name="working">Un momento…</string>
+    <string name="account_title">Ya estás dentro</string>
+    <string name="account_hint">Tu cuenta está conectada. Puedes cerrar la app y retomar tu sesión al volver.</string>
+    <string name="connected_as">Conectado como %1$s</string>
+    <string name="retry">Reintentar</string>
+    <string name="error_credentials">El correo o la contraseña no son correctos.</string>
+    <string name="error_unverified">Verifica tu correo antes de entrar.</string>
+    <string name="error_expired">Tu sesión ha caducado. Vuelve a entrar.</string>
+    <string name="error_network">No pudimos conectar. Comprueba tu conexión e inténtalo de nuevo.</string>
+    <string name="error_service">El servicio no está disponible en este momento. Inténtalo de nuevo.</string>
+    <string name="error_configuration">Falta configurar la conexión a Supabase para este entorno.</string>
+    <string name="error_input">Escribe tu correo y contraseña.</string>
+    <string name="environment_test">Entorno de pruebas</string>
+    <string name="environment_presentation">Entorno de presentación</string>
+</resources>

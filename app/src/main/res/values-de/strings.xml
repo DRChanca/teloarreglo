@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">Teloarreglo</string>
+    <string name="welcome">Filmen.\nHochladen.\nReparieren lassen.</string>
+    <string name="intro">Finde Fachleute in deiner Nähe.</string>
+    <string name="sign_in_title">Willkommen zurück</string>
+    <string name="sign_in_hint">Melde dich an, um fortzufahren.</string>
+    <string name="email">E-Mail-Adresse</string>
+    <string name="password">Passwort</string>
+    <string name="show_password">Passwort anzeigen</string>
+    <string name="hide_password">Passwort ausblenden</string>
+    <string name="sign_in">Anmelden</string>
+    <string name="sign_out">Abmelden</string>
+    <string name="language">Sprache</string>
+    <string name="language_system">Gerätesprache</string>
+    <string name="checking_session">Deine Sitzung wird überprüft…</string>
+    <string name="working">Bitte warten…</string>
+    <string name="account_title">Du bist angemeldet</string>
+    <string name="account_hint">Dein Konto ist verbunden. Du kannst die App schließen und deine Sitzung später fortsetzen.</string>
+    <string name="connected_as">Angemeldet als %1$s</string>
+    <string name="retry">Erneut versuchen</string>
+    <string name="error_credentials">Die E-Mail-Adresse oder das Passwort ist falsch.</string>
+    <string name="error_unverified">Bestätige vor der Anmeldung deine E-Mail-Adresse.</string>
+    <string name="error_expired">Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.</string>
+    <string name="error_network">Keine Verbindung möglich. Prüfe deine Verbindung und versuche es erneut.</string>
+    <string name="error_service">Der Dienst ist momentan nicht verfügbar. Bitte versuche es erneut.</string>
+    <string name="error_configuration">Die Supabase-Verbindung ist für diese Umgebung noch nicht eingerichtet.</string>
+    <string name="error_input">Gib deine E-Mail-Adresse und dein Passwort ein.</string>
+    <string name="environment_test">Testumgebung</string>
+    <string name="environment_presentation">Präsentationsumgebung</string>
+</resources>
