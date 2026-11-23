@@ -376,6 +376,87 @@ class AppointmentsTest {
         }
     }
 
+    private fun marksJson(stage: String, refunded: Int = 0) = """{"id":"appt","stage":"$stage","version":5,
+        "started_at":${if (stage == "started") "\"2030-01-15T10:31:00+00:00\"" else "null"},
+        "cancelled_at":${if (stage == "cancelled") "\"2030-01-14T09:00:00+00:00\"" else "null"},
+        "cancelled_by":${if (stage == "cancelled") "\"client\"" else "null"},"refunded_cents":$refunded}"""
+
+    @Test fun startAndCancelCallTheirFunctionsAndReturnTheServerMarks() = runTest {
+        val calls = mutableListOf<Pair<String, JsonObject>>()
+        val (started, cancelled) = withClient({ request ->
+            calls += request.url.encodedPath to Json.parseToJsonElement((request.body as TextContent).text).jsonObject
+            if (request.url.encodedPath.endsWith("start_work")) json(marksJson("started"))
+            else json(marksJson("cancelled", refunded = 8500))
+        }) { it.startWork("appt") to it.cancel("appt") }
+        assertEquals(listOf("/rest/v1/rpc/start_work", "/rest/v1/rpc/cancel_appointment"), calls.map { it.first })
+        assertEquals("appt", calls[1].second["p_appointment_id"]!!.jsonPrimitive.content)
+        assertEquals(AppointmentStage.STARTED, started.stage)
+        assertEquals(Instant.parse("2030-01-15T10:31:00Z"), started.startedAt)
+        assertEquals(AppointmentStage.CANCELLED, cancelled.stage)
+        assertEquals("client", cancelled.cancelledBy)
+        assertEquals(8500, cancelled.refundedCents)
+    }
+
+    private fun MockRequestHandleScope.markedListing(request: HttpRequestData, stage: String, payment: String = paymentJson) =
+        if (request.url.encodedPath == "/rest/v1/rpc/appointment_places") json("[]")
+        else json("[" + appointmentJson.dropLast(1).replace("\"stage\":\"pending\"", "\"stage\":\"$stage\"") +
+            ""","started_at":${if (stage == "started") "\"2030-01-15T10:31:00+00:00\"" else "null"},
+            "cancelled_at":${if (stage == "cancelled") "\"2030-01-14T09:00:00+00:00\"" else "null"},
+            "cancelled_by":${if (stage == "cancelled") "\"pro\"" else "null"},
+            "appointment_proposals":[${proposalJson(1, "accepted")}],"appointment_payments":$payment}]""")
+
+    @Test fun bothAccountsSeeTheStartAndTheCancellationMarkedByTheServer() = runTest {
+        val started = withClient({ request ->
+            if (request.url.encodedPath == "/rest/v1/appointments")
+                assertTrue(request.url.parameters["select"]!!.contains("started_at,cancelled_at,cancelled_by"))
+            markedListing(request, "started")
+        }) { it.list("conv") }.single()
+        assertEquals(Instant.parse("2030-01-15T10:31:00Z"), started.startedAt)
+        assertEquals(AppointmentNotice.STARTED, started.notice("client"))
+        assertEquals(AppointmentNotice.STARTED, started.notice("pro"))
+        val cancelled = withClient({ markedListing(it, "cancelled") }) { it.list("conv") }.single()
+        assertEquals("pro", cancelled.cancelledBy)
+        assertEquals(AppointmentNotice.CANCELLED, cancelled.notice("client"))
+    }
+
+    @Test fun onlyTheProfessionalStartsAndNobodyCancelsWithARefundAfterTheStart() = runTest {
+        val confirmed = withClient({ markedListing(it, "confirmed") }) { it.list("conv") }.single()
+        assertTrue(confirmed.canStart("pro"))
+        assertFalse(confirmed.canStart("client"))
+        assertTrue(confirmed.canCancel("client") && confirmed.canCancel("pro"))
+        assertFalse(confirmed.canCancel("stranger"))
+        val started = withClient({ markedListing(it, "started") }) { it.list("conv") }.single()
+        assertFalse(started.canStart("pro"))
+        assertFalse(started.canCancel("client") || started.canCancel("pro"))
+        val pending = withClient({ listing(it, proposalJson(1, "pending")) }) { it.list("conv") }.single()
+        assertFalse(pending.canStart("pro") || pending.canCancel("client"))
+    }
+
+    @Test fun cancellingRefundsOnlyThePendingIntegratedMoney() = runTest {
+        suspend fun effect(payment: String) = withClient({ markedListing(it, "confirmed", payment) }) { it.list("conv") }
+            .single().cancellationEffect
+        assertEquals(CancellationEffect.Refund(8500), effect(paymentJson))
+        assertEquals(CancellationEffect.Refund(6000), effect(paymentJson.replace("\"pending_cents\":8500", "\"pending_cents\":6000")
+            .replace("\"refunded_cents\":0", "\"refunded_cents\":2500")))
+        assertEquals(CancellationEffect.DirectNotRefunded(8500), effect(paymentJson.replace("\"integrated\"", "\"direct\"")
+            .replace("\"paid_cents\":8500", "\"paid_cents\":0").replace("\"pending_cents\":8500", "\"pending_cents\":0")))
+        assertEquals(CancellationEffect.None, effect("null"))
+    }
+
+    @Test fun startAndCancelRejectionsMapToStableFailures() = runTest {
+        val cases = listOf(
+            Triple(HttpStatusCode.Conflict, error("PT409", "already_started"), AppointmentFailure.ALREADY_STARTED),
+            Triple(HttpStatusCode.Conflict, error("PT409", "incompatible_state"), AppointmentFailure.STALE),
+            Triple(HttpStatusCode.Forbidden, error("42501", "permission_denied"), AppointmentFailure.ACCESS),
+        )
+        for ((status, body, expected) in cases) {
+            val failure = withClient({ json(body, status) }) {
+                try { it.cancel("appt"); null } catch (e: AppointmentException) { e.failure }
+            }
+            assertEquals(expected, failure)
+        }
+    }
+
     @Test fun euroInputIsParsedToExactCentsWithoutFloatingPoint() {
         assertEquals(8550, parseEuroCents("85,5"))
         assertEquals(8550, parseEuroCents("85.50"))

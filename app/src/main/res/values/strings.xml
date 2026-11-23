@@ -399,4 +399,22 @@
     <string name="change_correction_hint">No puedes cambiar la dirección del cliente. Le enviaremos tu petición y será el cliente quien proponga la corrección.</string>
     <string name="change_correction_note">¿Qué hay que corregir?</string>
     <string name="change_correction_send">Enviar la petición</string>
+    <string name="start_cancel_notice_started">Trabajo comenzado</string>
+    <string name="start_cancel_notice_cancelled">Cita cancelada</string>
+    <string name="start_cancel_start">Comenzar trabajo</string>
+    <string name="start_cancel_start_title">¿Comenzar el trabajo ahora?</string>
+    <string name="start_cancel_start_explain">El cliente verá que has comenzado. Desde ese momento la cita ya no se puede cancelar con devolución automática: un problema se tramitará como incidencia. Comenzar no autoriza ningún coste adicional.</string>
+    <string name="start_cancel_started_at">Trabajo comenzado el %1$s.</string>
+    <string name="start_cancel_after_start">Ya no se puede cancelar con devolución automática. Si hay un problema, se tramitará como incidencia.</string>
+    <string name="start_cancel_cancel">Cancelar la cita</string>
+    <string name="start_cancel_cancel_title">¿Cancelar la cita?</string>
+    <string name="start_cancel_effect_refund">Se devolverá íntegramente al cliente lo pagado en la app: %1$s (simulado). Sin penalización.</string>
+    <string name="start_cancel_effect_direct">El pago directo acordado (%1$s) no pasa por la app, así que la app no devuelve nada. Sin penalización.</string>
+    <string name="start_cancel_effect_none">Sin penalización y sin movimientos de dinero.</string>
+    <string name="start_cancel_release">Se liberará el horario reservado y se avisará a la otra parte.</string>
+    <string name="start_cancel_keep">Mantener la cita</string>
+    <string name="start_cancel_cancelled_by_me">Cancelada por ti el %1$s.</string>
+    <string name="start_cancel_cancelled_by_other">Cancelada por la otra parte el %1$s.</string>
+    <string name="start_cancel_released">Cancelada: el horario ya no está reservado.</string>
+    <string name="start_cancel_error_started">El trabajo ya ha comenzado: no se puede cancelar con devolución automática.</string>
 </resources>

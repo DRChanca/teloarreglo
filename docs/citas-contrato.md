@@ -425,3 +425,58 @@ Textos `change_*` en ES/EN/FR/DE.
 ```
 
 Resultados: [comprobación de cambios](comprobacion-cambios.md).
+
+## Comenzar trabajo y cancelar antes del inicio — #24
+
+Migración nueva: `20261123012400_appointment_start_cancel.sql`. No edita migraciones anteriores ni cambia firmas
+de RPC existentes. No se ha desplegado ni escrito en la base alojada. El dinero sigue siendo simulado.
+
+Regla: «Comenzar trabajo» separa una cita confirmada de un trabajo iniciado. Antes del inicio cualquiera de las dos
+partes cancela sin penalización; después no hay cancelación con devolución automática y un problema se tramita
+como incidencia (#26), sin inventar resolución.
+
+Cambios en el esquema:
+
+- `appointments_stage_check` + `started` y `cancelled`. Columnas nuevas legibles por los dos participantes (privilegio
+  de columna, como #38): `started_at`, `cancelled_at`, `cancelled_by` (hora y cuenta de servidor).
+- `appointment_events_kind_check` + `started` (al cliente) y `cancelled` (a la otra parte).
+- `payment_movements.cancellation boolean`: marca la devolución de una cancelación; índice único parcial
+  `payment_movements_one_cancellation`, como mucho una por cita.
+
+RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo). Ambas devuelven
+`{id, stage, version, started_at, cancelled_at, cancelled_by, refunded_cents}` (nunca el lugar exacto):
+
+- `start_work(p_appointment_id uuid)`. Solo el profesional de la cita (`42501 permission_denied`, también para citas
+  ajenas o inexistentes) y solo con la cita `confirmed` (`PT409 incompatible_state`). Pone `started`, `started_at`,
+  `version + 1`, cierra como `superseded` un cambio pendiente (comenzar no acepta costes nuevos) y avisa al cliente.
+  No mueve dinero. Repetirla devuelve la misma marca. Tras el inicio, los cambios de #23 responden
+  `incompatible_state`.
+- `cancel_appointment(p_appointment_id uuid)`. Cliente o profesional, cita `confirmed`. Toma el bloqueo de la cita y
+  después `private.lock_agenda`, como `accept_proposal`. En una sola transacción: borra la reserva de
+  `agenda_reservations` (la hora vuelve a estar libre), cierra un cambio pendiente, y si el pago es integrado con
+  pendiente > 0 añade un movimiento `refunded` con `cancellation = true` por todo lo pendiente y deja `pending = 0`.
+  Pago directo: no se toca (`agreed_cents` se conserva, ningún movimiento). Gratuita: no se crea pago. Pone
+  `cancelled`, `cancelled_at`, `cancelled_by`, `version + 1` y avisa a la otra parte. Repetirla (por cualquiera de
+  las dos partes) devuelve la primera cancelación sin otra devolución ni otro aviso. Errores:
+  `PT409 already_started` si ya comenzó, `PT409 incompatible_state` si no está confirmada.
+
+Carrera inicio/cancelación: las dos operaciones bloquean la fila de la cita, así que gana la primera y la otra
+recibe 409 (`already_started` o `incompatible_state`) sin efectos parciales.
+
+Android: `Appointments.startWork(appointmentId)` y `cancel(appointmentId)` → `AppointmentMarks`. `AppointmentStage`
++ `STARTED`, `CANCELLED`; `Appointment.startedAt/cancelledAt/cancelledBy`, `canStart(account)`, `canCancel(account)`
+y `cancellationEffect` (`CancellationEffect.Refund`, `DirectNotRefunded`, `None`). Avisos `STARTED` y `CANCELLED`.
+`already_started` → `AppointmentFailure.ALREADY_STARTED`.
+
+Interfaz (`AppointmentStartCancelUi.kt`, dentro de la tarjeta de la cita): el profesional ve «Comenzar trabajo» con
+un diálogo que explica que después no habrá cancelación con devolución automática y que comenzar no autoriza
+costes. Ambas partes ven «Cancelar la cita» antes del inicio; el diálogo muestra lo que se devolverá (o que el pago
+directo no lo devuelve la app, o que no hay dinero) y que se libera la hora. Ambas cuentas ven «Trabajo comenzado
+el …» o «Cancelada por ti / por la otra parte el …». Textos `start_cancel_*` en ES/EN/FR/DE.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_start_cancel.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AppointmentsTest'
+```
+
+Resultados: [comprobación de inicio y cancelación](comprobacion-inicio-cancelacion.md).

@@ -399,4 +399,22 @@
     <string name="change_correction_hint">Du kannst die Adresse des Kunden nicht ändern. Wir senden ihm deine Bitte, und der Kunde schlägt die Korrektur vor.</string>
     <string name="change_correction_note">Was muss korrigiert werden?</string>
     <string name="change_correction_send">Bitte senden</string>
+    <string name="start_cancel_notice_started">Arbeit begonnen</string>
+    <string name="start_cancel_notice_cancelled">Termin storniert</string>
+    <string name="start_cancel_start">Arbeit beginnen</string>
+    <string name="start_cancel_start_title">Jetzt mit der Arbeit beginnen?</string>
+    <string name="start_cancel_start_explain">Der Kunde sieht, dass du begonnen hast. Ab dann kann der Termin nicht mehr mit automatischer Erstattung storniert werden: Ein Problem wird als Vorfall bearbeitet. Der Beginn erlaubt keine zusätzlichen Kosten.</string>
+    <string name="start_cancel_started_at">Arbeit begonnen am %1$s.</string>
+    <string name="start_cancel_after_start">Eine Stornierung mit automatischer Erstattung ist nicht mehr möglich. Ein Problem wird als Vorfall bearbeitet.</string>
+    <string name="start_cancel_cancel">Termin stornieren</string>
+    <string name="start_cancel_cancel_title">Termin stornieren?</string>
+    <string name="start_cancel_effect_refund">Der Kunde erhält alles in der App Bezahlte zurück: %1$s (simuliert). Ohne Strafgebühr.</string>
+    <string name="start_cancel_effect_direct">Die vereinbarte Direktzahlung (%1$s) läuft nicht über die App, daher erstattet die App nichts. Ohne Strafgebühr.</string>
+    <string name="start_cancel_effect_none">Ohne Strafgebühr und ohne Geldbewegungen.</string>
+    <string name="start_cancel_release">Die reservierte Zeit wird freigegeben und die andere Seite benachrichtigt.</string>
+    <string name="start_cancel_keep">Termin behalten</string>
+    <string name="start_cancel_cancelled_by_me">Von dir storniert am %1$s.</string>
+    <string name="start_cancel_cancelled_by_other">Von der anderen Seite storniert am %1$s.</string>
+    <string name="start_cancel_released">Storniert: Die Zeit ist nicht mehr reserviert.</string>
+    <string name="start_cancel_error_started">Die Arbeit hat bereits begonnen: Eine Stornierung mit automatischer Erstattung ist nicht möglich.</string>
 </resources>
