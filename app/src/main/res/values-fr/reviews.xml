@@ -1,0 +1,22 @@
+<resources>
+    <string name="review_section">Avis</string>
+    <string name="review_none">Aucun avis client pour le moment.</string>
+    <string name="review_load_error">Impossible de charger les avis.</string>
+    <string name="review_stars">%1$d étoiles sur 5</string>
+    <string name="review_publish">Écrire un avis</string>
+    <string name="review_title">Avis sur le service</string>
+    <string name="review_comment">Commentaire</string>
+    <string name="review_privacy">L\'avis sera public sur le profil du professionnel. N\'incluez ni visages, ni adresses, ni téléphones, ni autres données privées.</string>
+    <string name="review_privacy_accept">Je comprends que l\'avis sera public</string>
+    <string name="review_send">Publier l\'avis</string>
+    <string name="review_retry">Réessayer la publication</string>
+    <string name="review_published_mine">Votre avis publié</string>
+    <string name="review_published_client">Avis du client</string>
+    <string name="review_awaiting_confirmation">Vous pourrez écrire un avis après avoir confirmé que le travail a été réalisé.</string>
+    <string name="review_disputed">L\'avis attend que l\'administration vérifie si le service a eu lieu.</string>
+    <string name="review_not_performed">L\'administration a constaté que le service n\'a pas eu lieu : aucun avis possible.</string>
+    <string name="review_error_invalid">Choisissez de 1 à 5 étoiles, écrivez un commentaire et acceptez l\'avertissement.</string>
+    <string name="review_error_exists">Ce rendez-vous a déjà un avis ; un seul est publié.</string>
+    <string name="review_error_network">On ne sait pas si l\'avis a été publié. Réessayez : il ne sera pas publié deux fois.</string>
+    <string name="review_notice">Le client a publié un avis</string>
+</resources>

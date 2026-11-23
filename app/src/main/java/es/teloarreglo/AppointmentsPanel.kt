@@ -56,9 +56,12 @@ fun AppointmentsPanel(
     scope: CoroutineScope, pins: PinSource,
     /** Incidents and private evidence (#26); null hides the section. */
     incidentTools: IncidentTools? = null,
+    /** Reviews of performed appointments (#28); null hides the section. */
+    reviews: Reviews? = null,
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var list by remember(conversation.id) { mutableStateOf<List<Appointment>?>(null) }
+    var reviewStates by remember(conversation.id) { mutableStateOf<Map<String, AppointmentReviewState>>(emptyMap()) }
     var loadFailed by remember(conversation.id) { mutableStateOf(false) }
     var refresh by remember { mutableIntStateOf(0) }
     // "list", "request", "propose:<id>", "change:<id>" or "correction:<id>"; null keeps the chat in front.
@@ -68,6 +71,8 @@ fun AppointmentsPanel(
             while (true) {
                 try { list = appointments.list(conversation.id); loadFailed = false }
                 catch (error: Exception) { if (error is CancellationException) throw error; loadFailed = true }
+                if (reviews != null) try { reviewStates = reviews.states(conversation.id) }
+                catch (error: Exception) { if (error is CancellationException) throw error }
                 delay(2500)
             }
         }
@@ -124,7 +129,8 @@ fun AppointmentsPanel(
                                 AppointmentDetails(appointment, accountId, appointments, scope, pins.mapsReady,
                                     onPropose = { sheet = "propose:${appointment.id}" }, onChanged = { refresh++ },
                                     onChange = { sheet = "change:${appointment.id}" },
-                                    onCorrection = { sheet = "correction:${appointment.id}" }, incidentTools = incidentTools)
+                                    onCorrection = { sheet = "correction:${appointment.id}" }, incidentTools = incidentTools,
+                                    reviews = reviews, reviewState = reviewStates[appointment.id])
                             }
                         }
                     }
@@ -239,6 +245,7 @@ private fun AppointmentDetails(
     appointment: Appointment, accountId: String, appointments: Appointments, scope: CoroutineScope,
     mapsReady: Boolean, onPropose: () -> Unit, onChanged: () -> Unit,
     onChange: () -> Unit = {}, onCorrection: () -> Unit = {}, incidentTools: IncidentTools? = null,
+    reviews: Reviews? = null, reviewState: AppointmentReviewState? = null,
 ) {
     val format = dateTimeFormat()
     val professional = appointment.professionalId == accountId
@@ -275,6 +282,7 @@ private fun AppointmentDetails(
             StartCancelSection(appointment, accountId, appointments, scope, onChanged)
             CompletionSection(appointment, accountId, appointments, scope, onChanged)
             IncidentSection(appointment, accountId, incidentTools, scope, onChanged)
+            ReviewSection(appointment, accountId, reviewState, reviews, scope, onChanged)
             if (professional && appointment.stage == AppointmentStage.PENDING) Button(onClick = onPropose, modifier = Modifier.testTag("appointment_propose")) {
                 Text(stringResource(if (appointment.proposals.isEmpty()) R.string.appointment_propose else R.string.appointment_propose_new))
             }

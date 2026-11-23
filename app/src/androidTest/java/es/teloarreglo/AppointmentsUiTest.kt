@@ -13,7 +13,7 @@ import java.time.Duration
 import java.time.Instant
 
 /** In-memory stand-in with the server's observable rules: keys, versions and kept history. */
-private class FakeAppointments : Appointments {
+internal class FakeAppointments : Appointments {
     val items = mutableListOf<Appointment>()
     val requestKeys = mutableListOf<String>()
     var loseNextResponse = false

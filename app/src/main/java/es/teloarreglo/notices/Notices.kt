@@ -33,7 +33,7 @@ data class Notice(
 /** What a notice is about, independent of language. Unknown future events keep a generic topic. */
 enum class NoticeTopic {
     MESSAGE, REQUEST, PROPOSAL, REJECTED, CONFIRMED, CHANGE, CHANGE_DECIDED, STARTED, CANCELLED, DONE, REMINDER,
-    COMPLETED, INCIDENT, APPOINTMENT_OTHER, PROFILE_APPROVED, PROFILE_REJECTED, OTHER,
+    COMPLETED, INCIDENT, REVIEW, APPOINTMENT_OTHER, PROFILE_APPROVED, PROFILE_REJECTED, OTHER,
 }
 
 fun topicOf(kind: String, event: String?): NoticeTopic = when (kind) {
@@ -52,6 +52,7 @@ fun topicOf(kind: String, event: String?): NoticeTopic = when (kind) {
         event == "reminder" -> NoticeTopic.REMINDER
         event == "completed" -> NoticeTopic.COMPLETED
         event?.startsWith("incident") == true -> NoticeTopic.INCIDENT
+        event == "review_published" -> NoticeTopic.REVIEW
         else -> NoticeTopic.APPOINTMENT_OTHER
     }
     else -> NoticeTopic.OTHER
