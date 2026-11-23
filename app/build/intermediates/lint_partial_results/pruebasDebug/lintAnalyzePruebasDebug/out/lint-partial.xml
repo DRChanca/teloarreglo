@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.13.2" type="partial_results">
+    <map id="UnsafeIntentLaunch">
+            <map id="unprotected">
+                <entry
+                    name="es.teloarreglo.MainActivity"
+                    boolean="true"/>
+            </map>
+    </map>
+    <map id="UnusedResources">
+        <location id="R.string.catalogue_illustration"
+            file="${:app*pruebasDebug*MAIN*sourceProvider*0*resDir*0}/values/catalogue.xml"
+            line="22"
+            column="13"
+            startOffset="1488"
+            endLine="22"
+            endColumn="42"
+            endOffset="1517"/>
+        <location id="R.string.catalogue_open"
+            file="${:app*pruebasDebug*MAIN*sourceProvider*0*resDir*0}/values/catalogue.xml"
+            line="5"
+            column="13"
+            startOffset="201"
+            endLine="5"
+            endColumn="34"
+            endOffset="222"/>
+        <entry
+            name="model"
+            string="plurals[catalogue_results(U)],string[app_name(U),catalogue_title(U),catalogue_account(U),catalogue_back(U),catalogue_open(D),catalogue_loading(U),catalogue_error(U),catalogue_empty(U),catalogue_unpublished(U),catalogue_services(U),catalogue_coverage(U),catalogue_languages(U),catalogue_phone(U),catalogue_address(U),catalogue_prices(U),catalogue_prices_hint(U),catalogue_no_prices(U),catalogue_includes(U),catalogue_excludes(U),catalogue_no_reviews(U),catalogue_rating(U),catalogue_illustration(D),catalogue_owned(U),catalogue_can_hire(U),trade_all(U),trade_plumbing(U),trade_electrical(U),trade_carpentry(U),trade_painting(U),trade_masonry(U),trade_general(U),price_hour(U),price_sqm(U),price_unit(U),price_job(U),cover_edit(U),cover_photo_description(U),cover_generic_description(U),cover_image_unavailable(U),cover_review_hint(U),cover_limits(U),cover_preparing(U),cover_pending(U),cover_unsent(U),cover_approved(U),cover_rejected(U),cover_invalid(U),cover_error(U),cover_check(U),cover_choose(U),cover_submit(U),cover_use_generic(U),cover_leave_title(U),cover_leave_hint(U),cover_leave(U),cover_stay(U),catalogue_search(U),catalogue_clear_search(U),catalogue_filtered_empty(U),catalogue_reset_filters(U),catalogue_reference(U),catalogue_free(U),welcome(U),intro(U),sign_in_title(U),sign_in_hint(U),email(U),password(U),show_password(U),hide_password(U),sign_in(U),sign_out(U),language(U),language_system(U),checking_session(U),working(U),account_title(U),account_hint(U),connected_as(U),retry(U),error_credentials(U),error_unverified(U),error_expired(U),error_network(U),error_service(U),error_configuration(U),error_input(U),environment_test(U),environment_presentation(U)],style[Theme_Teloarreglo(U),Theme_AppCompat_DayNight_NoActionBar(R)],xml[data_extraction_rules(U),locales_config(U)];5a^5b;;;"/>
+    </map>
+
+</incidents>

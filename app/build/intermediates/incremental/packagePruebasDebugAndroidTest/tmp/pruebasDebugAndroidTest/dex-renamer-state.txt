@@ -1,0 +1,13 @@
+#Sat Nov 21 10:01:03 CET 2026
+base.0=/Users/david/Desktop/MOVIL/app/build/intermediates/dex/pruebasDebugAndroidTest/mergeExtDexPruebasDebugAndroidTest/classes.dex
+base.1=/Users/david/Desktop/MOVIL/app/build/intermediates/dex/pruebasDebugAndroidTest/mergeProjectDexPruebasDebugAndroidTest/0/classes.dex
+base.2=/Users/david/Desktop/MOVIL/app/build/intermediates/dex/pruebasDebugAndroidTest/mergeProjectDexPruebasDebugAndroidTest/12/classes.dex
+base.3=/Users/david/Desktop/MOVIL/app/build/intermediates/dex/pruebasDebugAndroidTest/mergeProjectDexPruebasDebugAndroidTest/2/classes.dex
+path.0=classes.dex
+path.1=0/classes.dex
+path.2=12/classes.dex
+path.3=2/classes.dex
+renamed.0=classes.dex
+renamed.1=classes2.dex
+renamed.2=classes3.dex
+renamed.3=classes4.dex

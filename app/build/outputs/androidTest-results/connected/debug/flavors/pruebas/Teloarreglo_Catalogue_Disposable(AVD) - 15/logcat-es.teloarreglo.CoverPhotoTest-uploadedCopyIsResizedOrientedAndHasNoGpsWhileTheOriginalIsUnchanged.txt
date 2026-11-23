@@ -1,0 +1,14 @@
+11-21 10:01:35.410 10634 10672 I TestRunner: started: uploadedCopyIsResizedOrientedAndHasNoGpsWhileTheOriginalIsUnchanged(es.teloarreglo.CoverPhotoTest)
+11-21 10:01:35.421  1322  1322 D SearchTargetUtil: query= size=0
+11-21 10:01:35.421  1322  1322 I TopTaskTracker: onTaskRemoved: taskId=225
+11-21 10:01:35.421  1322  1322 I TopTaskTracker: onTaskRemoved: taskId=225
+11-21 10:01:35.460   401  3365 I RanchuHwc: logCompositionFallbackIfChanged: layer 635 CompositionType fallback from 2 to 1
+11-21 10:01:35.460   401  3365 I RanchuHwc: logCompositionFallbackIfChanged: layer 636 CompositionType fallback from 2 to 1
+11-21 10:01:35.500   592   709 I ImeTracker: com.google.android.apps.nexuslauncher:f4a7fc3d: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+11-21 10:01:35.500   592   709 I ImeTracker: com.google.android.apps.nexuslauncher:f4a7fc3d: onCancelled at PHASE_SERVER_SHOULD_HIDE
+11-21 10:01:35.504  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+11-21 10:01:35.504  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+11-21 10:01:35.504  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.google.android.apps.nexuslauncher, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+11-21 10:01:35.504  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+11-21 10:01:35.504  1389  1389 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+11-21 10:01:35.517 10634 10672 I TestRunner: finished: uploadedCopyIsResizedOrientedAndHasNoGpsWhileTheOriginalIsUnchanged(es.teloarreglo.CoverPhotoTest)

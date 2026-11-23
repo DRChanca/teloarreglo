@@ -1,0 +1,22 @@
+<resources>
+    <string name="chat_title">Unterhaltungen</string>
+    <string name="chat_contact">Nachricht senden</string>
+    <string name="chat_empty">Noch keine Unterhaltungen. Kontaktieren Sie jemanden über das Berufsprofil.</string>
+    <string name="chat_first">Beschreiben Sie Ihr Anliegen. Zum Chatten ist kein Termin nötig.</string>
+    <string name="chat_privacy">Privater Chat zwischen beiden Konten. Beim Öffnen wird Ihre Adresse nicht geteilt.</string>
+    <string name="chat_error">Aktualisierung fehlgeschlagen. Prüfen Sie die Verbindung; wir versuchen es erneut.</string>
+    <string name="chat_open_error">Kontakt nicht möglich. Prüfen Sie die Verbindung und ob das Profil ein verfügbares Konto hat.</string>
+    <string name="chat_send_error">Versand nicht bestätigt. Wiederholen Sie dieselbe Nachricht ohne Duplikat.</string>
+    <string name="chat_send_access">Der Server hat den Zugriff verweigert. Kehren Sie zum Katalog zurück und prüfen Sie Ihre Sitzung. Die ausstehende Nachricht bleibt erhalten.</string>
+    <string name="chat_send_invalid">Der Server hat den Text abgelehnt. Geben Sie 1 bis 4000 Zeichen ein.</string>
+    <string name="chat_send_conflict">Diese Anfrage gehört bereits zu einem anderen Text. Öffnen Sie den Chat erneut und prüfen Sie den Verlauf; keine Nachricht wurde geändert.</string>
+    <string name="chat_retry_send">Versand wiederholen</string>
+    <string name="chat_input">Nachricht (höchstens 4000 Zeichen)</string>
+    <string name="chat_send">Senden</string>
+    <string name="chat_sending">Wird gesendet…</string>
+    <string name="chat_sent">Vom Server bestätigt</string>
+    <string name="chat_you">Sie</string>
+    <string name="chat_other">Anderes Konto</string>
+    <string name="chat_client">Kunde · %1$s</string>
+    <string name="chat_access">Melden Sie sich an, um Kontakt aufzunehmen.</string>
+</resources>

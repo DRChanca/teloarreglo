@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="es.teloarreglo.ChatTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-21T09:01:02.822Z" hostname="MacBook-Air-de-David.local" time="0.014">
+  <properties/>
+  <testcase name="retryUsesSameRequestAndDoesNotInventSuccessWhenOffline" classname="es.teloarreglo.ChatTest" time="0.005"/>
+  <testcase name="openingFromProfileReturnsServerConversation" classname="es.teloarreglo.ChatTest" time="0.002"/>
+  <testcase name="historyIsReadFromServerInStableOrderAfterReconnection" classname="es.teloarreglo.ChatTest" time="0.005"/>
+  <testcase name="permissionRejectionIsNotPresentedAsUncertainNetworkDelivery" classname="es.teloarreglo.ChatTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

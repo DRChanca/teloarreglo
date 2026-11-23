@@ -1,0 +1,26 @@
+<variant
+    name="presentacionDebug"
+    package="es.teloarreglo"
+    minSdkVersion="26"
+    targetSdkVersion="35"
+    debuggable="true"
+    mergedManifest="build/intermediates/merged_manifest/presentacionDebug/processPresentacionDebugMainManifest/AndroidManifest.xml"
+    partialResultsDir="build/intermediates/unit_test_lint_partial_results/presentacionDebug/lintAnalyzePresentacionDebugUnitTest/out"
+    desugaredMethodsFiles="/Users/david/.gradle/caches/8.13/transforms/456ba3d89b53ebb3122451cad9f99bcf/transformed/D8BackportedDesugaredMethods.txt">
+  <buildFeatures
+      namespacing="REQUIRED"/>
+  <sourceProviders>
+  </sourceProviders>
+  <testSourceProviders>
+    <sourceProvider
+        manifests="src/test/AndroidManifest.xml"
+        javaDirectories="src/test/java:src/testPresentacion/java:src/testDebug/java:src/testPresentacionDebug/java:src/test/kotlin:src/testPresentacion/kotlin:src/testDebug/kotlin:src/testPresentacionDebug/kotlin"
+        assetsDirectories="src/test/assets:src/testPresentacion/assets:src/testDebug/assets:src/testPresentacionDebug/assets"
+        unitTest="true"/>
+  </testSourceProviders>
+  <testFixturesSourceProviders>
+  </testFixturesSourceProviders>
+  <artifact
+      type="UNIT_TEST">
+  </artifact>
+</variant>

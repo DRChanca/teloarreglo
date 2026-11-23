@@ -33,6 +33,8 @@ def public_build_environment():
             raise ValueError(f"{key}: only publishable keys may be included in an APK")
         for name in (key, f"{prefix}_SUPABASE_URL"):
             env[name] = values.get(name, "")
+    # Public OAuth web client ID for native Google sign-in (not a secret).
+    env["GOOGLE_WEB_CLIENT_ID"] = values.get("GOOGLE_WEB_CLIENT_ID", "")
     if not env.get("JAVA_HOME") and Path("/usr/libexec/java_home").exists():
         import subprocess
         env["JAVA_HOME"] = subprocess.check_output(

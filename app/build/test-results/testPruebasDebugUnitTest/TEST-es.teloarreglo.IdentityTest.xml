@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="es.teloarreglo.IdentityTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-21T09:01:01.473Z" hostname="MacBook-Air-de-David.local" time="0.049">
+  <properties/>
+  <testcase name="revokedSessionRequestsSignInAndRemovesItsStoredToken" classname="es.teloarreglo.IdentityTest" time="0.018"/>
+  <testcase name="anAutomaticRefreshServerFailureIsNotReportedAsLostConnectivity" classname="es.teloarreglo.IdentityTest" time="0.016"/>
+  <testcase name="anOldSignOutEventCannotOverwriteASubsequentlyVerifiedSession" classname="es.teloarreglo.IdentityTest" time="0.007"/>
+  <testcase name="invalidCredentialsRemainSignedOut" classname="es.teloarreglo.IdentityTest" time="0.002"/>
+  <testcase name="connectionFailureDoesNotInventSuccessOrForgetTheSavedSession" classname="es.teloarreglo.IdentityTest" time="0.003"/>
+  <testcase name="reopeningRefreshesAnExpiredAccessTokenBeforeShowingTheAccount" classname="es.teloarreglo.IdentityTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

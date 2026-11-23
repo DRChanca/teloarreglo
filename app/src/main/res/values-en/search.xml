@@ -1,0 +1,21 @@
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
+    <string name="catalogue_nearby">Near me</string>
+    <string name="nearby_back">Back to catalogue</string>
+    <string name="nearby_title">Professionals near the job</string>
+    <string name="nearby_hint">We use your location once to find the concejo and sort those who work there by distance.</string>
+    <string name="nearby_use_location">Use my location</string>
+    <string name="nearby_privacy">We do not store or track your location. Distances are approximate and in a straight line.</string>
+    <string name="nearby_locating">Finding your location…</string>
+    <string name="nearby_searching">Finding professionals…</string>
+    <string name="nearby_denied">Without location permission we cannot search near you. You can choose the concejo and mark the place on the map yourself.</string>
+    <string name="nearby_unavailable">We could not get your location. Turn location on and try again, or choose the concejo on the map yourself.</string>
+    <string name="nearby_uncertain">Your location is too imprecise to know the concejo. Try outdoors or choose the concejo on the map yourself.</string>
+    <string name="nearby_outside">That place is outside Asturias. For now there are only professionals in Asturias.</string>
+    <string name="nearby_confirm">You are close to a boundary between concejos. Where is the job?</string>
+    <string name="nearby_results">Working in %1$s</string>
+    <string name="nearby_empty">No professionals of this trade work in %1$s.</string>
+    <string name="nearby_distance_under_1km">Less than 1 km away</string>
+    <string name="nearby_distance_about">About %1$s km away</string>
+    <string name="nearby_error_network">Could not connect. Check your connection and try again.</string>
+    <string name="nearby_error_service">Search is not available right now. Please try again.</string>
+</resources>

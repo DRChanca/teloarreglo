@@ -1,0 +1,32 @@
+<variant
+    name="presentacionDebug"
+    package="es.teloarreglo"
+    minSdkVersion="26"
+    targetSdkVersion="35"
+    debuggable="true"
+    mergedManifest="build/intermediates/merged_manifest/presentacionDebug/processPresentacionDebugMainManifest/AndroidManifest.xml"
+    manifestMergeReport="build/outputs/logs/manifest-merger-presentacion-debug-report.txt"
+    proguardFiles="build/intermediates/default_proguard_files/global/proguard-android.txt-8.13.2"
+    partialResultsDir="build/intermediates/lint_partial_results/presentacionDebug/lintAnalyzePresentacionDebug/out">
+  <buildFeatures
+      namespacing="REQUIRED"/>
+  <sourceProviders>
+    <sourceProvider
+        manifests="src/main/AndroidManifest.xml"
+        javaDirectories="src/main/java:src/presentacion/java:src/debug/java:src/presentacionDebug/java:src/main/kotlin:src/presentacion/kotlin:src/debug/kotlin:src/presentacionDebug/kotlin"
+        resDirectories="src/main/res:src/presentacion/res:src/debug/res:src/presentacionDebug/res"
+        assetsDirectories="src/main/assets:src/presentacion/assets:src/debug/assets:src/presentacionDebug/assets"/>
+  </sourceProviders>
+  <testSourceProviders>
+  </testSourceProviders>
+  <testFixturesSourceProviders>
+  </testFixturesSourceProviders>
+  <artifact
+      classOutputs="build/intermediates/javac/presentacionDebug/compilePresentacionDebugJavaWithJavac/classes:build/tmp/kotlin-classes/presentacionDebug:build/intermediates/compile_and_runtime_not_namespaced_r_class_jar/presentacionDebug/processPresentacionDebugResources/R.jar"
+      type="MAIN"
+      applicationId="es.teloarreglo.presentacion"
+      generatedSourceFolders="build/generated/ap_generated_sources/presentacionDebug/out:build/generated/source/buildConfig/presentacion/debug"
+      generatedResourceFolders="build/generated/res/resValues/presentacion/debug"
+      desugaredMethodsFiles="/Users/david/.gradle/caches/8.13/transforms/456ba3d89b53ebb3122451cad9f99bcf/transformed/D8BackportedDesugaredMethods.txt">
+  </artifact>
+</variant>

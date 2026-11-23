@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "es.teloarreglo.app-mergePruebasReleaseResources-50:/values-watch-v21/values-watch-v21.xml",
+            "map": [
+                {
+                    "source": "/Users/david/.gradle/caches/8.13/transforms/e441b8524a6b53835f78e2b4ec17df24/transformed/appcompat-1.7.0/res/values-watch-v21/values-watch-v21.xml",
+                    "from": {
+                        "startLines": "2,6,10",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,271,499",
+                        "endLines": "5,9,13",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "266,494,724"
+                    }
+                }
+            ]
+        }
+    ]
+}

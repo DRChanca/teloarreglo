@@ -1,0 +1,9 @@
+{
+  "name": "search-data",
+  "private": true,
+  "description": "Reviewable SQL for the search: IGN concejos and prepared profile locations.",
+  "type": "module",
+  "dependencies": {
+    "h3-js": "4.1.0"
+  }
+}

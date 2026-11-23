@@ -10,13 +10,67 @@ plugins {
 val local = Properties().apply {
     rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
 }
+
+// Read only public connection settings. Never evaluate shell expressions or copy
+// credentials from .env into BuildConfig, resources or packaged assets.
+val publicNames = setOf(
+    "TEST_SUPABASE_URL", "TEST_SUPABASE_PUBLISHABLE_KEY",
+    "PRESENTATION_SUPABASE_URL", "PRESENTATION_SUPABASE_PUBLISHABLE_KEY",
+    // Public OAuth web client ID for native Google sign-in (its secret lives only in Supabase).
+    "GOOGLE_WEB_CLIENT_ID",
+)
+fun dotenvValue(raw: String, lineNumber: Int): String {
+    val result = StringBuilder()
+    var quote: Char? = null
+    var ended = false
+    var index = 0
+    fun invalid(): Nothing = error("Invalid public .env entry at line $lineNumber; use one quoted or unquoted value")
+    while (index < raw.length) {
+        val char = raw[index++]
+        when {
+            quote == '\'' -> if (char == '\'') quote = null else result.append(char)
+            quote == '"' -> when {
+                char == '"' -> quote = null
+                char == '\\' && index < raw.length && raw[index] in listOf('"', '\\') -> result.append(raw[index++])
+                else -> result.append(char)
+            }
+            char == '#' -> break
+            char.isWhitespace() -> ended = true
+            ended -> invalid()
+            char == '\'' || char == '"' -> quote = char
+            char == '\\' -> {
+                if (index == raw.length) invalid()
+                result.append(raw[index++])
+            }
+            else -> result.append(char)
+        }
+    }
+    if (quote != null) invalid()
+    return result.toString()
+}
+val dotenv = mutableMapOf<String, String>()
+// Provider-backed file reads are tracked by Gradle, including configuration-cache
+// invalidation when .env changes between IDE builds.
+providers.fileContents(rootProject.layout.projectDirectory.file(".env")).asText.orNull
+    ?.lineSequence()?.forEachIndexed { index, line ->
+        val name = line.substringBefore('=').trim()
+        if ('=' in line && name in publicNames) {
+            dotenv[name] = dotenvValue(line.substringAfter('=').trimStart(), index + 1)
+        }
+    }
 fun publicConfig(name: String): String {
-    val value = System.getenv(name) ?: local.getProperty(name, "")
+    require(name in publicNames)
+    val value = providers.environmentVariable(name).orNull?.takeIf { it.isNotEmpty() }
+        ?: dotenv[name] ?: local.getProperty(name, "")
     require(!name.endsWith("PUBLISHABLE_KEY") || value.isEmpty() || value.startsWith("sb_publishable_")) {
         "$name must be a publishable key, never a privileged secret"
     }
     require(!name.endsWith("_URL") || value.isEmpty() || value.startsWith("https://")) {
         "$name must use HTTPS"
+    }
+    require(value.none { it.isISOControl() }) { "$name must not contain control characters" }
+    require(name != "GOOGLE_WEB_CLIENT_ID" || value.isEmpty() || value.endsWith(".apps.googleusercontent.com")) {
+        "$name must be the public OAuth web client ID, never its secret"
     }
     return value.replace("\\", "\\\\").replace("\"", "\\\"")
 }
@@ -31,6 +85,26 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Public OAuth web client ID used by native Google sign-in (Google Cloud project
+        // "teloarreglo"). It is not a secret: it ships in every APK. .env/env can override it;
+        // an explicitly empty value is not possible here, so remove the line below to hide Google.
+        val googleWebClientId = publicConfig("GOOGLE_WEB_CLIENT_ID")
+            .ifEmpty { "852089134796-mihgv1588q6lq17lbovpupgq6i7ljhsd.apps.googleusercontent.com" }
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
+    }
+    // Shared debug signing: every machine and CI produce the same SHA-1, registered once
+    // in Google Cloud for Google sign-in. Debug only (standard "android" passwords);
+    // never used for release or Google Play.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = rootProject.file("app/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+    buildTypes {
+        getByName("debug") { signingConfig = signingConfigs.getByName("debug") }
     }
     flavorDimensions += "environment"
     productFlavors {
@@ -70,6 +144,11 @@ dependencies {
     implementation(platform("io.github.jan-tennert.supabase:bom:3.1.4"))
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    implementation("io.github.jan-tennert.supabase:storage-kt")
+    implementation("io.github.jan-tennert.supabase:compose-auth")
+    implementation("io.coil-kt.coil3:coil-compose:3.1.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("io.ktor:ktor-client-okhttp:3.1.3")
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.ktor:ktor-client-mock:3.1.3")

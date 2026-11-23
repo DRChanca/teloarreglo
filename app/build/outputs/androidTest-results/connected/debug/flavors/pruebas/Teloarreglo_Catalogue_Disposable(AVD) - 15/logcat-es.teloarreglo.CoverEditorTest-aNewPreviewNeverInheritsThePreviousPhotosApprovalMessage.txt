@@ -1,0 +1,120 @@
+11-21 10:01:34.668 10634 10672 I TestRunner: started: aNewPreviewNeverInheritsThePreviousPhotosApprovalMessage(es.teloarreglo.CoverEditorTest)
+11-21 10:01:34.669 10634 10672 D IdlingRegistry: Registering idling resources: [androidx.compose.ui.test.EspressoLink@432e804]
+11-21 10:01:34.670 10634 10672 W Settings: Setting always_finish_activities has moved from android.provider.Settings.System to android.provider.Settings.Global, returning read-only value.
+11-21 10:01:34.671   592   908 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10240, packageName = null, attributionTag = null, token = android.os.Binder@5cecbb5, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+11-21 10:01:34.710   832   887 D SplashScreenView: Build android.window.SplashScreenView{cf024ae V.E...... ......ID 0,0-0,0}
+11-21 10:01:34.710   832   887 D SplashScreenView: Icon: view: null drawable: null size: 0
+11-21 10:01:34.710   832   887 D SplashScreenView: Branding: view: android.view.View{a00d24f G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+11-21 10:01:34.727  1322  1322 I TopTaskTracker: onTaskRemoved: taskId=223
+11-21 10:01:34.727  1322  1322 I TopTaskTracker: onTaskRemoved: taskId=223
+11-21 10:01:34.728  1322  1322 W SplitSelectStateCtor: Missing session instanceIds
+11-21 10:01:34.728  1322  1322 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+11-21 10:01:34.740  1322  1322 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=225, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 cmp=es.teloarreglo.pruebas/androidx.activity.ComponentActivity }
+11-21 10:01:34.746 10634 10634 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@a5c352b in: PRE_ON_CREATE
+11-21 10:01:34.746 10634 10634 V ActivityScenario: Activity lifecycle changed event received but ignored because the reported transition was not ON_CREATE while the last known transition was PRE_ON_CREATE
+11-21 10:01:34.747 10634 10634 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@a5c352b in: CREATED
+11-21 10:01:34.747 10634 10634 V ActivityScenario: Update currentActivityStage to CREATED, currentActivity=androidx.activity.ComponentActivity@a5c352b
+11-21 10:01:34.748 10634 10634 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@a5c352b in: STARTED
+11-21 10:01:34.748 10634 10634 V ActivityScenario: Update currentActivityStage to STARTED, currentActivity=androidx.activity.ComponentActivity@a5c352b
+11-21 10:01:34.750 10634 10634 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@a5c352b in: RESUMED
+11-21 10:01:34.750 10634 10634 V ActivityScenario: Update currentActivityStage to RESUMED, currentActivity=androidx.activity.ComponentActivity@a5c352b
+11-21 10:01:34.803   592   612 W ziparchive: Unable to open '/data/app/~~ZRcpTVfNVo1ZMJX57GLITw==/es.teloarreglo.pruebas-oWTm3dceigLbJErYZirphA==/base.dm': No such file or directory
+11-21 10:01:34.803   592   612 I ActivityTaskManager: Displayed es.teloarreglo.pruebas/androidx.activity.ComponentActivity for user 0: +124ms
+11-21 10:01:34.805 10689 10689 D VRI[InstrumentationActivityInvoker$EmptyActivity]: visibilityChanged oldVisibility=true newVisibility=false
+11-21 10:01:34.829 10689 10689 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@342234e
+11-21 10:01:34.830   592  1098 W InputManager-JNI: Input channel object '656877b es.teloarreglo.pruebas.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity (client)' was disposed without first being removed with the input manager!
+11-21 10:01:34.844   592   616 W InputManager-JNI: Input channel object 'd62bb03 Splash Screen es.teloarreglo.pruebas.test (client)' was disposed without first being removed with the input manager!
+11-21 10:01:34.850   592   709 I ImeTracker: es.teloarreglo.pruebas:2caa3828: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+11-21 10:01:34.851   592   709 I ImeTracker: es.teloarreglo.pruebas:2caa3828: onCancelled at PHASE_SERVER_SHOULD_HIDE
+11-21 10:01:34.859  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+11-21 10:01:34.860  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+11-21 10:01:34.861  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=es.teloarreglo.pruebas, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+11-21 10:01:34.862  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+11-21 10:01:34.862  1389  1389 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+11-21 10:01:34.930  1322  1322 I TopTaskTracker: onTaskRemoved: taskId=224
+11-21 10:01:34.930  1322  1322 I TopTaskTracker: onTaskRemoved: taskId=224
+11-21 10:01:34.933   832   886 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@acd3238
+11-21 10:01:35.066  1322  1584 D EGL_emulation: app_time_stats: avg=34.89ms min=2.54ms max=362.16ms count=26
+11-21 10:01:35.100  1322  1322 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+11-21 10:01:35.111  1322  1322 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+11-21 10:01:35.118 10634 10634 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+11-21 10:01:35.136 10634 10634 W WindowOnBackDispatcher: OnBackInvokedCallback is not enabled for the application.
+11-21 10:01:35.136 10634 10634 W WindowOnBackDispatcher: Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+11-21 10:01:35.138  1322  1322 D BaseDepthController: setSurface:
+11-21 10:01:35.138  1322  1322 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+11-21 10:01:35.138  1322  1322 D BaseDepthController: 	mSurface: null
+11-21 10:01:35.138  1322  1322 D BaseDepthController: mSurface is null and mCurrentBlur is: 23
+11-21 10:01:35.138  1322  1322 D StatsLog: LAUNCHER_ONSTOP
+11-21 10:01:35.139  1322  1698 D OneSearchSuggestProvider: Shut down the binder channel
+11-21 10:01:35.139  1322  1322 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+11-21 10:01:35.139  1322  2522 D GmsPlayProvider: Shut down the binder channel
+11-21 10:01:35.141  1322  8118 I IPCThreadState: oneway function results for code 2 on binder at 0xb400007de49959b0 will be dropped but finished with status UNKNOWN_TRANSACTION
+11-21 10:01:35.177   832   886 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@49dddba
+11-21 10:01:35.179   592   908 W InputManager-JNI: Input channel object 'a0509e6 Splash Screen es.teloarreglo.pruebas (client)' was disposed without first being removed with the input manager!
+11-21 10:01:35.302   592  2011 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10241, packageName = null, attributionTag = null, token = android.os.Binder@5cecbb5, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+11-21 10:01:35.305   832   887 D SplashScreenView: Build android.window.SplashScreenView{e35a42f V.E...... ......ID 0,0-0,0}
+11-21 10:01:35.305   832   887 D SplashScreenView: Icon: view: null drawable: null size: 0
+11-21 10:01:35.305   832   887 D SplashScreenView: Branding: view: android.view.View{376a3c G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+11-21 10:01:35.307 10634 10634 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@a5c352b in: PAUSED
+11-21 10:01:35.307 10634 10634 V ActivityScenario: Update currentActivityStage to PAUSED, currentActivity=androidx.activity.ComponentActivity@a5c352b
+11-21 10:01:35.307  1322  1322 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=226, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 cmp=es.teloarreglo.pruebas.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity }
+11-21 10:01:35.343   401  3365 I RanchuHwc: logCompositionFallbackIfChanged: layer 632 CompositionType fallback from 3 to 1
+11-21 10:01:35.344 10689 10703 I EGL_emulation: Opening libGLESv1_CM_emulation.so
+11-21 10:01:35.344 10689 10703 I EGL_emulation: Opening libGLESv2_emulation.so
+11-21 10:01:35.355 10689 10703 W HWUI    : Failed to choose config with EGL_SWAP_BEHAVIOR_PRESERVED, retrying without...
+11-21 10:01:35.356 10689 10703 W HWUI    : Failed to initialize 101010-2 format, error = EGL_SUCCESS
+11-21 10:01:35.360   428   428 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+11-21 10:01:35.368   592   612 W ziparchive: Unable to open '/data/app/~~KrejeTxClNWhZdPLoHIKqQ==/es.teloarreglo.pruebas.test-3NcUA3v-V0e1ZvLYEZkYtg==/base.dm': No such file or directory
+11-21 10:01:35.369   592   612 I ActivityTaskManager: Displayed es.teloarreglo.pruebas.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity for user 0: +66ms
+11-21 10:01:35.369  1322  1322 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=60, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity }
+11-21 10:01:35.372  1322  1322 D StatsLog: LAUNCHER_ONRESUME
+11-21 10:01:35.372  1322  1343 D QuickstepModelDelegate: notifyAppTargetEvent action=1 launchLocation=
+11-21 10:01:35.373   592  1524 W AppSearchIcing: icing-search-engine.cc:321: Error: 5, Message: Document (com.google.android.googlequicksearchbox$OneSearchZeroStateGoogleSuggestions/default, zp) not found.
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: AppSearch 0-state cache not available, fallback to AGA
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: java.util.concurrent.CompletionException: java.util.NoSuchElementException: No value present
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:308)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:323)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(CompletableFuture.java:684)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:486)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2138)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:67)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.lambda$onResult$0(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:144)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.$r8$lambda$CEk3q8sDAQVhU3rQwVueB8FAj_M(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:1)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1$$ExternalSyntheticLambda0.run(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:22)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at android.os.Handler.handleCallback(Handler.java:959)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at android.os.Looper.loopOnce(Looper.java:232)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at android.os.Looper.loop(Looper.java:317)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at android.os.HandlerThread.run(HandlerThread.java:85)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: Caused by: java.util.NoSuchElementException: No value present
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at java.util.Optional.get(Optional.java:143)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:28)
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: 	... 8 more
+11-21 10:01:35.373  1322  1698 D OneSearchSuggestProvider: Created the binder channel successfully for end point service =com.google.android.apps.search.googleapp.search.suggest.plugins.onesearch.server.OneSearchSuggestService , mChannel=i1{delegate=f{logId=382, target=directaddress:///AndroidComponentAddress%5BIntent%20%7B%20act=grpc.io.action.BIND%20cmp=com.google.android.googlequicksearchbox/com.google.android.apps.search.googleapp.search.suggest.plugins.onesearch.server.OneSearchSuggestService%20%7D%5D}} , mOneSearchConnection=l2.Z@6f20658
+11-21 10:01:35.375  1594  1594 I A       : (REDACTED) Created gRPC endpoint for service %s
+11-21 10:01:35.376  1322  1322 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=6}
+11-21 10:01:35.376  1322  1322 D BaseDepthController: mSurface is null and mCurrentBlur is: 23
+11-21 10:01:35.377  1470  1581 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+11-21 10:01:35.377  1470  1581 I AiAiEcho: EchoTargets:
+11-21 10:01:35.377  1470  1581 I AiAiEcho: Filtered by AiAi flag check:
+11-21 10:01:35.377  1470  1581 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+11-21 10:01:35.377  1470  1581 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+11-21 10:01:35.377  1470  1581 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+11-21 10:01:35.377  1470  1581 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+11-21 10:01:35.384  1322  1322 D BaseDepthController: setSurface:
+11-21 10:01:35.384  1322  1322 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+11-21 10:01:35.384  1322  1322 D BaseDepthController: 	mSurface: Surface(name=com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity)/@0xdf7ae48
+11-21 10:01:35.388  1322  1322 D SsBaseTemplateCard: No text view can be set up
+11-21 10:01:35.388  1322  1322 D SsBaseTemplateCard: Passed-in item info is null
+11-21 10:01:35.388  1322  1322 D SsBaseTemplateCard: Passed-in item info is null
+11-21 10:01:35.388  1322  1322 D SsBaseTemplateCard: Passed-in item info is null
+11-21 10:01:35.388  1322  1322 I SsBaseTemplateCard: Secondary card pane is null
+11-21 10:01:35.392 10634 10634 D VRI[ComponentActivity]: visibilityChanged oldVisibility=true newVisibility=false
+11-21 10:01:35.404 10634 10634 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@a5c352b in: STOPPED
+11-21 10:01:35.404 10634 10634 V ActivityScenario: Update currentActivityStage to STOPPED, currentActivity=androidx.activity.ComponentActivity@a5c352b
+11-21 10:01:35.405 10634 10634 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@a5c352b in: DESTROYED
+11-21 10:01:35.405 10634 10634 V ActivityScenario: Update currentActivityStage to DESTROYED, currentActivity=null
+11-21 10:01:35.405 10634 10634 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@edc01ff
+11-21 10:01:35.407   592  1098 W InputManager-JNI: Input channel object '5270f7d es.teloarreglo.pruebas/androidx.activity.ComponentActivity (client)' was disposed without first being removed with the input manager!
+11-21 10:01:35.408 10634 10672 D IdlingRegistry: Unregistering idling resources: [androidx.compose.ui.test.EspressoLink@432e804]
+11-21 10:01:35.408 10634 10672 I TestRunner: finished: aNewPreviewNeverInheritsThePreviousPhotosApprovalMessage(es.teloarreglo.CoverEditorTest)

@@ -1,0 +1,36 @@
+<resources>
+    <string name="catalogue_title">Hilfe für dein Zuhause finden</string>
+    <string name="catalogue_account">Konto</string>
+    <string name="catalogue_back">Zurück</string>
+    <string name="catalogue_open">Profil ansehen →</string>
+    <string name="catalogue_loading">Fachkräfte werden geladen…</string>
+    <string name="catalogue_error">Fachkräfte konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.</string>
+    <string name="catalogue_empty">Für dieses Handwerk sind noch keine Fachkräfte veröffentlicht.</string>
+    <string name="catalogue_unpublished">Dieses Profil ist nicht öffentlich verfügbar.</string>
+    <string name="catalogue_services">Leistungen</string>
+    <string name="catalogue_coverage">Einsatzgebiete</string>
+    <string name="catalogue_languages">Sprachen</string>
+    <string name="catalogue_phone">Öffentliche Telefonnummer</string>
+    <string name="catalogue_address">Geschäftsadresse</string>
+    <string name="catalogue_prices">Richtpreise</string>
+    <string name="catalogue_prices_hint">Der Endpreis wird bei der Terminvereinbarung vereinbart.</string>
+    <string name="catalogue_no_prices">Fordere ein Angebot für deine Arbeiten an.</string>
+    <string name="catalogue_includes">Enthalten: %1$s</string>
+    <string name="catalogue_excludes">Zusätzlich: %1$s</string>
+    <string name="catalogue_no_reviews">Noch keine Bewertungen</string>
+    <string name="catalogue_rating">%1$.1f von 5 · %2$d Bewertungen</string>
+    <string name="catalogue_illustration">Illustration für %1$s; kein Foto einer ausgeführten Arbeit</string>
+    <string name="catalogue_owned">Dein berufliches Profil</string>
+    <string name="catalogue_can_hire">Dieses Konto kann Leistungen beauftragen und ein eigenes berufliches Profil haben.</string>
+    <string name="trade_all">Alle</string>
+    <string name="trade_plumbing">Sanitär</string>
+    <string name="trade_electrical">Elektrik</string>
+    <string name="trade_carpentry">Tischlerei</string>
+    <string name="trade_painting">Malerarbeiten</string>
+    <string name="trade_masonry">Maurerarbeiten</string>
+    <string name="trade_general">Allgemeine Reparaturen</string>
+    <string name="price_hour">Stunde</string>
+    <string name="price_sqm">m²</string>
+    <string name="price_unit">Einheit</string>
+    <string name="price_job">Auftrag</string>
+</resources>

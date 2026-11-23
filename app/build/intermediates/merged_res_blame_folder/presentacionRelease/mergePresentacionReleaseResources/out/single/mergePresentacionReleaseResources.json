@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "es.teloarreglo.app-presentacionRelease-52:/xml_locales_config.xml.flat",
+        "source": "es.teloarreglo.app-main-53:/xml/locales_config.xml"
+    },
+    {
+        "merged": "es.teloarreglo.app-presentacionRelease-52:/xml_data_extraction_rules.xml.flat",
+        "source": "es.teloarreglo.app-main-53:/xml/data_extraction_rules.xml"
+    }
+]

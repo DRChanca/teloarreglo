@@ -1,0 +1,1253 @@
+# proto-message: google.testing.platform.proto.api.core.TestSuiteResult
+# 2026-11-21T09:01:38.191236Z:
+test_suite_meta_data {
+  scheduled_test_case_count: 22
+  device {
+    id: "emulator-5560"
+    friendly_name: "primary"
+  }
+}
+test_status: PASSED
+test_result {
+  test_case {
+    test_class: "AccessTest"
+    test_package: "es.teloarreglo"
+    test_method: "signedInAccountCanSignOutWithoutLeavingAnAuthenticatedScreen"
+    start_time {
+      seconds: 1795251669
+      nanos: 195000000
+    }
+    end_time {
+      seconds: 1795251672
+      nanos: 384000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.AccessTest-signedInAccountCanSignOutWithoutLeavingAnAuthenticatedScreen.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "AccessTest"
+    test_package: "es.teloarreglo"
+    test_method: "incorrectCredentialsDoNotOpenTheAccount"
+    start_time {
+      seconds: 1795251672
+      nanos: 394000000
+    }
+    end_time {
+      seconds: 1795251674
+      nanos: 420000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.AccessTest-incorrectCredentialsDoNotOpenTheAccount.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "AccessTest"
+    test_package: "es.teloarreglo"
+    test_method: "leavingAccountDuringSignInDoesNotStrandThePendingOperation"
+    start_time {
+      seconds: 1795251674
+      nanos: 421000000
+    }
+    end_time {
+      seconds: 1795251676
+      nanos: 225000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.AccessTest-leavingAccountDuringSignInDoesNotStrandThePendingOperation.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "CatalogueUiTest"
+    test_package: "es.teloarreglo"
+    test_method: "returningFromAProfileKeepsTheListPosition"
+    start_time {
+      seconds: 1795251676
+      nanos: 226000000
+    }
+    end_time {
+      seconds: 1795251678
+      nanos: 74000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.CatalogueUiTest-returningFromAProfileKeepsTheListPosition.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "CatalogueUiTest"
+    test_package: "es.teloarreglo"
+    test_method: "aSearchWithoutMatchesOffersAResetInsteadOfATechnicalError"
+    start_time {
+      seconds: 1795251678
+      nanos: 75000000
+    }
+    end_time {
+      seconds: 1795251679
+      nanos: 456000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.CatalogueUiTest-aSearchWithoutMatchesOffersAResetInsteadOfATechnicalError.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "CatalogueUiTest"
+    test_package: "es.teloarreglo"
+    test_method: "commercialAddressIsVisibleAndSpanishOnlyDoesNotShowLanguages"
+    start_time {
+      seconds: 1795251679
+      nanos: 457000000
+    }
+    end_time {
+      seconds: 1795251680
+      nanos: 184000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.CatalogueUiTest-commercialAddressIsVisibleAndSpanishOnlyDoesNotShowLanguages.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "CatalogueUiTest"
+    test_package: "es.teloarreglo"
+    test_method: "failureCanBeRetriedWithoutShowingAnEmptySuccess"
+    start_time {
+      seconds: 1795251680
+      nanos: 185000000
+    }
+    end_time {
+      seconds: 1795251681
+      nanos: 62000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.CatalogueUiTest-failureCanBeRetriedWithoutShowingAnEmptySuccess.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "CatalogueUiTest"
+    test_package: "es.teloarreglo"
+    test_method: "loadingDoesNotPretendTheCatalogueIsEmpty"
+    start_time {
+      seconds: 1795251681
+      nanos: 63000000
+    }
+    end_time {
+      seconds: 1795251681
+      nanos: 906000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.CatalogueUiTest-loadingDoesNotPretendTheCatalogueIsEmpty.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "CatalogueUiTest"
+    test_package: "es.teloarreglo"
+    test_method: "visitorOpensProfileAndReturnsToTheFilteredList"
+    start_time {
+      seconds: 1795251681
+      nanos: 907000000
+    }
+    end_time {
+      seconds: 1795251683
+      nanos: 326000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.CatalogueUiTest-visitorOpensProfileAndReturnsToTheFilteredList.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "ChatUiTest"
+    test_package: "es.teloarreglo"
+    test_method: "recoveredHistoryConfirmsUncertainSendWithoutManualRetry"
+    start_time {
+      seconds: 1795251683
+      nanos: 327000000
+    }
+    end_time {
+      seconds: 1795251686
+      nanos: 706000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.ChatUiTest-recoveredHistoryConfirmsUncertainSendWithoutManualRetry.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "ChatUiTest"
+    test_package: "es.teloarreglo"
+    test_method: "failedSendKeepsTextAndRetriesWithoutChangingIdentity"
+    start_time {
+      seconds: 1795251686
+      nanos: 707000000
+    }
+    end_time {
+      seconds: 1795251688
+      nanos: 30000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.ChatUiTest-failedSendKeepsTextAndRetriesWithoutChangingIdentity.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "ChatUiTest"
+    test_package: "es.teloarreglo"
+    test_method: "uncertainSendSurvivesLeavingAndReopeningChat"
+    start_time {
+      seconds: 1795251688
+      nanos: 30000000
+    }
+    end_time {
+      seconds: 1795251689
+      nanos: 720000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.ChatUiTest-uncertainSendSurvivesLeavingAndReopeningChat.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "ChatUiTest"
+    test_package: "es.teloarreglo"
+    test_method: "professionalOpensInboxAndReadsPersistedContact"
+    start_time {
+      seconds: 1795251689
+      nanos: 721000000
+    }
+    end_time {
+      seconds: 1795251690
+      nanos: 457000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.ChatUiTest-professionalOpensInboxAndReadsPersistedContact.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "CoverEditorTest"
+    test_package: "es.teloarreglo"
+    test_method: "aPhotoSubmissionRetiresTheKeyOfAnEarlierUnconfirmedGenericRequest"
+    start_time {
+      seconds: 1795251690
+      nanos: 457000000
+    }
+    end_time {
+      seconds: 1795251691
+      nanos: 606000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.CoverEditorTest-aPhotoSubmissionRetiresTheKeyOfAnEarlierUnconfirmedGenericRequest.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "CoverEditorTest"
+    test_package: "es.teloarreglo"
+    test_method: "anInvalidReplacementCannotSubmitThePreviousSelection"
+    start_time {
+      seconds: 1795251691
+      nanos: 607000000
+    }
+    end_time {
+      seconds: 1795251692
+      nanos: 295000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.CoverEditorTest-anInvalidReplacementCannotSubmitThePreviousSelection.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "CoverEditorTest"
+    test_package: "es.teloarreglo"
+    test_method: "aRealSdkNullResponseOpensTheEditorWithoutAConnectionError"
+    start_time {
+      seconds: 1795251692
+      nanos: 295000000
+    }
+    end_time {
+      seconds: 1795251693
+      nanos: 334000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.CoverEditorTest-aRealSdkNullResponseOpensTheEditorWithoutAConnectionError.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "CoverEditorTest"
+    test_package: "es.teloarreglo"
+    test_method: "submissionIsNotShownAsPendingBeforeTheServerConfirmsIt"
+    start_time {
+      seconds: 1795251693
+      nanos: 335000000
+    }
+    end_time {
+      seconds: 1795251694
+      nanos: 263000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.CoverEditorTest-submissionIsNotShownAsPendingBeforeTheServerConfirmsIt.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "CoverEditorTest"
+    test_package: "es.teloarreglo"
+    test_method: "retryKeepsTheSameImageAndIdempotencyKey"
+    start_time {
+      seconds: 1795251694
+      nanos: 264000000
+    }
+    end_time {
+      seconds: 1795251695
+      nanos: 308000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.CoverEditorTest-retryKeepsTheSameImageAndIdempotencyKey.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "CoverEditorTest"
+    test_package: "es.teloarreglo"
+    test_method: "aNewPreviewNeverInheritsThePreviousPhotosApprovalMessage"
+    start_time {
+      seconds: 1795251695
+      nanos: 310000000
+    }
+    end_time {
+      seconds: 1795251696
+      nanos: 43000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.CoverEditorTest-aNewPreviewNeverInheritsThePreviousPhotosApprovalMessage.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "CoverPhotoTest"
+    test_package: "es.teloarreglo"
+    test_method: "uploadedCopyIsResizedOrientedAndHasNoGpsWhileTheOriginalIsUnchanged"
+    start_time {
+      seconds: 1795251696
+      nanos: 74000000
+    }
+    end_time {
+      seconds: 1795251696
+      nanos: 157000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.CoverPhotoTest-uploadedCopyIsResizedOrientedAndHasNoGpsWhileTheOriginalIsUnchanged.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "LanguageTest"
+    test_package: "es.teloarreglo"
+    test_method: "manualLanguageSurvivesActivityRecreation"
+    start_time {
+      seconds: 1795251696
+      nanos: 158000000
+    }
+    end_time {
+      seconds: 1795251697
+      nanos: 500000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.LanguageTest-manualLanguageSurvivesActivityRecreation.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "PersistedIdentityTest"
+    test_package: "es.teloarreglo"
+    test_method: "aNewClientRecoversTheEncryptedSessionAndLogoutRemovesIt"
+    start_time {
+      seconds: 1795251697
+      nanos: 501000000
+    }
+    end_time {
+      seconds: 1795251697
+      nanos: 643000000
+    }
+    device {
+      id: "emulator-5560"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/logcat-es.teloarreglo.PersistedIdentityTest-aNewClientRecoversTheEncryptedSessionAndLogoutRemovesIt.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/cpuinfo"
+    }
+  }
+}
+output_artifact {
+  label {
+    label: "test-results.log"
+    namespace: "com.google.testing.platform.runtime.android.driver.AndroidInstrumentationDriver"
+  }
+  source_path {
+    path: "/Users/david/Desktop/MOVIL/app/build/outputs/androidTest-results/connected/debug/flavors/pruebas/Teloarreglo_Catalogue_Disposable(AVD) - 15/testlog/test-results.log"
+  }
+  type: TEST_DATA
+  mime_type: "text/plain"
+}

@@ -34,10 +34,10 @@ de separar pruebas y presentación en dos proyectos.
 Esta sección tiene prioridad sobre las referencias posteriores al alcance del primer lanzamiento. El resto del documento conserva la visión del producto futuro; no todo es requisito de la demostración.
 
 - Contexto: programa universitario de emprendimiento en aplicaciones móviles.
-- Equipo: una persona.
+- Equipo: dos personas.
 - Sin experiencia previa en desarrollo Android; la implementación se realizará con ayuda de agentes.
-- Dedicación disponible: unas tres horas al día.
-- Planteamiento aceptado: recorridos verticales con interfaces acordadas e integración frecuente, no una integración única al final.
+- Dedicación disponible: unas tres horas al día por integrante, aproximadamente seis horas diarias combinadas. Esto no equivale a seis horas de trabajo independiente sin costes de coordinación.
+- Reparto aceptado: dos líneas de trabajo con interfaces acordadas e integración frecuente, no una integración única al final.
 - Calendario acordado: recorrido completo integrado el 27 de noviembre de 2026; 28 para pruebas; 29–30 para correcciones y grabación; entrega del vídeo el 1 de diciembre.
 - Presupuesto orientativo de infraestructura: unos 10 €/mes; no es una estimación comprobada de costes.
 - Destino del mapa Wayfinder: resolver las decisiones necesarias para una demo Android presentable y documentar cómo evolucionarla a producto viable.
@@ -46,7 +46,7 @@ Esta sección tiene prioridad sobre las referencias posteriores al alcance del p
 - Pagos, suscripción y comprobación del negocio se simulan, sin cobros ni petición de datos bancarios reales. La narración no los presenta como operaciones comerciales auténticas.
 - La visión comercial mantiene la suscripción opcional de 5 €/mes con herramientas de gestión y ventajas de posicionamiento, y los pagos opcionales sin comisión propia.
 - No se exige operar un negocio, revisar documentación real o procesar dinero real para esta demo.
-- La planificación de implementación deberá permitir ordenar el trabajo en tareas secuenciales, con dependencias e integración explícitas.
+- La planificación de implementación deberá permitir repartir trabajo entre los dos integrantes, con dependencias e integración explícitas.
 - Arquitectura y contratos aprobados: [arquitectura de la demo](arquitectura-demo.md), decisión [Elegir arquitectura y contratos](https://github.com/DRChanca/teloarreglo/issues/6). Kotlin/Compose, Supabase Free en Frankfurt, panel React/TypeScript en Cloudflare Pages Free, Google Maps y APK directa. Son elecciones documentadas, no servicios contratados ni funciones implementadas.
 - El usuario confirma la entrega del vídeo el 1 de diciembre de 2026, antes de la prueba posterior de la aplicación. El cartel anuncia presentación final el 4 de diciembre a las 17:00; mantiene una discrepancia entre día semanal y fecha para el 1 de diciembre y no aporta una rúbrica oficial detallada.
 
@@ -161,7 +161,7 @@ Estas decisiones actualizan el calendario, la evidencia del reloj y la forma de 
 - La dependencia de internet se acepta expresamente sin conexión alternativa ni grabación de respaldo obligatorias por ahora. No se promete funcionamiento completo sin conexión.
 - Identificar y conservar APK y versiones del panel/servidor utilizadas al grabar; comprobar disponibilidad de servicios y evitar despliegues improvisados durante la grabación. No reiniciar los datos preparados.
 - Separar lo demostrado de los requisitos de negocio futuro. No prometer coste garantizado de 10 €/mes, ingreso bancario en 48 horas, verificación comercial real ni rentabilidad demostrada de la suscripción.
-- Cerrar Wayfinder significa que las decisiones permiten pasar a especificación, no que se hayan construido o validado los servicios. Siguiente paso: consolidar una especificación implementable y después proponer y aprobar tickets con dependencias y responsable. No se generan tickets de implementación con este cierre.
+- Cerrar Wayfinder significa que las decisiones permiten pasar a especificación, no que se hayan construido o validado los servicios. Siguiente paso: consolidar una especificación implementable y después proponer y aprobar tickets con dependencias y reparto. No se generan tickets de implementación con este cierre.
 - Las comprobaciones técnicas pendientes de la arquitectura deben hacerse pronto durante el trabajo posterior. Si revelan cambios necesarios de coste, alcance o tecnología, se vuelve al usuario antes de aplicarlos.
 
 Teloarreglo conecta a particulares que necesitan arreglos con profesionales independientes y pequeñas empresas. Permite encontrar profesionales, contactar, concertar citas, acordar precios, pagar opcionalmente y dejar reseñas.

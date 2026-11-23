@@ -1,0 +1,284 @@
+11-21 10:01:27.387 10634 10672 I TestRunner: started: uncertainSendSurvivesLeavingAndReopeningChat(es.teloarreglo.ChatUiTest)
+11-21 10:01:27.388 10634 10672 D IdlingRegistry: Registering idling resources: [androidx.compose.ui.test.EspressoLink@9a8b35]
+11-21 10:01:27.389 10634 10672 W Settings: Setting always_finish_activities has moved from android.provider.Settings.System to android.provider.Settings.Global, returning read-only value.
+11-21 10:01:27.390   592  1098 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10240, packageName = null, attributionTag = null, token = android.os.Binder@5cecbb5, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+11-21 10:01:27.393   401  3365 I RanchuHwc: logCompositionFallbackIfChanged: layer 584 CompositionType fallback from 2 to 1
+11-21 10:01:27.393   401  3365 I RanchuHwc: logCompositionFallbackIfChanged: layer 585 CompositionType fallback from 2 to 1
+11-21 10:01:27.427  1322  1584 D EGL_emulation: app_time_stats: avg=57.50ms min=0.64ms max=716.73ms count=20
+11-21 10:01:27.443   832   887 D SplashScreenView: Build android.window.SplashScreenView{465f368 V.E...... ......ID 0,0-0,0}
+11-21 10:01:27.443   832   887 D SplashScreenView: Icon: view: null drawable: null size: 0
+11-21 10:01:27.443   832   887 D SplashScreenView: Branding: view: android.view.View{a028381 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+11-21 10:01:27.445  1322  1322 I TopTaskTracker: onTaskRemoved: taskId=209
+11-21 10:01:27.445  1322  1322 I TopTaskTracker: onTaskRemoved: taskId=209
+11-21 10:01:27.449  1322  1322 W SplitSelectStateCtor: Missing session instanceIds
+11-21 10:01:27.449  1322  1322 D StatsLog: LAUNCHER_SPLIT_SELECTION_EXIT_INTERRUPTED
+11-21 10:01:27.451  1322  1322 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=211, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 cmp=es.teloarreglo.pruebas/androidx.activity.ComponentActivity }
+11-21 10:01:27.462 10634 10634 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@4ea59e9 in: PRE_ON_CREATE
+11-21 10:01:27.462 10634 10634 V ActivityScenario: Activity lifecycle changed event received but ignored because the reported transition was not ON_CREATE while the last known transition was PRE_ON_CREATE
+11-21 10:01:27.462 10634 10634 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@4ea59e9 in: CREATED
+11-21 10:01:27.462 10634 10634 V ActivityScenario: Update currentActivityStage to CREATED, currentActivity=androidx.activity.ComponentActivity@4ea59e9
+11-21 10:01:27.462 10634 10634 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@4ea59e9 in: STARTED
+11-21 10:01:27.462 10634 10634 V ActivityScenario: Update currentActivityStage to STARTED, currentActivity=androidx.activity.ComponentActivity@4ea59e9
+11-21 10:01:27.479 10634 10634 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@4ea59e9 in: RESUMED
+11-21 10:01:27.479 10634 10634 V ActivityScenario: Update currentActivityStage to RESUMED, currentActivity=androidx.activity.ComponentActivity@4ea59e9
+11-21 10:01:27.574   592   612 W ziparchive: Unable to open '/data/app/~~ZRcpTVfNVo1ZMJX57GLITw==/es.teloarreglo.pruebas-oWTm3dceigLbJErYZirphA==/base.dm': No such file or directory
+11-21 10:01:27.574   592   612 I ActivityTaskManager: Displayed es.teloarreglo.pruebas/androidx.activity.ComponentActivity for user 0: +154ms
+11-21 10:01:27.579   832   886 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@c1f3433
+11-21 10:01:27.579   592  2011 W InputManager-JNI: Input channel object 'af2c14c Splash Screen es.teloarreglo.pruebas.test (client)' was disposed without first being removed with the input manager!
+11-21 10:01:27.581 10689 10689 D VRI[InstrumentationActivityInvoker$EmptyActivity]: visibilityChanged oldVisibility=true newVisibility=false
+11-21 10:01:27.611 10689 10689 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@77eabfc
+11-21 10:01:27.620   592  2011 W InputManager-JNI: Input channel object 'c0bfb4e es.teloarreglo.pruebas.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity (client)' was disposed without first being removed with the input manager!
+11-21 10:01:27.638  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Camera2/Camera2.apk' with 1 weak references
+11-21 10:01:27.641  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/SettingsGoogle/SettingsGoogle.apk' with 1 weak references
+11-21 10:01:27.641  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '/product/overlay/SettingsGoogle__sdk_gphone64_arm64__auto_generated_rro_product.apk' with 1 weak references
+11-21 10:01:27.641  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/PrebuiltBugle/PrebuiltBugle.apk' with 1 weak references
+11-21 10:01:27.641  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/GoogleDialer/GoogleDialer.apk' with 1 weak references
+11-21 10:01:27.641  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/SafetyHubPrebuilt/SafetyHubPrebuilt.apk' with 1 weak references
+11-21 10:01:27.641  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/Velvet/Velvet.apk' with 1 weak references
+11-21 10:01:27.641  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~O7LsXArg3F2MHTFx_J0dig==/es.teloarreglo.presentacion-WCqJUtMtPinE7bGrVkJS2g==/base.apk' with 1 weak references
+11-21 10:01:27.642  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /system_ext/priv-app/SystemUIGoogle/SystemUIGoogle.apk' with 1 weak references
+11-21 10:01:27.642  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '/vendor/overlay/SystemUIGoogle__sdk_gphone64_arm64__auto_generated_rro_vendor.apk' with 1 weak references
+11-21 10:01:27.642  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '/product/overlay/SystemUIGoogle__sdk_gphone64_arm64__auto_generated_rro_product.apk' with 1 weak references
+11-21 10:01:27.642  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '/product/overlay/SystemUIEmulationPixel7/SystemUIEmulationPixel7Overlay.apk' with 1 weak references
+11-21 10:01:27.642  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Drive/Drive.apk' with 1 weak references
+11-21 10:01:27.642  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Maps/Maps.apk' with 1 weak references
+11-21 10:01:27.642  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/Photos/Photos.apk' with 1 weak references
+11-21 10:01:27.642  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/WellbeingPrebuilt/WellbeingPrebuilt.apk' with 1 weak references
+11-21 10:01:27.642  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/YouTubeMusicPrebuilt/YouTubeMusicPrebuilt.apk' with 1 weak references
+11-21 10:01:27.642  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/CalendarGooglePrebuilt/CalendarGooglePrebuilt.apk' with 1 weak references
+11-21 10:01:27.643  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/GoogleContacts/GoogleContacts.apk' with 1 weak references
+11-21 10:01:27.643  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/PrebuiltDeskClockGoogle/PrebuiltDeskClockGoogle.apk' with 1 weak references
+11-21 10:01:27.643  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /product/priv-app/SettingsIntelligenceGooglePrebuilt/SettingsIntelligenceGooglePrebuilt.apk' with 1 weak references
+11-21 10:01:27.643  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /product/app/YouTube/YouTube.apk' with 1 weak references
+11-21 10:01:27.643  1470  1480 W ogle.android.as: ApkAssets: Deleting an ApkAssets object '<empty> and /data/app/~~ZRcpTVfNVo1ZMJX57GLITw==/es.teloarreglo.pruebas-oWTm3dceigLbJErYZirphA==/base.apk' with 1 weak references
+11-21 10:01:27.644   592   709 I ImeTracker: es.teloarreglo.pruebas:a721f223: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+11-21 10:01:27.644   592   709 I ImeTracker: es.teloarreglo.pruebas:a721f223: onCancelled at PHASE_SERVER_SHOULD_HIDE
+11-21 10:01:27.646  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+11-21 10:01:27.647  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+11-21 10:01:27.647  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=es.teloarreglo.pruebas, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+11-21 10:01:27.647  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+11-21 10:01:27.648  1389  1389 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+11-21 10:01:27.678  1322  1322 I TopTaskTracker: onTaskRemoved: taskId=210
+11-21 10:01:27.679  1322  1322 I TopTaskTracker: onTaskRemoved: taskId=210
+11-21 10:01:27.893 10634 10672 W SurfaceComposerClient: Sync transaction timed out waiting for commit callback.
+11-21 10:01:27.905  1322  1322 D VRI[NexusLauncherActivity]: visibilityChanged oldVisibility=true newVisibility=false
+11-21 10:01:27.908 10634 10634 D AutofillManager: Fill dialog is enabled:false, hints=[password, passwordAuto, creditCardNumber, creditCardSecurityCode, creditCardExpirationDate]
+11-21 10:01:27.914 10634 10634 W WindowOnBackDispatcher: OnBackInvokedCallback is not enabled for the application.
+11-21 10:01:27.914 10634 10634 W WindowOnBackDispatcher: Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+11-21 10:01:27.937  1322  1322 D BaseDepthController: setSurface:
+11-21 10:01:27.937  1322  1322 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+11-21 10:01:27.937  1322  1322 D BaseDepthController: 	mSurface: null
+11-21 10:01:27.937  1322  1322 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+11-21 10:01:27.937  1322  1322 D StatsLog: LAUNCHER_ONSTOP
+11-21 10:01:27.937  1322  2522 D GmsPlayProvider: Shut down the binder channel
+11-21 10:01:27.937  1322  1322 D StatsLog: LAUNCHER_GOOGLE_SEARCH_RESTORE_LIST_SIZE_AFTER_ACTIVITY_RESTART
+11-21 10:01:27.937  1322  1322 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+11-21 10:01:27.937  1322  1322 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+11-21 10:01:27.937  1322  1322 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=7}
+11-21 10:01:27.941  1322  1698 D OneSearchSuggestProvider: Shut down the binder channel
+11-21 10:01:27.944  1322  3025 I IPCThreadState: oneway function results for code 2 on binder at 0xb400007de4974770 will be dropped but finished with status UNKNOWN_TRANSACTION
+11-21 10:01:27.958   832   886 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@95ade14
+11-21 10:01:27.959   592  1098 W InputManager-JNI: Input channel object 'b934af8 Splash Screen es.teloarreglo.pruebas (client)' was disposed without first being removed with the input manager!
+11-21 10:01:28.096 10634 10634 D InsetsController: show(ime(), fromIme=false)
+11-21 10:01:28.097  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+11-21 10:01:28.097  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+11-21 10:01:28.097  1389  1389 I DeviceIntelligenceExtension: DeviceIntelligenceExtension.getInlineSuggestionsRequest():304 Inline suggestions disabled in stylus mode or vertical PK/Voice toolbar
+11-21 10:01:28.097 10634 10634 I ImeTracker: es.teloarreglo.pruebas:85ef17c8: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT_BY_INSETS_API fromUser false
+11-21 10:01:28.097 10634 10634 D InputMethodManager: showSoftInput() view=androidx.compose.ui.platform.AndroidComposeView{1f46bff VFED..... .F....ID 0,0-320,640 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT_BY_INSETS_API
+11-21 10:01:28.105 10634 10634 I AssistStructure: Flattened final assist data: 528 bytes, containing 1 windows, 3 views
+11-21 10:01:28.105  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=es.teloarreglo.pruebas, inputType=28001, inputTypeString=Normal, enableLearning=true, autoCorrection=true, autoComplete=true, imeOptions=42000000, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=0, initialSelEnd=0, initialCapsMode=0, label=null, fieldId=-1, fieldName=null, extras=Bundle[mParcelledData.dataSize=404], hintText=null, hintLocales=[]}}, false)
+11-21 10:01:28.105  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+11-21 10:01:28.105  1389  1389 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: en-US, ime_english_united_states
+11-21 10:01:28.107  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=es.teloarreglo.pruebas, inputType=28001, inputTypeString=Normal, enableLearning=true, autoCorrection=true, autoComplete=true, imeOptions=42000000, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=0, initialSelEnd=0, initialCapsMode=0, label=null, fieldId=-1, fieldName=null, extras=Bundle[mParcelledData.dataSize=404], hintText=null, hintLocales=[]}}, true)
+11-21 10:01:28.108  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+11-21 10:01:28.108  1389  1389 W SessionManager: SessionManager.beginSession():53 Try to begin an already begun session [INPUT_SESSION], end it first
+11-21 10:01:28.108  1389  1389 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: en-US, ime_english_united_states
+11-21 10:01:28.109  1389  1389 I StylusModule: StylusModule.onUpdateToolType():770 Update tool type = 2
+11-21 10:01:28.109  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.onStartInputView():2098 onStartInputView(EditorInfo{EditorInfo{packageName=es.teloarreglo.pruebas, inputType=28001, inputTypeString=Normal, enableLearning=true, autoCorrection=true, autoComplete=true, imeOptions=42000000, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=0, initialSelEnd=0, initialCapsMode=0, label=null, fieldId=-1, fieldName=null, extras=Bundle[{android.support.text.emoji.emojiCompat_metadataVersion=9, androidx.core.view.inputmethod.EditorInfoCompat.STYLUS_HANDWRITING_ENABLED=true, android.support.text.emoji.emojiCompat_replaceAll=false}], hintText=null, hintLocales=[]}}, false)
+11-21 10:01:28.110  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+11-21 10:01:28.124  1028  1028 V InlineSuggestionRenderService: handleDestroySuggestionViews called for 0:253144538
+11-21 10:01:28.132   377   449 I netd    : tetherGetStats() -> {[]} <0.20ms>
+11-21 10:01:28.136 10634 10634 I ImeTracker: es.teloarreglo.pruebas:45c88bb0: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+11-21 10:01:28.136 10634 10634 D InputMethodManager: showSoftInput() view=androidx.compose.ui.platform.AndroidComposeView{1f46bff VFED..... .F....ID 0,0-320,640 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+11-21 10:01:28.137 10634 10634 D Autofill Status: Autofill popup isn't shown because autofill is not available.
+11-21 10:01:28.137 10634 10634 D Autofill Status:
+11-21 10:01:28.137 10634 10634 D Autofill Status: Did you set up autofill?
+11-21 10:01:28.137 10634 10634 D Autofill Status: 1. Go to Settings > System > Languages&input > Advanced > Autofill Service
+11-21 10:01:28.137 10634 10634 D Autofill Status: 2. Pick a service
+11-21 10:01:28.137 10634 10634 D Autofill Status:
+11-21 10:01:28.137 10634 10634 D Autofill Status: Did you add an account?
+11-21 10:01:28.137 10634 10634 D Autofill Status: 1. Go to Settings > System > Languages&input > Advanced
+11-21 10:01:28.137 10634 10634 D Autofill Status: 2. Click on the settings icon next to the Autofill Service
+11-21 10:01:28.137 10634 10634 D Autofill Status: 3. Add your account
+11-21 10:01:28.138  1389  1389 I KeyboardHeightUtil: KeyboardHeightUtil.getOemKeyboardHeightRatio():206 systemKeyboardHeightRatio:1.000000.
+11-21 10:01:28.138  1389  1389 I AndroidIME: AbstractIme.onActivate():89 LatinIme.onActivate() : EditorInfo = EditorInfo{packageName=es.teloarreglo.pruebas, inputType=28001, inputTypeString=Normal, enableLearning=true, autoCorrection=true, autoComplete=true, imeOptions=42000000, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=0, initialSelEnd=0, initialCapsMode=0, label=null, fieldId=-1, fieldName=null, extras=Bundle[{android.support.text.emoji.emojiCompat_metadataVersion=9, androidx.core.view.inputmethod.EditorInfoCompat.STYLUS_HANDWRITING_ENABLED=true, android.support.text.emoji.emojiCompat_replaceAll=false}], hintText=null, hintLocales=[]}, IncognitoMode = false, DeviceLocked = false
+11-21 10:01:28.138  1389  1389 I Delight5Facilitator: Delight5Facilitator.initializeForIme():747 initializeForIme() : Locale = [en_US], layout = qwerty
+11-21 10:01:28.138  1389  1389 I VoiceInputHandler: VoiceInputHandler.onActivateIme():99 registering TalkbackStateListener
+11-21 10:01:28.138  1389  1389 I VoiceInputManagerWrapper: VoiceInputManagerWrapper.cancelShutdown():102 cancelShutdown()
+11-21 10:01:28.138  1389  1389 I VoiceInputManagerWrapper: VoiceInputManagerWrapper.syncLanguagePacks():114 syncLanguagePacks()
+11-21 10:01:28.139  1389  1389 I LatinIme: LatinIme.updateEnableInlineSuggestionsOnDecoderSideFlags():1174 inline flag updated to:false
+11-21 10:01:28.139  1389  4941 I SpeechFactory: SpeechRecognitionFactory.maybeScheduleAutoPackDownloadForFallback():200 maybeScheduleAutoPackDownloadForFallback()
+11-21 10:01:28.139  1389  4941 I FallbackOnDeviceRecognitionProvider: FallbackOnDeviceRecognitionProvider.maybeScheduleAutoPackDownload():197 maybeScheduleAutoPackDownload() for language tag en-US
+11-21 10:01:28.139  1389  1389 I InputBundle: InputBundle.consumeEvent():884 Skip consuming an event as keyboard status is 0
+11-21 10:01:28.139  1389  1389 I KeyboardWrapper: KeyboardWrapper.activateKeyboard():575 activateKeyboard(): type=accessory, status=0, imeDef=ktt{stringId=ime_english_united_states, language=en-US, languageTag=en-US, processedConditions={enable_number_row=false, device=phone}, className=com.google.android.apps.inputmethod.libs.latin5.LatinIme, label=0, keyEventInterpreter=null, inlineComposing=true, autoCapital=true, announceAutoSelectedCandidate=true, statusIcon=0, primeKeyboardType=SOFT, indicatorIcon=0, indicatorLabel=US, displayAppCompletions=true, extraValues=ktl{}, processors=kvl@be99a77, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=true, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, secondaryIme=null, keyboardGroupDef=kut@625149b, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=true, supportsAccessPoints=true}
+11-21 10:01:28.139  1389  1389 I KeyboardManager: KeyboardManager.requestKeyboard():234 Creating keyboard accessory, imeId=ime_english_united_states, cacheKey=theme_border_stylesheet_noshadow_gsans_pillkey_silkpopup_hover_light_phone_navredesign
+11-21 10:01:28.139  1389  1389 I KeyboardWrapper: KeyboardWrapper.onKeyboardReady():239 onKeyboardReady(): type=accessory(accessory), kb=com.google.android.libraries.inputmethod.keyboard.impl.Keyboard@f8d3ed2
+11-21 10:01:28.139  1389  1389 I KeyboardWrapper: KeyboardWrapper.doActivateKeyboard():606 doActivateKeyboard(): accessory
+11-21 10:01:28.139  1389  1389 W Keyboard: Keyboard.getKeyboardViewHelper():574 null helper is returned: keyboardDef=kuo{processedConditions={}, globalConditions={}, className=com.google.android.libraries.inputmethod.keyboard.impl.Keyboard, resourceIds=[#0x7f170047], initialStates=0, keyboardViewDefs=[], persistentStates=0, persistentStatesPrefKey=null, popupBubbleLayoutId=0, recentKeyLayoutId=0, recentKeyPopupLayoutId=0, recentKeyType=null, rememberRecentKey=NONE, sessionStates=0}, type=HEADER, helpersCreated=[null, null, null, null], context.getResources().getConfiguration(): {1.0 310mcc260mnc [en_US] ldltr sw320dp w320dp h640dp 160dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 320, 640) mAppBounds=Rect(0, 0 - 320, 640) mMaxBounds=Rect(0, 0 - 320, 640) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.129 fontWeightAdjustment=0}
+11-21 10:01:28.139  1389  1389 W Keyboard: Keyboard.getKeyboardViewHelper():574 null helper is returned: keyboardDef=kuo{processedConditions={}, globalConditions={}, className=com.google.android.libraries.inputmethod.keyboard.impl.Keyboard, resourceIds=[#0x7f170047], initialStates=0, keyboardViewDefs=[], persistentStates=0, persistentStatesPrefKey=null, popupBubbleLayoutId=0, recentKeyLayoutId=0, recentKeyPopupLayoutId=0, recentKeyType=null, rememberRecentKey=NONE, sessionStates=0}, type=BODY, helpersCreated=[null, null, null, null], context.getResources().getConfiguration(): {1.0 310mcc260mnc [en_US] ldltr sw320dp w320dp h640dp 160dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 320, 640) mAppBounds=Rect(0, 0 - 320, 640) mMaxBounds=Rect(0, 0 - 320, 640) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.129 fontWeightAdjustment=0}
+11-21 10:01:28.139  1389  1389 W Keyboard: Keyboard.getKeyboardViewHelper():574 null helper is returned: keyboardDef=kuo{processedConditions={}, globalConditions={}, className=com.google.android.libraries.inputmethod.keyboard.impl.Keyboard, resourceIds=[#0x7f170047], initialStates=0, keyboardViewDefs=[], persistentStates=0, persistentStatesPrefKey=null, popupBubbleLayoutId=0, recentKeyLayoutId=0, recentKeyPopupLayoutId=0, recentKeyType=null, rememberRecentKey=NONE, sessionStates=0}, type=HEADER, helpersCreated=[null, null, null, null], context.getResources().getConfiguration(): {1.0 310mcc260mnc [en_US] ldltr sw320dp w320dp h640dp 160dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 320, 640) mAppBounds=Rect(0, 0 - 320, 640) mMaxBounds=Rect(0, 0 - 320, 640) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.129 fontWeightAdjustment=0}
+11-21 10:01:28.139  1389  1389 W Keyboard: Keyboard.getKeyboardViewHelper():574 null helper is returned: keyboardDef=kuo{processedConditions={}, globalConditions={}, className=com.google.android.libraries.inputmethod.keyboard.impl.Keyboard, resourceIds=[#0x7f170047], initialStates=0, keyboardViewDefs=[], persistentStates=0, persistentStatesPrefKey=null, popupBubbleLayoutId=0, recentKeyLayoutId=0, recentKeyPopupLayoutId=0, recentKeyType=null, rememberRecentKey=NONE, sessionStates=0}, type=BODY, helpersCreated=[null, null, null, null], context.getResources().getConfiguration(): {1.0 310mcc260mnc [en_US] ldltr sw320dp w320dp h640dp 160dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 320, 640) mAppBounds=Rect(0, 0 - 320, 640) mMaxBounds=Rect(0, 0 - 320, 640) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.129 fontWeightAdjustment=0}
+11-21 10:01:28.139  1389  1389 W Keyboard: Keyboard.getKeyboardViewHelper():574 null helper is returned: keyboardDef=kuo{processedConditions={}, globalConditions={}, className=com.google.android.libraries.inputmethod.keyboard.impl.Keyboard, resourceIds=[#0x7f170047], initialStates=0, keyboardViewDefs=[], persistentStates=0, persistentStatesPrefKey=null, popupBubbleLayoutId=0, recentKeyLayoutId=0, recentKeyPopupLayoutId=0, recentKeyType=null, rememberRecentKey=NONE, sessionStates=0}, type=FLOATING_CANDIDATES, helpersCreated=[null, null, null, null], context.getResources().getConfiguration(): {1.0 310mcc260mnc [en_US] ldltr sw320dp w320dp h640dp 160dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 320, 640) mAppBounds=Rect(0, 0 - 320, 640) mMaxBounds=Rect(0, 0 - 320, 640) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.129 fontWeightAdjustment=0}
+11-21 10:01:28.139  1389  1389 W Keyboard: Keyboard.getKeyboardViewHelper():574 null helper is returned: keyboardDef=kuo{processedConditions={}, globalConditions={}, className=com.google.android.libraries.inputmethod.keyboard.impl.Keyboard, resourceIds=[#0x7f170047], initialStates=0, keyboardViewDefs=[], persistentStates=0, persistentStatesPrefKey=null, popupBubbleLayoutId=0, recentKeyLayoutId=0, recentKeyPopupLayoutId=0, recentKeyType=null, rememberRecentKey=NONE, sessionStates=0}, type=WIDGET, helpersCreated=[null, null, null, null], context.getResources().getConfiguration(): {1.0 310mcc260mnc [en_US] ldltr sw320dp w320dp h640dp 160dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 320, 640) mAppBounds=Rect(0, 0 - 320, 640) mMaxBounds=Rect(0, 0 - 320, 640) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.129 fontWeightAdjustment=0}
+11-21 10:01:28.139  1389  1389 I KeyboardManager: KeyboardManager.requestKeyboard():234 Creating keyboard accessory_candidates_consumer, imeId=ime_english_united_states, cacheKey=theme_border_stylesheet_noshadow_gsans_pillkey_silkpopup_hover_light_phone_navredesign
+11-21 10:01:28.139  1389  1389 W Keyboard: Keyboard.getKeyboardViewHelper():574 null helper is returned: keyboardDef=kuo{processedConditions={}, globalConditions={global_theme_key=theme_border_stylesheet_noshadow_gsans_pillkey_silkpopup_hover_light_phone_navredesign, global_locale=en_US, global_density_dpi=160, global_orientation=1}, className=.latin.keyboard.AccessoryKeyboard, resourceIds=[#0x7f170046], initialStates=0, keyboardViewDefs=[kvb{direction=null, id=#0x7f0b014d, isScalable=false, layoutId=#0x7f0e0027, type=FLOATING_CANDIDATES, touchable=true, defaultShow=false}], persistentStates=0, persistentStatesPrefKey=null, popupBubbleLayoutId=#0x7f0e068d, recentKeyLayoutId=0, recentKeyPopupLayoutId=0, recentKeyType=null, rememberRecentKey=NONE, sessionStates=0}, type=HEADER, helpersCreated=[null, null, kib@efca507, null], context.getResources().getConfiguration(): {1.0 310mcc260mnc [en_US] ldltr sw320dp w320dp h640dp 160dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 320, 640) mAppBounds=Rect(0, 0 - 320, 640) mMaxBounds=Rect(0, 0 - 320, 640) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.129 fontWeightAdjustment=0}
+11-21 10:01:28.139  1389  1389 W Keyboard: Keyboard.getKeyboardViewHelper():574 null helper is returned: keyboardDef=kuo{processedConditions={}, globalConditions={global_theme_key=theme_border_stylesheet_noshadow_gsans_pillkey_silkpopup_hover_light_phone_navredesign, global_locale=en_US, global_density_dpi=160, global_orientation=1}, className=.latin.keyboard.AccessoryKeyboard, resourceIds=[#0x7f170046], initialStates=0, keyboardViewDefs=[kvb{direction=null, id=#0x7f0b014d, isScalable=false, layoutId=#0x7f0e0027, type=FLOATING_CANDIDATES, touchable=true, defaultShow=false}], persistentStates=0, persistentStatesPrefKey=null, popupBubbleLayoutId=#0x7f0e068d, recentKeyLayoutId=0, recentKeyPopupLayoutId=0, recentKeyType=null, rememberRecentKey=NONE, sessionStates=0}, type=BODY, helpersCreated=[null, null, kib@efca507, null], context.getResources().getConfiguration(): {1.0 310mcc260mnc [en_US] ldltr sw320dp w320dp h640dp 160dpi nrml long port finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 320, 640) mAppBounds=Rect(0, 0 - 320, 640) mMaxBounds=Rect(0, 0 - 320, 640) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.129 fontWeightAdjustment=0}
+11-21 10:01:28.139  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.startInputIfInputViewStarted():3724 startInputIfInputViewStarted(): ACCESSORY
+11-21 10:01:28.139  1389  1389 I KeyboardModeManager: KeyboardModeManager.setInputViewKeyboardViewHolderProvider():625 setInputView() : supportsOneHandedMode=true supportsSplitMode=true
+11-21 10:01:28.139  1389  1389 I NormalModeController: NormalModeController.getKeyboardBodyViewHolderPaddingBottom():104 currentPrimeKeyboardType:SOFT systemPaddingBottom:-1
+11-21 10:01:28.139  1389  1389 I KeyboardHeightUtil: KeyboardHeightUtil.calculateMaxKeyboardBodyHeight():45 leave 82 height for app when ime window height:580, header height:38 and isFullscreenMode:false, so the max keyboard body height is:460
+11-21 10:01:28.139  1389  1389 I KeyboardHeightUtil: KeyboardHeightUtil.calculateMaxKeyboardBodyHeight():45 leave 82 height for app when ime window height:580, header height:38 and isFullscreenMode:false, so the max keyboard body height is:460
+11-21 10:01:28.139  1389  1389 I KeyboardHeightUtil: KeyboardHeightUtil.calculateMaxKeyboardBodyHeight():45 leave 82 height for app when ime window height:580, header height:38 and isFullscreenMode:false, so the max keyboard body height is:460
+11-21 10:01:28.139  1389  1389 I KeyboardHeightUtil: KeyboardHeightUtil.calculateMaxKeyboardBodyHeight():45 leave 82 height for app when ime window height:580, header height:38 and isFullscreenMode:false, so the max keyboard body height is:460
+11-21 10:01:28.139  1389  1389 I NormalModeController: NormalModeController.getKeyboardBodyViewHolderPaddingBottom():104 currentPrimeKeyboardType:SOFT systemPaddingBottom:-1
+11-21 10:01:28.140  1389  1389 I KeyboardHeightUtil: KeyboardHeightUtil.calculateMaxKeyboardBodyHeight():45 leave 82 height for app when ime window height:580, header height:38 and isFullscreenMode:false, so the max keyboard body height is:460
+11-21 10:01:28.140  1389  1389 I KeyboardHeightUtil: KeyboardHeightUtil.calculateMaxKeyboardBodyHeight():45 leave 82 height for app when ime window height:580, header height:38 and isFullscreenMode:false, so the max keyboard body height is:460
+11-21 10:01:28.140  1389  1389 I KeyboardModeManager: KeyboardModeManager.setInputViewKeyboardViewHolderProvider():613 setInputView() : supportsOneHandedMode=true, supportSplitMode=true
+11-21 10:01:28.140  1389  1389 I AccessoryInputModeManager: AccessoryInputModeManager.onModeStarted():308 Accessory input mode started: STYLUS
+11-21 10:01:28.140  1389  1389 I WidgetViewShowingController: WidgetViewShowingController.showWidgetKeyboardInternal():466 Show companion widget
+11-21 10:01:28.141  1389  1389 I CrowdsourceExtension: CrowdsourceExtension.checkIfDefaultBrowserIsAllowed():110 Failed to get default browser. The default browser may be deactived.
+11-21 10:01:28.141  1389  1389 I VoiceImeExtension: VoiceImeExtension.shouldStartVoiceInputAutomaticallyInCurrentInputBox():415 No private IME option set to start voice input.
+11-21 10:01:28.144  1389  1389 I WindowMetricsNotification: WindowMetricsNotification.notifyWithWindow():113
+11-21 10:01:28.144  1389  1389 I WindowMetricsNotification: WindowMetricsNotification.notify():106 WindowMetricsNotification{bounds=Rect(0, 36 - 320, 640), insets=Rect(0, 0 - 0, 24), densityDpi=160, smallestScreenWidthDp=320, displayWidth=320, displayHeight=640, xdpi=420.0, ydpi=420.0}; DisplayMetrics{density=1.0, width=320, height=640, scaledDensity=1.0, xdpi=420.0, ydpi=420.0}
+11-21 10:01:28.157  1389  1389 I StylusModule: StylusModule.onUpdateToolType():770 Update tool type = 2
+11-21 10:01:28.157  1389  1389 I GoogleInputMethodService: GoogleInputMethodService$1.onKeyboardViewShown():494 onKeyboardViewShown: keyboardType=accessory, keyboardViewType=HEADER keyboardView=null
+11-21 10:01:28.157  1389  1389 I GoogleInputMethodService: GoogleInputMethodService$1.onKeyboardViewShown():494 onKeyboardViewShown: keyboardType=accessory, keyboardViewType=BODY keyboardView=null
+11-21 10:01:28.157  1389  1389 I WindowMetricsNotification: WindowMetricsNotification.notifyWithWindow():113
+11-21 10:01:28.157 10634 10634 D InsetsController: show(ime(), fromIme=true)
+11-21 10:01:28.157  1389  1389 I WindowMetricsNotification: WindowMetricsNotification.notify():106 WindowMetricsNotification{bounds=Rect(0, 36 - 320, 640), insets=Rect(0, 0 - 0, 24), densityDpi=160, smallestScreenWidthDp=320, displayWidth=320, displayHeight=640, xdpi=420.0, ydpi=420.0}; DisplayMetrics{density=1.0, width=320, height=640, scaledDensity=1.0, xdpi=420.0, ydpi=420.0}
+11-21 10:01:28.163 10634 10634 D InsetsController: show(ime(), fromIme=true)
+11-21 10:01:28.163 10634 10634 I ImeTracker: es.teloarreglo.pruebas:45c88bb0: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+11-21 10:01:28.293 10634 10634 D InsetsController: hide(ime(), fromIme=false)
+11-21 10:01:28.294 10634 10634 I ImeTracker: es.teloarreglo.pruebas:83653757: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT_BY_INSETS_API fromUser false
+11-21 10:01:28.294 10634 10634 I ImeTracker: es.teloarreglo.pruebas:f83798bd: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT_REQUEST_HIDE_WITH_CONTROL fromUser false
+11-21 10:01:28.303 10634 10634 I ImeTracker: es.teloarreglo.pruebas:85ef17c8: onCancelled at PHASE_CLIENT_ANIMATION_CANCEL
+11-21 10:01:28.307  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.onFinishInputView():2393
+11-21 10:01:28.307 10634 10634 D InsetsController: hide(ime(), fromIme=true)
+11-21 10:01:28.307 10634 10634 I ImeTracker: es.teloarreglo.pruebas:f83798bd: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+11-21 10:01:28.308  1389  1389 W TooltipLifecycleManager: TooltipLifecycleManager.dismissTooltips():152 Tooltip with id spell_check_add_to_dictionary not found in tooltipManager.
+11-21 10:01:28.309 10634 10634 W RemoteInputConnectionImpl: requestCursorUpdates on inactive InputConnection
+11-21 10:01:28.310  1389  1389 I InputBundle: InputBundle.consumeEvent():884 Skip consuming an event as keyboard status is 0
+11-21 10:01:28.310  1389  1389 I VoiceInputHandler: VoiceInputHandler.onDeactivateIme():115 unregistering TalkbackStateListener
+11-21 10:01:28.310  1389  1389 I VoiceInputManagerWrapper: VoiceInputManagerWrapper.shutdown():124 shutdown()
+11-21 10:01:28.314  1389  1389 I AndroidIME: AbstractIme.onDeactivate():202 LatinIme.onDeactivate()
+11-21 10:01:28.315  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=es.teloarreglo.pruebas, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, true)
+11-21 10:01:28.315  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+11-21 10:01:28.316  1389  1389 W SessionManager: SessionManager.beginSession():53 Try to begin an already begun session [INPUT_SESSION], end it first
+11-21 10:01:28.316  1389  1389 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+11-21 10:01:28.322  1389  1589 W ModuleManager: ModuleManager.loadModule():473 Module mgc is not available
+11-21 10:01:28.458 10634 10634 W WindowOnBackDispatcher: OnBackInvokedCallback is not enabled for the application.
+11-21 10:01:28.458 10634 10634 W WindowOnBackDispatcher: Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+11-21 10:01:28.610 10634 10634 I ImeTracker: es.teloarreglo.pruebas:b1a2f5c4: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT_ON_ANIMATION_STATE_CHANGED fromUser false
+11-21 10:01:28.610 10634 10634 I ImeTracker: es.teloarreglo.pruebas:83653757: onHidden
+11-21 10:01:28.610   592   709 I ImeTracker: es.teloarreglo.pruebas:b1a2f5c4: onCancelled at PHASE_SERVER_SHOULD_HIDE
+11-21 10:01:28.633   592   658 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10241, packageName = null, attributionTag = null, token = android.os.Binder@5cecbb5, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+11-21 10:01:28.636   832   887 D SplashScreenView: Build android.window.SplashScreenView{de3d661 V.E...... ......ID 0,0-0,0}
+11-21 10:01:28.636   832   887 D SplashScreenView: Icon: view: null drawable: null size: 0
+11-21 10:01:28.636   832   887 D SplashScreenView: Branding: view: android.view.View{55a0586 G.ED..... ......I. 0,0-0,0 #1020503 android:id/splashscreen_branding_view} drawable: null size w: 0 h: 0
+11-21 10:01:28.636 10634 10634 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@4ea59e9 in: PAUSED
+11-21 10:01:28.636 10634 10634 V ActivityScenario: Update currentActivityStage to PAUSED, currentActivity=androidx.activity.ComponentActivity@4ea59e9
+11-21 10:01:28.638  1322  1322 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=212, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 cmp=es.teloarreglo.pruebas.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity }
+11-21 10:01:28.643   428   428 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+11-21 10:01:28.650 10689 10703 I EGL_emulation: Opening libGLESv1_CM_emulation.so
+11-21 10:01:28.650 10689 10703 I EGL_emulation: Opening libGLESv2_emulation.so
+11-21 10:01:28.652 10689 10703 W HWUI    : Failed to choose config with EGL_SWAP_BEHAVIOR_PRESERVED, retrying without...
+11-21 10:01:28.652 10689 10703 W HWUI    : Failed to initialize 101010-2 format, error = EGL_SUCCESS
+11-21 10:01:28.659  1322  1322 I TopTaskTracker: onTaskMovedToFront: (moved taskInfo to front) taskId=60, baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity }
+11-21 10:01:28.662  1322  1322 D StatsLog: LAUNCHER_ONRESUME
+11-21 10:01:28.666   592  1524 W AppSearchIcing: icing-search-engine.cc:321: Error: 5, Message: Document (com.google.android.googlequicksearchbox$OneSearchZeroStateGoogleSuggestions/default, zp) not found.
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: AppSearch 0-state cache not available, fallback to AGA
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: java.util.concurrent.CompletionException: java.util.NoSuchElementException: No value present
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:308)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:323)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture$UniAccept.tryFire(CompletableFuture.java:684)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:486)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2138)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:67)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.lambda$onResult$0(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:144)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1.$r8$lambda$CEk3q8sDAQVhU3rQwVueB8FAj_M(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:1)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at android.app.appsearch.SearchSessionUtil$1$$ExternalSyntheticLambda0.run(go/retraceme 64eee9e9f568ff45978879ad2ff83146f2618ee8a88278736fbdf5fae931976e:22)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at android.os.Handler.handleCallback(Handler.java:959)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at android.os.Handler.dispatchMessage(Handler.java:100)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at android.os.Looper.loopOnce(Looper.java:232)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at android.os.Looper.loop(Looper.java:317)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at android.os.HandlerThread.run(HandlerThread.java:85)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: Caused by: java.util.NoSuchElementException: No value present
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at java.util.Optional.get(Optional.java:143)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	at com.google.android.apps.nexuslauncher.allapps.E0.onResult(go/retraceme 31f9979659277bb965985aff1272c33e3c3c9e755b77166d20a2465454178f2c:28)
+11-21 10:01:28.666  1322  1698 D OneSearchSuggestProvider: 	... 8 more
+11-21 10:01:28.667  1322  1343 D QuickstepModelDelegate: notifyAppTargetEvent action=1 launchLocation=
+11-21 10:01:28.668  1322  1698 D OneSearchSuggestProvider: Created the binder channel successfully for end point service =com.google.android.apps.search.googleapp.search.suggest.plugins.onesearch.server.OneSearchSuggestService , mChannel=i1{delegate=f{logId=354, target=directaddress:///AndroidComponentAddress%5BIntent%20%7B%20act=grpc.io.action.BIND%20cmp=com.google.android.googlequicksearchbox/com.google.android.apps.search.googleapp.search.suggest.plugins.onesearch.server.OneSearchSuggestService%20%7D%5D}} , mOneSearchConnection=l2.Z@65a4f6d
+11-21 10:01:28.671  1594  1594 I A       : (REDACTED) Created gRPC endpoint for service %s
+11-21 10:01:28.672  1470  1581 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+11-21 10:01:28.672  1470  1581 I AiAiEcho: EchoTargets:
+11-21 10:01:28.672  1470  1581 I AiAiEcho: Filtered by AiAi flag check:
+11-21 10:01:28.672  1470  1581 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+11-21 10:01:28.672  1470  1581 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+11-21 10:01:28.672  1470  1581 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+11-21 10:01:28.672  1470  1581 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+11-21 10:01:28.676  1322  1322 D NexusLauncherModelDelegate: notifySmartspaceEvent: SmartspaceTargetEvent{mSmartspaceTarget=null, mSmartspaceActionId='null', mEventType=6}
+11-21 10:01:28.676  1322  1322 D BaseDepthController: mSurface is null and mCurrentBlur is: 0
+11-21 10:01:28.683  1322  1322 D BaseDepthController: setSurface:
+11-21 10:01:28.683  1322  1322 D BaseDepthController: 	mWaitingOnSurfaceValidity: false
+11-21 10:01:28.683  1322  1322 D BaseDepthController: 	mSurface: Surface(name=com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity)/@0xdf7ae48
+11-21 10:01:28.686  1322  1322 D SsBaseTemplateCard: No text view can be set up
+11-21 10:01:28.686  1322  1322 D SsBaseTemplateCard: Passed-in item info is null
+11-21 10:01:28.686  1322  1322 D SsBaseTemplateCard: Passed-in item info is null
+11-21 10:01:28.686  1322  1322 D SsBaseTemplateCard: Passed-in item info is null
+11-21 10:01:28.686  1322  1322 I SsBaseTemplateCard: Secondary card pane is null
+11-21 10:01:28.701   832   942 D EGL_emulation: app_time_stats: avg=74.90ms min=0.95ms max=623.62ms count=18
+11-21 10:01:28.711  1322  1322 D SearchTargetUtil: query= size=0
+11-21 10:01:28.743   401  3365 I RanchuHwc: logCompositionFallbackIfChanged: layer 590 CompositionType fallback from 2 to 1
+11-21 10:01:28.743   401  3365 I RanchuHwc: logCompositionFallbackIfChanged: layer 589 CompositionType fallback from 2 to 1
+11-21 10:01:28.800  1322  1584 D EGL_emulation: app_time_stats: avg=57.66ms min=0.42ms max=772.96ms count=22
+11-21 10:01:28.815   592   709 I ImeTracker: com.google.android.apps.nexuslauncher:5d8d7ce3: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+11-21 10:01:28.815   592   709 I ImeTracker: com.google.android.apps.nexuslauncher:5d8d7ce3: onCancelled at PHASE_SERVER_SHOULD_HIDE
+11-21 10:01:28.836  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3157
+11-21 10:01:28.837  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+11-21 10:01:28.837  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.google.android.apps.nexuslauncher, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+11-21 10:01:28.837  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+11-21 10:01:28.837  1389  1389 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+11-21 10:01:29.007   832   886 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@fb705e0
+11-21 10:01:29.008   592   658 W InputManager-JNI: Input channel object '5281bef Splash Screen es.teloarreglo.pruebas.test (client)' was disposed without first being removed with the input manager!
+11-21 10:01:29.025 10634 10634 D VRI[ComponentActivity]: visibilityChanged oldVisibility=true newVisibility=false
+11-21 10:01:29.027 10634 10675 D HWUI    : endAllActiveAnimators on 0xb400007d74943310 (UnprojectedRipple) with handle 0xb400007de49935b0
+11-21 10:01:29.041 10689 10689 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@e068c8a
+11-21 10:01:29.042 10634 10634 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@4ea59e9 in: STOPPED
+11-21 10:01:29.042 10634 10634 V ActivityScenario: Update currentActivityStage to STOPPED, currentActivity=androidx.activity.ComponentActivity@4ea59e9
+11-21 10:01:29.044   592  2018 W InputManager-JNI: Input channel object '5f199e7 es.teloarreglo.pruebas.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity (client)' was disposed without first being removed with the input manager!
+11-21 10:01:29.045 10634 10634 D AutofillManager: onActivityFinishing(): calling cancelLocked()
+11-21 10:01:29.045 10634 10634 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@4ea59e9 in: DESTROYED
+11-21 10:01:29.045 10634 10634 V ActivityScenario: Update currentActivityStage to DESTROYED, currentActivity=null
+11-21 10:01:29.047 10634 10634 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@ff5e8a3
+11-21 10:01:29.073   592   990 W InputManager-JNI: Input channel object 'ee55fe0 es.teloarreglo.pruebas/androidx.activity.ComponentActivity (client)' was disposed without first being removed with the input manager!
+11-21 10:01:29.074 10634 10634 E FrameTracker: force finish cuj, time out: J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.074 10634 10634 W FrameTracker: Missed SF frame:PREDICTION_ERROR, 187467, 0, CUJ=J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.075 10634 10634 W FrameTracker: Missed SF frame:PREDICTION_ERROR, 187496, 0, CUJ=J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.075 10634 10634 W FrameTracker: Missed SF frame:PREDICTION_ERROR, 187518, 0, CUJ=J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.075 10634 10634 W FrameTracker: Missed SF frame:PREDICTION_ERROR, 187554, 0, CUJ=J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.075 10634 10634 W FrameTracker: Missed SF frame:PREDICTION_ERROR, 187576, 0, CUJ=J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.075 10634 10634 W FrameTracker: Missed SF frame:PREDICTION_ERROR, 187649, 0, CUJ=J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.075 10634 10634 W FrameTracker: Missed SF frame:PREDICTION_ERROR, 187685, 0, CUJ=J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.075 10634 10634 W FrameTracker: Missed SF frame:PREDICTION_ERROR, 187714, 0, CUJ=J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.075 10634 10634 W FrameTracker: Missed SF frame:PREDICTION_ERROR, 187743, 0, CUJ=J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.075 10634 10634 W FrameTracker: Missed SF frame:PREDICTION_ERROR, 187772, 0, CUJ=J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.075 10634 10634 W FrameTracker: Missed SF frame:PREDICTION_ERROR, 187801, 0, CUJ=J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.075 10634 10634 W FrameTracker: Missed SF frame:PREDICTION_ERROR, 187830, 0, CUJ=J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.075 10634 10634 W FrameTracker: Missed SF frame:PREDICTION_ERROR, 187873, 0, CUJ=J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.075 10634 10634 W FrameTracker: Missed SF frame:PREDICTION_ERROR, 187930, 0, CUJ=J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.075 10634 10634 W FrameTracker: Missed SF frame:PREDICTION_ERROR, 187994, 0, CUJ=J<IME_INSETS_HIDE_ANIMATION::1@1@es.teloarreglo.pruebas>
+11-21 10:01:29.075 10634 10687 V PerfettoTrigger: Not triggering com.android.telemetry.interaction-jank-monitor-81 - not enough time since last trigger
+11-21 10:01:29.076  1322  1322 I TopTaskTracker: onTaskRemoved: taskId=212
+11-21 10:01:29.076  1322  1322 I TopTaskTracker: onTaskRemoved: taskId=212
+11-21 10:01:29.087 10634 10672 D IdlingRegistry: Unregistering idling resources: [androidx.compose.ui.test.EspressoLink@9a8b35]
+11-21 10:01:29.088 10634 10672 I TestRunner: finished: uncertainSendSurvivesLeavingAndReopeningChat(es.teloarreglo.ChatUiTest)

@@ -35,3 +35,8 @@ double_confirm_changes = true
 
 [analytics]
 enabled = false
+
+# Public search: callers use the publishable key (not a JWT). The function itself
+# returns only public data; it reads private locations with its own service role.
+[functions.search-professionals]
+verify_jwt = false

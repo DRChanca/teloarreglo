@@ -1,0 +1,177 @@
+11-21 10:01:36.872 10634 10672 I TestRunner: started: aNewClientRecoversTheEncryptedSessionAndLogoutRemovesIt(es.teloarreglo.PersistedIdentityTest)
+11-21 10:01:36.874   832   832 D SsMediaDataProvider: Forwarding Smartspace updates []
+11-21 10:01:36.874  1389  7970 I LatinImeEntryActivation: LatinImeActivationContentObserver.activeLanguagesHaveChanged():70 Active entries changed: [de, en-US] -> {en-US}
+11-21 10:01:36.874  1389  1592 I SP      : Registering emoticon_content_description.2022081613, url: https://www.gstatic.com/android/keyboard/emoticon_content_desc/202208161305/superpacks_manifest.json, constraints: W:*:*:*, flags: bg, requested: 2022081613, current: -1
+11-21 10:01:36.874  1389  7970 I LmManager: LmManager.asyncUpdateEnabledLanguageModels():96 asyncUpdateEnabledLanguageModels()
+11-21 10:01:36.874  1389  7970 I SuperDelight: SuperDelightManager.initializeOverridesSuperpacks():400 initializeOverridesSuperpacks()
+11-21 10:01:36.874  1389  7970 I DelightKLPDownloader: DelightKLPDownloader.downloadKLPInternal():185 downloading KLP for en_840
+11-21 10:01:36.874  1389  7970 I ManifestedDataDownloader: ManifestedDataDownloader.download():57 downloading manifest https://www.gstatic.com/android/keyboard/dictionarypack/2024070918/metadata.json-perlang/en-840.json?v=2024071002
+11-21 10:01:36.874  1389  7970 I KeyboardGroupDefParser: KeyboardGroupDefParser.parseKeyboardGroupDef():83 parseKeyboardGroupDef() 2132214040 -> 0_resource_name_obfuscated : WaitTime = 5 ms : RunTime = 0 ms
+11-21 10:01:36.874  1389  7970 I KeyboardGroupDefParser: KeyboardGroupDefParser.parseKeyboardGroupDef():83 parseKeyboardGroupDef() 2132214033 -> 0_resource_name_obfuscated : WaitTime = 5 ms : RunTime = 0 ms
+11-21 10:01:36.874  1389  7970 I KeyboardGroupDefParser: KeyboardGroupDefParser.parseKeyboardGroupDef():83 parseKeyboardGroupDef() 2132214039 -> 0_resource_name_obfuscated : WaitTime = 5 ms : RunTime = 0 ms
+11-21 10:01:36.874  1389  7970 I SuperDelight: SuperDelightManager.initializeBundledDelightSuperpacks():374 initializeBundledDelightSuperpacks()
+11-21 10:01:36.876  1389  1389 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+11-21 10:01:36.876  1389  1389 I SystemSubtypesReportModule: SystemSubtypesReportModule$3.onCurrentInputMethodEntryChanged():136 entry: en-US, source: UNSPECIFIED
+11-21 10:01:36.876  1389  1389 I SystemSubtypesReportModule: SystemSubtypesReportModule.switchToSubtypeByEntry():205 en-US
+11-21 10:01:36.878  1389  9062 I DownloadManager: DownloadManager$5.onSuccess():613 Data __KLP_manifest_delight__de-DE removed!
+11-21 10:01:36.897  1389  1389 W NotificationCenter: NotificationCenter$ListenerData.notifyOnExecutor():672 Heavy notify work detected on UI thread: |kga->jjc| takes 35ms
+11-21 10:01:36.898  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 0, locked = false
+11-21 10:01:36.898  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1986 onStartInput(EditorInfo{EditorInfo{packageName=com.google.android.apps.nexuslauncher, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+11-21 10:01:36.898  1389  1389 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2248 repeatCheckTimes = 1, locked = false
+11-21 10:01:36.899  1389  1389 I AndroidIME: InputBundleManager.loadActiveInputBundleId():450 loadActiveInputBundleId: und-Latn-x-password, password
+11-21 10:01:36.899   832   891 D StylusManager: Stylus InputDevice changed: 12 virtio_input_multi_touch_1
+11-21 10:01:36.899  1389  1389 I SystemSubtypesReportModule: SystemSubtypesReportModule$4.onSetCurrentInputMethodSubtype():160 en_US
+11-21 10:01:36.899  1389  1389 I DictionarySuperpacksManager: DictionarySuperpacksManager$1.onEnabledInputMethodEntriesChanged():65 onEnabledInputMethodEntriesChanged
+11-21 10:01:36.899  1389  9062 I DownloadManager: DownloadManager$5.onSuccess():613 Data __KLP_delight__de-DE removed!
+11-21 10:01:36.899  1389  9062 I DownloadManager: DownloadManager.downloadInternal():390 Download for __KLP_delight__en-840 scheduled with params DownloadParams{allowMetered=false, requireCharging=false, foreground=false, immediately=false, priority=500}
+11-21 10:01:36.899  1389  1389 I HandwritingOfflineSuperpacks: HandwritingOfflineSuperpacks.syncInternal():80 no bundled lm for handwriting.
+11-21 10:01:36.900  1389  1389 I HandwritingSuperpacks: HandwritingSuperpacks.register():273 register(): version '86', url 'https://dl.google.com/handwriting/models/handwriting_release.superpack_manifest.20231127.json' [ONLINE]
+11-21 10:01:36.900  1389  1389 I AbstractOpenableExtension: AbstractOpenableExtension$3.onSuccess():552 KeyboardGroupManager destroyed in fxu.
+11-21 10:01:36.900  1389  1389 I AbstractOpenableExtension: AbstractOpenableExtension$3.onSuccess():552 KeyboardGroupManager destroyed in fvq.
+11-21 10:01:36.900  1389  1389 I AbstractOpenableExtension: AbstractOpenableExtension$3.onSuccess():552 KeyboardGroupManager destroyed in eid.
+11-21 10:01:36.900   832   891 D StylusManager: Stylus InputDevice changed: 10 virtio_input_multi_touch_3
+11-21 10:01:36.900  1389  9062 I DownloadManager: DownloadManager.downloadInternal():390 Download for __KLP_manifest_delight__en-840 scheduled with params DownloadParams{allowMetered=true, requireCharging=false, foreground=false, immediately=true, priority=0}
+11-21 10:01:36.900  1389  9062 I DownloadManager: DownloadManager.startDownload():484 start download of __KLP_manifest_delight__en-840
+11-21 10:01:36.901   832   891 D StylusManager: Stylus InputDevice changed: 5 virtio_input_multi_touch_8
+11-21 10:01:36.901   832   891 D StylusManager: Stylus InputDevice changed: 9 virtio_input_multi_touch_4
+11-21 10:01:36.902   832   891 D StylusManager: Stylus InputDevice changed: 7 virtio_input_multi_touch_6
+11-21 10:01:36.902   832   891 D StylusManager: Stylus InputDevice changed: 8 virtio_input_multi_touch_5
+11-21 10:01:36.902   832   891 D StylusManager: Stylus InputDevice changed: 4 virtio_input_multi_touch_9
+11-21 10:01:36.903   832   891 D StylusManager: Stylus InputDevice changed: 3 virtio_input_multi_touch_10
+11-21 10:01:36.903   832   891 D StylusManager: Stylus InputDevice changed: 11 virtio_input_multi_touch_2
+11-21 10:01:36.903   832   891 D StylusManager: Stylus InputDevice changed: 6 virtio_input_multi_touch_7
+11-21 10:01:36.903   832   891 D StylusManager: Stylus InputDevice changed: 2 virtio_input_multi_touch_11
+11-21 10:01:36.905  1389  9062 I DownloadManager: DownloadManager.downloadInternal():390 Download for __KLP_delight__en-840 scheduled with params DownloadParams{allowMetered=false, requireCharging=false, foreground=false, immediately=false, priority=500}
+11-21 10:01:36.908  1389  1592 I SP      : Scheduling job with delay of 0s for {W:b:u:l, bg}, 3 candidates
+11-21 10:01:36.910   401  3365 I RanchuHwc: logCompositionFallbackIfChanged: layer 646 CompositionType fallback from 2 to 1
+11-21 10:01:36.910   401  3365 I RanchuHwc: logCompositionFallbackIfChanged: layer 645 CompositionType fallback from 2 to 1
+11-21 10:01:36.911  1389  1592 I SP      : Scheduling: download registered, 0 started, 0 paused, 3 scheduled, 3 pending: spell_checker:en_cpu_272adaa02e4841a0e8fe0d7f95b77421 * {W:b:u:l, bg}, manifests:kc_tflite_model-2024052201 * {W:b:u:l, bg}, manifests:emoticon_content_description-2022081613 * {W:b:u:l, bg}
+11-21 10:01:36.911  1389  1592 I SuperpacksManagerImpl: SuperpacksManagerImpl$3$1.onFailure():588 emoticon_content_description.registerManifest() cancelled
+11-21 10:01:36.911  1389  1592 I SP      : Registering bundled_delight.2024043000, url: null, constraints: *:*:*:*, flags: *, requested: 2024043000, current: 2024043000
+11-21 10:01:36.911  1389  1592 I SP      : Registering emoticon_content_description.2022081613, url: https://www.gstatic.com/android/keyboard/emoticon_content_desc/202208161305/superpacks_manifest.json, constraints: W:*:*:*, flags: bg, requested: 2022081613, current: -1
+11-21 10:01:36.912  1389  1592 I SP      : Registering emoticon_content_description.2022081613, url: https://www.gstatic.com/android/keyboard/emoticon_content_desc/202208161305/superpacks_manifest.json, constraints: W:*:*:*, flags: bg, requested: 2022081613, current: -1
+11-21 10:01:36.912  1389  1592 I SP      : Registering handwriting_recognition.86, url: https://dl.google.com/handwriting/models/handwriting_release.superpack_manifest.20231127.json, constraints: m:*:*:*, flags: fg, requested: 86, current: 86
+11-21 10:01:36.913  1389  7969 I SuperDelight: SuperDelightManager.lambda$syncOverridesLanguageModels$14():683 SuperDelightManager#syncOverridesLanguageModels(): Superpack delight_overrides not found or negative version provided
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_tflite_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_en_us_reco_20231010_fst_20230613_recospec_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_conf_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: pack_mapping_v1_lstm_20231127[80]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_seg_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_recospec_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: en_us_20230613_compact_fst_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_tflite_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_en_us_reco_20231010_fst_20230613_recospec_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_conf_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: pack_mapping_v1_lstm_20231127[80]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_seg_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_recospec_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: en_us_20230613_compact_fst_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_recospec_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_tflite_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_en_us_reco_20231010_fst_20230613_recospec_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_conf_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_seg_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: en_us_20230613_compact_fst_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_tflite_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_en_us_reco_20231010_fst_20230613_recospec_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_conf_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: pack_mapping_v1_lstm_20231127[80]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_seg_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_recospec_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: en_us_20230613_compact_fst_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_tflite_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_en_us_reco_20231010_fst_20230613_recospec_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_conf_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: pack_mapping_v1_lstm_20231127[80]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_seg_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_recospec_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: en_us_20230613_compact_fst_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_recospec_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_tflite_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_conf_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_seg_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_tflite_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_de_de_reco_20231010_fst_20230613_recospec_zip[21]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_en_us_reco_20231010_fst_20230613_recospec_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_conf_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: pack_mapping_v1_lstm_20231127[80]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_seg_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: de_de_20230613_compact_fst_zip[21]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_recospec_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: en_us_20230613_compact_fst_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_tflite_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_de_de_reco_20231010_fst_20230613_recospec_zip[21]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_en_us_reco_20231010_fst_20230613_recospec_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_conf_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: pack_mapping_v1_lstm_20231127[80]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_seg_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: de_de_20230613_compact_fst_zip[21]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_recospec_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: en_us_20230613_compact_fst_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_recospec_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_tflite_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_en_us_reco_20231010_fst_20230613_recospec_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_conf_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_seg_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: en_us_20230613_compact_fst_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: main_en_us_2024022600_2[48]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_tflite_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_de_de_reco_20231010_fst_20230613_recospec_zip[21]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_en_us_reco_20231010_fst_20230613_recospec_zip[110]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_conf_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: pack_mapping_v1_lstm_20231127[80]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_seg_tflite_20231010_zip[120]
+11-21 10:01:36.946  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: de_de_20230613_compact_fst_zip[21]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_recospec_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: en_us_20230613_compact_fst_zip[110]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: main_en_us_2024022600_2[48]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_tflite_20231010_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_tflite_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_de_de_reco_20231010_fst_20230613_recospec_zip[21]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_en_us_reco_20231010_fst_20230613_recospec_zip[110]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_conf_tflite_20231010_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: pack_mapping_v1_lstm_20231127[80]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_seg_tflite_20231010_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: de_de_20230613_compact_fst_zip[21]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_recospec_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: en_us_20230613_compact_fst_zip[110]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_recospec_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_tflite_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_de_de_reco_20231010_fst_20230613_recospec_zip[21]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_conf_tflite_20231010_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_seg_tflite_20231010_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_tflite_20231010_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: de_de_20230613_compact_fst_zip[21]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_recospec_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: scribe_latin_20231123_tflite_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: qrnn_en_us_reco_20231010_fst_20230613_recospec_zip[110]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_conf_tflite_20231010_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_seg_tflite_20231010_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: transformer_latin_tflite_20231010_zip[120]
+11-21 10:01:36.947  1389  1396 W SP      : File ref is being finalized but wasn't closed, file: en_us_20230613_compact_fst_zip[110]
+11-21 10:01:36.951  1389  1592 I SP      : Scheduling job with delay of 0s for {W:b:u:l, bg}, 3 candidates
+11-21 10:01:36.953  1322  1322 I TopTaskTracker: onTaskRemoved: taskId=227
+11-21 10:01:36.953  1322  1322 I TopTaskTracker: onTaskRemoved: taskId=227
+11-21 10:01:36.956  1389  1592 I SP      : Scheduling: download registered, 0 started, 0 paused, 3 scheduled, 3 pending: spell_checker:en_cpu_272adaa02e4841a0e8fe0d7f95b77421 * {W:b:u:l, bg}, manifests:kc_tflite_model-2024052201 * {W:b:u:l, bg}, manifests:emoticon_content_description-2022081613 * {W:b:u:l, bg}
+11-21 10:01:36.957  1389  6547 I HandwritingOnlineSuperpacks: HandwritingOnlineSuperpacks$2.apply():184 syncPackMapping()
+11-21 10:01:36.957  1389  1592 I SuperpacksManagerImpl: SuperpacksManagerImpl$3$1.onFailure():588 emoticon_content_description.registerManifest() cancelled
+11-21 10:01:36.957  1389  1592 I SuperpacksManagerImpl: SuperpacksManagerImpl$3$1.onFailure():588 emoticon_content_description.registerManifest() cancelled
+11-21 10:01:36.957  1389  7969 I SuperDelight: SuperDelightManager.lambda$syncBundledLanguageModels$16():769 SuperDelightManager#syncBundledLanguageModels(): Syncing for version 2024043000
+11-21 10:01:36.958  1389  7970 I SuperDelight: SuperDelightManager$2.onSuccess():631 delight_overrides sync success, adding to data file manager
+11-21 10:01:36.958  1389  1592 I HandwritingSlicingStrategy: HandwritingSlicingStrategy.getSlices():44 getSlices(): handwriting_recognition.86 useForeground=true
+11-21 10:01:36.958  1389  1592 I HandwritingSlicingStrategy: HandwritingSlicingStrategy.getSlices():103 getSlices(): result {slices=[{handwriting_recognition:pack_mapping_v1_lstm_20231127, m:*:*:*, fg}, {handwriting_recognition:transformer_latin_tflite_20231010_zip, m:*:*:*, fg}, {handwriting_recognition:qrnn_en_us_reco_20231010_fst_20230613_recospec_zip, m:*:*:*, fg}, {handwriting_recognition:transformer_latin_conf_tflite_20231010_zip, m:*:*:*, fg}, {handwriting_recognition:transformer_latin_seg_tflite_20231010_zip, m:*:*:*, fg}, {handwriting_recognition:en_us_20230613_compact_fst_zip, m:*:*:*, fg}, {handwriting_recognition:scribe_latin_20231123_tflite_zip, m:*:*:*, fg}, {handwriting_recognition:scribe_latin_20231123_recospec_zip, m:*:*:*, fg}], last batch=true, sync metadata=false}
+11-21 10:01:36.958  1389  1592 I SP      : Syncing handwriting_recognition (86) with slices: [{pack_mapping_v1_lstm_20231127, m:*:*:*, fg}, {transformer_latin_tflite_20231010_zip, m:*:*:*, fg}, {qrnn_en_us_reco_20231010_fst_20230613_recospec_zip, m:*:*:*, fg}, {transformer_latin_conf_tflite_20231010_zip, m:*:*:*, fg}, {transformer_latin_seg_tflite_20231010_zip, m:*:*:*, fg}, {en_us_20230613_compact_fst_zip, m:*:*:*, fg}, {scribe_latin_20231123_tflite_zip, m:*:*:*, fg}, {scribe_latin_20231123_recospec_zip, m:*:*:*, fg}], metadata: false
+11-21 10:01:36.958  1389  1592 I SuperDelight: SuperDelightBundledSlicingStrategy.getSlices():41 BundledSlicing#getSlices() : Locale = [en_US]
+11-21 10:01:36.959  1389  1592 I SuperDelight: SuperDelightBundledSlicingStrategy.getSlices():67 BundledSlicing#getSlices(): result {slices=[bundled_delight:main_en_us_2024022600_2], last batch=true, sync metadata=false}
+11-21 10:01:36.959  1389  1592 I SP      : Syncing bundled_delight (2024043000) with slices: [main_en_us_2024022600_2], metadata: false
+11-21 10:01:37.017 10634 10672 I TestRunner: finished: aNewClientRecoversTheEncryptedSessionAndLogoutRemovesIt(es.teloarreglo.PersistedIdentityTest)

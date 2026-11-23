@@ -1,0 +1,33 @@
+<resources>
+    <string name="cover_edit">Cambiar portada</string>
+    <string name="cover_photo_description">Foto de portada del negocio</string>
+    <string name="cover_generic_description">Imagen genérica de %1$s</string>
+    <string name="cover_image_unavailable">Foto no disponible; se muestra la imagen del oficio.</string>
+    <string name="cover_review_hint">Tu nueva portada se hará pública tras su revisión. Hasta entonces se mantiene la portada aprobada.</string>
+    <string name="cover_limits">Usa una imagen propia o autorizada, sin domicilios ni datos privados. Máximo de origen: 20 MB. Se ajusta a 1600 píxeles y 2 MB sin cambiar el original.</string>
+    <string name="cover_preparing">Preparando imagen…</string>
+    <string name="cover_pending">Portada enviada. Pendiente de revisión.</string>
+    <string name="cover_unsent">Nueva portada: envío aún no confirmado.</string>
+    <string name="cover_approved">Portada aprobada.</string>
+    <string name="cover_rejected">Portada rechazada. Puedes elegir otra imagen y volver a enviarla.</string>
+    <string name="cover_invalid">No se pudo preparar esta imagen. Elige otra foto de hasta 20 MB.</string>
+    <string name="cover_error">No se ha podido confirmar el estado de la portada. Comprueba la conexión y consulta su estado antes de reintentar.</string>
+    <string name="cover_check">Comprobar estado</string>
+    <string name="cover_choose">Elegir foto del dispositivo</string>
+    <string name="cover_submit">Enviar portada a revisión</string>
+    <string name="cover_use_generic">Usar la imagen de mi oficio</string>
+    <string name="cover_leave_title">¿Salir de la edición?</string>
+    <string name="cover_leave_hint">La selección sin enviar no se conserva. Si había un envío en curso, comprueba su estado al volver. Tu foto original no cambia.</string>
+    <string name="cover_leave">Salir</string>
+    <string name="cover_stay">Seguir editando</string>
+    <string name="catalogue_search">Buscar por nombre o servicio</string>
+    <string name="catalogue_clear_search">Borrar búsqueda</string>
+    <string name="catalogue_filtered_empty">No hay coincidencias con esta búsqueda.</string>
+    <string name="catalogue_reset_filters">Ver todos los profesionales</string>
+    <string name="catalogue_reference">Referencia: %1$s</string>
+    <string name="catalogue_free">Sin coste</string>
+    <plurals name="catalogue_results">
+        <item quantity="one">%d profesional</item>
+        <item quantity="other">%d profesionales</item>
+    </plurals>
+</resources>

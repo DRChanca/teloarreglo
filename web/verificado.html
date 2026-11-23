@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Cuenta · Teloarreglo</title>
+  <link rel="stylesheet" href="/estilo.css">
+</head>
+<body>
+<main>
+  <header><a class="marca" href="/">teloarreglo</a></header>
+  <!-- Destination of Supabase email links opened outside the app (Site URL). -->
+  <div class="tarjeta" id="ok">
+    <h1>Listo</h1>
+    <p>Si venías de verificar tu correo, tu cuenta ya está activada. Vuelve a la app de Teloarreglo
+      en tu móvil y entra con tu correo y contraseña.</p>
+  </div>
+  <div class="tarjeta" id="fallo" hidden>
+    <h1 class="error">Este enlace ya no es válido</h1>
+    <p>Los enlaces de los correos solo se pueden usar una vez y caducan al cabo de una hora. Si tu cuenta
+      ya estaba verificada, simplemente entra en la app. Si no, pide un correo nuevo desde la app.</p>
+  </div>
+  <footer><a href="/privacidad">Política de privacidad</a></footer>
+</main>
+<script>
+  // Supabase reports link errors in the URL fragment (#error=...); nothing is sent anywhere.
+  if (/(^|[#&?])error(_code)?=/.test(location.hash + location.search)) {
+    document.getElementById("ok").hidden = true;
+    document.getElementById("fallo").hidden = false;
+  }
+  // Never keep tokens or codes in the address bar or history.
+  if (location.hash || location.search) history.replaceState(null, "", location.pathname);
+</script>
+</body>
+</html>

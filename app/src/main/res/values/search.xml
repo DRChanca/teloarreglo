@@ -1,0 +1,21 @@
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="es">
+    <string name="catalogue_nearby">Cerca de mí</string>
+    <string name="nearby_back">Volver al catálogo</string>
+    <string name="nearby_title">Profesionales cerca del trabajo</string>
+    <string name="nearby_hint">Usamos tu ubicación una sola vez para saber el concejo y ordenar por cercanía a quienes trabajan allí.</string>
+    <string name="nearby_use_location">Usar mi ubicación</string>
+    <string name="nearby_privacy">No guardamos tu ubicación ni la seguimos. Las distancias son en línea recta y aproximadas.</string>
+    <string name="nearby_locating">Buscando tu ubicación…</string>
+    <string name="nearby_searching">Buscando profesionales…</string>
+    <string name="nearby_denied">Sin permiso de ubicación no podemos buscar cerca de ti. Puedes elegir el concejo y marcar el lugar en el mapa a mano.</string>
+    <string name="nearby_unavailable">No pudimos obtener tu ubicación. Activa la ubicación e inténtalo de nuevo, o elige el concejo a mano en el mapa.</string>
+    <string name="nearby_uncertain">Tu ubicación es demasiado imprecisa para saber el concejo. Inténtalo al aire libre o elige el concejo a mano en el mapa.</string>
+    <string name="nearby_outside">Ese lugar está fuera de Asturias. Por ahora solo hay profesionales en Asturias.</string>
+    <string name="nearby_confirm">Estás cerca del límite entre concejos. ¿Dónde es el trabajo?</string>
+    <string name="nearby_results">Trabajan en %1$s</string>
+    <string name="nearby_empty">No hay profesionales de este oficio que trabajen en %1$s.</string>
+    <string name="nearby_distance_under_1km">A menos de 1 km</string>
+    <string name="nearby_distance_about">A unos %1$s km</string>
+    <string name="nearby_error_network">No pudimos conectar. Comprueba tu conexión e inténtalo de nuevo.</string>
+    <string name="nearby_error_service">La búsqueda no está disponible en este momento. Inténtalo de nuevo.</string>
+</resources>

@@ -3,14 +3,14 @@
 Estado: decisión aprobada, no implementada ni desplegada.
 Fecha: 19 de noviembre de 2026.
 
-Fuente: [Elegir arquitectura y contratos para desarrollar la demo](https://github.com/DRChanca/teloarreglo/issues/6).
+Fuente: [Elegir arquitectura y contratos para desarrollar la demo entre dos personas](https://github.com/DRChanca/teloarreglo/issues/6).
 Actualización de aceptación y entrega: [Preparación del vídeo y paso a especificación](https://github.com/DRChanca/teloarreglo/issues/8).
 Actualización posterior de David, 19/11/2026: **un único proyecto Supabase y una
 única base alojada para desarrollo, pruebas funcionales y presentación**.
 Prevalece sobre las referencias anteriores a dos proyectos; véase la
 [decisión vigente](especificacion.md#actualización-una-única-base-de-datos-compartida).
 Reglas funcionales: [especificación](especificacion.md), especialmente apartados 1 y 14.
-La resolución de la issue es la referencia de aprobación; este documento desarrolla sus contratos para mantenerlos coherentes entre recorridos. No constituye un desglose de tickets.
+La resolución de la issue es la referencia de aprobación; este documento desarrolla sus contratos para compartirlos entre las dos líneas de trabajo. No constituye un desglose de tickets.
 
 ## 1. Elecciones y costes
 
@@ -39,7 +39,7 @@ La resolución de la issue es la referencia de aprobación; este documento desar
 
 ## 2. Módulos e interfaces
 
-Organización por recorridos completos, no separar totalmente pantallas y servidor. No se exige convertir cada módulo en un artefacto Gradle independiente.
+Organización por recorridos completos, no una persona solo con pantallas y otra solo con servidor. No se exige convertir cada módulo en un artefacto Gradle independiente.
 
 | Módulo | Interfaz que ofrece a sus consumidores | Reglas que concentra |
 | --- | --- | --- |
@@ -133,9 +133,9 @@ Repetir una operación con la misma clave y datos devuelve su resultado sin repe
 - Progreso, cancelación y original intacto. Si compresión o formato fallan, informar y no subir silenciosamente el original.
 - No declarar envío confirmado hasta recibir respuesta del servidor. Conexión necesaria para operaciones compartidas; no se promete modo completo sin internet.
 
-## 6. Responsable, integración y entrega
+## 6. Dos personas, integración y entrega
 
-- Responsable de futuros tickets: `DRChanca`.
+- Responsables de futuros tickets: `DRChanca` y `marcosarguellesrivera`, quien ya tiene acceso de escritura al repositorio.
 - Un responsable por ticket, con dependencias nativas en GitHub. No se crea todavía el desglose final.
 - Acordar y compartir estos contratos antes de trabajar en paralelo. Cada recorrido incluye presentación, persistencia y permisos.
 - Primera integración: acceso, perfil y conversación persistente entre dos cuentas en dos emuladores contra Supabase. Ampliar después con archivos, citas y administración.

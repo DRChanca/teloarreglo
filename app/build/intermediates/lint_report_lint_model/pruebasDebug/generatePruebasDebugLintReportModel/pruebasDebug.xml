@@ -1,0 +1,32 @@
+<variant
+    name="pruebasDebug"
+    package="es.teloarreglo"
+    minSdkVersion="26"
+    targetSdkVersion="35"
+    debuggable="true"
+    mergedManifest="build/intermediates/merged_manifest/pruebasDebug/processPruebasDebugMainManifest/AndroidManifest.xml"
+    manifestMergeReport="build/outputs/logs/manifest-merger-pruebas-debug-report.txt"
+    proguardFiles="build/intermediates/default_proguard_files/global/proguard-android.txt-8.13.2"
+    partialResultsDir="build/intermediates/lint_partial_results/pruebasDebug/lintAnalyzePruebasDebug/out">
+  <buildFeatures
+      namespacing="REQUIRED"/>
+  <sourceProviders>
+    <sourceProvider
+        manifests="src/main/AndroidManifest.xml"
+        javaDirectories="src/main/java:src/pruebas/java:src/debug/java:src/pruebasDebug/java:src/main/kotlin:src/pruebas/kotlin:src/debug/kotlin:src/pruebasDebug/kotlin"
+        resDirectories="src/main/res:src/pruebas/res:src/debug/res:src/pruebasDebug/res"
+        assetsDirectories="src/main/assets:src/pruebas/assets:src/debug/assets:src/pruebasDebug/assets"/>
+  </sourceProviders>
+  <testSourceProviders>
+  </testSourceProviders>
+  <testFixturesSourceProviders>
+  </testFixturesSourceProviders>
+  <artifact
+      classOutputs="build/intermediates/javac/pruebasDebug/compilePruebasDebugJavaWithJavac/classes:build/tmp/kotlin-classes/pruebasDebug:build/intermediates/compile_and_runtime_not_namespaced_r_class_jar/pruebasDebug/processPruebasDebugResources/R.jar"
+      type="MAIN"
+      applicationId="es.teloarreglo.pruebas"
+      generatedSourceFolders="build/generated/ap_generated_sources/pruebasDebug/out:build/generated/source/buildConfig/pruebas/debug"
+      generatedResourceFolders="build/generated/res/resValues/pruebas/debug"
+      desugaredMethodsFiles="/Users/david/.gradle/caches/8.13/transforms/456ba3d89b53ebb3122451cad9f99bcf/transformed/D8BackportedDesugaredMethods.txt">
+  </artifact>
+</variant>

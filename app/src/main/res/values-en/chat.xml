@@ -1,0 +1,22 @@
+<resources>
+    <string name="chat_title">Conversations</string>
+    <string name="chat_contact">Send message</string>
+    <string name="chat_empty">No conversations yet. Contact someone from their professional profile.</string>
+    <string name="chat_first">Explain what you need. You do not need an appointment to chat.</string>
+    <string name="chat_privacy">Private chat between the two accounts. Opening it does not share your address.</string>
+    <string name="chat_error">Could not refresh. Check your connection; we will try again.</string>
+    <string name="chat_open_error">Could not contact this professional. Check your connection and that the profile has an available account.</string>
+    <string name="chat_send_error">Send not confirmed. Retry the same message without duplicating it.</string>
+    <string name="chat_send_access">The server denied access. Return to the catalogue and check your session before retrying. Your pending message is kept.</string>
+    <string name="chat_send_invalid">The server rejected the text. Enter between 1 and 4000 characters.</string>
+    <string name="chat_send_conflict">This request already belongs to another text. Reopen the chat to review its history; no message was changed.</string>
+    <string name="chat_retry_send">Retry send</string>
+    <string name="chat_input">Message (4000 characters maximum)</string>
+    <string name="chat_send">Send</string>
+    <string name="chat_sending">Sending…</string>
+    <string name="chat_sent">Confirmed by the server</string>
+    <string name="chat_you">You</string>
+    <string name="chat_other">Other account</string>
+    <string name="chat_client">Client · %1$s</string>
+    <string name="chat_access">Sign in to contact this professional.</string>
+</resources>

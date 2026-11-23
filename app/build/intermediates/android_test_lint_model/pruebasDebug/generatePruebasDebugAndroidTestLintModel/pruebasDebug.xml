@@ -1,0 +1,30 @@
+<variant
+    name="pruebasDebug"
+    package="es.teloarreglo"
+    minSdkVersion="26"
+    targetSdkVersion="35"
+    debuggable="true"
+    mergedManifest="build/intermediates/merged_manifest/pruebasDebug/processPruebasDebugMainManifest/AndroidManifest.xml"
+    manifestMergeReport="build/outputs/logs/manifest-merger-pruebas-debug-report.txt"
+    partialResultsDir="build/intermediates/android_test_lint_partial_results/pruebasDebug/lintAnalyzePruebasDebugAndroidTest/out">
+  <buildFeatures
+      namespacing="REQUIRED"/>
+  <sourceProviders>
+  </sourceProviders>
+  <testSourceProviders>
+    <sourceProvider
+        manifests="src/androidTest/AndroidManifest.xml"
+        javaDirectories="src/androidTest/java:src/androidTestPruebas/java:src/androidTestDebug/java:src/androidTestPruebasDebug/java:src/androidTest/kotlin:src/androidTestPruebas/kotlin:src/androidTestDebug/kotlin:src/androidTestPruebasDebug/kotlin"
+        resDirectories="src/androidTest/res:src/androidTestPruebas/res:src/androidTestDebug/res:src/androidTestPruebasDebug/res"
+        assetsDirectories="src/androidTest/assets:src/androidTestPruebas/assets:src/androidTestDebug/assets:src/androidTestPruebasDebug/assets"
+        androidTest="true"/>
+  </testSourceProviders>
+  <testFixturesSourceProviders>
+  </testFixturesSourceProviders>
+  <artifact
+      type="INSTRUMENTATION_TEST"
+      applicationId="es.teloarreglo.pruebas.test"
+      generatedResourceFolders="build/generated/res/resValues/androidTest/pruebas/debug"
+      desugaredMethodsFiles="/Users/david/.gradle/caches/8.13/transforms/456ba3d89b53ebb3122451cad9f99bcf/transformed/D8BackportedDesugaredMethods.txt">
+  </artifact>
+</variant>
