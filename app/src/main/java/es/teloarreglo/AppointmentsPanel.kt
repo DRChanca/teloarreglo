@@ -41,6 +41,8 @@ class PinSource(
     val locate: suspend () -> Located,
     /** True when Google Maps can be shown (#17): the point can then be chosen on the map. */
     val mapsReady: Boolean = false,
+    /** The client's private home (#37): a new request starts with it and can be edited. */
+    val home: es.teloarreglo.home.HomeAddress? = null,
 )
 
 /**
@@ -340,9 +342,11 @@ private fun RequestForm(
     var dateText by rememberSaveable(conversation.id) { mutableStateOf<String?>(LocalDate.now().plusDays(1).toString()) }
     var from by rememberSaveable(conversation.id) { mutableStateOf("09:00") }
     var to by rememberSaveable(conversation.id) { mutableStateOf("11:00") }
-    var address by rememberSaveable(conversation.id) { mutableStateOf("") }
-    var lat by rememberSaveable(conversation.id) { mutableStateOf("") }
-    var lng by rememberSaveable(conversation.id) { mutableStateOf("") }
+    // The home (#37) is only a suggestion: the client can change any of it before sending.
+    val home = pins.home
+    var address by rememberSaveable(conversation.id) { mutableStateOf(home?.address.orEmpty()) }
+    var lat by rememberSaveable(conversation.id) { mutableStateOf(home?.let { "%.6f".format(Locale.ROOT, it.lat) }.orEmpty()) }
+    var lng by rememberSaveable(conversation.id) { mutableStateOf(home?.let { "%.6f".format(Locale.ROOT, it.lng) }.orEmpty()) }
     var key by rememberSaveable(conversation.id) { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var locating by remember { mutableStateOf(false) }
@@ -370,6 +374,8 @@ private fun RequestForm(
     }
     OutlinedTextField(address, { if (it.length <= 300) address = it }, enabled = editable,
         label = { Text(stringResource(R.string.appointment_address)) }, modifier = scrollSafe.testTag("appointment_address"))
+    if (home != null && address == home.address) Text(stringResource(R.string.home_appointment_prefilled),
+        style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("appointment_home_prefilled"))
     Text(stringResource(R.string.appointment_address_privacy), style = MaterialTheme.typography.bodySmall)
     OutlinedButton(onClick = {
         locating = true; noLocation = false
@@ -418,7 +424,7 @@ private fun RequestForm(
             try {
                 appointments.request(conversation.id, requestKey,
                     AppointmentRequest(problem.trim(), start!!, end!!, address.trim(), latitude!!, longitude!!))
-                key = null; problem = ""; address = ""; onDone()
+                key = null; problem = ""; address = home?.address.orEmpty(); onDone()
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 failure = (e as? AppointmentException)?.failure
