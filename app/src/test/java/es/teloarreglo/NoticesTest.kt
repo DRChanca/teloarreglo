@@ -78,6 +78,7 @@ class NoticesTest {
         assertEquals(NoticeTopic.REMINDER, t("appointment", "reminder"))
         assertEquals(NoticeTopic.COMPLETED, t("appointment", "completed"))
         assertEquals(NoticeTopic.INCIDENT, t("appointment", "incident_reported"))
+        assertEquals(NoticeTopic.REVIEW, t("appointment", "review_published"))
         assertEquals(NoticeTopic.APPOINTMENT_OTHER, t("appointment", "something_new"))
         assertEquals(NoticeTopic.PROFILE_APPROVED, t("profile_review", "approved"))
         assertEquals(NoticeTopic.OTHER, t("future_kind", null))

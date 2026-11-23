@@ -77,6 +77,7 @@ fun topicText(topic: NoticeTopic): Int = when (topic) {
     NoticeTopic.REMINDER -> R.string.notices_topic_reminder
     NoticeTopic.COMPLETED -> R.string.notices_topic_completed
     NoticeTopic.INCIDENT -> R.string.notices_topic_incident
+    NoticeTopic.REVIEW -> R.string.review_notice
     NoticeTopic.APPOINTMENT_OTHER -> R.string.notices_topic_appointment
     NoticeTopic.PROFILE_APPROVED -> R.string.notices_topic_profile_approved
     NoticeTopic.PROFILE_REJECTED -> R.string.notices_topic_profile_rejected

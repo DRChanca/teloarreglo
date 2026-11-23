@@ -50,6 +50,8 @@ fun CatalogueScreen(
     onContact: ((String) -> Unit)? = null,
     onChats: (() -> Unit)? = null,
     onNearby: (() -> Unit)? = null,
+    /** Published reviews shown on the profile (#28); null hides them. */
+    reviews: es.teloarreglo.appointments.Reviews? = null,
     onNotices: (() -> Unit)? = null,
     unreadNotices: Int = 0,
 ) {
@@ -180,7 +182,8 @@ fun CatalogueScreen(
                     }
                     selected != null -> ProfileDetail(profiles.single(), covers, catalogue,
                         onEdit = if (selected == ownedProfileId && covers != null) ({ editing = true }) else null,
-                        onContact = if (selected != ownedProfileId) onContact?.let { contact -> { contact(profiles.single().id) } } else null)
+                        onContact = if (selected != ownedProfileId) onContact?.let { contact -> { contact(profiles.single().id) } } else null,
+                        reviews = reviews)
                     else -> {
                         Text(pluralStringResource(R.plurals.catalogue_results, visible.size, visible.size),
                             Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
@@ -225,7 +228,7 @@ fun CatalogueScreen(
 @Composable
 private fun ProfileDetail(
     profile: PublicProfile, covers: ProfessionalCovers?, catalogue: Catalogue,
-    onEdit: (() -> Unit)?, onContact: (() -> Unit)?,
+    onEdit: (() -> Unit)?, onContact: (() -> Unit)?, reviews: es.teloarreglo.appointments.Reviews? = null,
 ) {
     val locale = LocalConfiguration.current.locales[0]
     // «Destacado» (#33) from the server rule; a failed check shows no badge rather than a false one.
@@ -300,6 +303,7 @@ private fun ProfileDetail(
                 }
             }
         }
+        if (reviews != null) item { ProfileReviewList(profile.id, reviews) }
     }
 }
 

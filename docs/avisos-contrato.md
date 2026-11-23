@@ -95,7 +95,8 @@ $$);
 - `notices/AndroidPush.kt`:
   - Firebase se inicializa con identificadores públicos de cliente, sin `google-services.json`:
     - `FCM_PROJECT_ID`, `FCM_API_KEY` y `FCM_SENDER_ID`.
-    - `TEST_FCM_APP_ID` y `PRESENTATION_FCM_APP_ID`.
+    - `PRESENTATION_FCM_APP_ID`. Solo se usa la variante `es.teloarreglo.presentacion`
+      (decisión del 23 de noviembre en `especificacion.md`); `TEST_FCM_APP_ID` puede quedar vacío.
   - Esos valores se leen de `.env`. Si falta alguno, no hay push.
   - `TeloMessagingService` muestra la notificación con etiqueta por conversación o aviso, así que un push
     repetido sustituye al anterior.

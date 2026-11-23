@@ -1,0 +1,22 @@
+<resources>
+    <string name="review_section">Bewertungen</string>
+    <string name="review_none">Noch keine Kundenbewertungen.</string>
+    <string name="review_load_error">Die Bewertungen konnten nicht geladen werden.</string>
+    <string name="review_stars">%1$d von 5 Sternen</string>
+    <string name="review_publish">Bewertung schreiben</string>
+    <string name="review_title">Bewertung des Auftrags</string>
+    <string name="review_comment">Kommentar</string>
+    <string name="review_privacy">Die Bewertung ist im Profil des Fachbetriebs öffentlich. Gib keine Gesichter, Adressen, Telefonnummern oder andere privaten Daten an.</string>
+    <string name="review_privacy_accept">Ich verstehe, dass die Bewertung öffentlich ist</string>
+    <string name="review_send">Bewertung veröffentlichen</string>
+    <string name="review_retry">Veröffentlichung wiederholen</string>
+    <string name="review_published_mine">Deine veröffentlichte Bewertung</string>
+    <string name="review_published_client">Bewertung des Kunden</string>
+    <string name="review_awaiting_confirmation">Du kannst bewerten, sobald du bestätigt hast, dass die Arbeit erledigt wurde.</string>
+    <string name="review_disputed">Die Bewertung wartet, bis die Verwaltung prüft, ob der Auftrag stattgefunden hat.</string>
+    <string name="review_not_performed">Die Verwaltung hat festgestellt, dass der Auftrag nicht stattfand: keine Bewertung möglich.</string>
+    <string name="review_error_invalid">Wähle 1 bis 5 Sterne, schreibe einen Kommentar und akzeptiere den Hinweis.</string>
+    <string name="review_error_exists">Dieser Termin hat bereits eine Bewertung; es wird nur eine veröffentlicht.</string>
+    <string name="review_error_network">Unklar, ob sie veröffentlicht wurde. Erneut versuchen: Sie wird nicht doppelt veröffentlicht.</string>
+    <string name="review_notice">Der Kunde hat eine Bewertung veröffentlicht</string>
+</resources>

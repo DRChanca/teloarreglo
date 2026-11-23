@@ -25,6 +25,21 @@ de separar pruebas y presentación en dos proyectos.
   sustituidas por esta decisión. La configuración técnica inicial del ticket de
   acceso conserva dos variantes de APK, pero el asistente sincroniza sus alias
   de configuración con la misma conexión y cuenta; no son dos proyectos.
+
+## Actualización: solo se usa la variante de presentación
+
+Decisión de David, 23 de noviembre de 2026: la única variante de la aplicación
+que se instala, prueba y presenta es **`es.teloarreglo.presentacion`**.
+
+- Firebase Cloud Messaging se configura en **un único proyecto Firebase** con
+  **una sola app Android registrada**, `es.teloarreglo.presentacion`. Firebase
+  solo entrega notificaciones push; no guarda datos de la aplicación, que siguen
+  en la única base Supabase.
+- En `.env` basta con `FCM_PROJECT_ID`, `FCM_API_KEY`, `FCM_SENDER_ID` y
+  `PRESENTATION_FCM_APP_ID`. `TEST_FCM_APP_ID` puede quedar vacío: la variante
+  `pruebas` compila igual, pero sin notificaciones push.
+- La variante `pruebas` se conserva en el código para compilaciones y pruebas
+  automáticas, pero no es objetivo de verificación manual ni de la presentación.
 - El intervalo reducido de 5 minutos no se aplica globalmente a esta base ni a
   sus citas preparadas. Su comprobación deberá aislarse sin exigir un segundo
   proyecto alojado, antes de desplegarla. Se mantienen 24/48 horas por defecto.
