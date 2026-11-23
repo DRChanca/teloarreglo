@@ -417,4 +417,11 @@
     <string name="start_cancel_cancelled_by_other">Annulé par l’autre partie le %1$s.</string>
     <string name="start_cancel_released">Annulé : le créneau n’est plus réservé.</string>
     <string name="start_cancel_error_started">Le travail a déjà commencé : il ne peut pas être annulé avec un remboursement automatique.</string>
+    <string name="kept_prices_title">Prix de référence de cette demande</string>
+    <string name="kept_prices_item">%1$s : %2$s</string>
+    <string name="kept_prices_hint">Ce sont les prix du profil au moment de l’envoi de la demande. Si le profil les modifie, cette demande et ses propositions conservent les leurs.</string>
+    <string name="running_change_hint">Une fois le travail commencé, vous pouvez encore convenir d’un autre prix, périmètre ou durée. L’heure de début et l’adresse ne changent plus.</string>
+    <string name="running_change_intro">Travail commencé : proposez un autre prix, périmètre ou durée. Avec le paiement dans l’app, l’acceptation encaisse la hausse ou rembourse la baisse (simulé).</string>
+    <string name="running_change_start_fixed">Début : %1$s (ne change plus une fois le travail commencé).</string>
+    <string name="running_change_error_started">Le travail a déjà commencé : l’heure de début et l’adresse ne changent pas. Vérifiez la proposition.</string>
 </resources>

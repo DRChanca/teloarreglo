@@ -396,6 +396,38 @@ class AppointmentsUiTest {
         assertEquals(8550, appointment.payment?.pendingCents)
     }
 
+    /** Extra work agreed on the spot (2026-11-23): after the start the start time is fixed, the rest can change. */
+    @Test fun afterTheStartTheProfessionalProposesExtraWorkAndTheClientPaysTheDifference() {
+        val fake = withPaidConfirmation().apply {
+            items[0] = items[0].copy(referencePrices = listOf(
+                es.teloarreglo.catalogue.ReferencePrice("Fuga", "Una hora", "hour", 3500)))
+            kotlinx.coroutines.runBlocking { startWork("a1") }
+        }
+        var account by mutableStateOf("pro")
+        compose.setContent { AppointmentsPanel(fake, account, conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        waitForTag("kept_prices_a1")
+        compose.onNodeWithTag("running_change_hint").assertExists()
+        compose.onAllNodesWithTag("change_request_correction").assertCountEquals(0)
+        compose.onNodeWithTag("change_propose").performScrollTo().performClick()
+        waitForTag("change_start_fixed")
+        compose.onAllNodesWithTag("change_start").assertCountEquals(0)
+        compose.onNodeWithTag("change_amount").performTextReplacement("95,50")
+        compose.onNodeWithTag("change_send").performScrollTo().performClick()
+        waitForTag("change_pending")
+        account = "client"
+        waitForTag("change_accept")
+        compose.onNodeWithTag("change_accept").performScrollTo().performClick()
+        compose.onNodeWithTag("change_decision_confirm").performClick()
+        compose.waitUntil(5_000) { kotlinx.coroutines.runBlocking { fake.list("conversation") }.single().pendingChange == null }
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.STARTED, appointment.stage)
+        assertEquals(9550, appointment.payment?.paidCents)
+        // The new conditions keep the original start time.
+        assertEquals(appointment.proposals.first().startAt, appointment.confirmedProposal?.startAt)
+    }
+
     @Test fun clientSeesTheFullRefundBeforeCancellingAndTheHourIsReleased() {
         val fake = withPaidConfirmation()
         compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }

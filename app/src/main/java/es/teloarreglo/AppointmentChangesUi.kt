@@ -23,7 +23,8 @@ import java.util.Locale
 import java.util.UUID
 
 /**
- * Changes to a confirmed appointment (#23). The pending change is shown side by side with the conditions in force
+ * Changes to a confirmed appointment (#23), and during the job once started (2026-11-23): then only price, scope,
+ * duration and inclusions, never the start time or the address. The pending change is shown side by side with the conditions in force
  * and what accepting does with the money; only the other participant may accept or reject it. Nothing is shown
  * as applied until the server answers, and the conditions in force are always the accepted proposal.
  */
@@ -92,17 +93,19 @@ internal fun ChangeSection(
             Text(stringResource(if (pending.kind == ChangeKind.ADDRESS_CORRECTION) R.string.change_dismiss else R.string.change_reject))
         }
     }
+    if (!appointment.startAndAddressMayChange) Text(stringResource(R.string.running_change_hint),
+        style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("running_change_hint"))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedButton(onClick = onPropose, enabled = !busy, modifier = Modifier.testTag("change_propose")) {
             Text(stringResource(if (!professional && pending?.kind == ChangeKind.ADDRESS_CORRECTION) R.string.change_correct_address
                 else R.string.change_propose))
         }
     }
-    if (professional) TextButton(onClick = onCorrection, enabled = !busy, modifier = Modifier.testTag("change_request_correction")) {
+    if (appointment.canRequestAddressCorrection(accountId)) TextButton(onClick = onCorrection, enabled = !busy, modifier = Modifier.testTag("change_request_correction")) {
         Text(stringResource(R.string.change_request_correction))
     }
     if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-    if (failed) Text(failureText(failure), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("change_error"))
+    if (failed) Text(changeFailureText(failure), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("change_error"))
     val decided = appointment.changes.filter { it.status != ChangeStatus.PENDING }
     if (decided.isNotEmpty()) {
         Text(stringResource(R.string.change_history), style = MaterialTheme.typography.titleSmall)
@@ -219,16 +222,21 @@ internal fun ChangeForm(
         }
     }
     val editable = key == null && !busy
+    // During the job (2026-11-23) the start and the address stay as they are; only the rest can change.
+    val running = !appointment.startAndAddressMayChange
     Text(appointment.problem, style = MaterialTheme.typography.titleMedium)
-    Text(stringResource(R.string.change_form_intro), style = MaterialTheme.typography.bodyMedium)
+    Text(stringResource(if (running) R.string.running_change_intro else R.string.change_form_intro),
+        style = MaterialTheme.typography.bodyMedium)
     OutlinedTextField(scopeText, { if (it.length <= 2000) scopeText = it }, enabled = editable, minLines = 2,
         label = { Text(stringResource(R.string.appointment_scope)) }, modifier = Modifier.fillMaxWidth().testTag("change_scope"))
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    if (running) Text(stringResource(R.string.running_change_start_fixed, dateTimeFormat().format(base.startAt)),
+        style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("change_start_fixed"))
+    else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.appointment_date))
         DateField(date, editable) { dateText = it.toString() }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedTextField(start, { start = it.take(5) }, enabled = editable, singleLine = true,
+        if (!running) OutlinedTextField(start, { start = it.take(5) }, enabled = editable, singleLine = true,
             label = { Text(stringResource(R.string.appointment_start)) }, modifier = Modifier.weight(1f).testTag("change_start"))
         OutlinedTextField(minutes, { minutes = it.filter(Char::isDigit).take(4) }, enabled = editable, singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -247,7 +255,7 @@ internal fun ChangeForm(
         Checkbox(travel, { travel = it }, enabled = editable, modifier = Modifier.testTag("change_travel"))
         Text(stringResource(R.string.appointment_travel_included))
     }
-    if (client) {
+    if (client && !running) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(changeAddress, { changeAddress = it }, enabled = editable, modifier = Modifier.testTag("change_address_toggle"))
             Text(stringResource(R.string.change_form_change_address))
@@ -289,15 +297,16 @@ internal fun ChangeForm(
         label = { Text(stringResource(R.string.change_form_note)) }, modifier = Modifier.fillMaxWidth().testTag("change_note"))
     if (invalid) Text(stringResource(R.string.appointment_form_invalid), color = MaterialTheme.colorScheme.error)
     if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-    if (shownError) Text(failureText(failure), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("change_form_error"))
+    if (shownError) Text(changeFailureText(failure), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("change_form_error"))
     Button(onClick = {
-        val startAt = localInstant(date, start)
+        // Once started, the start in force is sent unchanged: the server refuses any other.
+        val startAt = if (running) base.startAt else localInstant(date, start)
         val duration = minutes.toIntOrNull()
         val latitude = lat.replace(',', '.').toDoubleOrNull()
         val longitude = lng.replace(',', '.').toDoubleOrNull()
         invalid = scopeText.isBlank() || startAt == null || duration == null || duration !in 15..1440 || cents == null ||
             (visitFee.isNotBlank() && fee == null) || (needsMode && mode == null) ||
-            (changeAddress && (address.isBlank() || latitude == null || longitude == null))
+            (!running && changeAddress && (address.isBlank() || latitude == null || longitude == null))
         if (invalid) return@Button
         val requestKey = key ?: UUID.randomUUID().toString().also { key = it }
         busy = true; shownError = false; failure = null
@@ -305,7 +314,7 @@ internal fun ChangeForm(
             try {
                 appointments.proposeChange(appointment.id, expected, requestKey, ChangeDraft(scopeText.trim(), startAt!!, duration!!,
                     cents!!, fee, materials, travel,
-                    address = if (client && changeAddress) ChangedAddress(address.trim(), latitude!!, longitude!!) else null,
+                    address = if (client && !running && changeAddress) ChangedAddress(address.trim(), latitude!!, longitude!!) else null,
                     note = note.trim().ifEmpty { null }, mode = if (needsMode) mode?.let(PaymentMode::valueOf) else null))
                 key = null; onDone()
             } catch (e: Exception) {
@@ -363,6 +372,11 @@ internal fun CorrectionForm(
         Text(stringResource(if (key != null) R.string.appointment_retry_send else R.string.change_correction_send))
     }
 }
+
+/** A change refused because the work started names the start time and the address, not a cancellation. */
+@Composable
+private fun changeFailureText(failure: AppointmentFailure?): String =
+    if (failure == AppointmentFailure.ALREADY_STARTED) stringResource(R.string.running_change_error_started) else failureText(failure)
 
 /** 8550 → "85,50" in the form's input format (parseEuroCents accepts both separators). */
 private fun centsText(cents: Int) = "%d,%02d".format(Locale.ROOT, cents / 100, cents % 100)

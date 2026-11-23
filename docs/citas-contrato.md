@@ -342,7 +342,8 @@ nunca `approved_profiles.prices`. Así lo hace ya `confirm_proposal`; #23–#27 
 cliente pide sin propuesta, la referencia es `appointments.reference_prices`. Un movimiento simulado no
 debe leer el precio del perfil.
 
-Android no muestra todavía `reference_prices` (la consulta de `Appointments.list` no la pide).
+~~Android no muestra todavía `reference_prices`.~~ Corregido el 23 de noviembre (ver «Cambios con el trabajo
+comenzado y precios guardados en el chat»): `Appointments.list` la pide y el chat la muestra.
 
 ```bash
 /Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree>   # incluye appointment_prices.test.sql
@@ -449,8 +450,9 @@ RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo). Ambas devu
 - `start_work(p_appointment_id uuid)`. Solo el profesional de la cita (`42501 permission_denied`, también para citas
   ajenas o inexistentes) y solo con la cita `confirmed` (`PT409 incompatible_state`). Pone `started`, `started_at`,
   `version + 1`, cierra como `superseded` un cambio pendiente (comenzar no acepta costes nuevos) y avisa al cliente.
-  No mueve dinero. Repetirla devuelve la misma marca. Tras el inicio, los cambios de #23 responden
-  `incompatible_state`.
+  No mueve dinero. Repetirla devuelve la misma marca. ~~Tras el inicio, los cambios de #23 responden
+  `incompatible_state`.~~ Sustituido el 23 de noviembre por `20261123012500` (sección siguiente): comenzar solo
+  cierra el cambio pendiente que mueve la hora o la dirección, o una petición de corrección.
 - `cancel_appointment(p_appointment_id uuid)`. Cliente o profesional, cita `confirmed`. Toma el bloqueo de la cita y
   después `private.lock_agenda`, como `accept_proposal`. En una sola transacción: borra la reserva de
   `agenda_reservations` (la hora vuelve a estar libre), cierra un cambio pendiente, y si el pago es integrado con
@@ -480,3 +482,50 @@ el …» o «Cancelada por ti / por la otra parte el …». Textos `start_cancel
 ```
 
 Resultados: [comprobación de inicio y cancelación](comprobacion-inicio-cancelacion.md).
+
+## Cambios con el trabajo comenzado y precios guardados en el chat — decisiones del 23 de noviembre de 2026
+
+Migración nueva: `20261123012500_changes_during_job.sql` (`create or replace` de `propose_change`,
+`request_address_correction`, `accept_change` y `start_work`; mismas firmas y permisos). No edita migraciones
+anteriores. No se ha desplegado ni escrito en la base alojada. El dinero sigue siendo simulado.
+
+Regla A (trabajo extra acordado en el momento): con la cita `started`, cualquiera de las dos partes propone y la
+otra acepta o rechaza otro precio, alcance, duración o inclusiones, con las mismas reglas que #23.
+
+- `propose_change`: admite `confirmed` y `started`. Con `started`, un `p_start` distinto del vigente o una
+  dirección nueva → `PT409 already_started`. `cancelled` o `pending` → `PT409 incompatible_state`, como antes.
+- `accept_change`: admite `confirmed` y `started`. Con `started`, un cambio que mueve la hora o la dirección →
+  `PT409 already_started` (defensa: comenzar ya los cierra). Dinero igual que #23: integrado, al aceptar se cobra
+  (simulado) la diferencia del aumento o se devuelve la de la reducción (sin superar lo pendiente de entrega);
+  directo, solo `agreed_cents`. Una duración nueva mueve el final de la reserva y debe caber en la franja de
+  disponibilidad y sin solapes (`PT409 slot_unavailable`), como antes de comenzar.
+- `request_address_correction`: con `started` → `PT409 already_started`.
+- `start_work`: ya no cierra todo cambio pendiente. Cierra (`superseded`) solo el que mueve la hora de inicio o la
+  dirección y la petición de corrección de dirección; un cambio de precio, alcance, duración o inclusiones sigue
+  `pending` y puede aceptarse durante el trabajo.
+- `cancel_appointment` sin cambios: solo antes de comenzar y sigue cerrando cualquier cambio pendiente. Una cita
+  cancelada no admite cambios.
+
+Regla B (precios del perfil): un cambio de precios del perfil vale para el catálogo, los chats sin solicitud y las
+solicitudes nuevas. Cada solicitud ya enviada conserva `appointments.reference_prices` (migración `20261123004300`) y cada propuesta su
+importe. Vía de lectura: la columna ya era legible por los dos participantes (privilegio de columna y la RLS de
+`appointments`); no hace falta RPC ni vista nueva. Una tercera cuenta no ve la fila.
+
+Android: `Appointments.list` añade `reference_prices` a las columnas leídas; `Appointment.referencePrices`
+(`List<ReferencePrice>`, vacía si no había precios). `canProposeChange(account)` (participante y `CONFIRMED` o
+`STARTED`), `startAndAddressMayChange` (solo `CONFIRMED`) y `canRequestAddressCorrection(account)` (profesional y
+`CONFIRMED`). Con `STARTED` y un cambio pendiente, el aviso es `DECIDE_CHANGE` / `AWAITING_CHANGE`; sin cambio,
+`STARTED`.
+
+Interfaz: la tarjeta de cada solicitud muestra «Precios de referencia de esta solicitud» (los guardados, no los del
+perfil) y el formulario de propuesta del profesional también; las tarjetas de propuesta ya mostraban su importe.
+Con el trabajo comenzado sigue visible «Proponer un cambio», con un aviso de que la hora y la dirección ya no
+cambian; el formulario muestra el inicio fijo, sin campos de fecha, hora ni dirección, y no hay «Pedir corrección».
+`already_started` en un cambio muestra su propio texto. Textos `kept_prices_*` y `running_change_*` en ES/EN/FR/DE.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_start_cancel.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AppointmentsTest'
+```
+
+Resultados: [comprobación de cambios en curso](comprobacion-cambios-en-curso.md).

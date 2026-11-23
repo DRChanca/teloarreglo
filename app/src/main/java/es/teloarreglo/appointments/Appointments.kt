@@ -9,6 +9,7 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import es.teloarreglo.catalogue.ReferencePrice
 import es.teloarreglo.search.GeoPoint
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -133,6 +134,11 @@ data class Appointment(
     @SerialName("started_at") @Serializable(ServerInstant::class) val startedAt: Instant? = null,
     @SerialName("cancelled_at") @Serializable(ServerInstant::class) val cancelledAt: Instant? = null,
     @SerialName("cancelled_by") val cancelledBy: String? = null,
+    /**
+     * The profile's reference prices in force when the request was sent, kept by the server (2026-11-23). In this
+     * chat they are shown instead of the live profile prices; later profile edits never change them.
+     */
+    @SerialName("reference_prices") val referencePrices: List<ReferencePrice> = emptyList(),
     @SerialName("appointment_proposals") private val rawProposals: List<AppointmentProposal> = emptyList(),
     /** Present once a proposal with a cost is confirmed; free visits have none. */
     @SerialName("appointment_payments") val payment: AppointmentPayment? = null,
@@ -170,6 +176,18 @@ data class Appointment(
         }
     }
 
+    private fun participant(accountId: String) = accountId == clientId || accountId == professionalId
+    /**
+     * Either participant proposes a change while confirmed and also during the job (extra work agreed on the spot,
+     * 2026-11-23); never once cancelled or before confirmation.
+     */
+    fun canProposeChange(accountId: String) =
+        participant(accountId) && (stage == AppointmentStage.CONFIRMED || stage == AppointmentStage.STARTED)
+    /** Once the work started only price, scope, duration and inclusions change: not the start time nor the address. */
+    val startAndAddressMayChange get() = stage == AppointmentStage.CONFIRMED
+    /** The professional asks for an address correction only before the start. */
+    fun canRequestAddressCorrection(accountId: String) = stage == AppointmentStage.CONFIRMED && accountId == professionalId
+
     /** Only its professional starts, and only a confirmed appointment (#24). */
     fun canStart(accountId: String) = stage == AppointmentStage.CONFIRMED && accountId == professionalId
     /** Either participant cancels before the start; afterwards it is an incident, not a cancellation (#24). */
@@ -191,8 +209,8 @@ data class Appointment(
         val change = pendingChange
         return when {
             stage == AppointmentStage.CANCELLED -> AppointmentNotice.CANCELLED
-            stage == AppointmentStage.STARTED -> AppointmentNotice.STARTED
-            stage == AppointmentStage.CONFIRMED && change != null -> when {
+            stage == AppointmentStage.STARTED && change == null -> AppointmentNotice.STARTED
+            (stage == AppointmentStage.CONFIRMED || stage == AppointmentStage.STARTED) && change != null -> when {
                 change.authorId == accountId -> AppointmentNotice.AWAITING_CHANGE
                 change.kind == ChangeKind.ADDRESS_CORRECTION -> AppointmentNotice.CORRECT_ADDRESS
                 else -> AppointmentNotice.DECIDE_CHANGE
@@ -366,7 +384,7 @@ interface Appointments {
 
 /** Every column the server lets app accounts read; `*`, address, latitude or longitude would be refused (#38). */
 private const val READABLE_COLUMNS = "id,conversation_id,profile_id,client_id,professional_id,request_id,problem," +
-    "requested_start,requested_end,version,stage,created_at,started_at,cancelled_at,cancelled_by"
+    "requested_start,requested_end,version,stage,created_at,started_at,cancelled_at,cancelled_by,reference_prices"
 
 class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
     override suspend fun list(conversationId: String): List<Appointment> = mapped {
