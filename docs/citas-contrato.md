@@ -672,3 +672,64 @@ del chat o escribir una nota, con el mismo aviso). Textos `incident_*` en ES/EN/
 ```
 
 Resultados: [comprobación de incidencias](comprobacion-incidencias.md).
+
+## Reseñas — #28
+
+Migración nueva: `20261123012800_reviews.sql`. No edita migraciones anteriores ni cambia firmas de RPC existentes. No se ha
+desplegado ni escrito en la base alojada. La Edge Function `search-professionals` no cambia.
+
+Regla: el cliente de la cita publica una reseña (1–5 estrellas y comentario) por cita, solo cuando consta que el servicio se
+realizó; nunca se genera sola. Directo y gratuito se reseñan igual. La habilitación la decide el servidor y no se deduce del
+dinero:
+
+| `state` | Cuándo |
+| --- | --- |
+| `enabled` | Cita `completed` (confirmación del cliente o cierre sin respuesta, #25/#27); o `done` con una queja de calidad (`performance = acknowledged`), aunque el pago siga retenido; o decisión administrativa `performed` |
+| `published` | Ya existe su reseña (solo en `review_states`) |
+| `not_done` | `pending`, `confirmed`, `cancelled` o solo `started` |
+| `awaiting_confirmation` | `done` sin confirmar ni queja de calidad: el cliente confirma primero |
+| `performance_disputed` | La última incidencia que discute la realización (`not_performed` o `cancellation`) o tiene decisión sobre ella sigue sin decidir o con `missing_evidence` |
+| `not_performed` | Esa última decisión es `not_performed` |
+
+Esquema:
+
+- `public.incidents.performance_decision` (`performed` | `not_performed` | `missing_evidence`, nulo hasta decidir): **punto de
+  extensión para #31**. La resolución administrativa lo fija aparte del reparto del dinero; no lo bloquea
+  `incidents_keep_history`.
+- `public.reviews` (RLS: lectura `anon` y `authenticated`; sin escritura directa): `id`, `profile_id`, `stars` 1–5, `comment`
+  1–2000, `created_at`. Solo lo público: ni cita, ni autor, ni dirección, ni chat. Disparador `reviews_locked`
+  (`42501 review_locked`): ni el profesional ni el SQL de confianza la editan o borran.
+- `private.review_sources` (sin permisos): `review_id`, `appointment_id` único (una por cita), `author_id`, `request_id`;
+  único `(author_id, request_id)`.
+- `approved_profiles.rating`/`review_count`: recalculados en la misma transacción a partir de `public.reviews` (media
+  redondeada a 2 decimales). La aprobación de perfiles (#29) no los toca.
+- `appointment_events_kind_check` + `review_published` (al profesional). #32 lo convierte en aviso sin cambios.
+
+RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo):
+
+- `publish_review(p_appointment_id uuid, p_request_id uuid, p_stars integer, p_comment text, p_privacy_acknowledged boolean)`
+  → `{id, appointment_id, profile_id, stars, comment, created_at}`. Bloquea primero la fila de la cita (como `confirm_done`,
+  `open_incident` y el reloj). Solo el cliente (`42501 permission_denied`, también profesional, terceros o cita inexistente).
+  Sin el aviso de datos privados → `22023 privacy_not_acknowledged`; estrellas o comentario inválidos → `22023 invalid_review`.
+  Misma clave y contenido → misma reseña; otro contenido → `22023 retry_conflict`. Otra clave con reseña ya publicada →
+  `PT409 review_exists`. No habilitada → `PT409` con el `state` como mensaje (`not_done`, `awaiting_confirmation`,
+  `performance_disputed`, `not_performed`). Publicar no confirma la cita ni entrega dinero.
+- `review_states(p_conversation_id uuid)` → filas `{appointment_id, state, review}` de las citas de la conversación en las que
+  participa quien llama (vacío para terceros).
+- `private.review_eligibility(p_appointment_id)`: la regla anterior, solo servidor.
+
+Lectura pública: `GET /rest/v1/reviews?profile_id=eq.<id>&order=created_at.desc` y el agregado de `approved_profiles`.
+
+Android: `appointments/Reviews.kt` (`Reviews.states`, `publish`, `forProfile`; `ReviewState`, `Review`,
+`AppointmentReviewState`, `ReviewFailure`). `AppointmentReviewUi.kt` dentro de la tarjeta de la cita: el cliente ve «Escribir
+una reseña» solo con `enabled` (estrellas, comentario y aviso de contenido público con casilla obligatoria; una respuesta
+perdida conserva la clave y bloquea el contenido), o el motivo de espera. Ambas partes ven la reseña publicada.
+`ProfileReviewList.kt` en el perfil público, bajo el agregado ya existente. Aviso `NoticeTopic.REVIEW`. Textos `review_*` en
+`values*/reviews.xml` (ES/EN/FR/DE).
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_reviews.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.ReviewsTest'
+```
+
+Resultados: [comprobación de reseñas](comprobacion-resenas.md).

@@ -18,4 +18,5 @@
     <string name="review_error_invalid">Choisissez de 1 à 5 étoiles, écrivez un commentaire et acceptez l\'avertissement.</string>
     <string name="review_error_exists">Ce rendez-vous a déjà un avis ; un seul est publié.</string>
     <string name="review_error_network">On ne sait pas si l\'avis a été publié. Réessayez : il ne sera pas publié deux fois.</string>
+    <string name="review_notice">Le client a publié un avis</string>
 </resources>

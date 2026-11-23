@@ -18,4 +18,5 @@
     <string name="review_error_invalid">Wähle 1 bis 5 Sterne, schreibe einen Kommentar und akzeptiere den Hinweis.</string>
     <string name="review_error_exists">Dieser Termin hat bereits eine Bewertung; es wird nur eine veröffentlicht.</string>
     <string name="review_error_network">Unklar, ob sie veröffentlicht wurde. Erneut versuchen: Sie wird nicht doppelt veröffentlicht.</string>
+    <string name="review_notice">Der Kunde hat eine Bewertung veröffentlicht</string>
 </resources>

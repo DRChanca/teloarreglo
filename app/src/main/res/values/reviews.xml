@@ -18,4 +18,5 @@
     <string name="review_error_invalid">Elige de 1 a 5 estrellas, escribe un comentario y acepta el aviso.</string>
     <string name="review_error_exists">Esta cita ya tiene una reseña; solo se publica una.</string>
     <string name="review_error_network">No se sabe si se publicó. Reintenta: no se publicará dos veces.</string>
+    <string name="review_notice">El cliente publicó una reseña</string>
 </resources>

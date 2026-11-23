@@ -18,4 +18,5 @@
     <string name="review_error_invalid">Choose 1 to 5 stars, write a comment and accept the notice.</string>
     <string name="review_error_exists">This appointment already has a review; only one is published.</string>
     <string name="review_error_network">It is unknown whether it was published. Retry: it will not be published twice.</string>
+    <string name="review_notice">The client published a review</string>
 </resources>

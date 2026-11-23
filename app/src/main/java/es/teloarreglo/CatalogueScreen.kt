@@ -52,6 +52,8 @@ fun CatalogueScreen(
     onNearby: (() -> Unit)? = null,
     /** Published reviews shown on the profile (#28); null hides them. */
     reviews: es.teloarreglo.appointments.Reviews? = null,
+    onNotices: (() -> Unit)? = null,
+    unreadNotices: Int = 0,
 ) {
     var trade by rememberSaveable { mutableStateOf<String?>(null) }
     var selected by rememberSaveable(initialProfileId) { mutableStateOf(initialProfileId) }
@@ -119,6 +121,10 @@ fun CatalogueScreen(
                         Text(stringResource(R.string.catalogue_nearby))
                     }
                     if (onChats != null) TextButton(onClick = onChats) { Text(stringResource(R.string.chat_title)) }
+                    if (onNotices != null) TextButton(onClick = onNotices, Modifier.testTag("catalogue_notices")) {
+                        Text(if (unreadNotices > 0) stringResource(R.string.notices_open_count, unreadNotices)
+                            else stringResource(R.string.notices_open))
+                    }
                     TextButton(onClick = onAccount) { Text(stringResource(R.string.catalogue_account)) }
                 }
                 if (selected == null) {
