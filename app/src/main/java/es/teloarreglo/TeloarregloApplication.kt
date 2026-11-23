@@ -100,6 +100,16 @@ class TeloarregloApplication : Application() {
     /** Concejos for the manual job location (#17); null without configuration. */
     val concejos: ConcejoDirectory? by lazy { client?.let(::SupabaseConcejoDirectory) }
 
+    /** Private home address of the signed-in account (#37); null without configuration. */
+    val homeSession: es.teloarreglo.home.HomeSession? by lazy {
+        client?.let { es.teloarreglo.home.HomeSession(es.teloarreglo.home.SupabaseHomeAddresses(it)) }
+    }
+
+    /** Google Places (New) autocomplete with the Maps key; null without key (pin/GPS fallback). */
+    val addressAutocomplete: es.teloarreglo.home.AddressAutocomplete? by lazy {
+        es.teloarreglo.home.GooglePlacesAutocomplete.create(this, BuildConfig.MAPS_API_KEY)
+    }
+
     /** Native Google sign-in, only when its public web client ID is configured for this build. */
     val googleAuth: ComposeAuth?
         get() = client?.takeIf { BuildConfig.GOOGLE_WEB_CLIENT_ID.isNotEmpty() }?.composeAuth

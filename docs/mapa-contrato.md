@@ -38,7 +38,8 @@ en el mapa» y conserva las coordenadas escritas como alternativa.
    Destinos: punto comercial aprobado (ficha del perfil) y punto de una cita, que el cliente comparte
    con ese profesional al solicitarla. Buscar o abrir un chat no revela la dirección del cliente.
 4. El pin no sustituye la dirección: la cita exige calle y número escritos aparte.
-5. No se usan Places, geocodificación ni rutas internas. Mapa sin map ID.
+5. No se usan geocodificación ni rutas internas. Mapa sin map ID. Places (New) solo se usa para el
+   autocompletado de la dirección de casa (#37, [casa-contrato.md](casa-contrato.md)).
 
 ## Clave de Google Maps
 
@@ -56,8 +57,8 @@ Comprobación pendiente en Google Cloud (humana, sin cambiar nada desde los agen
    `es.teloarreglo.presentacion`, ambas con el SHA-1 de `app/debug.keystore`
    (`keytool -list -v -keystore app/debug.keystore -alias androiddebugkey -storepass android`).
    Añadir el SHA-1 de una firma de publicación solo si algún día existe.
-2. «Restricciones de API»: solo **Maps SDK for Android**. Places, Geocoding, Directions y Routes
-   deben quedar fuera.
+2. «Restricciones de API»: **Maps SDK for Android** y, desde #37, **Places API (New)**.
+   Geocoding, Directions y Routes deben quedar fuera.
 3. Facturación: revisar explícitamente la cuenta de facturación, las cuotas y una alerta de
    presupuesto antes de la presentación. Maps SDK para Android con mapas sin map ID no genera cargos
    por carga de mapa en móvil, pero la cuenta de facturación es obligatoria.
