@@ -172,7 +172,7 @@ fun CatalogueScreen(
                             }
                         }
                     }
-                    selected != null -> ProfileDetail(profiles.single(), covers,
+                    selected != null -> ProfileDetail(profiles.single(), covers, catalogue,
                         onEdit = if (selected == ownedProfileId && covers != null) ({ editing = true }) else null,
                         onContact = if (selected != ownedProfileId) onContact?.let { contact -> { contact(profiles.single().id) } } else null)
                     else -> {
@@ -217,13 +217,24 @@ fun CatalogueScreen(
 }
 
 @Composable
-private fun ProfileDetail(profile: PublicProfile, covers: ProfessionalCovers?, onEdit: (() -> Unit)?, onContact: (() -> Unit)?) {
+private fun ProfileDetail(
+    profile: PublicProfile, covers: ProfessionalCovers?, catalogue: Catalogue,
+    onEdit: (() -> Unit)?, onContact: (() -> Unit)?,
+) {
     val locale = LocalConfiguration.current.locales[0]
+    // «Destacado» (#33) from the server rule; a failed check shows no badge rather than a false one.
+    val featured by produceState(false, profile.id) {
+        value = try { catalogue.featured(profile.id) } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            false
+        }
+    }
     LazyColumn(
         modifier = Modifier.testTag("profile_detail"),
         contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
+            if (featured) FeaturedBadge(Modifier.testTag("profile_featured"))
             Text(profile.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(), color = green)
             Rating(profile)

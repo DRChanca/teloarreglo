@@ -44,13 +44,18 @@ fun PublicProfile.publicLocation(): GeoPoint? {
     return GeoPoint(businessLat ?: return null, businessLng ?: return null).takeIf { it.valid }
 }
 
-data class MapMarker(val profileId: String, val name: String, val point: GeoPoint, val distanceBandM: Int)
+data class MapMarker(
+    val profileId: String, val name: String, val point: GeoPoint, val distanceBandM: Int, val featured: Boolean = false,
+)
 
 /** Same candidates and order as the list; [listOnly] counts those without a public point. */
 data class MapView(val markers: List<MapMarker>, val listOnly: Int)
 
-fun mapView(rows: List<Pair<PublicProfile, Int>>): MapView {
-    val markers = rows.mapNotNull { (profile, band) -> profile.publicLocation()?.let { MapMarker(profile.id, profile.name, it, band) } }
+/** [featured]: «Destacado» ids from the search (#33), labelled on the map as in the list. */
+fun mapView(rows: List<Pair<PublicProfile, Int>>, featured: Set<String> = emptySet()): MapView {
+    val markers = rows.mapNotNull { (profile, band) ->
+        profile.publicLocation()?.let { MapMarker(profile.id, profile.name, it, band, profile.id in featured) }
+    }
     return MapView(markers, rows.size - markers.size)
 }
 

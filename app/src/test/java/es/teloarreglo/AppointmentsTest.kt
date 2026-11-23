@@ -238,6 +238,7 @@ class AppointmentsTest {
     @Test fun paymentRejectionsMapToStableFailures() = runTest {
         val cases = listOf(
             Triple(HttpStatusCode.Conflict, error("PT409", "slot_unavailable"), AppointmentFailure.SLOT_UNAVAILABLE),
+            Triple(HttpStatusCode.Conflict, error("PT409", "outside_hours"), AppointmentFailure.OUTSIDE_HOURS),
             Triple(HttpStatusCode.BadRequest, error("22023", "retry_conflict"), AppointmentFailure.RETRY_CONFLICT),
             Triple(HttpStatusCode.BadRequest, error("22023", "payment_not_required"), AppointmentFailure.INVALID),
             Triple(HttpStatusCode.BadRequest, error("22023", "invalid_payment"), AppointmentFailure.INVALID),
@@ -366,6 +367,7 @@ class AppointmentsTest {
             Triple(HttpStatusCode.BadRequest, error("22023", "invalid_change"), AppointmentFailure.INVALID),
             Triple(HttpStatusCode.BadRequest, error("22023", "out_of_coverage"), AppointmentFailure.OUT_OF_COVERAGE),
             Triple(HttpStatusCode.Conflict, error("PT409", "slot_unavailable"), AppointmentFailure.SLOT_UNAVAILABLE),
+            Triple(HttpStatusCode.Conflict, error("PT409", "outside_hours"), AppointmentFailure.OUTSIDE_HOURS),
             Triple(HttpStatusCode.Conflict, error("PT409", "stale_version"), AppointmentFailure.STALE),
         )
         for ((status, body, expected) in cases) {

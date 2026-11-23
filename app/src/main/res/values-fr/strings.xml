@@ -446,4 +446,10 @@
     <string name="completion_completed_no_answer">Terminé sans confirmation du client le %1$s.</string>
     <string name="completion_delivered">Versé au professionnel : %1$s (simulé).</string>
     <string name="completion_error_incident">Un incident est ouvert : impossible de confirmer ou de verser le paiement tant qu\'il n\'est pas résolu.</string>
+    <string name="appointment_error_hours">Cet horaire est en dehors des heures de travail du professionnel. Rien n\'a été confirmé ; la demande reste ouverte pour un autre horaire.</string>
+    <string name="agenda_send_error_hours">Cet horaire est en dehors de vos heures de disponibilité. Rien n\'a été envoyé : choisissez un autre horaire ou élargissez vos heures dans « Mon agenda ».</string>
+    <string name="agenda_send_error_slot">Ce créneau est déjà pris dans votre agenda par un rendez-vous confirmé ou un blocage. Rien n\'a été envoyé : choisissez un autre horaire.</string>
+    <string name="agenda_send_error_hours_client">Cet horaire est en dehors des heures de travail du professionnel. La modification n\'a pas été envoyée.</string>
+    <string name="agenda_send_error_slot_client">Ce créneau n\'est pas libre dans l\'agenda du professionnel. La modification n\'a pas été envoyée.</string>
+    <string name="agenda_no_hours">Vous n\'avez encore enregistré aucun horaire : vous pouvez proposer n\'importe quelle heure ; seuls les chevauchements avec vos rendez-vous et blocages sont évités.</string>
 </resources>

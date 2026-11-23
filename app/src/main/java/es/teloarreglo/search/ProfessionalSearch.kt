@@ -18,11 +18,15 @@ import kotlinx.serialization.json.put
 @Serializable
 data class Concejo(@SerialName("ine_code") val ineCode: String, val name: String)
 
-/** Never a coordinate or exact distance: the server returns a rounded band in metres. */
+/**
+ * Never a coordinate or exact distance: the server returns a rounded band in metres. [featured] marks a
+ * «Destacado» (#33): an approved subscriber covering this concejo, placed first by the server.
+ */
 @Serializable
 data class NearbyResult(
     @SerialName("profile_id") val profileId: String,
     @SerialName("distance_band_m") val distanceBandM: Int,
+    val featured: Boolean = false,
 )
 
 sealed interface SearchOutcome {
