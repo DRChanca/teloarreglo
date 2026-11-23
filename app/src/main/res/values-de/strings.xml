@@ -132,4 +132,15 @@
     <string name="photo_message">Foto in der Unterhaltung gesendet</string>
     <string name="photo_open_error">Das Foto konnte nicht geöffnet werden. Zum erneuten Versuch tippen.</string>
     <string name="photo_close">Schließen</string>
+    <string name="profile_review_title">Prüfung deines Profils</string>
+    <string name="profile_review_error">Die Prüfung konnte nicht geladen werden. Prüfe deine Verbindung.</string>
+    <string name="profile_review_refresh">Aktualisieren</string>
+    <string name="profile_review_decided_at">Entschieden am %1$s</string>
+    <string name="profile_review_reason">Grund: %1$s</string>
+    <string name="profile_review_not_submitted">Dein Profil wurde noch nicht zur Prüfung eingereicht.</string>
+    <string name="profile_review_pending_first">In Prüfung. Es erscheint erst im Katalog, wenn die Verwaltung es freigibt.</string>
+    <string name="profile_review_pending_change">Deine Änderungen werden geprüft. Bis dahin bleibt die freigegebene Version sichtbar.</string>
+    <string name="profile_review_published">Freigegeben und im Katalog veröffentlicht.</string>
+    <string name="profile_review_rejected_first">Abgelehnt. Es erscheint nicht im Katalog.</string>
+    <string name="profile_review_rejected_change">Änderungen abgelehnt. Die zuvor freigegebene Version bleibt sichtbar.</string>
 </resources>

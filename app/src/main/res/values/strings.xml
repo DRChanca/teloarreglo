@@ -132,4 +132,15 @@
     <string name="photo_message">Foto enviada en la conversación</string>
     <string name="photo_open_error">No se pudo abrir la foto. Toca para reintentar.</string>
     <string name="photo_close">Cerrar</string>
+    <string name="profile_review_title">Revisión de tu perfil profesional</string>
+    <string name="profile_review_error">No se pudo consultar la revisión. Comprueba la conexión.</string>
+    <string name="profile_review_refresh">Actualizar</string>
+    <string name="profile_review_decided_at">Decidido el %1$s</string>
+    <string name="profile_review_reason">Motivo: %1$s</string>
+    <string name="profile_review_not_submitted">Tu perfil todavía no se ha presentado a revisión.</string>
+    <string name="profile_review_pending_first">En revisión. No aparece en el catálogo hasta que administración lo apruebe.</string>
+    <string name="profile_review_pending_change">Tus cambios están en revisión. Mientras tanto sigue visible la versión aprobada.</string>
+    <string name="profile_review_published">Aprobado y publicado en el catálogo.</string>
+    <string name="profile_review_rejected_first">Rechazado. No aparece en el catálogo.</string>
+    <string name="profile_review_rejected_change">Cambios rechazados. Sigue visible la versión aprobada anterior.</string>
 </resources>

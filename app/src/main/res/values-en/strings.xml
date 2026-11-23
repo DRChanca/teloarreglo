@@ -132,4 +132,15 @@
     <string name="photo_message">Photo sent in the conversation</string>
     <string name="photo_open_error">The photo could not be opened. Tap to retry.</string>
     <string name="photo_close">Close</string>
+    <string name="profile_review_title">Review of your professional profile</string>
+    <string name="profile_review_error">Could not load the review. Check your connection.</string>
+    <string name="profile_review_refresh">Refresh</string>
+    <string name="profile_review_decided_at">Decided on %1$s</string>
+    <string name="profile_review_reason">Reason: %1$s</string>
+    <string name="profile_review_not_submitted">Your profile has not been submitted for review yet.</string>
+    <string name="profile_review_pending_first">Under review. It will not appear in the catalogue until administration approves it.</string>
+    <string name="profile_review_pending_change">Your changes are under review. Meanwhile the approved version stays visible.</string>
+    <string name="profile_review_published">Approved and published in the catalogue.</string>
+    <string name="profile_review_rejected_first">Rejected. It does not appear in the catalogue.</string>
+    <string name="profile_review_rejected_change">Changes rejected. The previously approved version stays visible.</string>
 </resources>

@@ -132,4 +132,15 @@
     <string name="photo_message">Photo envoyée dans la conversation</string>
     <string name="photo_open_error">Impossible d’ouvrir la photo. Touchez pour réessayer.</string>
     <string name="photo_close">Fermer</string>
+    <string name="profile_review_title">Vérification de votre profil professionnel</string>
+    <string name="profile_review_error">Impossible de consulter la vérification. Vérifiez votre connexion.</string>
+    <string name="profile_review_refresh">Actualiser</string>
+    <string name="profile_review_decided_at">Décidé le %1$s</string>
+    <string name="profile_review_reason">Motif : %1$s</string>
+    <string name="profile_review_not_submitted">Votre profil n’a pas encore été soumis à vérification.</string>
+    <string name="profile_review_pending_first">En cours de vérification. Il n’apparaît pas dans le catalogue tant que l’administration ne l’a pas approuvé.</string>
+    <string name="profile_review_pending_change">Vos modifications sont en cours de vérification. En attendant, la version approuvée reste visible.</string>
+    <string name="profile_review_published">Approuvé et publié dans le catalogue.</string>
+    <string name="profile_review_rejected_first">Refusé. Il n’apparaît pas dans le catalogue.</string>
+    <string name="profile_review_rejected_change">Modifications refusées. La version approuvée précédente reste visible.</string>
 </resources>
