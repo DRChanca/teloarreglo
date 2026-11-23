@@ -174,8 +174,11 @@ private fun IncidentCard(
             Text(incident.description)
             Text(stringResource(if (incident.performance == Performance.ACKNOWLEDGED) R.string.incident_performance_acknowledged
                 else R.string.incident_performance_disputed), style = MaterialTheme.typography.bodySmall)
-            Text(stringResource(if (incident.blocksDelivery) R.string.incident_blocks else R.string.incident_after_close),
-                style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("incident_effect_${incident.id}"))
+            // Once administration settled the money (or resolved it) the incident no longer holds anything back.
+            if (!incident.blocksDelivery || (incident.isOpen && incident.settlement == null))
+                Text(stringResource(if (incident.blocksDelivery) R.string.incident_blocks else R.string.incident_after_close),
+                    style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("incident_effect_${incident.id}"))
+            IncidentResolution(incident, format)
             Text(stringResource(R.string.incident_evidence_title, incident.evidence.size), style = MaterialTheme.typography.titleSmall)
             incident.evidence.forEach { EvidenceRow(it, accountId, tools?.attachments, format) }
             if (tools != null && incident.isOpen && appointment.canAddEvidence(accountId))
@@ -295,4 +298,33 @@ private fun EvidenceDialog(
                 Text(stringResource(if (key != null) R.string.incident_retry else R.string.incident_evidence_send))
             }
         })
+}
+
+/** What administration decided (#31): the money and the performance, apart, each with its reason and date. */
+@Composable
+private fun IncidentResolution(incident: Incident, format: java.time.format.DateTimeFormatter) {
+    val settlement = incident.settlement
+    val decision = incident.performanceDecision
+    if (settlement != null) Column(Modifier.testTag("incident_settlement_${incident.id}")) {
+        val refunded = incident.settlementRefundedCents ?: 0
+        val delivered = incident.settlementDeliveredCents ?: 0
+        Text(when (settlement) {
+            Settlement.DELIVER -> stringResource(R.string.resolution_settlement_deliver, euros(delivered))
+            Settlement.REFUND -> stringResource(R.string.resolution_settlement_refund, euros(refunded))
+            Settlement.SPLIT -> stringResource(R.string.resolution_settlement_split, euros(refunded), euros(delivered))
+        }, style = MaterialTheme.typography.bodyMedium)
+        incident.settlementReason?.let { Text(stringResource(R.string.resolution_reason, it), style = MaterialTheme.typography.bodySmall) }
+        incident.settledAt?.let { Text(stringResource(R.string.resolution_decided_at, format.format(it)), style = MaterialTheme.typography.labelSmall) }
+    }
+    if (decision != null) Column(Modifier.testTag("incident_performance_${incident.id}")) {
+        Text(stringResource(when (decision) {
+            PerformanceDecision.PERFORMED -> R.string.resolution_performance_performed
+            PerformanceDecision.NOT_PERFORMED -> R.string.resolution_performance_not_performed
+            PerformanceDecision.MISSING_EVIDENCE -> R.string.resolution_performance_missing_evidence
+        }), style = MaterialTheme.typography.bodyMedium)
+        incident.performanceReason?.let { Text(stringResource(R.string.resolution_reason, it), style = MaterialTheme.typography.bodySmall) }
+        incident.performanceDecidedAt?.let { Text(stringResource(R.string.resolution_decided_at, format.format(it)), style = MaterialTheme.typography.labelSmall) }
+    }
+    if (incident.isOpen && (settlement != null || decision != null))
+        Text(stringResource(R.string.resolution_partial), style = MaterialTheme.typography.bodySmall)
 }

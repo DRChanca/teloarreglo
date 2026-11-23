@@ -536,4 +536,15 @@
         <item quantity="many">%1$d mensajes sin leer</item>
         <item quantity="other">%1$d mensajes sin leer</item>
     </plurals>
+    <string name="resolution_notice_completed">Cerrada por administración tras revisar la incidencia. Las decisiones y sus motivos están en la incidencia.</string>
+    <string name="resolution_completed_at">Cerrada por administración el %1$s</string>
+    <string name="resolution_settlement_deliver">Administración: lo pendiente (%1$s) se entregó al profesional (simulado).</string>
+    <string name="resolution_settlement_refund">Administración: lo pendiente (%1$s) se devolvió al cliente (simulado).</string>
+    <string name="resolution_settlement_split">Administración: se devolvieron %1$s al cliente y se entregaron %2$s al profesional (simulado).</string>
+    <string name="resolution_reason">Motivo: %1$s</string>
+    <string name="resolution_decided_at">Decidido el %1$s</string>
+    <string name="resolution_performance_performed">Administración: consta que el servicio se realizó.</string>
+    <string name="resolution_performance_not_performed">Administración: consta que el servicio no se realizó.</string>
+    <string name="resolution_performance_missing_evidence">Administración: faltan pruebas para saber si el servicio se realizó.</string>
+    <string name="resolution_partial">Administración ya ha registrado una decisión; la incidencia sigue abierta hasta registrar la otra.</string>
 </resources>

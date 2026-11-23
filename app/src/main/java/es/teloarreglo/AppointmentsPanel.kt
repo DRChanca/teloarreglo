@@ -161,6 +161,7 @@ private fun noticeText(appointment: Appointment, accountId: String): String {
         AppointmentNotice.COMPLETED -> stringResource(R.string.completion_notice_completed)
         AppointmentNotice.COMPLETED_NO_ANSWER -> stringResource(R.string.completion_notice_no_answer)
         AppointmentNotice.INCIDENT_OPEN -> stringResource(R.string.incident_notice_open)
+        AppointmentNotice.COMPLETED_BY_ADMINISTRATION -> stringResource(R.string.resolution_notice_completed)
     }
 }
 

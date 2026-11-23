@@ -535,4 +535,15 @@
         <item quantity="one">%1$d ungelesene Nachricht</item>
         <item quantity="other">%1$d ungelesene Nachrichten</item>
     </plurals>
+    <string name="resolution_notice_completed">Nach Prüfung des Vorfalls von der Administration geschlossen. Die Entscheidungen und Begründungen stehen im Vorfall.</string>
+    <string name="resolution_completed_at">Von der Administration geschlossen am %1$s</string>
+    <string name="resolution_settlement_deliver">Administration: Der ausstehende Betrag (%1$s) wurde an die Fachkraft ausgezahlt (simuliert).</string>
+    <string name="resolution_settlement_refund">Administration: Der ausstehende Betrag (%1$s) wurde an die Kundschaft erstattet (simuliert).</string>
+    <string name="resolution_settlement_split">Administration: %1$s wurden an die Kundschaft erstattet und %2$s an die Fachkraft ausgezahlt (simuliert).</string>
+    <string name="resolution_reason">Begründung: %1$s</string>
+    <string name="resolution_decided_at">Entschieden am %1$s</string>
+    <string name="resolution_performance_performed">Administration: Die Leistung gilt als erbracht.</string>
+    <string name="resolution_performance_not_performed">Administration: Die Leistung gilt als nicht erbracht.</string>
+    <string name="resolution_performance_missing_evidence">Administration: Die Belege reichen nicht aus, um festzustellen, ob die Leistung erbracht wurde.</string>
+    <string name="resolution_partial">Die Administration hat eine Entscheidung gespeichert; der Vorfall bleibt offen, bis die andere gespeichert ist.</string>
 </resources>

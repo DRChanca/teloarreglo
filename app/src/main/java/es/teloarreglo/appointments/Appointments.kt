@@ -40,7 +40,11 @@ object ServerInstant : KSerializer<Instant> {
 }
 
 /** How a job marked done was finalised. NO_ANSWER is the silent close at the deadline (#27). */
-@Serializable enum class Completion { @SerialName("client_confirmed") CLIENT_CONFIRMED, @SerialName("no_answer") NO_ANSWER }
+@Serializable enum class Completion {
+    @SerialName("client_confirmed") CLIENT_CONFIRMED, @SerialName("no_answer") NO_ANSWER,
+    /** Closed by the incident review (#31): after settling the pending money, or once the incident of a job marked done is resolved. */
+    @SerialName("administration") ADMINISTRATION,
+}
 @Serializable enum class ProposalStatus {
     @SerialName("pending") PENDING, @SerialName("rejected") REJECTED, @SerialName("superseded") SUPERSEDED,
     @SerialName("accepted") ACCEPTED,
@@ -218,7 +222,7 @@ data class Appointment(
     /** The incident still open, if any: evidence goes to it instead of opening another. */
     val openIncident get() = rawIncidents.firstOrNull { it.isOpen }
     /** The open incident that stops the delivery, if any (opened before the completion). */
-    val blockingIncident get() = openIncident?.takeIf { it.blocksDelivery }
+    val blockingIncident get() = openIncident?.takeIf { it.blocksDelivery && it.settlement == null }
     /** When the server clock will close the job without the client's answer (#27); null if it will not (#26 incident). */
     val silentCloseAt get() = closeDueAt?.takeIf { stage == AppointmentStage.DONE && blockingIncident == null }
     /**
@@ -261,7 +265,11 @@ data class Appointment(
             stage == AppointmentStage.CANCELLED -> AppointmentNotice.CANCELLED
             blockingIncident != null -> AppointmentNotice.INCIDENT_OPEN
             stage == AppointmentStage.COMPLETED ->
-                if (completion == Completion.NO_ANSWER) AppointmentNotice.COMPLETED_NO_ANSWER else AppointmentNotice.COMPLETED
+                when (completion) {
+                    Completion.NO_ANSWER -> AppointmentNotice.COMPLETED_NO_ANSWER
+                    Completion.ADMINISTRATION -> AppointmentNotice.COMPLETED_BY_ADMINISTRATION
+                    else -> AppointmentNotice.COMPLETED
+                }
             stage == AppointmentStage.DONE ->
                 if (professional) AppointmentNotice.AWAITING_CONFIRMATION else AppointmentNotice.CONFIRM_DONE
             stage == AppointmentStage.STARTED && change == null -> AppointmentNotice.STARTED
@@ -300,6 +308,8 @@ enum class AppointmentNotice {
     COMPLETED_NO_ANSWER,
     /** An incident opened before the completion waits for review; nothing is delivered meanwhile (#26). */
     INCIDENT_OPEN,
+    /** Closed by the incident review (#31); the incident card shows both decisions and their reasons. */
+    COMPLETED_BY_ADMINISTRATION,
 }
 
 /** What the client's confirmation does with the (simulated) money (#25). */

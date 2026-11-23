@@ -21,6 +21,10 @@ function fakeApi(account: Account | null, overrides: Partial<AdminApi> = {}): Ad
     signOut: vi.fn(async () => {}),
     submissions: vi.fn(async () => [pending]),
     review: vi.fn(async () => ({ status: "rejected" as const })),
+    incidents: vi.fn(async () => []),
+    settleIncident: vi.fn(async () => ({ status: "open" as const })),
+    decidePerformance: vi.fn(async () => ({ status: "resolved" as const })),
+    evidenceUrl: vi.fn(async () => "https://example.org/signed"),
     ...overrides,
   };
 }

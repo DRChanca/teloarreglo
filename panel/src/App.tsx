@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { AdminError, type Account, type AdminApi, type Failure, type Submission } from "./api";
+import { IncidentReviews } from "./Incidents";
 import { initialLanguage, languageNames, languages, translate, type Language, type MessageKey } from "./i18n";
 
 type View = "pending" | "all";
@@ -14,6 +15,7 @@ export function App({ api, language: start }: { api: AdminApi | null; language?:
   const t = (key: MessageKey, values?: Record<string, string | number>) => translate(language, key, values);
   const [account, setAccount] = useState<Account | null | undefined>(undefined);
   const [error, setError] = useState<MessageKey | null>(null);
+  const [section, setSection] = useState<"profiles" | "incidents">("profiles");
 
   useEffect(() => { document.documentElement.lang = language; }, [language]);
   useEffect(() => {
@@ -50,9 +52,16 @@ export function App({ api, language: start }: { api: AdminApi | null; language?:
                 <span>{t("signedInAs", { email: account.email })}</span>
                 <button className="secondary" onClick={() => api.signOut().finally(() => setAccount(null))}>{t("signOut")}</button>
               </div>
-              {account.is_administrator
-                ? <Reviews api={api} t={t} language={language} />
-                : <p role="alert" className="error">{t("notAdministrator")}</p>}
+              {account.is_administrator ? (<>
+                <nav className="tabs sections">
+                  {(["profiles", "incidents"] as const).map((s) => (
+                    <button key={s} className={s === section ? "tab active" : "tab"} aria-pressed={s === section}
+                      onClick={() => setSection(s)}>{t(s === "profiles" ? "sectionProfiles" : "sectionIncidents")}</button>
+                  ))}
+                </nav>
+                {section === "profiles" ? <Reviews api={api} t={t} language={language} />
+                  : <IncidentReviews api={api} t={t} language={language} />}
+              </>) : <p role="alert" className="error">{t("notAdministrator")}</p>}
             </>
           )}
       </main>

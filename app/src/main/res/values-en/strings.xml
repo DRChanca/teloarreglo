@@ -535,4 +535,15 @@
         <item quantity="one">%1$d unread message</item>
         <item quantity="other">%1$d unread messages</item>
     </plurals>
+    <string name="resolution_notice_completed">Closed by administration after reviewing the incident. The decisions and their reasons are in the incident.</string>
+    <string name="resolution_completed_at">Closed by administration on %1$s</string>
+    <string name="resolution_settlement_deliver">Administration: the pending amount (%1$s) was delivered to the professional (simulated).</string>
+    <string name="resolution_settlement_refund">Administration: the pending amount (%1$s) was refunded to the client (simulated).</string>
+    <string name="resolution_settlement_split">Administration: %1$s was refunded to the client and %2$s delivered to the professional (simulated).</string>
+    <string name="resolution_reason">Reason: %1$s</string>
+    <string name="resolution_decided_at">Decided on %1$s</string>
+    <string name="resolution_performance_performed">Administration: the service is recorded as performed.</string>
+    <string name="resolution_performance_not_performed">Administration: the service is recorded as not performed.</string>
+    <string name="resolution_performance_missing_evidence">Administration: there is not enough evidence to know whether the service took place.</string>
+    <string name="resolution_partial">Administration has recorded one decision; the incident stays open until the other is recorded.</string>
 </resources>

@@ -141,7 +141,11 @@ select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-00000028
 select throws_ok($$select public.publish_review((select disputed from ids), '80000000-0000-0000-0000-000000280105',
  3, 'No sé', true)$$, 'PT409', 'performance_disputed', 'missing evidence keeps the dispute about performance pending');
 reset role;
+-- An executed decision is immutable since #31 (incident_resolution_locked); this fixture swaps it with triggers off
+-- only to check the other review state on the same appointment.
+set local session_replication_role = replica;
 update public.incidents set performance_decision = 'performed' where appointment_id = (select disputed from ids);
+set local session_replication_role = origin;
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000280101","role":"authenticated"}',true);
 select is((select r->>'stars' from public.publish_review((select disputed from ids), '80000000-0000-0000-0000-000000280105',
