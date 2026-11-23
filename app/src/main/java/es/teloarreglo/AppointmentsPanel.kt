@@ -59,7 +59,7 @@ fun AppointmentsPanel(
     var list by remember(conversation.id) { mutableStateOf<List<Appointment>?>(null) }
     var loadFailed by remember(conversation.id) { mutableStateOf(false) }
     var refresh by remember { mutableIntStateOf(0) }
-    // "list", "request" or "propose:<appointment id>"; null keeps the chat in front.
+    // "list", "request", "propose:<id>", "change:<id>" or "correction:<id>"; null keeps the chat in front.
     var sheet by rememberSaveable(conversation.id) { mutableStateOf<String?>(null) }
     LaunchedEffect(appointments, conversation.id, refresh) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -109,13 +109,20 @@ fun AppointmentsPanel(
                             onDone = { refresh++; sheet = "list" })
                         shown.startsWith("propose:") -> current.firstOrNull { it.id == shown.removePrefix("propose:") }
                             ?.let { ProposalForm(appointments, it, scope, current, onDone = { refresh++; sheet = "list" }) }
+                        shown.startsWith("change:") -> current.firstOrNull { it.id == shown.removePrefix("change:") }
+                            ?.let { ChangeForm(appointments, it, accountId, scope, current, pins.mapsReady,
+                                onDone = { refresh++; sheet = "list" }) }
+                        shown.startsWith("correction:") -> current.firstOrNull { it.id == shown.removePrefix("correction:") }
+                            ?.let { CorrectionForm(appointments, it, scope, current, onDone = { refresh++; sheet = "list" }) }
                         else -> {
                             if (isClient) Button(onClick = { sheet = "request" }, modifier = Modifier.testTag("appointment_new_request")) {
                                 Text(stringResource(R.string.appointment_new_request))
                             }
                             current.forEach { appointment ->
                                 AppointmentDetails(appointment, accountId, appointments, scope, pins.mapsReady,
-                                    onPropose = { sheet = "propose:${appointment.id}" }, onChanged = { refresh++ })
+                                    onPropose = { sheet = "propose:${appointment.id}" }, onChanged = { refresh++ },
+                                    onChange = { sheet = "change:${appointment.id}" },
+                                    onCorrection = { sheet = "correction:${appointment.id}" })
                             }
                         }
                     }
@@ -136,6 +143,9 @@ private fun noticeText(appointment: Appointment, accountId: String): String {
         AppointmentNotice.AWAITING_NEW_PROPOSAL -> stringResource(R.string.appointment_notice_awaiting_new)
         AppointmentNotice.SEND_NEW_PROPOSAL -> stringResource(R.string.appointment_notice_send_new)
         AppointmentNotice.CONFIRMED -> stringResource(R.string.appointment_notice_confirmed)
+        AppointmentNotice.DECIDE_CHANGE -> stringResource(R.string.change_notice_decide)
+        AppointmentNotice.AWAITING_CHANGE -> stringResource(R.string.change_notice_awaiting)
+        AppointmentNotice.CORRECT_ADDRESS -> stringResource(R.string.change_notice_correct_address)
     }
 }
 
@@ -171,14 +181,14 @@ internal fun dateTimeFormat(): DateTimeFormatter {
 }
 
 @Composable
-private fun euros(cents: Int): String {
+internal fun euros(cents: Int): String {
     val locale = LocalConfiguration.current.locales[0]
     return NumberFormat.getCurrencyInstance(locale).apply { currency = Currency.getInstance("EUR") }
         .format(BigDecimal.valueOf(cents.toLong(), 2))
 }
 
 @Composable
-private fun failureText(failure: AppointmentFailure?): String = stringResource(when (failure) {
+internal fun failureText(failure: AppointmentFailure?): String = stringResource(when (failure) {
     AppointmentFailure.ACCESS -> R.string.appointment_error_access
     AppointmentFailure.INVALID -> R.string.appointment_error_invalid
     AppointmentFailure.OUT_OF_COVERAGE -> R.string.appointment_error_coverage
@@ -192,6 +202,7 @@ private fun failureText(failure: AppointmentFailure?): String = stringResource(w
 private fun AppointmentDetails(
     appointment: Appointment, accountId: String, appointments: Appointments, scope: CoroutineScope,
     mapsReady: Boolean, onPropose: () -> Unit, onChanged: () -> Unit,
+    onChange: () -> Unit = {}, onCorrection: () -> Unit = {},
 ) {
     val format = dateTimeFormat()
     val professional = appointment.professionalId == accountId
@@ -223,6 +234,7 @@ private fun AppointmentDetails(
             }
             val pending = appointment.currentProposal
             val confirmed = appointment.stage == AppointmentStage.CONFIRMED
+            if (confirmed) ChangeSection(appointment, accountId, appointments, scope, onChange, onCorrection, onChanged)
             if (professional && !confirmed) Button(onClick = onPropose, modifier = Modifier.testTag("appointment_propose")) {
                 Text(stringResource(if (appointment.proposals.isEmpty()) R.string.appointment_propose else R.string.appointment_propose_new))
             }
@@ -344,6 +356,7 @@ private fun ProposalCard(proposal: AppointmentProposal, format: DateTimeFormatte
                 ProposalStatus.REJECTED -> R.string.appointment_status_rejected
                 ProposalStatus.SUPERSEDED -> R.string.appointment_status_superseded
                 ProposalStatus.ACCEPTED -> R.string.appointment_status_accepted
+                ProposalStatus.REPLACED -> R.string.change_status_replaced
             }), style = MaterialTheme.typography.labelLarge)
             Text(proposal.scope)
             Text(stringResource(R.string.appointment_proposal_when, format.format(proposal.startAt), proposal.durationMinutes))
@@ -624,7 +637,7 @@ private fun AppointmentLocationBlock(appointment: Appointment, professional: Boo
 
 /** Full-screen map to place the appointment point; the typed address stays the reference. */
 @Composable
-private fun MapPickDialog(
+internal fun MapPickDialog(
     initial: es.teloarreglo.search.GeoPoint?, onDismiss: () -> Unit, onPick: (es.teloarreglo.search.GeoPoint) -> Unit,
 ) {
     var pin by remember { mutableStateOf(initial) }

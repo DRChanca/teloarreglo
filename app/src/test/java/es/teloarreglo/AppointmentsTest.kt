@@ -80,7 +80,7 @@ class AppointmentsTest {
         val appointments = withClient({ request ->
             if (request.url.encodedPath == "/rest/v1/appointments") {
                 assertEquals("eq.conv", request.url.parameters["conversation_id"])
-                assertTrue(request.url.parameters["select"]!!.endsWith(",appointment_proposals(*),appointment_payments(*)"))
+                assertTrue(request.url.parameters["select"]!!.endsWith(",appointment_proposals(*),appointment_payments(*),appointment_changes(*)"))
             }
             listing(request, "${proposalJson(2, "pending")},${proposalJson(1, "rejected")}")
         }) { it.list("conv") }
@@ -246,6 +246,131 @@ class AppointmentsTest {
         for ((status, body, expected) in cases) {
             val failure = withClient({ json(body, status) }) {
                 try { it.confirm("p1", "k", PaymentMode.INTEGRATED); null } catch (e: AppointmentException) { e.failure }
+            }
+            assertEquals(expected, failure)
+        }
+    }
+
+    private fun changeJson(version: Int, status: String, author: String = "pro", amount: Int = 12000,
+                           kind: String = "change", mode: String? = null) = """{"id":"c$version","appointment_id":"appt",
+        "author_id":"$author","version":$version,"request_id":"ck$version","kind":"$kind","base_proposal_id":"p1",
+        "scope":${if (kind == "change") "\"Sifón y llave\"" else "null"},
+        "start_at":${if (kind == "change") "\"2030-01-15T10:30:00+00:00\"" else "null"},
+        "end_at":${if (kind == "change") "\"2030-01-15T12:30:00+00:00\"" else "null"},
+        "duration_minutes":${if (kind == "change") 120 else "null"},"amount_cents":${if (kind == "change") amount else "null"},
+        "visit_fee_cents":null,"materials_included":${if (kind == "change") "true" else "null"},
+        "travel_included":${if (kind == "change") "false" else "null"},"address":null,"latitude":null,"longitude":null,
+        "previous_address":null,"previous_latitude":null,"previous_longitude":null,
+        "note":${if (kind == "change") "null" else "\"Falta el piso\""},"payment_mode":${mode?.let { "\"$it\"" } ?: "null"},
+        "status":"$status","result_proposal_id":null,"created_at":"2026-11-23T11:00:00+00:00","decided_at":null}"""
+
+    private fun MockRequestHandleScope.confirmedListing(request: HttpRequestData, changes: String, payment: String = paymentJson) =
+        if (request.url.encodedPath == "/rest/v1/rpc/appointment_places") json("[]")
+        else json("[" + appointmentJson.dropLast(1).replace("\"stage\":\"pending\"", "\"stage\":\"confirmed\"") +
+            ""","appointment_proposals":[${proposalJson(1, "accepted")}],"appointment_payments":$payment,
+            "appointment_changes":[$changes]}]""")
+
+    @Test fun listReadsChangesAndThePendingOneLeavesTheAgreedConditionsInForce() = runTest {
+        val appointment = withClient({ request ->
+            if (request.url.encodedPath == "/rest/v1/appointments")
+                assertTrue(request.url.parameters["select"]!!.contains("appointment_changes(*)"))
+            confirmedListing(request, "${changeJson(2, "pending")},${changeJson(1, "rejected")}")
+        }) { it.list("conv") }.single()
+        assertEquals(listOf(1, 2), appointment.changes.map { it.version })
+        assertEquals("c2", appointment.pendingChange?.id)
+        assertEquals(8500, appointment.confirmedProposal?.amountCents)
+        assertEquals(AppointmentNotice.DECIDE_CHANGE, appointment.notice("client"))
+        assertEquals(AppointmentNotice.AWAITING_CHANGE, appointment.notice("pro"))
+    }
+
+    @Test fun addressCorrectionAsksTheClientAndNoticeReturnsToConfirmedOnceDecided() = runTest {
+        val asked = withClient({ confirmedListing(it, changeJson(1, "pending", kind = "address_correction")) }) {
+            it.list("conv") }.single()
+        assertEquals(AppointmentNotice.CORRECT_ADDRESS, asked.notice("client"))
+        assertEquals(AppointmentNotice.AWAITING_CHANGE, asked.notice("pro"))
+        val decided = withClient({ confirmedListing(it, changeJson(1, "rejected")) }) { it.list("conv") }.single()
+        assertEquals(AppointmentNotice.CONFIRMED, decided.notice("client"))
+    }
+
+    @Test fun acceptingShowsTheMoneyEffectBeforeTheDecision() = runTest {
+        suspend fun effect(change: String, payment: String = paymentJson) =
+            withClient({ confirmedListing(it, change, payment) }) { it.list("conv") }.single().let { it.changeEffect(it.pendingChange!!) }
+        assertEquals(ChangeEffect.PayDifference(3500), effect(changeJson(1, "pending")))
+        assertEquals(ChangeEffect.Refund(2500), effect(changeJson(1, "pending", amount = 6000)))
+        assertEquals(ChangeEffect.None, effect(changeJson(1, "pending", amount = 8500)))
+        val direct = paymentJson.replace("\"integrated\"", "\"direct\"")
+        assertEquals(ChangeEffect.DirectAgreement(12000), effect(changeJson(1, "pending"), direct))
+        assertEquals(ChangeEffect.ChooseMode(12000), effect(changeJson(1, "pending"), "null"))
+        assertEquals(ChangeEffect.NewPayment(PaymentMode.DIRECT, 12000),
+            effect(changeJson(1, "pending", author = "client", mode = "direct"), "null"))
+        assertEquals(ChangeEffect.None, effect(changeJson(1, "pending", amount = 0), "null"))
+    }
+
+    @Test fun proposedChangeSendsExpectedVersionKeyTermsAndOnlyTheClientsAddress() = runTest {
+        var body: JsonObject? = null
+        val change = withClient({ request ->
+            assertEquals("/rest/v1/rpc/propose_change", request.url.encodedPath)
+            body = Json.parseToJsonElement((request.body as TextContent).text).jsonObject
+            json(changeJson(1, "pending"))
+        }) {
+            it.proposeChange("appt", 4, "ck1", ChangeDraft("Sifón y llave", Instant.parse("2030-01-15T10:30:00Z"), 120,
+                12000, null, materialsIncluded = true, travelIncluded = false,
+                address = ChangedAddress("Calle 1, 3º", 43.06, -5.94), note = "Piso", mode = PaymentMode.INTEGRATED))
+        }
+        val sent = body!!
+        assertEquals(4, sent["p_expected_version"]!!.jsonPrimitive.int)
+        assertEquals("ck1", sent["p_request_id"]!!.jsonPrimitive.content)
+        assertEquals(12000, sent["p_amount_cents"]!!.jsonPrimitive.int)
+        assertEquals("Calle 1, 3º", sent["p_address"]!!.jsonPrimitive.content)
+        assertEquals(-5.94, sent["p_lng"]!!.jsonPrimitive.double, 0.0)
+        assertEquals("integrated", sent["p_mode"]!!.jsonPrimitive.content)
+        assertEquals(ChangeStatus.PENDING, change.status)
+        assertEquals(Instant.parse("2030-01-15T12:30:00Z"), change.endAt)
+    }
+
+    @Test fun unchangedAddressIsSentAsNull() = runTest {
+        var body: JsonObject? = null
+        withClient({ request -> body = Json.parseToJsonElement((request.body as TextContent).text).jsonObject
+            json(changeJson(1, "pending")) }) {
+            it.proposeChange("appt", 4, "ck1", ChangeDraft("Sifón", Instant.parse("2030-01-15T10:30:00Z"), 60, 9000,
+                null, materialsIncluded = false, travelIncluded = true))
+        }
+        assertEquals(JsonNull, body!!["p_address"])
+        assertEquals(JsonNull, body!!["p_mode"])
+    }
+
+    @Test fun decisionsAndCorrectionsCallTheirFunctions() = runTest {
+        val calls = mutableListOf<Pair<String, JsonObject>>()
+        withClient({ request ->
+            calls += request.url.encodedPath to Json.parseToJsonElement((request.body as TextContent).text).jsonObject
+            json(changeJson(1, "accepted"))
+        }) {
+            it.acceptChange("c1", PaymentMode.DIRECT)
+            it.acceptChange("c1", null)
+            it.rejectChange("c1")
+            it.requestAddressCorrection("appt", 5, "ck2", "Falta el piso")
+        }
+        assertEquals(listOf("/rest/v1/rpc/accept_change", "/rest/v1/rpc/accept_change", "/rest/v1/rpc/reject_change",
+            "/rest/v1/rpc/request_address_correction"), calls.map { it.first })
+        assertEquals("direct", calls[0].second["p_mode"]!!.jsonPrimitive.content)
+        assertEquals(JsonNull, calls[1].second["p_mode"])
+        assertEquals("c1", calls[2].second["p_change_id"]!!.jsonPrimitive.content)
+        assertEquals("Falta el piso", calls[3].second["p_note"]!!.jsonPrimitive.content)
+        assertEquals(5, calls[3].second["p_expected_version"]!!.jsonPrimitive.int)
+    }
+
+    @Test fun changeRejectionsMapToStableFailures() = runTest {
+        val cases = listOf(
+            Triple(HttpStatusCode.Forbidden, error("42501", "address_owner_only"), AppointmentFailure.ACCESS),
+            Triple(HttpStatusCode.BadRequest, error("22023", "no_change"), AppointmentFailure.INVALID),
+            Triple(HttpStatusCode.BadRequest, error("22023", "invalid_change"), AppointmentFailure.INVALID),
+            Triple(HttpStatusCode.BadRequest, error("22023", "out_of_coverage"), AppointmentFailure.OUT_OF_COVERAGE),
+            Triple(HttpStatusCode.Conflict, error("PT409", "slot_unavailable"), AppointmentFailure.SLOT_UNAVAILABLE),
+            Triple(HttpStatusCode.Conflict, error("PT409", "stale_version"), AppointmentFailure.STALE),
+        )
+        for ((status, body, expected) in cases) {
+            val failure = withClient({ json(body, status) }) {
+                try { it.acceptChange("c1", null); null } catch (e: AppointmentException) { e.failure }
             }
             assertEquals(expected, failure)
         }

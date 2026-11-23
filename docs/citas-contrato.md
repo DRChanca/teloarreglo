@@ -348,3 +348,80 @@ Android no muestra todavía `reference_prices` (la consulta de `Appointments.lis
 /Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree>   # incluye appointment_prices.test.sql
 ```
 
+
+## Cambios de condiciones — #23
+
+Migración nueva: `20261123012300_appointment_changes.sql`. No edita migraciones anteriores ni cambia firmas
+de RPC existentes. No se ha desplegado ni escrito en la base alojada. El dinero sigue siendo simulado.
+
+Regla: una cita confirmada solo cambia cuando la otra parte acepta expresamente una versión concreta. Mientras
+el cambio está pendiente, o si se rechaza o falla, siguen vigentes la propuesta aceptada, la reserva de agenda,
+la dirección y el pago. El profesional nunca sustituye la dirección del cliente; solo puede pedir que la corrija.
+
+Cambios en el esquema:
+
+- `appointment_proposals_status_check` + `replaced`: el acuerdo que estaba vigente hasta que un cambio aceptado
+  lo sustituyó. Sigue habiendo como máximo una propuesta `accepted` por cita: la de las condiciones vigentes.
+- `public.appointment_changes` (RLS: lectura para cliente y profesional de citas ya confirmadas, sin escritura
+  directa). `kind` `change` (condiciones nuevas completas: `scope`, `start_at`, `end_at`, `duration_minutes`,
+  `amount_cents`, `visit_fee_cents`, `materials_included`, `travel_included`; `address/latitude/longitude` solo
+  si el cliente cambia la dirección, con `previous_*` para el historial) o `address_correction` (solo `note`).
+  `version` 1, 2, 3… por cita, `request_id` único por autor, `base_proposal_id` (condiciones que modifica),
+  `payment_mode` (si una cita gratuita pasa a tener coste), `status` `pending | accepted | rejected | superseded`,
+  `result_proposal_id`. Como máximo un cambio `pending` por cita (índice parcial).
+- `appointment_events` + columna `change_id` y tipos `change_proposed`, `change_accepted`, `change_rejected`,
+  `address_correction_requested`.
+- `payment_movements` + columna `change_id` única: como mucho un movimiento por cambio.
+- `appointment_payments.agreed_cents` admite 0 (una reducción puede devolverlo todo).
+
+RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo):
+
+- `propose_change(p_appointment_id, p_expected_version, p_request_id, p_scope, p_start, p_duration_minutes,
+  p_amount_cents, p_visit_fee_cents, p_materials_included, p_travel_included, p_address = null, p_lat = null,
+  p_lng = null, p_note = null, p_mode = null)` → fila de `appointment_changes`. Cualquiera de los dos
+  participantes, solo con la cita `confirmed` (`PT409 incompatible_state`) y `p_expected_version` vigente
+  (`PT409 stale_version`). Dirección solo del cliente (`42501 address_owner_only`) y dentro de la cobertura
+  (`22023 out_of_coverage`). Condiciones idénticas → `22023 no_change`; datos no válidos o nueva hora pasada →
+  `22023 invalid_change`. Si la cita no tenía pago y el cliente añade coste, `p_mode` es obligatorio
+  (`22023 invalid_payment`). Misma clave y contenido → mismo cambio; otro contenido → `retry_conflict`.
+  Sustituye (`superseded`) el cambio pendiente; no toca nada vigente.
+- `request_address_correction(p_appointment_id, p_expected_version, p_request_id, p_note)` → cambio
+  `address_correction`. Solo el profesional. El cliente responde proponiendo un cambio con dirección (que la
+  sustituye) o la descarta con `reject_change`.
+- `accept_change(p_change_id, p_mode = null)` → cambio `accepted`. Solo la otra parte (el autor recibe
+  `42501`). Toma el bloqueo de la cita y después `private.lock_agenda`, como `accept_proposal`. Versión no
+  vigente → `PT409 stale_version`; petición de corrección → `22023 invalid_change`. Si cambia el intervalo:
+  nueva hora futura (`PT409 proposal_expired`), dentro de una franja y sin solapes (`PT409 slot_unavailable`).
+  Si cambia la dirección: cobertura (`22023 out_of_coverage`). Después, en la misma transacción: propuesta
+  nueva `accepted` con las condiciones del cambio (la anterior pasa a `replaced`), reserva movida, dirección
+  actualizada (el disparador de #38 recalcula la zona aproximada), pago y aviso `change_accepted`. Cualquier
+  fallo deja la cita anterior íntegra y el cambio `pending`. Aceptar otra vez devuelve el mismo resultado.
+  - Integrado: aumento → movimiento `paid` por la diferencia (`paid` y `pending` suben) antes del trabajo
+    adicional; reducción → movimiento `refunded` (`pending` baja, `refunded` sube). Una reducción mayor que lo
+    pendiente de entrega → `PT409 incompatible_state`.
+  - Directo: solo cambia `agreed_cents`; ningún movimiento.
+  - Cita gratuita que pasa a tener coste: se crea el pago con el modo del cliente (`payment_mode` de su
+    cambio o `p_mode` al aceptar el del profesional; sin modo → `22023 invalid_payment`).
+- `reject_change(p_change_id)` → cambio `rejected`. Solo la otra parte. Idempotente; versión no vigente →
+  `stale_version`. Conserva historial y condiciones.
+
+Android: `Appointments.proposeChange`, `requestAddressCorrection`, `acceptChange(changeId, mode?)`,
+`rejectChange`; `list` añade `appointment_changes(*)` y rellena `Appointment.changes` y `pendingChange`.
+`Appointment.changeEffect(change)` → `ChangeEffect` (`PayDifference`, `Refund`, `DirectAgreement`,
+`ChooseMode`, `NewPayment`, `None`) para explicar el dinero antes de decidir. Avisos nuevos
+`DECIDE_CHANGE`, `AWAITING_CHANGE`, `CORRECT_ADDRESS`. `no_change` e `invalid_change` → `INVALID`;
+`address_owner_only` (403) → `ACCESS`.
+
+Interfaz (`AppointmentChangesUi.kt`, dentro de la tarjeta de una cita confirmada): «Proponer un cambio» abre un
+formulario con las condiciones vigentes; el cliente puede marcar «Cambiar la dirección» y, si añade coste a una
+cita gratuita, elegir cómo pagará. El profesional tiene además «Pedir al cliente que corrija la dirección». El
+cambio pendiente muestra solo los campos que cambian («Antes: … → Propuesto: …»), el efecto en el dinero y que
+lo acordado sigue vigente; la otra parte acepta o rechaza con confirmación. Historial «Cambio N · estado».
+Textos `change_*` en ES/EN/FR/DE.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_changes.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AppointmentsTest'
+```
+
+Resultados: [comprobación de cambios](comprobacion-cambios.md).
