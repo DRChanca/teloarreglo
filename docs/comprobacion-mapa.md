@@ -9,10 +9,10 @@ Google ni activado facturación.
 
 | Suite | Resultado |
 | --- | --- |
-| pgTAP `supabase/tests/map_locations.test.sql` (pila local, `db reset` + `test db`) | 11/11; suite completa 189/189 |
+| pgTAP `supabase/tests/map_locations.test.sql` (pila local, `db reset` + `test db`) | 11/11; suite completa 214/214 (tras unir `spec/11-demo` 6219a65) |
 | `python3 scripts/contract_map.py --local` (PostgREST real, clave publicable sin sesión) | 3/3 |
 | `MapLocationTest` (JVM; RPC con `MockEngine`, lógica de mapa y navegación) | 7/7 |
-| Pruebas unitarias JVM completas (`:app:testPruebasDebugUnitTest`) | 77/77 |
+| Pruebas unitarias JVM completas (`:app:testPruebasDebugUnitTest`) | 84/84 |
 | `python3 scripts/android.py check` (compilación, pruebas, lint con traducciones) | correcto |
 | `:app:compilePruebasDebugAndroidTestKotlin` (nuevas pruebas de interfaz) | compila; **no ejecutadas** |
 
