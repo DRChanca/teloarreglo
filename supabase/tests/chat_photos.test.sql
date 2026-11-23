@@ -16,8 +16,8 @@ insert into public.conversations(id,profile_id,client_id,professional_id,name) v
   '00000000-0000-0000-0000-000000001801','00000000-0000-0000-0000-000000001802','Photo plumber');
 
 select is((select public from storage.buckets where id='chat-attachments'),false,'chat attachments bucket is private');
-select is((select file_size_limit from storage.buckets where id='chat-attachments'),2097152::bigint,
- 'bucket rejects objects over 2 MiB');
+select is(private.chat_attachment_limit('photo','image/jpeg'),2097152::bigint,
+ 'photos are limited to 2 MiB (the shared bucket admits 20 MiB videos since #19)');
 
 set local role anon;
 select throws_ok($$select public.request_chat_attachment('30000000-0000-0000-0000-000000001801',
@@ -33,8 +33,8 @@ select throws_ok($$select public.request_chat_attachment('30000000-0000-0000-000
  '20000000-0000-0000-0000-000000001801','photo','image/gif',repeat('a',64))$$,'22023','unsupported_attachment',
  'only JPEG/PNG photos are accepted');
 select throws_ok($$select public.request_chat_attachment('30000000-0000-0000-0000-000000001801',
- '20000000-0000-0000-0000-000000001801','video','video/mp4',repeat('a',64))$$,'22023','unsupported_attachment',
- 'videos are not enabled by the photo migration');
+ '20000000-0000-0000-0000-000000001801','photo','video/mp4',repeat('a',64))$$,'22023','unsupported_attachment',
+ 'a video cannot be sent as a photo');
 select is(public.request_chat_attachment('30000000-0000-0000-0000-000000001801',
  '20000000-0000-0000-0000-000000001801','photo','image/jpeg',repeat('a',64))->>'status','uploading',
  'client attaches before any professional reply or appointment');

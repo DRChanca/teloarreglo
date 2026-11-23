@@ -295,4 +295,19 @@
     <string name="home_search_from_home">Chercher près de chez moi</string>
     <string name="home_searching_from">Depuis le domicile : %1$s</string>
     <string name="home_appointment_prefilled">Nous avons indiqué votre adresse. Modifiez-la si le travail a lieu ailleurs.</string>
+    <string name="video_attach">Envoyer une vidéo</string>
+    <string name="video_limits">Vidéo d’une minute maximum. L’app envoie une copie MP4 de 720p et 20 Mo maximum ; votre original reste intact.</string>
+    <string name="video_preparing">Compression de la vidéo…</string>
+    <string name="video_preparing_percent">Compression de la vidéo… %1$d %%</string>
+    <string name="video_uploading">Envoi de la vidéo… %1$d %%</string>
+    <string name="video_error_unsupported">Cette vidéo ne peut pas être convertie en MP4 compatible sur ce téléphone. Elle n’a pas été envoyée ; choisissez-en une autre.</string>
+    <string name="video_error_too_long">La vidéo dure plus d’une minute. Elle n’a pas été envoyée ; coupez-la dans la galerie ou choisissez-en une autre.</string>
+    <string name="video_error_too_large">Même compressée, la vidéo dépasse 20 Mo. Elle n’a pas été envoyée ; choisissez-en une plus courte.</string>
+    <string name="video_error_quota">L’espace pour les vidéos est plein. La vidéo n’a pas été envoyée ; réessayez plus tard.</string>
+    <string name="video_error_access">Vous n’avez pas le droit d’envoyer des vidéos ici ou votre session a expiré. La vidéo n’a pas été envoyée.</string>
+    <string name="video_error_conflict">Cette vidéo ne correspond pas à un envoi précédent. Elle n’a pas été envoyée ; choisissez-la à nouveau.</string>
+    <string name="video_error_network">L’envoi de la vidéo n’a pas pu être confirmé. Réessayez : elle ne sera pas dupliquée.</string>
+    <string name="video_message">Vidéo envoyée dans la conversation</string>
+    <string name="video_play">Lire la vidéo</string>
+    <string name="video_open_error">La vidéo n’a pas pu être lue. Touchez pour réessayer.</string>
 </resources>

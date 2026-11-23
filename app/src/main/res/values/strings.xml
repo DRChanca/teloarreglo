@@ -295,4 +295,19 @@
     <string name="home_search_from_home">Buscar cerca de casa</string>
     <string name="home_searching_from">Desde casa: %1$s</string>
     <string name="home_appointment_prefilled">Hemos puesto tu dirección de casa. Cámbiala si el trabajo es en otro sitio.</string>
+    <string name="video_attach">Enviar vídeo</string>
+    <string name="video_limits">Vídeo de hasta 1 minuto. La app envía una copia MP4 de hasta 720p y 20 MB; tu original no cambia.</string>
+    <string name="video_preparing">Comprimiendo el vídeo…</string>
+    <string name="video_preparing_percent">Comprimiendo el vídeo… %1$d %%</string>
+    <string name="video_uploading">Enviando vídeo… %1$d %%</string>
+    <string name="video_error_unsupported">Este vídeo no se puede convertir a un MP4 compatible en este teléfono. No se ha enviado; elige otro.</string>
+    <string name="video_error_too_long">El vídeo dura más de un minuto. No se ha enviado; recórtalo en la galería o elige otro.</string>
+    <string name="video_error_too_large">El vídeo no cabe en 20 MB ni comprimido. No se ha enviado; elige uno más corto.</string>
+    <string name="video_error_quota">El espacio para vídeos está lleno. El vídeo no se ha enviado; inténtalo más tarde.</string>
+    <string name="video_error_access">No tienes permiso para enviar vídeos aquí o tu sesión ha caducado. El vídeo no se ha enviado.</string>
+    <string name="video_error_conflict">Este vídeo no coincide con un envío anterior. No se ha enviado; vuelve a elegirlo.</string>
+    <string name="video_error_network">No se pudo confirmar el envío del vídeo. Reintenta: no se duplicará.</string>
+    <string name="video_message">Vídeo enviado en la conversación</string>
+    <string name="video_play">Reproducir vídeo</string>
+    <string name="video_open_error">No se pudo reproducir el vídeo. Toca para reintentar.</string>
 </resources>
