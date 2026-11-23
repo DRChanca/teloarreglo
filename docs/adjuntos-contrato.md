@@ -97,3 +97,11 @@ python3 scripts/contract_chat_videos.py --local
 ```
 
 Resultados y recorrido pendiente: [comprobación](comprobacion-videos.md).
+
+## Pruebas de incidencias — #26
+
+`20261123012700_incidents.sql` añade una segunda política de lectura sobre el mismo bucket, sin tocar las de #18:
+`incident_evidence_read` (SELECT si `public.can_read_incident_evidence(name)`). Un adjunto pasa a ser legible por la
+administración solo cuando un participante lo aporta expresamente a una incidencia; el resto de adjuntos de la conversación
+sigue sin excepción administrativa. No hay bucket nuevo ni escritura nueva. Detalle en
+[citas-contrato.md](citas-contrato.md#incidencias-y-pruebas-privadas--26).

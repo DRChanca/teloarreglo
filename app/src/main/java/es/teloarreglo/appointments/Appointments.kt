@@ -157,6 +157,8 @@ data class Appointment(
     @SerialName("appointment_payments") val payment: AppointmentPayment? = null,
     /** Versioned changes to the confirmed conditions (#23), as the server keeps them. */
     @SerialName("appointment_changes") private val rawChanges: List<AppointmentChange> = emptyList(),
+    /** Incidents of this appointment with their evidence (#26), oldest first. */
+    @SerialName("incidents") private val rawIncidents: List<Incident> = emptyList(),
     /** Filled by [Appointments.list] from `appointment_places`; null until the server has answered. */
     @Transient val place: AppointmentPlace? = null,
 ) {
@@ -208,8 +210,26 @@ data class Appointment(
 
     /** Only its professional marks a started job as done (#25). */
     fun canMarkDone(accountId: String) = stage == AppointmentStage.STARTED && accountId == professionalId
-    /** Only its client confirms a job marked done (#25). */
-    fun canConfirmDone(accountId: String) = stage == AppointmentStage.DONE && accountId == clientId
+    /** Only its client confirms a job marked done (#25), and not while an incident blocks the delivery (#26). */
+    fun canConfirmDone(accountId: String) = stage == AppointmentStage.DONE && accountId == clientId && blockingIncident == null
+
+    /** Every incident, oldest first; reviewed ones are kept (#26). */
+    val incidents get() = rawIncidents.sortedBy { it.createdAt }
+    /** The incident still open, if any: evidence goes to it instead of opening another. */
+    val openIncident get() = rawIncidents.firstOrNull { it.isOpen }
+    /** The open incident that stops the delivery, if any (opened before the completion). */
+    val blockingIncident get() = openIncident?.takeIf { it.blocksDelivery }
+    /**
+     * Either participant opens an incident once the work started: before the start a problem is a cancellation with a
+     * refund (#24). After the close it is a communication that reverts nothing. One open incident at a time.
+     */
+    fun canOpenIncident(accountId: String) = participant(accountId) && openIncident == null &&
+        stage in setOf(AppointmentStage.STARTED, AppointmentStage.DONE, AppointmentStage.COMPLETED)
+    /** A cancellation request only exists while the job is started. */
+    val incidentKinds: List<IncidentKind> get() =
+        if (stage == AppointmentStage.STARTED) IncidentKind.entries.toList()
+        else listOf(IncidentKind.QUALITY, IncidentKind.NOT_PERFORMED)
+    fun canAddEvidence(accountId: String) = participant(accountId) && openIncident != null
 
     /** What confirming the job would do with the money, shown before the decision (#25). */
     val completionEffect: CompletionEffect get() {
@@ -237,6 +257,7 @@ data class Appointment(
         val change = pendingChange
         return when {
             stage == AppointmentStage.CANCELLED -> AppointmentNotice.CANCELLED
+            blockingIncident != null -> AppointmentNotice.INCIDENT_OPEN
             stage == AppointmentStage.COMPLETED ->
                 if (completion == Completion.NO_ANSWER) AppointmentNotice.COMPLETED_NO_ANSWER else AppointmentNotice.COMPLETED
             stage == AppointmentStage.DONE ->
@@ -275,6 +296,8 @@ enum class AppointmentNotice {
     COMPLETED,
     /** Finalised without the client's answer after the deadline (#27). */
     COMPLETED_NO_ANSWER,
+    /** An incident opened before the completion waits for review; nothing is delivered meanwhile (#26). */
+    INCIDENT_OPEN,
 }
 
 /** What the client's confirmation does with the (simulated) money (#25). */
@@ -470,7 +493,8 @@ private const val READABLE_COLUMNS = "id,conversation_id,profile_id,client_id,pr
 
 class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
     override suspend fun list(conversationId: String): List<Appointment> = mapped {
-        val rows = client.postgrest["appointments"].select(Columns.raw("$READABLE_COLUMNS,appointment_proposals(*),appointment_payments(*),appointment_changes(*)")) {
+        val rows = client.postgrest["appointments"].select(Columns.raw("$READABLE_COLUMNS,appointment_proposals(*),appointment_payments(*),appointment_changes(*)," +
+            "incidents(*,incident_evidence(*))")) {
             filter { eq("conversation_id", conversationId) }
             order("created_at", Order.DESCENDING)
         }.decodeList<Appointment>()
