@@ -77,6 +77,35 @@ class ChatAttachmentsTest {
         } finally { client.close() }
     }
 
+    @Test fun aVideoTravelsTheSamePrivatePathAsAnMp4WithItsContentType() = runTest {
+        val uploads = mutableListOf<Pair<String, String?>>()
+        val client = client { request ->
+            val path = request.url.encodedPath
+            when {
+                path.endsWith("/request_chat_attachment") -> {
+                    val body = (request.body as TextContent).text
+                    assertTrue(body.contains("\"p_kind\":\"video\""))
+                    assertTrue(body.contains("\"p_mime\":\"video/mp4\""))
+                    respond("""{"object_path":"conversation/key.mp4","status":"uploading","message":null}""",
+                        HttpStatusCode.OK, json)
+                }
+                path.contains("/storage/v1/object/") -> {
+                    uploads.add(path to request.body.contentType?.toString())
+                    respond(stored, HttpStatusCode.OK, json)
+                }
+                else -> respond(message.replace("\"photo\"", "\"video\"").replace("key.jpg", "key.mp4")
+                    .replace("image/jpeg", "video/mp4"), HttpStatusCode.OK, json)
+            }
+        }
+        try {
+            val events = SupabaseChatAttachments(client)
+                .send("conversation", "key", AttachmentKind.VIDEO, "video/mp4", ByteArray(4096) { 1 }).toList()
+            assertEquals("/storage/v1/object/chat-attachments/conversation/key.mp4", uploads.single().first)
+            assertEquals("video/mp4", uploads.single().second)
+            assertEquals("video", (events.last() as AttachmentProgress.Sent).message.attachmentKind)
+        } finally { client.close() }
+    }
+
     @Test fun aLostConfirmationIsRecoveredWithoutUploadingTheFileAgain() = runTest {
         val calls = mutableListOf<String>()
         val client = client { request ->

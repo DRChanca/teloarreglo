@@ -222,9 +222,10 @@ fun ChatScreen(
                                     Column(Modifier.widthIn(max = 300.dp).padding(12.dp).testTag("message_${message.id}")) {
                                         Text(stringResource(if (message.authorId == accountId) R.string.chat_you else R.string.chat_other),
                                             style = MaterialTheme.typography.labelSmall)
-                                        message.attachmentPath?.let { path ->
-                                            if (attachments != null) ChatPhotoBubble(path, attachments)
-                                            else Text(stringResource(R.string.photo_message))
+                                        if (message.attachmentPath != null) {
+                                            if (attachments != null) ChatAttachmentBubble(message, attachments)
+                                            else Text(stringResource(if (message.attachmentKind == "video")
+                                                R.string.video_message else R.string.photo_message))
                                         }
                                         if (message.body.isNotEmpty()) Text(message.body)
                                         Text(timestampFormat.format(Instant.parse(message.createdAt)),
@@ -250,7 +251,7 @@ fun ChatScreen(
                             Text(stringResource(R.string.chat_retry_send))
                         }
                     }
-                    if (attachments != null) ChatPhotoControls(attachments, accountId, conversation.id, outboxReady) { sent ->
+                    if (attachments != null) ChatAttachmentControls(attachments, accountId, conversation.id, outboxReady) { sent ->
                         messages = (messages + sent).distinctBy { it.id }.sortedWith(compareBy({ it.createdAt }, { it.id }))
                     }
                     OutlinedTextField(text, { if (it.length <= 4000) text = it },

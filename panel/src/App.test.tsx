@@ -78,6 +78,20 @@ describe("profile review panel", () => {
     expect(screen.getByText("Perfil de prueba")).toBeTruthy();
   });
 
+  it("marks what a change to a published profile alters, next to the public value", async () => {
+    const change: Submission = { ...pending, version: 2, published: true,
+      content: { ...pending.content, description: "Nueva descripción" },
+      public_content: { ...pending.content, description: "Ficticio" } };
+    const api = fakeApi({ email: "admin@example.org", is_administrator: true }, {
+      submissions: vi.fn(async () => [change]),
+    });
+    render(<App api={api} language="es" />);
+    expect(await screen.findByText("Nueva descripción")).toBeTruthy();
+    const changed = screen.getAllByText(messages.es.changed);
+    expect(changed).toHaveLength(1);
+    expect(screen.getByText(messages.es.publicValue.replace("{value}", "Ficticio"))).toBeTruthy();
+  });
+
   it("shows the audit of decided submissions in the history", async () => {
     const decided: Submission = { ...pending, status: "rejected",
       decision: { approved: false, reason: "Falta la cobertura", decided_at: "2026-11-23T11:00:00Z", administrator_email: "admin@example.org" } };

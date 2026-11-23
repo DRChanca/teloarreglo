@@ -26,6 +26,8 @@ export interface Submission {
   published: boolean;
   latest: boolean;
   content: ProfileContent;
+  /** Currently approved public version (#30); null while nothing is published. */
+  public_content?: ProfileContent | null;
   decision: { approved: boolean; reason: string; decided_at: string; administrator_email: string } | null;
 }
 
