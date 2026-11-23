@@ -125,6 +125,9 @@ class IncidentContract(unittest.TestCase):
         for token in (client, professional):
             evidence = self.get(f"incident_evidence?incident_id=eq.{incident['id']}&order=created_at", token)
             self.assertEqual([e["kind"] for e in evidence], ["message", "message", "note"])
+            # What the app reads: the incidents embedded in the appointment list.
+            row = self.get(f"appointments?select=id,incidents(*,incident_evidence(*))&id=eq.{appt}", token)[0]
+            self.assertEqual(len(row["incidents"][0]["incident_evidence"]), 3)
         # Append-only through the API too.
         for token in (client, professional):
             self.assertIn(api.request(f"/rest/v1/incident_evidence?incident_id=eq.{incident['id']}",
