@@ -29,6 +29,7 @@
     <string name="trade_painting">Peinture</string>
     <string name="trade_masonry">Maçonnerie</string>
     <string name="trade_general">Réparations générales</string>
+    <string name="trade_cleaning">Nettoyage</string>
     <string name="price_hour">heure</string>
     <string name="price_sqm">m²</string>
     <string name="price_unit">unité</string>

@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 // Print a one-time, reviewable SQL load for the search: the 78 IGN concejos and the
-// registered locations of the 18 prepared profiles. Never connects to a database.
+// registered locations of the 21 prepared profiles. Never connects to a database.
 //
 //   cd scripts/search-data && npm ci
-//   node prepare_search_data.mjs [--part concejos|locations] > /RUTA_LOCAL/carga.sql
+//   node prepare_search_data.mjs [--part concejos|locations] [--only-cleaning] > /RUTA_LOCAL/carga.sql
+//   --only-cleaning: locations of the three cleaning profiles (#36) only, for a database
+//   that already holds the first 18.
 //
 // Locations are fictitious: a deterministic point within ~800 m of the centre of the
 // town of each profile's fictitious business address (public city centres, no homes),
@@ -16,7 +18,7 @@ import { latLngToCell } from "h3-js";
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const RESOLUTION = 6; // Must match supabase/functions/search-professionals/search.ts
 const NAMESPACE = "c1771400-0000-4000-8000-000000000014"; // scripts/prepare_catalogue.py
-const TRADES = ["plumbing", "electrical", "carpentry", "painting", "masonry", "general"];
+const TRADES = ["plumbing", "electrical", "carpentry", "painting", "masonry", "general", "cleaning"];
 // Town centres of the fictitious business addresses (squares/streets, not people).
 const TOWNS = {
   Oviedo: { ine: "33044", lat: 43.3614, lng: -5.8494 },
@@ -67,8 +69,8 @@ function inGeometry(lng, lat, geometry) {
 function profiles() {
   const rows = read("supabase/catalogue/profiles.json");
   const details = new Map(read("supabase/catalogue/details.json").map((d) => [d.name, d]));
-  if (rows.length !== 18 || !TRADES.every((t) => rows.filter((p) => p.trade === t).length === 3)) {
-    throw new Error("Expected the 18 prepared profiles, three per trade");
+  if (rows.length !== 21 || !TRADES.every((t) => rows.filter((p) => p.trade === t).length === 3)) {
+    throw new Error("Expected the 21 prepared profiles, three per trade");
   }
   return rows.map((p, i) => ({ id: uuid5(NAMESPACE, String(i)), ...p, ...details.get(p.name) }));
 }
@@ -112,7 +114,7 @@ function locationsSql(located) {
   const values = located.map(({ p, l }) =>
     `(${literal(p.id)}::uuid, ${literal(p.name)}, ${l.lat}, ${l.lng}, ${literal(l.cell)}, ${literal(l.ine)})`);
   return [
-    "-- Ubicaciones registradas (ficticias) de los 18 perfiles preparados. Privadas: solo servidor.",
+    `-- Ubicaciones registradas (ficticias) de ${located.length} perfiles preparados. Privadas: solo servidor.`,
     "create temporary table search_locations_preparation (",
     "  profile_id uuid, name text, lat double precision, lng double precision, h3_cell text, ine_code text",
     ") on commit drop;",
@@ -144,7 +146,8 @@ const part = process.argv.includes("--part") ? process.argv[process.argv.indexOf
 if (!["all", "concejos", "locations"].includes(part)) throw new Error("--part concejos|locations");
 const features = read("supabase/geo/concejos_asturias.geojson").features;
 const concejos = new Map(features.map((f) => [f.properties.ine_code, f]));
-const located = profiles().map((p) => ({ p, l: locate(p, concejos) }));
+const onlyCleaning = process.argv.includes("--only-cleaning");
+const located = profiles().slice(onlyCleaning ? 18 : 0).map((p) => ({ p, l: locate(p, concejos) }));
 
 const HEADER = "-- Generado por scripts/search-data/prepare_search_data.mjs. Revisar antes de ejecutar.";
 

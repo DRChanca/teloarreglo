@@ -29,6 +29,7 @@
     <string name="trade_painting">Painting</string>
     <string name="trade_masonry">Masonry</string>
     <string name="trade_general">General repairs</string>
+    <string name="trade_cleaning">Cleaning</string>
     <string name="price_hour">hour</string>
     <string name="price_sqm">m²</string>
     <string name="price_unit">unit</string>
