@@ -697,8 +697,19 @@ Android: `appointments/Incidents.kt` (`Incidents.open`, `addEvidence(EvidenceDra
 `openIncident`, `blockingIncident`, `canOpenIncident`, `incidentKinds`, `canAddEvidence`. Con incidencia bloqueante
 `canConfirmDone` es falso y el aviso es `INCIDENT_OPEN`. Interfaz `AppointmentIncidentUi.kt` dentro de la tarjeta: «Comunicar
 una incidencia» (tipo, descripción, efecto económico y aviso de visibilidad con casilla obligatoria) y, por incidencia, estado,
-realización reconocida/discutida, efecto, pruebas (notas, mensajes, fotos y vídeos) y «Añadir prueba» (elegir un mensaje concreto
-del chat o escribir una nota, con el mismo aviso). Textos `incident_*` en ES/EN/FR/DE.
+realización reconocida/discutida, efecto y pruebas, cada una rotulada «Mensaje del chat» (autor, hora del mensaje y contenido
+citado: texto, foto o vídeo) o «Nota». Textos `incident_*` en ES/EN/FR/DE.
+
+Rediseño del 23 de noviembre de 2026 (sin cambios en el servidor): los mensajes ya no se eligen en una lista dentro de la
+tarjeta. «Elegir mensajes del chat» cierra el panel y abre el modo selección en el propio chat, como en WhatsApp; también se
+entra manteniendo pulsado un mensaje cuando hay una incidencia abierta a la que la cuenta puede aportar. Se marcan varios con
+toques, la barra superior muestra cuántos hay y «Añadir a la incidencia»; los ya aportados aparecen como «En la incidencia» y no
+se pueden volver a marcar. Una búsqueda del chat (lupa) resalta coincidencias sin distinguir mayúsculas ni acentos y salta entre
+ellas, también durante la selección. Al confirmar, con el mismo aviso de visibilidad, se llama a `add_incident_evidence` una vez
+por mensaje, con una clave derivada de incidencia y mensaje (`messageEvidenceKey`), así que un reintento tras una respuesta
+perdida no duplica nada; si una llamada falla, lo añadido sale de la selección y el resto queda marcado para reintentar. La
+tarjeta conserva «Añadir nota». Lógica pura en `chat/MessageSelection.kt` (`MessageSelection`, `MessageSearch`) e
+`Incidents.addMessages`; interfaz en `ChatEvidenceUi.kt` y `ChatScreen.kt`, unida al panel por `ChatEvidenceLink`.
 
 ```bash
 /Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_incidents.py --local'

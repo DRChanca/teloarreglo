@@ -1,5 +1,6 @@
 package es.teloarreglo
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -15,20 +16,42 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import es.teloarreglo.appointments.*
 import es.teloarreglo.chat.ChatAttachments
-import es.teloarreglo.chat.ChatMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import java.time.OffsetDateTime
 import java.util.UUID
 
-/** What the incident section needs besides the appointment: the operations and the conversation to pick from. */
+/** What the incident section needs besides the appointment: the operations and the private attachments to show. */
 class IncidentTools(
     val incidents: Incidents,
-    /** The appointment's conversation, read with the participant's own access, to choose concrete messages. */
-    val messages: suspend (conversationId: String) -> List<ChatMessage>,
     val attachments: ChatAttachments? = null,
 )
+
+/** An open incident of this conversation where the account can add chat messages, and what it already holds. */
+data class EvidenceTarget(
+    val conversationId: String, val incidentId: String, val problem: String, val contributed: Set<String>,
+)
+
+/**
+ * Joins a chat and its appointments panel (#26): the panel publishes where messages can be added, and an incident card
+ * asks the chat to start choosing them. The chat sends them; long operations run in [scope] so leaving does not cancel.
+ */
+@Stable
+class ChatEvidenceLink(val incidents: Incidents, val scope: CoroutineScope) {
+    var targets by mutableStateOf(emptyList<EvidenceTarget>())
+    /** Incident whose card asked to choose messages; the chat consumes it and enters selection mode. */
+    var requested by mutableStateOf<String?>(null)
+}
+
+val LocalChatEvidence = compositionLocalOf<ChatEvidenceLink?> { null }
+
+/** The open incidents of [appointments] where [accountId] can contribute chat messages. */
+internal fun evidenceTargets(conversationId: String, appointments: List<Appointment>, accountId: String) =
+    appointments.filter { it.canAddEvidence(accountId) }.mapNotNull { appointment ->
+        appointment.openIncident?.let { incident ->
+            EvidenceTarget(conversationId, incident.id, appointment.problem, incident.evidence.mapNotNull { it.messageId }.toSet())
+        }
+    }
 
 /**
  * Incidents of one appointment (#26), inside its card. Opening and contributing always show first who will see it
@@ -39,8 +62,10 @@ class IncidentTools(
 @Composable
 internal fun IncidentSection(
     appointment: Appointment, accountId: String, tools: IncidentTools?, scope: CoroutineScope, onChanged: () -> Unit,
+    /** Present when the chat is behind: closes the panel and lets the user select messages there. */
+    onChooseMessages: ((incidentId: String) -> Unit)? = null,
 ) {
-    appointment.incidents.forEach { IncidentCard(appointment, it, accountId, tools, scope, onChanged) }
+    appointment.incidents.forEach { IncidentCard(appointment, it, accountId, tools, scope, onChanged, onChooseMessages) }
     if (tools == null || !appointment.canOpenIncident(accountId)) return
     var opening by rememberSaveable(appointment.id) { mutableStateOf(false) }
     if (appointment.stage == AppointmentStage.STARTED)
@@ -67,7 +92,7 @@ private fun kindExplain(kind: IncidentKind) = stringResource(when (kind) {
 })
 
 @Composable
-private fun incidentFailureText(failure: IncidentFailure?) = stringResource(when (failure) {
+internal fun incidentFailureText(failure: IncidentFailure?) = stringResource(when (failure) {
     IncidentFailure.ACCESS -> R.string.appointment_error_access
     IncidentFailure.INVALID -> R.string.incident_error_invalid
     IncidentFailure.STALE -> R.string.appointment_error_stale
@@ -79,7 +104,7 @@ private fun incidentFailureText(failure: IncidentFailure?) = stringResource(when
 
 /** Who will see what is sent, and the explicit acceptance required before sending it. */
 @Composable
-private fun VisibilityNotice(accepted: Boolean, onAccepted: (Boolean) -> Unit) {
+internal fun VisibilityNotice(accepted: Boolean, onAccepted: (Boolean) -> Unit) {
     Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.small) {
         Column(Modifier.padding(8.dp)) {
             Text(stringResource(R.string.incident_visibility), style = MaterialTheme.typography.bodySmall,
@@ -159,10 +184,10 @@ private fun OpenIncidentDialog(
 @Composable
 private fun IncidentCard(
     appointment: Appointment, incident: Incident, accountId: String, tools: IncidentTools?, scope: CoroutineScope,
-    onChanged: () -> Unit,
+    onChanged: () -> Unit, onChooseMessages: ((String) -> Unit)?,
 ) {
     val format = dateTimeFormat()
-    var adding by rememberSaveable(incident.id) { mutableStateOf(false) }
+    var writing by rememberSaveable(incident.id) { mutableStateOf(false) }
     OutlinedCard(Modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("incident_${incident.id}")) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(kindText(incident.kind), style = MaterialTheme.typography.titleSmall)
@@ -181,98 +206,78 @@ private fun IncidentCard(
             IncidentResolution(incident, format)
             Text(stringResource(R.string.incident_evidence_title, incident.evidence.size), style = MaterialTheme.typography.titleSmall)
             incident.evidence.forEach { EvidenceRow(it, accountId, tools?.attachments, format) }
-            if (tools != null && incident.isOpen && appointment.canAddEvidence(accountId))
-                OutlinedButton(onClick = { adding = true }, modifier = Modifier.testTag("incident_add_evidence")) {
-                    Text(stringResource(R.string.incident_add_evidence))
+            if (tools != null && incident.isOpen && appointment.canAddEvidence(accountId)) {
+                // Messages are chosen inside the chat itself (long press, search); here only a written note is typed.
+                if (onChooseMessages != null) {
+                    Text(stringResource(R.string.incident_evidence_from_chat_hint), style = MaterialTheme.typography.bodySmall)
+                    Button(onClick = { onChooseMessages(incident.id) }, modifier = Modifier.testTag("incident_add_evidence")) {
+                        Text(stringResource(R.string.incident_evidence_from_chat))
+                    }
                 }
+                OutlinedButton(onClick = { writing = true }, modifier = Modifier.testTag("incident_add_note")) {
+                    Text(stringResource(R.string.incident_evidence_add_note))
+                }
+            }
         }
     }
-    if (adding && tools != null) EvidenceDialog(appointment, incident, tools, scope, onDismiss = { adding = false },
-        onDone = { adding = false; onChanged() })
+    if (writing && tools != null) NoteDialog(incident, tools, scope, onDismiss = { writing = false },
+        onDone = { writing = false; onChanged() })
 }
 
+/** One piece of evidence, saying plainly what it is: a chat message (who wrote it and when, quoted) or a note. */
 @Composable
 private fun EvidenceRow(evidence: IncidentEvidence, accountId: String, attachments: ChatAttachments?,
                         format: java.time.format.DateTimeFormatter) {
-    Column(Modifier.fillMaxWidth().padding(start = 8.dp).testTag("evidence_${evidence.id}")) {
+    val message = evidence.kind == EvidenceKind.MESSAGE
+    Column(Modifier.fillMaxWidth().padding(start = 8.dp, top = 4.dp).testTag("evidence_${evidence.id}"),
+        verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(stringResource(if (message) R.string.incident_evidence_kind_message else R.string.incident_evidence_kind_note),
+            style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.testTag("evidence_kind_${evidence.id}"))
+        if (message) {
+            val author = stringResource(if (evidence.messageAuthorId == accountId) R.string.incident_evidence_written_by_me
+                else R.string.incident_evidence_written_by_other)
+            Text(evidence.messageCreatedAt?.let { author + " · " + format.format(it) } ?: author,
+                style = MaterialTheme.typography.labelSmall)
+        }
+        Row(Modifier.height(IntrinsicSize.Min)) {
+            // A quote bar, as in messaging apps: what follows is the content exactly as it was contributed.
+            Box(Modifier.width(3.dp).fillMaxHeight().background(MaterialTheme.colorScheme.outlineVariant))
+            Column(Modifier.padding(start = 8.dp)) {
+                when {
+                    evidence.note != null -> Text(evidence.note)
+                    evidence.attachmentPath != null && attachments != null ->
+                        if (evidence.attachmentKind == "video") ChatVideoBubble(evidence.attachmentPath, null, attachments)
+                        else ChatPhotoBubble(evidence.attachmentPath, attachments)
+                    evidence.attachmentPath != null -> Text(stringResource(if (evidence.attachmentKind == "video")
+                        R.string.incident_evidence_video else R.string.incident_evidence_photo))
+                }
+                if (message && !evidence.messageBody.isNullOrEmpty()) Text("«${evidence.messageBody}»")
+            }
+        }
         Text(stringResource(if (evidence.authorId == accountId) R.string.incident_evidence_by_me
             else R.string.incident_evidence_by_other, format.format(evidence.createdAt)), style = MaterialTheme.typography.labelSmall)
-        when {
-            evidence.note != null -> Text(evidence.note)
-            evidence.attachmentPath != null && attachments != null ->
-                if (evidence.attachmentKind == "video") ChatVideoBubble(evidence.attachmentPath, null, attachments)
-                else ChatPhotoBubble(evidence.attachmentPath, attachments)
-            evidence.attachmentPath != null -> Text(stringResource(if (evidence.attachmentKind == "video")
-                R.string.incident_evidence_video else R.string.incident_evidence_photo))
-            else -> Text(stringResource(R.string.incident_evidence_message, evidence.messageBody.orEmpty()))
-        }
     }
 }
 
+/** A written note for the incident; chat messages are selected in the chat, never retyped here. */
 @Composable
-private fun EvidenceDialog(
-    appointment: Appointment, incident: Incident, tools: IncidentTools, scope: CoroutineScope,
-    onDismiss: () -> Unit, onDone: () -> Unit,
+private fun NoteDialog(
+    incident: Incident, tools: IncidentTools, scope: CoroutineScope, onDismiss: () -> Unit, onDone: () -> Unit,
 ) {
-    var messages by remember { mutableStateOf<List<ChatMessage>?>(null) }
-    var loadFailed by remember { mutableStateOf(false) }
-    var reload by remember { mutableIntStateOf(0) }
-    LaunchedEffect(appointment.conversationId, reload) {
-        loadFailed = false
-        try { messages = tools.messages(appointment.conversationId) }
-        catch (e: Exception) { if (e is CancellationException) throw e; loadFailed = true }
-    }
-    var noteMode by rememberSaveable { mutableStateOf(false) }
-    var chosen by rememberSaveable { mutableStateOf<String?>(null) }
     var note by rememberSaveable { mutableStateOf("") }
     var accepted by rememberSaveable { mutableStateOf(false) }
     var key by rememberSaveable { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<IncidentFailure?>(null) }
-    val contributed = incident.evidence.mapNotNull { it.messageId }.toSet()
-    val format = dateTimeFormat()
     AlertDialog(onDismissRequest = { if (!busy) onDismiss() },
-        title = { Text(stringResource(R.string.incident_add_evidence)) },
+        title = { Text(stringResource(R.string.incident_evidence_add_note)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(!noteMode, onClick = { if (key == null) noteMode = false },
-                        label = { Text(stringResource(R.string.incident_evidence_choose_message)) },
-                        modifier = Modifier.testTag("evidence_mode_message"))
-                    FilterChip(noteMode, onClick = { if (key == null) noteMode = true },
-                        label = { Text(stringResource(R.string.incident_evidence_choose_note)) },
-                        modifier = Modifier.testTag("evidence_mode_note"))
-                }
-                if (noteMode) OutlinedTextField(note, { if (it.length <= 2000) note = it }, enabled = key == null,
+                OutlinedTextField(note, { if (it.length <= 2000) note = it }, enabled = key == null,
                     label = { Text(stringResource(R.string.incident_evidence_note)) }, minLines = 2,
                     modifier = Modifier.fillMaxWidth().testTag("evidence_note"))
-                else {
-                    Text(stringResource(R.string.incident_evidence_pick_explain), style = MaterialTheme.typography.bodySmall)
-                    if (loadFailed) TextButton(onClick = { reload++ }) { Text(stringResource(R.string.incident_evidence_load_error)) }
-                    else if (messages == null) LinearProgressIndicator(Modifier.fillMaxWidth())
-                    else if (messages!!.isEmpty()) Text(stringResource(R.string.incident_evidence_no_messages))
-                    messages.orEmpty().asReversed().forEach { message ->
-                        val already = message.id in contributed
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()
-                            .selectable(chosen == message.id, enabled = !already && key == null, role = Role.RadioButton,
-                                onClick = { chosen = message.id })
-                            .testTag("evidence_pick_${message.id}")) {
-                            RadioButton(chosen == message.id, onClick = null, enabled = !already && key == null)
-                            Spacer(Modifier.width(8.dp))
-                            Column {
-                                Text(when (message.attachmentKind) {
-                                    "photo" -> stringResource(R.string.incident_evidence_photo)
-                                    "video" -> stringResource(R.string.incident_evidence_video)
-                                    else -> message.body
-                                }, maxLines = 3)
-                                Text((runCatching { format.format(OffsetDateTime.parse(message.createdAt)) }.getOrNull() ?: "") +
-                                    if (already) " · " + stringResource(R.string.incident_evidence_already) else "",
-                                    style = MaterialTheme.typography.labelSmall)
-                            }
-                        }
-                    }
-                }
                 VisibilityNotice(accepted) { accepted = it }
                 if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
                 if (failed) Text(incidentFailureText(failure), color = MaterialTheme.colorScheme.error,
@@ -281,8 +286,7 @@ private fun EvidenceDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text(stringResource(R.string.cancel)) } },
         confirmButton = {
-            val draft = if (noteMode) note.trim().takeIf { it.isNotEmpty() }?.let { EvidenceDraft.Note(it) }
-                else chosen?.let { EvidenceDraft.Message(it) }
+            val draft = note.trim().takeIf { it.isNotEmpty() }?.let { EvidenceDraft.Note(it) }
             TextButton(enabled = !busy && accepted && draft != null, onClick = {
                 val sent = key ?: UUID.randomUUID().toString().also { key = it }
                 busy = true; failed = false

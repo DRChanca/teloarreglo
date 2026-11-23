@@ -49,6 +49,8 @@ data class IncidentEvidence(
     @SerialName("message_id") val messageId: String? = null,
     @SerialName("message_author_id") val messageAuthorId: String? = null,
     @SerialName("message_body") val messageBody: String? = null,
+    /** When the contributed message was sent in the chat (not when it was contributed). */
+    @SerialName("message_created_at") @Serializable(ServerInstant::class) val messageCreatedAt: Instant? = null,
     @SerialName("attachment_kind") val attachmentKind: String? = null,
     @SerialName("attachment_path") val attachmentPath: String? = null,
     @SerialName("created_at") @Serializable(ServerInstant::class) val createdAt: Instant,
@@ -106,6 +108,33 @@ class IncidentException(val failure: IncidentFailure, cause: Exception) : Except
 interface Incidents {
     suspend fun open(appointmentId: String, requestId: String, kind: IncidentKind, description: String): Incident
     suspend fun addEvidence(incidentId: String, requestId: String, draft: EvidenceDraft): IncidentEvidence
+}
+
+/** Why a batch stopped; a null failure means the answer was lost (network) and a retry is safe. */
+data class EvidenceBatchFailure(val failure: IncidentFailure?)
+data class EvidenceBatch(val added: List<String>, val failed: EvidenceBatchFailure?)
+
+/**
+ * The request key of one chat message contributed to one incident. Derived, not random, so the same message keeps
+ * its key across retries, screens and restarts: the server then returns the first result instead of duplicating it.
+ */
+fun messageEvidenceKey(incidentId: String, messageId: String): String =
+    java.util.UUID.nameUUIDFromBytes("incident-evidence:$incidentId:$messageId".toByteArray()).toString()
+
+/**
+ * Adds the messages chosen in the chat, one call per message and in order. Stops at the first failure: the rest is
+ * not sent, and what was added is reported so the selection keeps only what is left.
+ */
+suspend fun Incidents.addMessages(incidentId: String, messageIds: List<String>): EvidenceBatch {
+    val added = mutableListOf<String>()
+    for (id in messageIds) {
+        try { addEvidence(incidentId, messageEvidenceKey(incidentId, id), EvidenceDraft.Message(id)); added += id }
+        catch (error: Exception) {
+            if (error is kotlinx.coroutines.CancellationException) throw error
+            return EvidenceBatch(added, EvidenceBatchFailure((error as? IncidentException)?.failure))
+        }
+    }
+    return EvidenceBatch(added, null)
 }
 
 class SupabaseIncidents(private val client: SupabaseClient) : Incidents {
