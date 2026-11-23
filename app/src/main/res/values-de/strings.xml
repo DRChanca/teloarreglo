@@ -446,6 +446,12 @@
     <string name="completion_completed_no_answer">Am %1$s ohne Bestätigung des Kunden abgeschlossen.</string>
     <string name="completion_delivered">An den Profi ausgezahlt: %1$s (simuliert).</string>
     <string name="completion_error_incident">Es gibt einen offenen Vorfall: Bestätigung und Auszahlung sind erst nach seiner Klärung möglich.</string>
+    <string name="appointment_error_hours">Diese Zeit liegt außerhalb der Arbeitszeiten der Fachkraft. Nichts wurde bestätigt; die Anfrage bleibt für eine andere Zeit offen.</string>
+    <string name="agenda_send_error_hours">Diese Zeit liegt außerhalb deiner Verfügbarkeit. Nichts wurde gesendet: wähle eine andere Zeit oder erweitere deine Zeiten unter „Mein Kalender“.</string>
+    <string name="agenda_send_error_slot">Diese Zeit ist in deinem Kalender bereits durch einen bestätigten Termin oder eine Sperre belegt. Nichts wurde gesendet: wähle eine andere Zeit.</string>
+    <string name="agenda_send_error_hours_client">Diese Zeit liegt außerhalb der Arbeitszeiten der Fachkraft. Die Änderung wurde nicht gesendet.</string>
+    <string name="agenda_send_error_slot_client">Diese Zeit ist im Kalender der Fachkraft nicht frei. Die Änderung wurde nicht gesendet.</string>
+    <string name="agenda_no_hours">Du hast noch keine Zeiten gespeichert: Du kannst jede Uhrzeit vorschlagen; verhindert werden nur Überschneidungen mit deinen Terminen und Sperren.</string>
     <string name="incident_started_hint">Möchtest du nach Arbeitsbeginn stornieren oder gibt es ein Problem? Melde einen Vorfall: Es gibt keine automatische Erstattung.</string>
     <string name="incident_open">Vorfall melden</string>
     <string name="incident_open_title">Vorfall melden</string>

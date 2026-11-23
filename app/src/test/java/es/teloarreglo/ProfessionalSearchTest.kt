@@ -52,6 +52,14 @@ class ProfessionalSearchTest {
         assertFalse("no concejo is guessed by the app", sent.containsKey("ine_code"))
     }
 
+    @Test fun featuredResultsAreMarkedAndKeepTheServerOrder() = runTest {
+        val outcome = search(HttpStatusCode.OK, """{"status":"ok","concejo":{"ine_code":"33044","name":"Oviedo"},
+            "method":"h3","results":[{"profile_id":"sub","distance_band_m":3000,"featured":true},
+            {"profile_id":"a","distance_band_m":500,"featured":false},{"profile_id":"b","distance_band_m":1500}]}""")
+            .search(43.36, -5.84, null) as SearchOutcome.Found
+        assertEquals(listOf("sub" to true, "a" to false, "b" to false), outcome.results.map { it.profileId to it.featured })
+    }
+
     @Test fun aBorderAsksToConfirmAndTheChoiceIsSent() = runTest {
         val api = search(HttpStatusCode.OK, """{"status":"confirm_concejo","options":[{"ine_code":"33044","name":"Oviedo"},
             {"ine_code":"33035","name":"Llanera"}],"results":[]}""")

@@ -74,6 +74,9 @@ fun AgendaCard(agenda: Agenda, scope: CoroutineScope) {
             Text(stringResource(R.string.agenda_title), style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.semantics { heading() })
             Text(stringResource(R.string.agenda_hint), style = MaterialTheme.typography.bodySmall)
+            // Server rule (20261123012610): no saved window means no hours limit, only bookings and blocks.
+            if (state?.windows?.isEmpty() == true) Text(stringResource(R.string.agenda_no_hours),
+                style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("agenda_no_hours"))
             if (loadFailed) Text(stringResource(R.string.agenda_load_error), color = MaterialTheme.colorScheme.error)
             if (state == null && !loadFailed) LinearProgressIndicator(Modifier.fillMaxWidth())
             val editable = state != null && !busy

@@ -107,12 +107,14 @@ fun ResultsMap(view: MapView, from: GeoPoint, onOpenProfile: (String) -> Unit) {
                 icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE),
             )
             val hint = stringResource(R.string.map_open_profile)
+            val badge = stringResource(R.string.subscription_featured_badge)
             view.markers.forEach { marker ->
                 key(marker.profileId) {
                     Marker(
                         state = rememberUpdatedMarkerState(position = marker.point.latLng()),
-                        title = marker.name,
+                        title = if (marker.featured) "${marker.name} · $badge" else marker.name,
                         snippet = hint,
+                        icon = if (marker.featured) BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE) else null,
                         onInfoWindowClick = { onOpenProfile(marker.profileId) },
                     )
                 }

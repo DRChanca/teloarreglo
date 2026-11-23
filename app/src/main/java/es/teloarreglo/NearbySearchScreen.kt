@@ -73,7 +73,11 @@ private sealed interface NearbyState {
     data object Uncertain : NearbyState
     data object OutsideArea : NearbyState
     data class Confirm(val options: List<Concejo>) : NearbyState
-    data class Results(val concejo: Concejo, val rows: List<Pair<PublicProfile, Int>>, val from: GeoPoint) : NearbyState
+    /** [featured]: «Destacado» profile ids, already placed first by the server (#33). */
+    data class Results(
+        val concejo: Concejo, val rows: List<Pair<PublicProfile, Int>>, val from: GeoPoint,
+        val featured: Set<String> = emptySet(),
+    ) : NearbyState
     data class Failed(val reason: SearchError) : NearbyState
 }
 
@@ -120,7 +124,8 @@ fun NearbySearchScreen(
         state = when (val outcome = search.search(position.lat, position.lng, trade, ineCode)) {
             is SearchOutcome.Found -> try {
                 val byId = catalogue.list(trade).associateBy { it.id }
-                NearbyState.Results(outcome.concejo, outcome.results.mapNotNull { r -> byId[r.profileId]?.let { it to r.distanceBandM } }, position)
+                NearbyState.Results(outcome.concejo, outcome.results.mapNotNull { r -> byId[r.profileId]?.let { it to r.distanceBandM } },
+                    position, outcome.results.filter { it.featured }.mapTo(mutableSetOf()) { it.profileId })
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 NearbyState.Failed(SearchError.SERVICE)
@@ -261,7 +266,7 @@ fun NearbySearchScreen(
                             }
                         }
                         if (showMap) item {
-                            val view = mapView(s.rows)
+                            val view = mapView(s.rows, s.featured)
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 if (map == MapAvailability.READY) ResultsMap(view, s.from, onOpenProfile) else MapUnavailableNotice(map)
                                 Text(
@@ -274,6 +279,7 @@ fun NearbySearchScreen(
                         items(s.rows, key = { it.first.id }) { (profile, band) ->
                             Card(onClick = { onOpenProfile(profile.id) }, modifier = Modifier.fillMaxWidth().testTag("nearby_${profile.id}")) {
                                 Column(Modifier.padding(16.dp)) {
+                                    if (profile.id in s.featured) FeaturedBadge(Modifier.testTag("nearby_featured_${profile.id}"))
                                     Text(profile.name, fontWeight = FontWeight.Bold)
                                     Text(distanceText(band), Modifier.testTag("nearby_distance_${profile.id}"))
                                 }

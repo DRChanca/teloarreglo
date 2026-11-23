@@ -36,3 +36,21 @@ implementada por `SupabaseSubscriptions`. Fallos: `SubscriptionFailure.ACCESS` (
 `UNCONFIRMED` (cualquier otro error del servidor; la interfaz mantiene el último estado confirmado).
 Interfaz: `SubscriptionCard` en la pantalla «Cuenta» de una cuenta con perfil profesional.
 Textos: claves `subscription_*` en ES/EN/FR/DE.
+
+## «Destacado» visible para clientes (23 de noviembre de 2026)
+
+Sustituye la segunda viñeta de «Qué NO se concede»: con la suscripción simulada activa, el «Destacado»
+ya aparece en resultados reales. Migración `supabase/migrations/20261123012620_featured_profiles.sql`.
+
+- Regla única (`private.is_featured`): suscripción simulada activa **y** versión pública aprobada en
+  `approved_profiles` con cobertura no vacía; es la misma fuente que `featured_zones`. Un perfil sin
+  versión aprobada nunca es destacado aunque se suscriba.
+- `public.is_featured(p_profile_id uuid) → boolean` (`anon`, `authenticated`): solo la insignia del perfil.
+- `public.featured_candidates(p_ine_code, p_trade)` (solo `service_role`): subconjunto destacado de
+  `search_candidates`, por tanto solo en concejos de su cobertura aprobada y de su oficio.
+- Búsqueda cercana: la Edge Function coloca primero los destacados del concejo (entre ellos por distancia),
+  después el resto por proximidad, sin repetir perfiles y con el mismo límite de página; cada resultado
+  lleva `featured`. La distancia mostrada no cambia. No se promete posición fija ni clientes.
+- Android: insignia «Destacado» (`FeaturedBadge`) en la lista de cercanos, título y color del marcador del
+  mapa, y cabecera del perfil público (`Catalogue.featured(id)`; si falla, no se muestra). El catálogo
+  general por oficio (sin zona) no muestra insignia, porque no hay concejo con el que aplicar la regla.

@@ -51,7 +51,7 @@ internal fun ChangeSection(
             catch (e: Exception) {
                 if (e is CancellationException) throw e
                 failure = (e as? AppointmentException)?.failure; failed = true
-                if (failure == AppointmentFailure.STALE || failure == AppointmentFailure.SLOT_UNAVAILABLE) onChanged()
+                if (failure.refreshesAgenda()) onChanged()
             } finally { busy = false }
         }
     }
@@ -297,7 +297,8 @@ internal fun ChangeForm(
         label = { Text(stringResource(R.string.change_form_note)) }, modifier = Modifier.fillMaxWidth().testTag("change_note"))
     if (invalid) Text(stringResource(R.string.appointment_form_invalid), color = MaterialTheme.colorScheme.error)
     if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-    if (shownError) Text(changeFailureText(failure), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("change_form_error"))
+    if (shownError) Text(if (failure == AppointmentFailure.ALREADY_STARTED) changeFailureText(failure)
+        else sendFailureText(failure, professional = !client), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("change_form_error"))
     Button(onClick = {
         // Once started, the start in force is sent unchanged: the server refuses any other.
         val startAt = if (running) base.startAt else localInstant(date, start)

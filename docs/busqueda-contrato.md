@@ -21,7 +21,7 @@ POST /functions/v1/search-professionals
 { lat, lng, trade?, ine_code?, limit? (1–50, def. 20) }
 
 200 { status: "ok", concejo: {ine_code, name}, method: "h3" | "coverage",
-      results: [{ profile_id, distance_band_m }] }
+      results: [{ profile_id, distance_band_m, featured }] }
 200 { status: "confirm_concejo", options: [{ine_code, name}], results: [] }
 200 { status: "outside_area", results: [] }
 400 { error: "invalid_input" | "unknown_concejo" }
@@ -38,6 +38,7 @@ POST /functions/v1/search-professionals
 3. **H3 organiza, no decide el orden**: anillos desde la celda del trabajo, por lotes (0, 1, 2–3, 4–7…), parando solo cuando ninguna celda sin explorar puede contener a alguien más cerca que el último de la página. Tope de 1000 celdas; si se agota, se ordena la lista de cobertura completa (`method: "coverage"`), siempre correcta.
 4. **Privacidad**: la distancia mostrada se redondea hacia arriba a tramos de 500 m (`distance_band_m`), para que no se pueda triangular el domicilio buscando desde varios puntos. Nunca se devuelven coordenadas ni celdas.
 5. **Fronteras**: si el punto está a menos de 250 m de otro concejo, la función no adivina: devuelve `confirm_concejo`.
+6. **Destacado** (#33, 23-11-2026): los perfiles con suscripción simulada activa y versión aprobada que cubren el concejo van primero (`featured: true`, entre ellos por distancia) y después el resto por proximidad; ver `suscripcion-contrato.md`.
 
 ## Datos de concejos
 

@@ -45,6 +45,8 @@ data class PublicProfile(
 interface Catalogue {
     suspend fun list(trade: String? = null): List<PublicProfile>
     suspend fun profile(id: String): PublicProfile?
+    /** «Destacado» badge (#33): an approved profile with an active simulated subscription. */
+    suspend fun featured(id: String): Boolean = false
 }
 
 class SupabaseCatalogue(private val client: SupabaseClient) : Catalogue {
@@ -56,4 +58,7 @@ class SupabaseCatalogue(private val client: SupabaseClient) : Catalogue {
     override suspend fun profile(id: String): PublicProfile? =
         client.postgrest.rpc("catalogue", buildJsonObject { put("p_id", id) })
             .decodeList<PublicProfile>().singleOrNull()
+
+    override suspend fun featured(id: String): Boolean =
+        client.postgrest.rpc("is_featured", buildJsonObject { put("p_profile_id", id) }).decodeAs<Boolean>()
 }

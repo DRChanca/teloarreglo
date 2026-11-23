@@ -91,12 +91,13 @@ select is((select stage from public.appointments), 'confirmed', 'client B sees t
 
 -- Agenda rules: outside availability, blocks, paid proposals, expired proposals.
 select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000210102","role":"authenticated"}',true);
+-- Since the agenda fix (20261123012610) a proposal is checked when it is sent, not only at confirmation.
+select throws_ok($$select public.propose_appointment((select id from public.appointments where request_id = '30000000-0000-0000-0000-000000210103'),
+ 1, '40000000-0000-0000-0000-000000210104', 'Too late', '2030-01-15 12:30Z', 60, 0, null, false, true)$$,
+ 'PT409', 'outside_hours', 'an interval leaving the availability window is refused when it is proposed');
+-- Proposed while free; the block taken afterwards must still stop the confirmation (race safety).
 select public.propose_appointment((select id from public.appointments where request_id = '30000000-0000-0000-0000-000000210103'),
- 1, '40000000-0000-0000-0000-000000210104', 'Too late', '2030-01-15 12:30Z', 60, 0, null, false, true);
-select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000210101","role":"authenticated"}',true);
-select throws_ok($$select public.accept_proposal((select id from public.appointment_proposals where scope = 'Too late'))$$,
- 'PT409', 'slot_unavailable', 'an interval leaving the availability window is refused');
-select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000210102","role":"authenticated"}',true);
+ 1, '40000000-0000-0000-0000-000000210105', 'During block', '2030-01-15 11:30Z', 30, 0, null, false, true);
 select is(public.add_agenda_block('50000000-0000-0000-0000-000000210101', '2030-01-15 11:00Z', '2030-01-15 12:00Z',
  'Travel')->>'reason', 'Travel', 'the professional blocks time');
 select is(public.add_agenda_block('50000000-0000-0000-0000-000000210101', '2030-01-15 11:00Z', '2030-01-15 12:00Z',
@@ -105,8 +106,6 @@ select throws_ok($$select public.add_agenda_block('50000000-0000-0000-0000-00000
  '2030-01-15 12:30Z', 'Travel')$$, '22023', 'retry_conflict', 'a block key cannot be reused for another interval');
 select throws_ok($$select public.add_agenda_block('50000000-0000-0000-0000-000000210102', '2030-01-15 09:30Z',
  '2030-01-15 10:30Z', 'Lunch')$$, 'PT409', 'slot_unavailable', 'a block cannot cover a confirmed appointment');
-select public.propose_appointment((select id from public.appointments where request_id = '30000000-0000-0000-0000-000000210103'),
- 2, '40000000-0000-0000-0000-000000210105', 'During block', '2030-01-15 11:30Z', 30, 0, null, false, true);
 select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000210101","role":"authenticated"}',true);
 select throws_ok($$select public.accept_proposal((select id from public.appointment_proposals where scope = 'During block'))$$,
  'PT409', 'slot_unavailable', 'a blocked interval cannot be confirmed');
@@ -116,7 +115,7 @@ select is(public.remove_agenda_block((select id from public.agenda_reservations 
 select is(public.remove_agenda_block('50000000-0000-0000-0000-000000210199')->>'removed', 'true',
  'removing an already removed block is idempotent');
 select public.propose_appointment((select id from public.appointments where request_id = '30000000-0000-0000-0000-000000210103'),
- 3, '40000000-0000-0000-0000-000000210106', 'Paid repair', '2030-01-15 11:30Z', 30, 4000, null, false, true);
+ 2, '40000000-0000-0000-0000-000000210106', 'Paid repair', '2030-01-15 11:30Z', 30, 4000, null, false, true);
 select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000210101","role":"authenticated"}',true);
 select throws_ok($$select public.accept_proposal((select id from public.appointment_proposals where scope = 'Paid repair'))$$,
  '22023', 'payment_required', 'a proposal with a cost is not confirmed without payment');

@@ -424,11 +424,13 @@ data class ProposalDraft(
 )
 
 /** Server rejections, kept apart from network uncertainty (which is rethrown as is). */
-/** SLOT_UNAVAILABLE: the interval overlaps the agenda or leaves its availability; nothing was confirmed. */
+/** SLOT_UNAVAILABLE: the interval overlaps a booking or block of the agenda; nothing was confirmed. */
+/** OUTSIDE_HOURS: the interval leaves the professional's configured hours (none configured = no limit). */
 /** ALREADY_STARTED: the work started first, so there is no cancellation with a refund (#24). */
 /** INCIDENT_BLOCKING: an incident blocks the delivery; nothing was confirmed or delivered (#25/#26). */
 enum class AppointmentFailure {
     ACCESS, INVALID, OUT_OF_COVERAGE, STALE, RETRY_CONFLICT, SLOT_UNAVAILABLE, ALREADY_STARTED, INCIDENT_BLOCKING,
+    OUTSIDE_HOURS,
 }
 class AppointmentException(val failure: AppointmentFailure, cause: Exception) : Exception(failure.name, cause)
 
@@ -611,6 +613,7 @@ class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
         val failure = when {
             error.statusCode == 401 || error.statusCode == 403 -> AppointmentFailure.ACCESS
             "slot_unavailable" in message -> AppointmentFailure.SLOT_UNAVAILABLE
+            "outside_hours" in message -> AppointmentFailure.OUTSIDE_HOURS
             "already_started" in message -> AppointmentFailure.ALREADY_STARTED
             "incident_blocking" in message -> AppointmentFailure.INCIDENT_BLOCKING
             "stale_version" in message || "incompatible_state" in message || "proposal_expired" in message ->

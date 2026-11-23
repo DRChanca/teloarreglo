@@ -446,6 +446,12 @@
     <string name="completion_completed_no_answer">Finalizada sin confirmación del cliente el %1$s.</string>
     <string name="completion_delivered">Entregado al profesional: %1$s (simulado).</string>
     <string name="completion_error_incident">Hay una incidencia abierta: no se puede confirmar ni entregar el pago hasta que se resuelva.</string>
+    <string name="appointment_error_hours">Esa hora queda fuera del horario de trabajo del profesional. No se ha confirmado nada; la solicitud sigue abierta para recibir otra hora.</string>
+    <string name="agenda_send_error_hours">Esa hora queda fuera de tu horario de disponibilidad. No se ha enviado: elige otra hora o amplía tu horario en «Mi agenda».</string>
+    <string name="agenda_send_error_slot">Esa hora ya está ocupada en tu agenda por una cita confirmada o un bloqueo. No se ha enviado: elige otra hora.</string>
+    <string name="agenda_send_error_hours_client">Esa hora queda fuera del horario de trabajo del profesional. No se ha enviado el cambio.</string>
+    <string name="agenda_send_error_slot_client">Esa hora no está libre en la agenda del profesional. No se ha enviado el cambio.</string>
+    <string name="agenda_no_hours">Aún no has guardado ningún horario: puedes proponer cualquier hora y solo se evitan solapes con tus citas y bloqueos.</string>
     <string name="incident_started_hint">¿Quieres cancelar con el trabajo comenzado o hay un problema? Comunícalo como incidencia: no hay devolución automática.</string>
     <string name="incident_open">Comunicar una incidencia</string>
     <string name="incident_open_title">Comunicar una incidencia</string>
