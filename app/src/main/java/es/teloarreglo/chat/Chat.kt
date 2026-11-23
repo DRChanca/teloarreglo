@@ -26,6 +26,11 @@ data class ChatMessage(
     @SerialName("request_id") val requestId: String,
     val body: String,
     @SerialName("created_at") val createdAt: String,
+    // Private attachment (#18/#19); open it through ChatAttachments.url.
+    @SerialName("attachment_kind") val attachmentKind: String? = null,
+    @SerialName("attachment_path") val attachmentPath: String? = null,
+    @SerialName("attachment_type") val attachmentType: String? = null,
+    @SerialName("attachment_size") val attachmentSize: Long? = null,
 )
 
 enum class SendFailure { ACCESS, INVALID_TEXT, CONFLICT }
