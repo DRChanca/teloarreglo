@@ -424,4 +424,26 @@
     <string name="running_change_intro">Trabajo comenzado: propón otro precio, alcance o duración. Con pago en la app, al aceptarse se cobra el aumento o se devuelve la rebaja (simulado).</string>
     <string name="running_change_start_fixed">Inicio: %1$s (no cambia una vez comenzado el trabajo).</string>
     <string name="running_change_error_started">El trabajo ya ha comenzado: la hora de inicio y la dirección no cambian. Revisa la propuesta.</string>
+    <string name="completion_notice_confirm">Trabajo marcado como realizado: confirma si se ha hecho</string>
+    <string name="completion_notice_awaiting">Realizado: esperando la confirmación del cliente</string>
+    <string name="completion_notice_completed">Cita finalizada</string>
+    <string name="completion_notice_no_answer">Finalizada sin confirmación del cliente</string>
+    <string name="completion_mark">Marcar como realizado</string>
+    <string name="completion_mark_title">¿Marcar el trabajo como realizado?</string>
+    <string name="completion_mark_explain">El cliente recibirá un aviso para confirmarlo. El pago pendiente no se entrega ahora: se entrega cuando el cliente confirme o, si no responde ni comunica un problema, 48 horas después de esta marca.</string>
+    <string name="completion_done_at">Marcado como realizado el %1$s.</string>
+    <string name="completion_deadline_client">Confirma si el trabajo se ha realizado. Si no respondes ni comunicas un problema, la cita se cerrará automáticamente a partir del %1$s y se entregará el pago pendiente.</string>
+    <string name="completion_deadline_pro">Esperando la confirmación del cliente. Si no responde ni comunica un problema, la cita se cerrará automáticamente a partir del %1$s.</string>
+    <string name="completion_confirm">Confirmar que se ha realizado</string>
+    <string name="completion_confirm_title">¿Confirmar que el trabajo se ha realizado?</string>
+    <string name="completion_effect_deliver">Se entregará al profesional lo pendiente: %1$s (simulado).</string>
+    <string name="completion_effect_direct">El pago directo acordado (%1$s) no pasa por la app, así que la app no entrega nada.</string>
+    <string name="completion_effect_none">No hay dinero pendiente que entregar.</string>
+    <string name="completion_final">La cita quedará finalizada. Si hay un problema, no confirmes y comunícalo como incidencia.</string>
+    <string name="completion_not_yet">Todavía no</string>
+    <string name="completion_completed_by_me">Finalizada con tu confirmación el %1$s.</string>
+    <string name="completion_completed_by_client">Finalizada con la confirmación del cliente el %1$s.</string>
+    <string name="completion_completed_no_answer">Finalizada sin confirmación del cliente el %1$s.</string>
+    <string name="completion_delivered">Entregado al profesional: %1$s (simulado).</string>
+    <string name="completion_error_incident">Hay una incidencia abierta: no se puede confirmar ni entregar el pago hasta que se resuelva.</string>
 </resources>

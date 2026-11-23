@@ -424,4 +424,26 @@
     <string name="running_change_intro">Work started: propose another price, scope or duration. With in-app payment, accepting charges the increase or refunds the reduction (simulated).</string>
     <string name="running_change_start_fixed">Start: %1$s (it does not change once the work has started).</string>
     <string name="running_change_error_started">The work has already started: the start time and the address do not change. Review the proposal.</string>
+    <string name="completion_notice_confirm">Job marked as done: confirm whether it was done</string>
+    <string name="completion_notice_awaiting">Done: waiting for the client\'s confirmation</string>
+    <string name="completion_notice_completed">Appointment completed</string>
+    <string name="completion_notice_no_answer">Completed without the client\'s confirmation</string>
+    <string name="completion_mark">Mark as done</string>
+    <string name="completion_mark_title">Mark the job as done?</string>
+    <string name="completion_mark_explain">The client will be asked to confirm it. The pending payment is not released now: it is released when the client confirms or, if they neither answer nor report a problem, 48 hours after this mark.</string>
+    <string name="completion_done_at">Marked as done on %1$s.</string>
+    <string name="completion_deadline_client">Confirm whether the job was done. If you neither answer nor report a problem, the appointment will close automatically from %1$s and the pending payment will be released.</string>
+    <string name="completion_deadline_pro">Waiting for the client\'s confirmation. If they neither answer nor report a problem, the appointment will close automatically from %1$s.</string>
+    <string name="completion_confirm">Confirm it was done</string>
+    <string name="completion_confirm_title">Confirm that the job was done?</string>
+    <string name="completion_effect_deliver">The pending amount will be released to the professional: %1$s (simulated).</string>
+    <string name="completion_effect_direct">The agreed direct payment (%1$s) does not go through the app, so the app releases nothing.</string>
+    <string name="completion_effect_none">There is no pending money to release.</string>
+    <string name="completion_final">The appointment will be completed. If there is a problem, do not confirm: report it as an incident.</string>
+    <string name="completion_not_yet">Not yet</string>
+    <string name="completion_completed_by_me">Completed with your confirmation on %1$s.</string>
+    <string name="completion_completed_by_client">Completed with the client\'s confirmation on %1$s.</string>
+    <string name="completion_completed_no_answer">Completed without the client\'s confirmation on %1$s.</string>
+    <string name="completion_delivered">Released to the professional: %1$s (simulated).</string>
+    <string name="completion_error_incident">There is an open incident: the job cannot be confirmed nor the payment released until it is resolved.</string>
 </resources>

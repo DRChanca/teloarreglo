@@ -507,6 +507,97 @@ class AppointmentsTest {
         assertEquals(AppointmentFailure.ALREADY_STARTED, failure)
     }
 
+    private fun completionJson(stage: String, completion: String? = null, delivered: Int = 0) =
+        """{"id":"appt","stage":"$stage","version":7,"done_at":"2030-01-15T11:30:00+00:00",
+        "reminder_due_at":"2030-01-16T11:30:00+00:00","close_due_at":"2030-01-17T11:30:00+00:00",
+        "completed_at":${if (stage == "completed") "\"2030-01-15T12:00:00+00:00\"" else "null"},
+        "completion":${completion?.let { "\"$it\"" } ?: "null"},"delivered_cents":$delivered}"""
+
+    private fun MockRequestHandleScope.completionListing(request: HttpRequestData, stage: String, completion: String? = null,
+                                                         payment: String = paymentJson) =
+        if (request.url.encodedPath == "/rest/v1/rpc/appointment_places") json("[]")
+        else json("[" + appointmentJson.dropLast(1).replace("\"stage\":\"pending\"", "\"stage\":\"$stage\"") +
+            ""","started_at":"2030-01-15T10:31:00+00:00",
+            "done_at":${if (stage == "done" || stage == "completed") "\"2030-01-15T11:30:00+00:00\"" else "null"},
+            "reminder_due_at":${if (stage == "done" || stage == "completed") "\"2030-01-16T11:30:00+00:00\"" else "null"},
+            "close_due_at":${if (stage == "done" || stage == "completed") "\"2030-01-17T11:30:00+00:00\"" else "null"},
+            "completed_at":${if (stage == "completed") "\"2030-01-15T12:00:00+00:00\"" else "null"},
+            "completion":${completion?.let { "\"$it\"" } ?: "null"},
+            "appointment_proposals":[${proposalJson(1, "accepted")}],"appointment_payments":$payment}]""")
+
+    @Test fun markDoneAndConfirmDoneCallTheirFunctionsAndReturnTheServerMarks() = runTest {
+        val calls = mutableListOf<Pair<String, JsonObject>>()
+        val (done, completed) = withClient({ request ->
+            calls += request.url.encodedPath to Json.parseToJsonElement((request.body as TextContent).text).jsonObject
+            if (request.url.encodedPath.endsWith("mark_done")) json(completionJson("done"))
+            else json(completionJson("completed", "client_confirmed", delivered = 8500))
+        }) { it.markDone("appt") to it.confirmDone("appt") }
+        assertEquals(listOf("/rest/v1/rpc/mark_done", "/rest/v1/rpc/confirm_done"), calls.map { it.first })
+        assertEquals("appt", calls[1].second["p_appointment_id"]!!.jsonPrimitive.content)
+        assertEquals(AppointmentStage.DONE, done.stage)
+        assertEquals(Instant.parse("2030-01-17T11:30:00Z"), done.closeDueAt)
+        assertEquals(0, done.deliveredCents)
+        assertEquals(AppointmentStage.COMPLETED, completed.stage)
+        assertEquals(Completion.CLIENT_CONFIRMED, completed.completion)
+        assertEquals(8500, completed.deliveredCents)
+    }
+
+    @Test fun bothAccountsSeeTheDoneMarkItsDeadlineAndTheCompletion() = runTest {
+        val done = withClient({ request ->
+            if (request.url.encodedPath == "/rest/v1/appointments")
+                assertTrue(request.url.parameters["select"]!!.contains("done_at,reminder_due_at,close_due_at,completed_at,completion"))
+            completionListing(request, "done")
+        }) { it.list("conv") }.single()
+        assertEquals(Instant.parse("2030-01-15T11:30:00Z"), done.doneAt)
+        assertEquals(Instant.parse("2030-01-16T11:30:00Z"), done.reminderDueAt)
+        assertEquals(Instant.parse("2030-01-17T11:30:00Z"), done.closeDueAt)
+        assertEquals(AppointmentNotice.CONFIRM_DONE, done.notice("client"))
+        assertEquals(AppointmentNotice.AWAITING_CONFIRMATION, done.notice("pro"))
+        val confirmed = withClient({ completionListing(it, "completed", "client_confirmed") }) { it.list("conv") }.single()
+        assertEquals(AppointmentNotice.COMPLETED, confirmed.notice("client"))
+        assertEquals(AppointmentNotice.COMPLETED, confirmed.notice("pro"))
+        assertEquals(Instant.parse("2030-01-15T12:00:00Z"), confirmed.completedAt)
+        val silent = withClient({ completionListing(it, "completed", "no_answer") }) { it.list("conv") }.single()
+        assertEquals(AppointmentNotice.COMPLETED_NO_ANSWER, silent.notice("pro"))
+    }
+
+    @Test fun onlyTheProfessionalMarksAStartedJobDoneAndOnlyTheClientConfirmsIt() = runTest {
+        val confirmed = withClient({ completionListing(it, "confirmed") }) { it.list("conv") }.single()
+        assertFalse(confirmed.canMarkDone("pro"))
+        val started = withClient({ completionListing(it, "started") }) { it.list("conv") }.single()
+        assertTrue(started.canMarkDone("pro"))
+        assertFalse(started.canMarkDone("client") || started.canConfirmDone("client"))
+        val done = withClient({ completionListing(it, "done") }) { it.list("conv") }.single()
+        assertTrue(done.canConfirmDone("client"))
+        assertFalse(done.canConfirmDone("pro") || done.canConfirmDone("stranger") || done.canMarkDone("pro"))
+        assertFalse(done.canProposeChange("client") || done.canCancel("client"))
+        val completed = withClient({ completionListing(it, "completed", "client_confirmed") }) { it.list("conv") }.single()
+        assertFalse(completed.canConfirmDone("client") || completed.canMarkDone("pro"))
+    }
+
+    @Test fun confirmingDeliversOnlyThePendingIntegratedMoney() = runTest {
+        suspend fun effect(payment: String) = withClient({ completionListing(it, "done", payment = payment) }) { it.list("conv") }
+            .single().completionEffect
+        assertEquals(CompletionEffect.Deliver(8500), effect(paymentJson))
+        assertEquals(CompletionEffect.DirectNotHandled(8500), effect(paymentJson.replace("\"integrated\"", "\"direct\"")
+            .replace("\"paid_cents\":8500", "\"paid_cents\":0").replace("\"pending_cents\":8500", "\"pending_cents\":0")))
+        assertEquals(CompletionEffect.None, effect("null"))
+    }
+
+    @Test fun completionRejectionsMapToStableFailures() = runTest {
+        val cases = listOf(
+            Triple(HttpStatusCode.Conflict, error("PT409", "incident_blocking"), AppointmentFailure.INCIDENT_BLOCKING),
+            Triple(HttpStatusCode.Conflict, error("PT409", "incompatible_state"), AppointmentFailure.STALE),
+            Triple(HttpStatusCode.Forbidden, error("42501", "permission_denied"), AppointmentFailure.ACCESS),
+        )
+        for ((status, body, expected) in cases) {
+            val failure = withClient({ json(body, status) }) {
+                try { it.confirmDone("appt"); null } catch (e: AppointmentException) { e.failure }
+            }
+            assertEquals(expected, failure)
+        }
+    }
+
     @Test fun euroInputIsParsedToExactCentsWithoutFloatingPoint() {
         assertEquals(8550, parseEuroCents("85,5"))
         assertEquals(8550, parseEuroCents("85.50"))
