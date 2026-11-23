@@ -1,5 +1,6 @@
 package es.teloarreglo
 
+import es.teloarreglo.search.publicLocation
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -240,6 +241,7 @@ private fun ProfileDetail(profile: PublicProfile, covers: ProfessionalCovers?, o
             item {
                 Section(R.string.catalogue_address)
                 androidx.compose.foundation.text.selection.SelectionContainer { Text(address) }
+                profile.publicLocation()?.let { point -> MapDirectionsButton(point) }
             }
         }
         item {
@@ -325,4 +327,15 @@ private fun unitLabel(key: String): Int = when (key) {
     "sqm" -> R.string.price_sqm
     "unit" -> R.string.price_unit
     else -> R.string.price_job
+}
+
+/** Directions to an approved public commercial point only (#17); a missing app is reported. */
+@Composable
+private fun MapDirectionsButton(point: es.teloarreglo.search.GeoPoint) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var failed by remember { mutableStateOf(false) }
+    OutlinedButton(onClick = { failed = !openExternalMaps(context, point) }, modifier = Modifier.testTag("map_directions")) {
+        Text(stringResource(R.string.map_directions))
+    }
+    if (failed) Text(stringResource(R.string.map_no_app), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("map_no_app"))
 }

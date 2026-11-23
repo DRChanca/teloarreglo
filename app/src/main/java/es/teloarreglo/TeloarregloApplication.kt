@@ -22,6 +22,8 @@ import es.teloarreglo.chat.SupabaseChatAttachments
 import es.teloarreglo.chat.SupabaseChat
 import es.teloarreglo.search.HttpProfessionalSearch
 import es.teloarreglo.search.ProfessionalSearch
+import es.teloarreglo.search.ConcejoDirectory
+import es.teloarreglo.search.SupabaseConcejoDirectory
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.github.jan.supabase.SupabaseClient
@@ -90,6 +92,9 @@ class TeloarregloApplication : Application() {
     val search: ProfessionalSearch? by lazy {
         client?.let { HttpProfessionalSearch(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_KEY, HttpClient(OkHttp)) }
     }
+
+    /** Concejos for the manual job location (#17); null without configuration. */
+    val concejos: ConcejoDirectory? by lazy { client?.let(::SupabaseConcejoDirectory) }
 
     /** Native Google sign-in, only when its public web client ID is configured for this build. */
     val googleAuth: ComposeAuth?

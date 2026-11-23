@@ -18,6 +18,9 @@ val publicNames = setOf(
     "PRESENTATION_SUPABASE_URL", "PRESENTATION_SUPABASE_PUBLISHABLE_KEY",
     // Public OAuth web client ID for native Google sign-in (its secret lives only in Supabase).
     "GOOGLE_WEB_CLIENT_ID",
+    // Google Maps SDK key (#17): public by design (ships in the APK), protected by its
+    // Android app + SHA-1 and API restrictions in Google Cloud. Empty hides the map.
+    "GOOGLE_MAPS_API",
 )
 fun dotenvValue(raw: String, lineNumber: Int): String {
     val result = StringBuilder()
@@ -91,6 +94,9 @@ android {
         val googleWebClientId = publicConfig("GOOGLE_WEB_CLIENT_ID")
             .ifEmpty { "852089134796-mihgv1588q6lq17lbovpupgq6i7ljhsd.apps.googleusercontent.com" }
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
+        val mapsApiKey = publicConfig("GOOGLE_MAPS_API")
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
+        buildConfigField("String", "MAPS_API_KEY", "\"$mapsApiKey\"")
     }
     // Shared debug signing: every machine and CI produce the same SHA-1, registered once
     // in Google Cloud for Google sign-in. Debug only (standard "android" passwords);
@@ -150,6 +156,7 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
     implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("io.ktor:ktor-client-okhttp:3.1.3")
+    implementation("com.google.maps.android:maps-compose:6.6.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.ktor:ktor-client-mock:3.1.3")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")

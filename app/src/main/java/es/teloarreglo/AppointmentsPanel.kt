@@ -36,7 +36,12 @@ import java.util.Locale
 import java.util.UUID
 
 /** Location helpers from the activity; the pin is taken once, on demand, and only sent with a request. */
-class PinSource(val ensurePermission: suspend () -> Boolean, val locate: suspend () -> Located)
+class PinSource(
+    val ensurePermission: suspend () -> Boolean,
+    val locate: suspend () -> Located,
+    /** True when Google Maps can be shown (#17): the point can then be chosen on the map. */
+    val mapsReady: Boolean = false,
+)
 
 /**
  * Appointment requests and proposals inside a conversation. Polls only while visible, like the chat.
@@ -175,6 +180,14 @@ private fun AppointmentDetails(
             Text(stringResource(R.string.appointment_address_label, appointment.address), style = MaterialTheme.typography.bodySmall)
             Text(stringResource(R.string.appointment_pin, "%.5f".format(Locale.ROOT, appointment.latitude),
                 "%.5f".format(Locale.ROOT, appointment.longitude)), style = MaterialTheme.typography.bodySmall)
+            // Shared by the client with this appointment only: both participants may navigate to it.
+            val context = androidx.compose.ui.platform.LocalContext.current
+            var noMapsApp by remember { mutableStateOf(false) }
+            TextButton(onClick = {
+                noMapsApp = !openExternalMaps(context, es.teloarreglo.search.GeoPoint(appointment.latitude, appointment.longitude))
+            }, modifier = Modifier.testTag("map_open_appointment")) { Text(stringResource(R.string.map_open_appointment)) }
+            if (noMapsApp) Text(stringResource(R.string.map_no_app), color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("map_no_app"))
             Text(noticeText(appointment, accountId), style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.testTag("appointment_notice_${appointment.id}"))
             Text(stringResource(R.string.appointment_unreserved), style = MaterialTheme.typography.labelSmall)
@@ -330,6 +343,17 @@ private fun RequestForm(
         Text(stringResource(if (locating) R.string.appointment_locating else R.string.appointment_use_location))
     }
     if (noLocation) Text(stringResource(R.string.appointment_location_unavailable), style = MaterialTheme.typography.bodySmall)
+    var picking by remember { mutableStateOf(false) }
+    if (pins.mapsReady) OutlinedButton(onClick = { picking = true }, enabled = editable,
+        modifier = Modifier.testTag("map_pick_on_map")) { Text(stringResource(R.string.map_pick_on_map)) }
+    Text(stringResource(R.string.map_pin_not_address), style = MaterialTheme.typography.bodySmall)
+    if (picking) MapPickDialog(
+        initial = lat.replace(',', '.').toDoubleOrNull()?.let { a -> lng.replace(',', '.').toDoubleOrNull()?.let { b ->
+            es.teloarreglo.search.GeoPoint(a, b) } }?.takeIf { it.valid },
+        onDismiss = { picking = false },
+    ) { point ->
+        lat = "%.6f".format(Locale.ROOT, point.lat); lng = "%.6f".format(Locale.ROOT, point.lng); picking = false
+    }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         val decimal = KeyboardOptions(keyboardType = KeyboardType.Decimal)
         OutlinedTextField(lat, { lat = it.take(12) }, enabled = editable, singleLine = true, keyboardOptions = decimal,
@@ -450,6 +474,29 @@ private fun ProposalForm(
                 if (failure == AppointmentFailure.STALE) latestKnown.firstOrNull { it.id == appointment.id }?.let { expected = it.version }
                 shownError = true
             } finally { busy = false }
+        }
+    }
+}
+
+/** Full-screen map to place the appointment point; the typed address stays the reference. */
+@Composable
+private fun MapPickDialog(
+    initial: es.teloarreglo.search.GeoPoint?, onDismiss: () -> Unit, onPick: (es.teloarreglo.search.GeoPoint) -> Unit,
+) {
+    var pin by remember { mutableStateOf(initial) }
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(Modifier.fillMaxSize()) {
+            Column(Modifier.padding(16.dp).safeDrawingPadding(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.map_pick_on_map), style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.map_pin_hint), style = MaterialTheme.typography.bodySmall)
+                MapPointPicker(initial ?: es.teloarreglo.search.ASTURIAS_CENTER, pin, onPin = { pin = it })
+                Text(stringResource(R.string.map_pin_not_address), style = MaterialTheme.typography.bodySmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { pin?.let(onPick) }, enabled = pin != null,
+                        modifier = Modifier.testTag("map_pick_confirm")) { Text(stringResource(R.string.map_pick_confirm)) }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+                }
+            }
         }
     }
 }
