@@ -304,7 +304,7 @@ private fun Rating(profile: PublicProfile) {
 }
 
 @Composable
-private fun priceText(price: ReferencePrice): String {
+internal fun priceText(price: ReferencePrice): String {
     if (price.amountCents == 0) return stringResource(R.string.catalogue_free)
     val locale = LocalConfiguration.current.locales[0]
     val money = NumberFormat.getCurrencyInstance(locale).apply { currency = java.util.Currency.getInstance("EUR") }

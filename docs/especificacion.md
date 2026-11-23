@@ -40,6 +40,8 @@ Estas decisiones sustituyen lo anterior incompatible en este documento, en los c
   - si lo pide el cliente, los precios orientativos vigentes cuando hace la solicitud;
   - si lo ofrece el negocio, el importe de la propuesta.
   Ninguna edición posterior del perfil cambia el importe de una cita, solicitud o propuesta que ya exista. El pago simulado (#22) cobra el importe guardado en la propuesta aceptada, nunca el precio del perfil.
+  Un cambio de precios del perfil vale para todos los demás: catálogo, chats sin solicitud y solicitudes nuevas. En el chat, cada solicitud ya enviada muestra los precios guardados con ella (no los del perfil) y cada propuesta muestra su propio importe.
+- **Cambios con el trabajo comenzado:** tras «Comenzar trabajo», cualquiera de las partes puede seguir proponiendo y aceptando otro precio, alcance, duración o inclusiones (trabajo extra acordado en el momento). Se aplican las mismas reglas de dinero que antes de comenzar (#23): con pago integrado simulado, al aceptar se cobra la diferencia del aumento o se devuelve la de la reducción; con pago directo solo se registra el acuerdo. Una duración nueva debe seguir cabiendo en la agenda. No se permite cambiar la hora de inicio ni la dirección, ni pedir corrección de dirección. Al comenzar, un cambio pendiente que solo toca precio, alcance, duración o inclusiones sigue pendiente; uno que mueve la hora de inicio o la dirección, y una petición de corrección de dirección, se cierran sin aplicarse. Cancelar (solo antes de comenzar) sigue cerrando cualquier cambio pendiente. Una cita cancelada no admite cambios.
 
 ## Actualización: objetivo inmediato de demostración universitaria
 
@@ -112,7 +114,7 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 
 **Inicio, finalización e incidencias**
 
-- El profesional dispone de una acción «Comenzar trabajo», visible para el cliente, que distingue el inicio de la confirmación de cita y de la marca de realizado. No autoriza costes adicionales.
+- El profesional dispone de una acción «Comenzar trabajo», visible para el cliente, que distingue el inicio de la confirmación de cita y de la marca de realizado. Por sí sola no autoriza costes adicionales: un coste extra durante el trabajo se propone y acepta como cambio (ver «Cambios con el trabajo comenzado», 2026-11-23).
 - Antes de comenzar, cualquiera de las partes puede cancelar sin penalización y con devolución total del pago integrado simulado.
 - Tras comenzar, la solicitud de cancelación se trata como incidencia; el dinero queda pendiente de resolución, sin devolución ni entrega automática.
 - El profesional marca «Realizado»; el cliente puede confirmar o comunicar una incidencia. La confirmación libera el pago integrado simulado.

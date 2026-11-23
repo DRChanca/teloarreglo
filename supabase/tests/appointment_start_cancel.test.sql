@@ -66,7 +66,8 @@ select is((select paid_cents || '/' || pending_cents || '/' || agreed_cents from
 select is((select count(*)::integer from public.payment_movements where appointment_id = (select started from ids)), 1,
  'starting adds no payment movement');
 
--- After the start there is no cancellation with an automatic refund and no change of conditions.
+-- After the start there is no cancellation with an automatic refund and the start time no longer moves
+-- (changes of price, scope or duration during the job: appointment_changes_started.test.sql).
 select throws_ok($$select public.cancel_appointment((select started from ids))$$, 'PT409', 'already_started',
  'the professional cannot cancel once the work has started');
 select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000240101","role":"authenticated"}',true);
@@ -75,8 +76,8 @@ select is((select stage || '/' || (started_at is not null) from public.appointme
 select throws_ok($$select public.cancel_appointment((select started from ids))$$, 'PT409', 'already_started',
  'the client cannot cancel once the work has started');
 select throws_ok($$select public.propose_change((select started from ids), (select version from public.appointments
- where id = (select started from ids)), '60000000-0000-0000-0000-000000240101', 'More', '2030-01-15 08:00Z', 60, 9900,
- null, true, true, null, null, null, null, null)$$, 'PT409', 'incompatible_state', 'starting does not open new costs');
+ where id = (select started from ids)), '60000000-0000-0000-0000-000000240101', 'More', '2030-01-15 10:00Z', 60, 9900,
+ null, true, true, null, null, null, null, null)$$, 'PT409', 'already_started', 'the start time no longer moves');
 select is((select paid_cents || '/' || pending_cents || '/' || refunded_cents from public.appointment_payments
  where appointment_id = (select started from ids)), '8500/8500/0', 'nothing is refunded after the start');
 

@@ -417,4 +417,11 @@
     <string name="start_cancel_cancelled_by_other">Cancelled by the other party on %1$s.</string>
     <string name="start_cancel_released">Cancelled: the time is no longer reserved.</string>
     <string name="start_cancel_error_started">The work has already started: it cannot be cancelled with an automatic refund.</string>
+    <string name="kept_prices_title">Reference prices of this request</string>
+    <string name="kept_prices_item">%1$s: %2$s</string>
+    <string name="kept_prices_hint">These are the profile prices when the request was sent. If the profile changes them, this request and its proposals keep their own.</string>
+    <string name="running_change_hint">With the work started you can still agree another price, scope or duration. The start time and the address no longer change.</string>
+    <string name="running_change_intro">Work started: propose another price, scope or duration. With in-app payment, accepting charges the increase or refunds the reduction (simulated).</string>
+    <string name="running_change_start_fixed">Start: %1$s (it does not change once the work has started).</string>
+    <string name="running_change_error_started">The work has already started: the start time and the address do not change. Review the proposal.</string>
 </resources>

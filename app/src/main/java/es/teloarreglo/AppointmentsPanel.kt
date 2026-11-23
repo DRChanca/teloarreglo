@@ -231,6 +231,7 @@ private fun AppointmentDetails(
             Text(stringResource(R.string.appointment_requested_window,
                 format.format(appointment.requestedStart), format.format(appointment.requestedEnd)))
             AppointmentLocationBlock(appointment, professional, mapsReady)
+            KeptPrices(appointment)
             Text(noticeText(appointment, accountId), style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.testTag("appointment_notice_${appointment.id}"))
             ReservationLine(appointment)
@@ -239,8 +240,8 @@ private fun AppointmentDetails(
                 appointment.proposals.asReversed().forEach { ProposalCard(it, format) }
             }
             val pending = appointment.currentProposal
-            val confirmed = appointment.stage == AppointmentStage.CONFIRMED
-            if (confirmed) ChangeSection(appointment, accountId, appointments, scope, onChange, onCorrection, onChanged)
+            // Changes are open while confirmed and during the job (price, scope, duration only once started).
+            if (appointment.canProposeChange(accountId)) ChangeSection(appointment, accountId, appointments, scope, onChange, onCorrection, onChanged)
             StartCancelSection(appointment, accountId, appointments, scope, onChanged)
             if (professional && appointment.stage == AppointmentStage.PENDING) Button(onClick = onPropose, modifier = Modifier.testTag("appointment_propose")) {
                 Text(stringResource(if (appointment.proposals.isEmpty()) R.string.appointment_propose else R.string.appointment_propose_new))
@@ -349,6 +350,22 @@ private fun AppointmentDetails(
                     }
                 }, modifier = Modifier.testTag("appointment_reject_confirm")) { Text(stringResource(R.string.appointment_reject)) }
             })
+    }
+}
+
+/**
+ * The reference prices kept with this request (2026-11-23). In this chat they replace the live profile prices: a later
+ * profile edit never reaches a request already sent, and each proposal keeps its own amount (shown in its card).
+ */
+@Composable
+private fun KeptPrices(appointment: Appointment) {
+    if (appointment.referencePrices.isEmpty()) return
+    Column(Modifier.fillMaxWidth().testTag("kept_prices_${appointment.id}"), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(stringResource(R.string.kept_prices_title), style = MaterialTheme.typography.titleSmall)
+        appointment.referencePrices.forEach { price ->
+            Text(stringResource(R.string.kept_prices_item, price.service, priceText(price)), style = MaterialTheme.typography.bodySmall)
+        }
+        Text(stringResource(R.string.kept_prices_hint), style = MaterialTheme.typography.labelSmall)
     }
 }
 
@@ -554,6 +571,8 @@ private fun ProposalForm(
     val editable = key == null && !busy
     Text(appointment.problem, style = MaterialTheme.typography.titleMedium)
     Text(stringResource(R.string.appointment_unreserved), style = MaterialTheme.typography.bodySmall)
+    // The prices the client saw when asking, not the profile's current ones.
+    KeptPrices(appointment)
     OutlinedTextField(scopeText, { if (it.length <= 2000) scopeText = it }, enabled = editable, minLines = 2,
         label = { Text(stringResource(R.string.appointment_scope)) }, modifier = Modifier.fillMaxWidth().testTag("proposal_scope"))
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

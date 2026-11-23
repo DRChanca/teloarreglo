@@ -417,4 +417,11 @@
     <string name="start_cancel_cancelled_by_other">Cancelada por la otra parte el %1$s.</string>
     <string name="start_cancel_released">Cancelada: el horario ya no está reservado.</string>
     <string name="start_cancel_error_started">El trabajo ya ha comenzado: no se puede cancelar con devolución automática.</string>
+    <string name="kept_prices_title">Precios de referencia de esta solicitud</string>
+    <string name="kept_prices_item">%1$s: %2$s</string>
+    <string name="kept_prices_hint">Son los precios del perfil cuando se envió la solicitud. Si el perfil los cambia, esta solicitud y sus propuestas conservan los suyos.</string>
+    <string name="running_change_hint">Con el trabajo comenzado aún podéis acordar otro precio, alcance o duración. La hora de inicio y la dirección ya no cambian.</string>
+    <string name="running_change_intro">Trabajo comenzado: propón otro precio, alcance o duración. Con pago en la app, al aceptarse se cobra el aumento o se devuelve la rebaja (simulado).</string>
+    <string name="running_change_start_fixed">Inicio: %1$s (no cambia una vez comenzado el trabajo).</string>
+    <string name="running_change_error_started">El trabajo ya ha comenzado: la hora de inicio y la dirección no cambian. Revisa la propuesta.</string>
 </resources>

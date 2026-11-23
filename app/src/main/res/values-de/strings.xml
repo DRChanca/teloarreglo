@@ -417,4 +417,11 @@
     <string name="start_cancel_cancelled_by_other">Von der anderen Seite storniert am %1$s.</string>
     <string name="start_cancel_released">Storniert: Die Zeit ist nicht mehr reserviert.</string>
     <string name="start_cancel_error_started">Die Arbeit hat bereits begonnen: Eine Stornierung mit automatischer Erstattung ist nicht möglich.</string>
+    <string name="kept_prices_title">Richtpreise dieser Anfrage</string>
+    <string name="kept_prices_item">%1$s: %2$s</string>
+    <string name="kept_prices_hint">Das sind die Profilpreise zum Zeitpunkt der Anfrage. Ändert das Profil sie, behalten diese Anfrage und ihre Angebote ihre eigenen.</string>
+    <string name="running_change_hint">Nach Arbeitsbeginn könnt ihr noch einen anderen Preis, Umfang oder eine andere Dauer vereinbaren. Startzeit und Adresse ändern sich nicht mehr.</string>
+    <string name="running_change_intro">Arbeit begonnen: Schlage einen anderen Preis, Umfang oder eine andere Dauer vor. Bei Zahlung in der App wird bei Annahme die Erhöhung belastet oder die Senkung erstattet (simuliert).</string>
+    <string name="running_change_start_fixed">Beginn: %1$s (ändert sich nach Arbeitsbeginn nicht mehr).</string>
+    <string name="running_change_error_started">Die Arbeit hat bereits begonnen: Startzeit und Adresse ändern sich nicht. Prüfe den Vorschlag.</string>
 </resources>

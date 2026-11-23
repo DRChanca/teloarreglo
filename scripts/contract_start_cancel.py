@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Real Auth/PostgREST contract for «Comenzar trabajo» and cancellation before the start (#24): a start and a
+"""Real Auth/PostgREST contract for «Comenzar trabajo» and cancellation before the start (#24), plus changes during
+the job and the prices kept with a request (2026-11-23): a start and a
 cancellation sent at the same instant end in exactly one of them, simultaneous cancellations refund once, and
 third or anonymous accounts cannot act. Disposable fixtures on loopback ONLY; money is simulated."""
 import argparse
@@ -17,6 +18,7 @@ from contract_agenda import simultaneously
 
 CONCEJO = "33925"  # Synthetic code, never a real concejo.
 DAY = "2030-01-15"  # Tuesday; Madrid is UTC+1 then, so the window 08:00–20:00 local is 07:00–19:00Z.
+NEXT = "2030-01-22"  # The next Tuesday, for the changes during the job.
 ROUNDS = 4
 
 
@@ -24,8 +26,8 @@ class StartCancelContract(unittest.TestCase):
     def rpc(self, name, body, token):
         return api.request(f"/rest/v1/rpc/{name}", body, token)
 
-    def confirmed(self, hour, mode="integrated", amount=8000):
-        start, end = f"{DAY}T{hour:02d}:00:00Z", f"{DAY}T{hour + 1:02d}:00:00Z"
+    def confirmed(self, hour, mode="integrated", amount=8000, day=DAY):
+        start, end = f"{day}T{hour:02d}:00:00Z", f"{day}T{hour + 1:02d}:00:00Z"
         code, appointment = self.rpc("request_appointment", {
             "p_conversation_id": conversation, "p_request_id": str(uuid.uuid4()), "p_problem": "Fuga",
             "p_start": start, "p_end": end, "p_address": "Calle Ficticia 1", "p_lat": 43.05, "p_lng": -5.95}, tokens[0])
@@ -61,6 +63,60 @@ class StartCancelContract(unittest.TestCase):
         code, mine = self.rpc("my_agenda", {}, tokens[1])
         self.assertEqual(code, 200, mine)
         return [b for b in mine["bookings"] if b["appointment_id"] == appointment_id]
+
+    def change(self, appt, token, start, minutes, amount, scope="Cambiar sifón y llave"):
+        version = api.request(f"/rest/v1/appointments?select=version&id=eq.{appt}", token=token, method="GET")[1][0]["version"]
+        return self.rpc("propose_change", {
+            "p_appointment_id": appt, "p_expected_version": version, "p_request_id": str(uuid.uuid4()),
+            "p_scope": scope, "p_start": start, "p_duration_minutes": minutes, "p_amount_cents": amount,
+            "p_visit_fee_cents": None, "p_materials_included": True, "p_travel_included": True}, token)
+
+    def test_changes_during_the_job_and_kept_prices(self):
+        """Changes after «Comenzar trabajo» (David, 2026-11-23) and the request's kept prices, over real HTTP."""
+        agenda = {"p_default_duration_minutes": 60, "p_windows": [{"weekday": 2, "start": "08:00", "end": "20:00"}]}
+        self.assertEqual(self.rpc("save_agenda", agenda, tokens[1])[0], 200)
+
+        # Start and acceptance of a change that moves the start, at the same instant: the job always starts; the
+        # change applies only if it was accepted first, otherwise starting closed it and the acceptance is refused.
+        outcomes = []
+        for round_ in range(2):
+            appt = self.confirmed(7 + round_, day=NEXT)
+            code, moved = self.change(appt, tokens[1], f"{NEXT}T{12 + round_}:00:00Z", 60, 8000)
+            self.assertEqual(code, 200, moved)
+            results = simultaneously(lambda: self.rpc("start_work", {"p_appointment_id": appt}, tokens[1]),
+                                     lambda: self.rpc("accept_change", {"p_change_id": moved["id"]}, tokens[0]))
+            self.assertEqual(results[0][0], 200, results)
+            self.assertIn(results[1][0], (200, 409), results)
+            code, rows = api.request(f"/rest/v1/appointment_changes?select=status&id=eq.{moved['id']}", token=tokens[0],
+                                     method="GET")
+            self.assertEqual(rows[0]["status"], "accepted" if results[1][0] == 200 else "superseded")
+            self.assertEqual(self.state(appt, tokens[0])["stage"], "started")
+            outcomes.append(rows[0]["status"])
+        print(f"start vs. accepting a moved start: {outcomes}")
+
+        # Extra work agreed on the spot: the professional proposes more after the start, the client accepts and
+        # the difference is paid (simulated) at acceptance. A new start time is refused.
+        appt = self.confirmed(9, day=NEXT)
+        self.assertEqual(self.rpc("start_work", {"p_appointment_id": appt}, tokens[1])[0], 200)
+        code, extra = self.change(appt, tokens[1], f"{NEXT}T09:00:00Z", 60, 9500)
+        self.assertEqual(code, 200, extra)
+        self.assertEqual(self.rpc("accept_change", {"p_change_id": extra["id"]}, tokens[0])[0], 200)
+        payment = self.state(appt, tokens[0])["appointment_payments"]
+        self.assertEqual((payment["paid_cents"], payment["pending_cents"], payment["agreed_cents"]), (9500, 9500, 9500))
+        self.assertEqual(self.change(appt, tokens[0], f"{NEXT}T15:00:00Z", 60, 9500)[0], 409, "the start no longer moves")
+
+        # The request keeps the reference prices in force when it was sent; both participants read them, a third
+        # account does not, and a later profile price only reaches new requests.
+        new_price = [{"service": "Fuga", "scope": "Una hora", "unit": "hour", "amount_cents": 9900, "includes": "", "excludes": ""}]
+        self.assertEqual(self.rpc("save_professional_offer", {"p_services": ["Repair"], "p_prices": new_price}, tokens[1])[0], 200)
+        for token in tokens[:2]:
+            code, rows = api.request(f"/rest/v1/appointments?select=reference_prices&id=eq.{appt}", token=token, method="GET")
+            self.assertEqual((code, rows[0]["reference_prices"][0]["amount_cents"]), (200, 3500), rows)
+        self.assertEqual(api.request(f"/rest/v1/appointments?select=reference_prices&id=eq.{appt}", token=tokens[2],
+                                     method="GET")[1], [])
+        later = self.confirmed(10, day=NEXT)
+        code, rows = api.request(f"/rest/v1/appointments?select=reference_prices&id=eq.{later}", token=tokens[0], method="GET")
+        self.assertEqual(rows[0]["reference_prices"][0]["amount_cents"], 9900)
 
     def test_start_and_cancel_race_retries_and_permissions(self):
         agenda = {"p_default_duration_minutes": 60, "p_windows": [{"weekday": 2, "start": "08:00", "end": "20:00"}]}
@@ -154,9 +210,10 @@ if __name__ == "__main__":
             insert into public.concejos(ine_code,name,boundary) values ('{CONCEJO}','Contrato inicio',
               'SRID=4326;MULTIPOLYGON(((-6.0 43.0,-5.9 43.0,-5.9 43.1,-6.0 43.1,-6.0 43.0)))'::extensions.geography);
             insert into private.professional_profiles(id,owner_id) values ('{profile_id}','{users[1]}');
-            insert into public.approved_profiles(profile_id,name,description,trades,services,coverage,languages,phone)
+            insert into public.approved_profiles(profile_id,name,description,trades,services,coverage,languages,phone,prices)
             values ('{profile_id}','Start contract','Fixture',array['plumbing'],array['Repair'],
-              '[{{"code":"{CONCEJO}","name":"Contrato inicio"}}]',array['es'],'000');
+              '[{{"code":"{CONCEJO}","name":"Contrato inicio"}}]',array['es'],'000',
+              '[{{"service":"Fuga","scope":"Una hora","unit":"hour","amount_cents":3500,"includes":"","excludes":""}}]');
             notify pgrst, 'reload schema';
             commit;""")
         conversation = api.request("/rest/v1/rpc/open_conversation", {"p_profile_id": profile_id}, tokens[0])[1]["id"]

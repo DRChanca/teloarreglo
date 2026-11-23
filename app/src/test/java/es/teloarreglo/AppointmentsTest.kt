@@ -457,6 +457,56 @@ class AppointmentsTest {
         }
     }
 
+    private fun MockRequestHandleScope.stagedListing(request: HttpRequestData, stage: String, changes: String) =
+        if (request.url.encodedPath == "/rest/v1/rpc/appointment_places") json("[]")
+        else json("[" + appointmentJson.dropLast(1).replace("\"stage\":\"pending\"", "\"stage\":\"$stage\"") +
+            ""","started_at":${if (stage == "started") "\"2030-01-15T10:31:00+00:00\"" else "null"},
+            "reference_prices":[{"service":"Fuga","scope":"Una hora","unit":"hour","amount_cents":3500,"includes":"IVA","excludes":""}],
+            "appointment_proposals":[${proposalJson(1, if (stage == "pending") "pending" else "accepted")}],
+            "appointment_payments":${if (stage == "pending") "null" else paymentJson},"appointment_changes":[$changes]}]""")
+
+    @Test fun listReadsThePricesKeptWithTheRequestInsteadOfTheLiveProfile() = runTest {
+        val appointment = withClient({ request ->
+            if (request.url.encodedPath == "/rest/v1/appointments")
+                assertTrue(request.url.parameters["select"]!!.split(',').contains("reference_prices"))
+            stagedListing(request, "confirmed", "")
+        }) { it.list("conv") }.single()
+        assertEquals(listOf(3500), appointment.referencePrices.map { it.amountCents })
+        assertEquals("Fuga", appointment.referencePrices.single().service)
+        val older = withClient({ listing(it, proposalJson(1, "pending")) }) { it.list("conv") }.single()
+        assertEquals(emptyList<Any>(), older.referencePrices)
+    }
+
+    @Test fun changesStayOpenDuringTheJobButNeverMoveTheStartOrTheAddress() = runTest {
+        val started = withClient({ stagedListing(it, "started", changeJson(1, "pending")) }) { it.list("conv") }.single()
+        assertTrue(started.canProposeChange("client") && started.canProposeChange("pro"))
+        assertFalse(started.canProposeChange("stranger"))
+        assertFalse(started.startAndAddressMayChange)
+        assertFalse(started.canRequestAddressCorrection("pro"))
+        assertEquals(AppointmentNotice.DECIDE_CHANGE, started.notice("client"))
+        assertEquals(AppointmentNotice.AWAITING_CHANGE, started.notice("pro"))
+        val quiet = withClient({ stagedListing(it, "started", changeJson(1, "accepted")) }) { it.list("conv") }.single()
+        assertEquals(AppointmentNotice.STARTED, quiet.notice("client"))
+
+        val confirmed = withClient({ stagedListing(it, "confirmed", "") }) { it.list("conv") }.single()
+        assertTrue(confirmed.canProposeChange("client") && confirmed.startAndAddressMayChange)
+        assertTrue(confirmed.canRequestAddressCorrection("pro"))
+        assertFalse(confirmed.canRequestAddressCorrection("client"))
+        for (stage in listOf("cancelled", "pending")) {
+            val closed = withClient({ stagedListing(it, stage, "") }) { it.list("conv") }.single()
+            assertFalse(stage, closed.canProposeChange("client") || closed.canProposeChange("pro"))
+        }
+    }
+
+    @Test fun aNewStartTimeAfterTheStartIsReportedAsAlreadyStarted() = runTest {
+        val failure = withClient({ json(error("PT409", "already_started"), HttpStatusCode.Conflict) }) {
+            try { it.proposeChange("appt", 6, "ck9", ChangeDraft("Sifón", Instant.parse("2030-01-15T11:30:00Z"), 60, 9000,
+                null, materialsIncluded = true, travelIncluded = false)); null }
+            catch (e: AppointmentException) { e.failure }
+        }
+        assertEquals(AppointmentFailure.ALREADY_STARTED, failure)
+    }
+
     @Test fun euroInputIsParsedToExactCentsWithoutFloatingPoint() {
         assertEquals(8550, parseEuroCents("85,5"))
         assertEquals(8550, parseEuroCents("85.50"))
