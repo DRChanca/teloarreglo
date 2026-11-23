@@ -90,6 +90,10 @@ class TeloarregloApplication : Application() {
     val chatAttachments: ChatAttachments? by lazy { client?.let(::SupabaseChatAttachments) }
     /** Owner's profile review result decided in the private panel (#29). */
     val profileReviews: ProfileReviews? by lazy { client?.let(::SupabaseProfileReviews) }
+    /** Owner presents and changes their professional profile for review (#30). */
+    val professionalProfiles: es.teloarreglo.catalogue.ProfessionalProfiles? by lazy {
+        client?.let { es.teloarreglo.catalogue.SupabaseProfessionalProfiles(it) }
+    }
     /** Simulated optional subscription (#33); never charges. */
     val subscriptions: es.teloarreglo.subscription.Subscriptions? by lazy { client?.let { es.teloarreglo.subscription.SupabaseSubscriptions(it) } }
     /** Nearby search through the public Edge Function; null without configuration. */

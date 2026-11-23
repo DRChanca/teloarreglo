@@ -83,6 +83,31 @@ Variables de compilación (públicas): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLI
    comando `npm ci && npm run build`, salida `dist`, y las dos variables públicas anteriores.
    No se ha creado ninguna cuenta ni proyecto de Cloudflare desde este ticket.
 
+## Ampliación #30: presentar, corregir y cambiar perfiles
+
+Migración nueva: `supabase/migrations/20261123003000_profile_editing.sql`. No modifica las anteriores;
+solo amplía `admin_profile_submissions` con `create or replace`.
+
+| Operación | Quién | Resultado / errores |
+| --- | --- | --- |
+| `public.start_professional_profile()` | `authenticated` (cuenta verificada) | Crea el perfil propio si no existe (uno por cuenta, idempotente) y devuelve `my_professional_profile()`. La cuenta sigue pudiendo contratar. |
+| `public.my_professional_profile()` | `authenticated` propietario | `null` sin perfil; si no, `profile_id, private_address, public` (versión aprobada o `null`), `editable` (última versión presentada; si no hay, la aprobada; si no, vacío) y `review` (= `my_profile_review()`). Otra cuenta nunca ve el perfil ajeno. |
+| `public.submit_professional_profile(p_submission uuid, p_content jsonb)` | `authenticated` propietario; el perfil se deriva de la sesión | Envuelve `private.submit_profile_version`. Mismos campos públicos de #29 y además: nombre 1–120, oficio conocido (≥1), ≥1 concejo `{code 33NNN, name}`, ≥1 idioma `xx`, teléfono `+34 600 000 000`, dirección comercial opcional 1–240. Errores: `22023 invalid_profile_content`, `22023 profile_not_found` (sin perfil propio), `22023 request_conflict` (misma clave, otro contenido). Reintentar con la misma clave devuelve la misma versión. |
+| `public.save_professional_private_address(p_address text)` | `authenticated` propietario | Guarda o borra (`''`/`null`) la dirección privada (≤240, `22023 invalid_private_address`). No crea versión ni revisión y nunca llega al catálogo ni al panel. |
+| `public.admin_profile_submissions(...)` | administrador | Igual que #29 y además `public_content`: la versión aprobada actual (o `null`), para comparar un cambio con lo publicado. |
+
+Reglas comprobadas: un cambio de un perfil aprobado queda pendiente y `approved_profiles` sigue con la
+última versión aprobada; si se rechaza, permanece. Administración decide sobre la versión concreta y no la
+reescribe. La agenda (`save_agenda`, bloqueos) no crea versiones. Revisar no borra conversaciones ni citas.
+
+Fronteras de cliente:
+
+- Android: `catalogue/ProfessionalProfiles.kt` (`ProfessionalProfiles`, `ProfileContent`, `OwnProfile`,
+  `ProfileEditFailure` INVALID/CONFLICT/NO_PROFILE/ACCESS; el resto se relanza como incertidumbre de red) y
+  `ProfileEditorScreen.kt`, abierto desde «Cuenta» («Ofrecer mis servicios» / «Editar mi perfil profesional»).
+  La clave de envío se conserva mientras se reintenta el mismo contenido. Strings `profile_edit_*`.
+- Panel: `Submission.public_content`; cada campo que cambia se marca «Cambia» junto al valor publicado.
+
 ## Fuera de alcance
 
 Sin acceso general a chats, documentación real, sanciones, categorías ni estadísticas. El panel

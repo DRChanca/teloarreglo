@@ -50,6 +50,7 @@ class MainActivity : AppCompatActivity() {
             var contactProfile by rememberSaveable { mutableStateOf<String?>(null) }
             var conversationJson by rememberSaveable { mutableStateOf<String?>(null) }
             var nearby by rememberSaveable { mutableStateOf(false) }
+            var profileEditor by rememberSaveable { mutableStateOf(false) }
             val app = application as TeloarregloApplication
             val access by app.identity.state.collectAsStateWithLifecycle()
             var knownOwner by rememberSaveable { mutableStateOf<String?>(null) }
@@ -76,7 +77,8 @@ class MainActivity : AppCompatActivity() {
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
             }
             BackHandler(enabled = editingHome && !mustGiveHome) { editingHome = false }
-            BackHandler(enabled = !editingHome && (account || nearby || (chatVisible && access.stage != AccessStage.CONNECTED))) {
+            BackHandler(enabled = profileEditor && !editingHome && !mustGiveHome) { profileEditor = false; account = true }
+            BackHandler(enabled = !editingHome && !profileEditor && (account || nearby || (chatVisible && access.stage != AccessStage.CONNECTED))) {
                 account = false; nearby = false; chatVisible = false; contactProfile = null; conversationJson = null
             }
             if (homeSession != null && (mustGiveHome || (editingHome && connectedUser != null))) {
@@ -88,6 +90,10 @@ class MainActivity : AppCompatActivity() {
                         onDone = { editingHome = false },
                         onSignOut = { editingHome = false; app.applicationScope.launch { app.identity.signOut() } })
                 }
+            } else if (profileEditor && app.professionalProfiles != null) {
+                ProfileEditorScreen(app.professionalProfiles!!, app.concejos, app.applicationScope,
+                    onBack = { profileEditor = false; account = true },
+                    onStarted = { app.identity.restore() })
             } else if (chatVisible && access.stage == AccessStage.CONNECTED && app.chat != null) {
                 key(access.account!!.userId) {
                     ChatRoute(app.chat!!, access.account!!.userId, contactProfile,
@@ -116,7 +122,8 @@ class MainActivity : AppCompatActivity() {
                     operationScope = app.applicationScope,
                     googleAuth = app.googleAuth, profileReviews = app.profileReviews,
                     subscriptions = app.subscriptions, agenda = app.agenda,
-                    homeSlot = homeSession?.let { session -> { HomeSummaryCard(session, onChange = { editingHome = true }) } })
+                    homeSlot = homeSession?.let { session -> { HomeSummaryCard(session, onChange = { editingHome = true }) } },
+                    onEditProfile = app.professionalProfiles?.let { { profileEditor = true; account = false } })
             } else if (nearby && app.search != null) {
                 NearbySearchScreen(app.search!!, app.catalogue,
                     ensurePermission = { ensureLocationPermission() },
