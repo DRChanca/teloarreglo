@@ -172,16 +172,9 @@ fun HomeAddressScreen(
                     singleLine = true, label = { Text(stringResource(R.string.home_locality)) },
                     modifier = Modifier.fillMaxWidth().testTag("home_locality"))
 
-                // Where the point came from, in words: coordinates mean nothing to people (#41).
-                Text(
-                    stringResource(when {
-                        point == null -> R.string.home_point_missing
-                        source == HomeSource.PLACES -> R.string.home_point_places
-                        source == HomeSource.GPS -> R.string.home_point_gps
-                        else -> R.string.home_point_pin
-                    }),
-                    Modifier.testTag("home_point"), style = MaterialTheme.typography.bodySmall,
-                )
+                // Only a missing point is worth a line; its source is not shown (David 2026-11-24).
+                if (point == null) Text(stringResource(R.string.home_point_missing),
+                    Modifier.testTag("home_point"), style = MaterialTheme.typography.bodySmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = {
                         locating = true; noLocation = false

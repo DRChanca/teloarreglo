@@ -107,6 +107,9 @@ Android (`home/AddressParts.kt`, `HomeAddressScreen`):
   GPS). Lo mismo en la solicitud y el cambio de dirección de una cita (`PointFromLine`); allí los campos de latitud
   y longitud solo aparecen como alternativa cuando no hay mapa. El detalle de la cita y la búsqueda manual dejan de
   mostrar coordenadas.
+- 24-11-2026 (David): la pantalla de casa deja de mostrar la línea «Ubicación: …» con el origen del punto; solo avisa
+  cuando falta (`home_point_missing`). Se mantienen «Usar mi ubicación» y «Marcar en el mapa». La solicitud de cita
+  (`PointFromLine`) no cambia.
 
 ## Places en Google Cloud (paso humano)
 
