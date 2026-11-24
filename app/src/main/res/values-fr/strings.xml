@@ -123,6 +123,9 @@
     <string name="photo_preparing">Compression de la photo…</string>
     <string name="photo_uploading">Envoi de la photo… %1$d %%</string>
     <string name="photo_discard">Abandonner</string>
+    <string name="attachment_ready_photo">Envoyer cette photo ? Elle n’a pas encore été envoyée.</string>
+    <string name="attachment_ready_video">Envoyer cette vidéo de %1$s ? Elle n’a pas encore été envoyée.</string>
+    <string name="attachment_send">Envoyer</string>
     <string name="photo_error_unsupported">Seules les photos JPEG ou PNG peuvent être envoyées. La photo n’a pas été envoyée ; choisissez-en une autre.</string>
     <string name="photo_error_too_large">Le serveur a refusé la photo à cause de sa taille. Elle n’a pas été envoyée ; essayez-en une autre.</string>
     <string name="photo_error_quota">L’espace des photos est plein. La photo n’a pas été envoyée ; réessayez plus tard.</string>
