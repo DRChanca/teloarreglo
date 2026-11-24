@@ -1,5 +1,8 @@
 package es.teloarreglo
 
+import es.teloarreglo.appointments.AvailabilityWindow
+import es.teloarreglo.catalogue.ProfileAgenda
+
 import es.teloarreglo.catalogue.Coverage
 import es.teloarreglo.catalogue.ProfileEditException
 import es.teloarreglo.catalogue.ProfileEditFailure
@@ -103,6 +106,32 @@ class ProfessionalProfilesTest {
             assertFalse("a private address is never sent as public content", "private_address" in content)
             assertEquals(ReviewStatus.PENDING, review.status)
             assertTrue(review.published)
+        } finally { client.close() }
+    }
+
+    @Test fun theAgendaTravelsWithThePresentedProfile() = runTest {
+        val client = client(HttpStatusCode.OK, """{"submission_id":"s1","profile_id":"p","version":1,
+            "status":"pending","submitted_at":"2026-11-24T10:00:00+00:00","published":false}""")
+        try {
+            val agenda = ProfileAgenda(90, listOf(AvailabilityWindow(1, "09:00", "14:00"), AvailabilityWindow(3, "16:00", "20:00")))
+            SupabaseProfessionalProfiles(client).submit("r1", ProfileContent(name = "Nueva"), agenda)
+            val json = Json.parseToJsonElement(requests.single().second).jsonObject
+            val sent = json["p_agenda"]!!.jsonObject
+            assertEquals(90, sent["default_duration_minutes"]!!.jsonPrimitive.content.toInt())
+            val windows = sent["windows"]!!.jsonArray
+            assertEquals(2, windows.size)
+            assertEquals("16:00", windows[1].jsonObject["start"]!!.jsonPrimitive.content)
+            assertEquals(3, windows[1].jsonObject["weekday"]!!.jsonPrimitive.content.toInt())
+        } finally { client.close() }
+    }
+
+    @Test fun anInvalidAgendaIsToldApartFromInvalidContent() = runTest {
+        val client = client(HttpStatusCode.BadRequest, """{"code":"22023","message":"invalid_agenda"}""")
+        try {
+            val failure = try {
+                SupabaseProfessionalProfiles(client).submit("r", ProfileContent(), ProfileAgenda(5, emptyList())); null
+            } catch (e: ProfileEditException) { e.failure }
+            assertEquals(ProfileEditFailure.INVALID_AGENDA, failure)
         } finally { client.close() }
     }
 

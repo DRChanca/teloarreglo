@@ -268,7 +268,11 @@
     <string name="profile_edit_private_hint">Wird weder veröffentlicht noch zur Prüfung gesendet. Nur du siehst sie.</string>
     <string name="profile_edit_private_save">Private Adresse speichern</string>
     <string name="profile_edit_private_saved">Private Adresse gespeichert.</string>
-    <string name="profile_edit_agenda_note">Kalender und Verfügbarkeit änderst du in deinem Konto; sie brauchen keine Prüfung.</string>
+    <string name="profile_edit_agenda_title">Dein Kalender</string>
+    <string name="profile_edit_agenda_hint">Gib die Tage und Zeiten an, an denen du arbeitest (spanische Festlandzeit). Er wird beim Einreichen des Profils gespeichert und braucht keine Freigabe.</string>
+    <string name="profile_edit_agenda_missing">Markiere mindestens einen Tag mit gültigen Zeiten (HH:MM, Ende nach Beginn) und eine Dauer von 15 bis 1440 Minuten.</string>
+    <string name="profile_edit_error_agenda">Der Server hat den Kalender abgelehnt. Prüfe Tage, Zeiten und Dauer.</string>
+    <string name="profile_edit_agenda_note">Später kannst du den Kalender und Sperrzeiten in deinem Konto ändern, ohne Prüfung.</string>
     <!-- #37 home address -->
     <string name="home_title">Wo ist dein Zuhause?</string>
     <string name="home_intro">Wir nutzen sie, um Fachleute in der Nähe zu finden und sie bei einer Terminanfrage vorzuschlagen. Du kannst sie später in deinem Konto ändern.</string>

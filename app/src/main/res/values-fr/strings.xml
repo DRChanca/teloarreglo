@@ -268,7 +268,11 @@
     <string name="profile_edit_private_hint">Elle n’est ni publiée ni envoyée à la vérification. Vous seul la voyez.</string>
     <string name="profile_edit_private_save">Enregistrer l’adresse privée</string>
     <string name="profile_edit_private_saved">Adresse privée enregistrée.</string>
-    <string name="profile_edit_agenda_note">L’agenda et les disponibilités se modifient depuis votre compte et ne nécessitent pas de vérification.</string>
+    <string name="profile_edit_agenda_title">Votre agenda</string>
+    <string name="profile_edit_agenda_hint">Indiquez les jours et heures où vous travaillez (heure de l’Espagne péninsulaire). Il est enregistré à l’envoi du profil en vérification et ne nécessite pas d’approbation.</string>
+    <string name="profile_edit_agenda_missing">Cochez au moins un jour avec un horaire valide (HH:MM, fin après le début) et une durée de 15 à 1440 minutes.</string>
+    <string name="profile_edit_error_agenda">Le serveur a refusé l’agenda. Vérifiez les jours, les heures et la durée.</string>
+    <string name="profile_edit_agenda_note">Ensuite, vous pourrez modifier l’agenda et ajouter des blocages depuis votre compte, sans vérification.</string>
     <!-- #37 home address -->
     <string name="home_title">Où se trouve votre domicile ?</string>
     <string name="home_intro">Nous l’utilisons pour trouver des professionnels à proximité et la proposer quand vous demandez un rendez-vous. Vous pourrez la modifier depuis votre compte.</string>

@@ -19,7 +19,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import es.teloarreglo.appointments.Agenda
 import es.teloarreglo.appointments.parseEuroCents
+import es.teloarreglo.catalogue.AgendaDay
+import es.teloarreglo.catalogue.AgendaDraft
 import es.teloarreglo.catalogue.Coverage
 import es.teloarreglo.catalogue.MAX_PRICES
 import es.teloarreglo.catalogue.OwnProfile
@@ -63,7 +66,9 @@ private enum class EditorSection { REVIEW, OFFER, ADDRESS }
  * for review; until administration approves it, the catalogue keeps the approved version. Services,
  * reference prices and the cover are published directly, without review (David, 2026-11-23); an
  * unapproved profile shows them once it is published. The private address is saved apart and is
- * never reviewed or published. The agenda is changed from the account screen and needs no review.
+ * never reviewed or published. The weekly agenda is filled in here and sent with the presentation (#41),
+ * so a new professional has hours before approval; it needs no review and can later be changed, with
+ * blocks, from the account screen.
  */
 @Composable
 fun ProfileEditorScreen(
@@ -73,6 +78,7 @@ fun ProfileEditorScreen(
     onBack: () -> Unit,
     onStarted: suspend () -> Unit,
     covers: ProfessionalCovers? = null,
+    agenda: Agenda? = null,
 ) {
     var attempt by remember { mutableIntStateOf(0) }
     var own by remember { mutableStateOf<OwnProfile?>(null) }
@@ -89,6 +95,20 @@ fun ProfileEditorScreen(
     var servicesText by rememberSaveable { mutableStateOf<String?>(null) }
     var pricesJson by rememberSaveable { mutableStateOf<String?>(null) }
     var editingCover by rememberSaveable { mutableStateOf(false) }
+    var agendaJson by rememberSaveable { mutableStateOf<String?>(null) }
+    var agendaFailed by remember { mutableStateOf(false) }
+    var agendaAttempt by remember { mutableIntStateOf(0) }
+    var showAgendaProblem by remember { mutableStateOf(false) }
+
+    // The saved agenda is where the form starts; until it loads, nothing would replace it by mistake.
+    LaunchedEffect(agenda, agendaAttempt, own != null) {
+        if (agenda == null || own == null || agendaJson != null) return@LaunchedEffect
+        agendaFailed = false
+        try {
+            val saved = agenda.load()
+            agendaJson = Json.encodeToString(AgendaDraft.serializer(), AgendaDraft.from(saved.defaultDurationMinutes, saved.windows))
+        } catch (e: CancellationException) { throw e } catch (_: Exception) { agendaFailed = true }
+    }
 
     LaunchedEffect(attempt) {
         loadFailed = false
@@ -123,6 +143,7 @@ fun ProfileEditorScreen(
             catch (e: Exception) {
                 failure = when ((e as? ProfileEditException)?.failure) {
                     ProfileEditFailure.INVALID -> R.string.profile_edit_error_invalid
+                    ProfileEditFailure.INVALID_AGENDA -> R.string.profile_edit_error_agenda
                     ProfileEditFailure.CONFLICT -> R.string.profile_edit_error_conflict
                     ProfileEditFailure.ACCESS, ProfileEditFailure.NO_PROFILE -> R.string.profile_edit_error_access
                     null -> R.string.profile_edit_error_network
@@ -164,16 +185,23 @@ fun ProfileEditorScreen(
                             Text(stringResource(R.string.profile_edit_missing), color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.testTag("profile_edit_missing"))
                         }
+                        val agendaDraft = agendaJson?.let { Json.decodeFromString(AgendaDraft.serializer(), it) }
+                        if (agenda != null) AgendaSection(agendaDraft, agendaFailed, !busy, showAgendaProblem,
+                            onRetry = { agendaAttempt++ },
+                            onChange = { agendaJson = Json.encodeToString(AgendaDraft.serializer(), it); outcome = null })
                         Text(stringResource(if (current.review.published) R.string.profile_edit_submit_hint_published
                             else R.string.profile_edit_submit_hint_first), style = MaterialTheme.typography.bodySmall)
                         Button(enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("profile_edit_submit"), onClick = {
                             showMissing = true
-                            if (missing.isNotEmpty()) return@Button
+                            // A first presentation carries the agenda (#41); later ones send it if it is complete.
+                            val weekly = agendaDraft?.toAgenda()
+                            showAgendaProblem = agenda != null && weekly == null && !current.review.published
+                            if (missing.isNotEmpty() || showAgendaProblem) return@Button
                             val previous = pendingJson?.let { Json.decodeFromString(PendingSubmission.serializer(), it) }
                             val pending = previous?.takeIf { it.content == draft } ?: PendingSubmission(UUID.randomUUID().toString(), draft)
                             pendingJson = Json.encodeToString(PendingSubmission.serializer(), pending)
                             perform(EditorSection.REVIEW) {
-                                profiles.submit(pending.requestId, pending.content)
+                                profiles.submit(pending.requestId, pending.content, weekly)
                                 pendingJson = null; attempt++
                                 R.string.profile_edit_submitted
                             }
@@ -203,6 +231,40 @@ fun ProfileEditorScreen(
             }
         }
     }
+}
+
+/** Weekly hours and usual duration, sent with the presentation (#41). */
+@Composable
+private fun AgendaSection(
+    draft: AgendaDraft?, failed: Boolean, enabled: Boolean, showProblem: Boolean,
+    onRetry: () -> Unit, onChange: (AgendaDraft) -> Unit,
+) {
+    HorizontalDivider()
+    Text(stringResource(R.string.profile_edit_agenda_title), style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.semantics { heading() })
+    Text(stringResource(R.string.profile_edit_agenda_hint), style = MaterialTheme.typography.bodySmall)
+    if (failed) {
+        Text(stringResource(R.string.agenda_load_error), color = MaterialTheme.colorScheme.error)
+        TextButton(onClick = onRetry, modifier = Modifier.testTag("profile_agenda_retry")) { Text(stringResource(R.string.retry)) }
+    }
+    if (draft == null) { if (!failed) LinearProgressIndicator(Modifier.fillMaxWidth()); return }
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    OutlinedTextField(draft.duration, { onChange(draft.copy(duration = it.filter(Char::isDigit).take(4))) }, enabled = enabled,
+        singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        label = { Text(stringResource(R.string.agenda_duration)) }, modifier = Modifier.fillMaxWidth().testTag("profile_agenda_duration"))
+    draft.days.forEachIndexed { index, day ->
+        fun change(updated: AgendaDay) = onChange(draft.copy(days = draft.days.toMutableList().also { it[index] = updated }))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Checkbox(day.open, { change(day.copy(open = it)) }, enabled = enabled, modifier = Modifier.testTag("profile_agenda_day_${index + 1}"))
+            Text(java.time.DayOfWeek.of(index + 1).getDisplayName(java.time.format.TextStyle.SHORT, locale), Modifier.width(48.dp))
+            OutlinedTextField(day.from, { change(day.copy(from = it.take(5))) }, enabled = enabled && day.open, singleLine = true,
+                label = { Text(stringResource(R.string.appointment_from)) }, modifier = Modifier.weight(1f).testTag("profile_agenda_from_${index + 1}"))
+            OutlinedTextField(day.to, { change(day.copy(to = it.take(5))) }, enabled = enabled && day.open, singleLine = true,
+                label = { Text(stringResource(R.string.appointment_to)) }, modifier = Modifier.weight(1f).testTag("profile_agenda_to_${index + 1}"))
+        }
+    }
+    if (showProblem && draft.toAgenda() == null) Text(stringResource(R.string.profile_edit_agenda_missing),
+        color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("profile_agenda_missing"))
 }
 
 @Composable

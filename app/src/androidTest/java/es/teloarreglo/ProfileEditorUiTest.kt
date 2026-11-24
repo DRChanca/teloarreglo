@@ -32,7 +32,7 @@ class ProfileEditorUiTest {
         var failNext = false
         override suspend fun mine() = own
         override suspend fun start() = OwnProfile("p", null, null, ProfileContent(), ProfileReview("p")).also { own = it }
-        override suspend fun submit(requestId: String, content: ProfileContent): ProfileReview {
+        override suspend fun submit(requestId: String, content: ProfileContent, agenda: es.teloarreglo.catalogue.ProfileAgenda?): ProfileReview {
             submitted += requestId to content
             if (failNext) { failNext = false; error("offline") }
             return ProfileReview("p", ReviewStatus.PENDING, published = own?.public != null)

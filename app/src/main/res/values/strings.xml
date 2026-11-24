@@ -268,7 +268,11 @@
     <string name="profile_edit_private_hint">No se publica ni se envía a revisión. Solo tú la ves.</string>
     <string name="profile_edit_private_save">Guardar dirección privada</string>
     <string name="profile_edit_private_saved">Dirección privada guardada.</string>
-    <string name="profile_edit_agenda_note">La agenda y la disponibilidad se cambian desde tu cuenta y no necesitan revisión.</string>
+    <string name="profile_edit_agenda_title">Tu agenda</string>
+    <string name="profile_edit_agenda_hint">Indica los días y horas en que trabajas (hora peninsular). Se guarda al enviar el perfil a revisión y no necesita aprobación.</string>
+    <string name="profile_edit_agenda_missing">Marca al menos un día con un horario válido (HH:MM, fin después del inicio) y una duración de 15 a 1440 minutos.</string>
+    <string name="profile_edit_error_agenda">El servidor rechazó la agenda. Revisa los días, las horas y la duración.</string>
+    <string name="profile_edit_agenda_note">Después podrás cambiar la agenda y añadir bloqueos desde tu cuenta, sin revisión.</string>
     <!-- #37 home address -->
     <string name="home_title">¿Dónde está tu casa?</string>
     <string name="home_intro">La usaremos para buscar profesionales cerca y para proponerla cuando pidas una cita. Puedes cambiarla después desde tu cuenta.</string>

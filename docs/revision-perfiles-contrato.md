@@ -141,6 +141,22 @@ Fronteras de cliente:
   portada» abre el editor de portada también para perfiles sin aprobar. Strings `profile_offer_*`, `profile_edit_cover`.
 - Panel: la tarjeta de revisión ya no muestra servicios ni precios; nunca mostró portadas.
 
+## Ampliación #41: la agenda se rellena al presentar el perfil
+
+Migración nueva: `supabase/migrations/20261124000200_profile_submission_agenda.sql` (no aplicada en la base alojada).
+
+- `public.submit_professional_profile(p_submission uuid, p_content jsonb, p_agenda jsonb default null)`. Con
+  `p_agenda = {default_duration_minutes, windows[{weekday,start,end}]}` guarda la agenda con `save_agenda` en la misma
+  transacción: agenda inválida → `22023 invalid_agenda` y no se presenta nada; perfil inválido → no se guarda la agenda.
+  La agenda no forma parte de la versión presentada ni necesita revisión. Sin `p_agenda` funciona como antes
+  (clientes anteriores, SQL de confianza) y conserva la agenda guardada.
+- Android: `ProfessionalProfiles.submit(requestId, content, agenda)`, `ProfileEditFailure.INVALID_AGENDA`,
+  `catalogue/ProfileAgenda.kt` (`AgendaDraft.toAgenda()`: duración 15–1440 y al menos un día abierto). En
+  `ProfileEditorScreen` la sección «Tu agenda» parte de la agenda guardada y es obligatoria en la primera
+  presentación; en un perfil ya publicado se envía si está completa. Bloqueos y cambios posteriores siguen en
+  «Cuenta» (`AgendaCard`). Strings `profile_edit_agenda_*`, `profile_edit_error_agenda`.
+- El servidor no exige agenda: la regla «sin franjas no hay límite de horario» (20261123012610) sigue vigente.
+
 ## Fuera de alcance
 
 Sin acceso general a chats, documentación real, sanciones, categorías ni estadísticas. El panel

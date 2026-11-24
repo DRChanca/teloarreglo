@@ -268,7 +268,11 @@
     <string name="profile_edit_private_hint">Not published and not sent for review. Only you can see it.</string>
     <string name="profile_edit_private_save">Save private address</string>
     <string name="profile_edit_private_saved">Private address saved.</string>
-    <string name="profile_edit_agenda_note">Agenda and availability are changed from your account and need no review.</string>
+    <string name="profile_edit_agenda_title">Your agenda</string>
+    <string name="profile_edit_agenda_hint">Tell us the days and hours you work (mainland Spain time). It is saved when you submit the profile for review and needs no approval.</string>
+    <string name="profile_edit_agenda_missing">Tick at least one day with valid hours (HH:MM, end after start) and a duration of 15 to 1440 minutes.</string>
+    <string name="profile_edit_error_agenda">The server refused the agenda. Check the days, hours and duration.</string>
+    <string name="profile_edit_agenda_note">Later you can change the agenda and add blocks from your account, without review.</string>
     <!-- #37 home address -->
     <string name="home_title">Where is your home?</string>
     <string name="home_intro">We use it to find professionals nearby and to suggest it when you request an appointment. You can change it later from your account.</string>
