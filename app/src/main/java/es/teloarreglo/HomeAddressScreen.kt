@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import es.teloarreglo.home.AddressAutocomplete
+import es.teloarreglo.home.AddressParts
 import es.teloarreglo.home.AddressLookup
 import es.teloarreglo.home.AddressSuggestion
 import es.teloarreglo.home.ChoiceResult
@@ -41,7 +42,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * Home address step (#37). Mandatory after signing in when the account has none (like Glovo), and
+ * Home address step (#37). The street field searches Google Places after 7 characters and is followed
+ * by the usual Spanish fields (número, bloque, portal, escalera, piso, puerta, locality) (#41). Mandatory after signing in when the account has none (like Glovo), and
  * reachable later from the account. Google Places autocomplete when available; otherwise (no key,
  * no network, API not enabled) a pin on the map or one GPS fix, with the address typed by hand.
  * Nothing is shown as saved until the server answers.
@@ -58,12 +60,21 @@ fun HomeAddressScreen(
 ) {
     val lookup = remember(places) { AddressLookup(places) }
     val current = session.home
+    val initial = current?.editableParts
     var placesUp by remember { mutableStateOf(lookup.available) }
-    var manual by rememberSaveable { mutableStateOf(!lookup.available) }
-    var query by rememberSaveable { mutableStateOf("") }
     var suggestions by remember { mutableStateOf<LookupResult?>(null) }
     var resolving by remember { mutableStateOf(false) }
-    var address by rememberSaveable { mutableStateOf(current?.address.orEmpty()) }
+    // The street field is also the Places search (#41); [chosenStreet] is the text a suggestion filled in,
+    // so it is not searched again until the person types something else.
+    var street by rememberSaveable { mutableStateOf(initial?.street.orEmpty()) }
+    var chosenStreet by rememberSaveable { mutableStateOf(initial?.street) }
+    var number by rememberSaveable { mutableStateOf(initial?.number.orEmpty()) }
+    var block by rememberSaveable { mutableStateOf(initial?.block.orEmpty()) }
+    var portal by rememberSaveable { mutableStateOf(initial?.portal.orEmpty()) }
+    var staircase by rememberSaveable { mutableStateOf(initial?.staircase.orEmpty()) }
+    var floor by rememberSaveable { mutableStateOf(initial?.floor.orEmpty()) }
+    var door by rememberSaveable { mutableStateOf(initial?.door.orEmpty()) }
+    var locality by rememberSaveable { mutableStateOf(initial?.locality.orEmpty()) }
     var lat by rememberSaveable { mutableStateOf(current?.lat) }
     var lng by rememberSaveable { mutableStateOf(current?.lng) }
     var source by rememberSaveable { mutableStateOf(current?.source) }
@@ -74,15 +85,15 @@ fun HomeAddressScreen(
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<Int?>(null) }
     val point = lat?.let { a -> lng?.let { b -> GeoPoint(a, b) } }?.takeIf { it.valid }
-    val showPlaces = placesUp && !manual
+    val parts = AddressParts(street, number, block, portal, staircase, floor, door, locality)
 
     // Debounced: Places is billed per session, and every keystroke would be a request.
-    LaunchedEffect(query, showPlaces) {
-        if (!showPlaces || query.isBlank()) { suggestions = null; return@LaunchedEffect }
+    LaunchedEffect(street, placesUp) {
+        if (!placesUp || street.isBlank() || street == chosenStreet) { suggestions = null; return@LaunchedEffect }
         delay(350)
-        val result = lookup.suggest(query)
+        val result = lookup.suggest(street)
         suggestions = result
-        if (result == LookupResult.Unavailable) { placesUp = false; manual = true }
+        if (result == LookupResult.Unavailable) placesUp = false
     }
 
     fun choose(suggestion: AddressSuggestion) {
@@ -91,15 +102,24 @@ fun HomeAddressScreen(
             try {
                 when (val chosen = lookup.choose(suggestion)) {
                     is ChoiceResult.Chosen -> {
-                        address = chosen.place.address; lat = chosen.place.point.lat; lng = chosen.place.point.lng
+                        val filled = AddressParts.from(chosen.place)
+                        street = filled.street; chosenStreet = filled.street
+                        if (filled.number.isNotEmpty()) number = filled.number
+                        if (filled.locality.isNotEmpty()) locality = filled.locality
+                        lat = chosen.place.point.lat; lng = chosen.place.point.lng
                         source = HomeSource.PLACES; placeId = chosen.place.placeId
-                        query = ""; suggestions = null
+                        suggestions = null
                     }
-                    ChoiceResult.Unavailable -> { placesUp = lookup.available; manual = true }
+                    ChoiceResult.Unavailable -> placesUp = lookup.available
                 }
             } finally { resolving = false }
         }
     }
+
+    @Composable
+    fun RowScope.Detail(value: String, onChange: (String) -> Unit, label: Int, tag: String) =
+        OutlinedTextField(value, { if (it.length <= AddressParts.MAX_DETAIL) onChange(it) }, enabled = !busy, singleLine = true,
+            label = { Text(stringResource(label), maxLines = 1) }, modifier = Modifier.weight(1f).testTag(tag))
 
     TeloTheme {
         Surface(Modifier.fillMaxSize(), color = Color(0xFFF7F8F5)) {
@@ -115,60 +135,72 @@ fun HomeAddressScreen(
                 Text(stringResource(R.string.home_intro))
                 Text(stringResource(R.string.home_privacy), style = MaterialTheme.typography.bodySmall)
 
-                if (showPlaces) {
-                    OutlinedTextField(query, { if (it.length <= 120) query = it }, enabled = !busy && !resolving, singleLine = true,
-                        label = { Text(stringResource(R.string.home_search_label)) },
-                        modifier = Modifier.fillMaxWidth().testTag("home_query"))
-                    when (val s = suggestions) {
-                        is LookupResult.Suggestions -> if (s.items.isEmpty()) {
-                            Text(stringResource(R.string.home_no_suggestions), style = MaterialTheme.typography.bodySmall)
-                        } else s.items.forEach { item ->
-                            Card(onClick = { choose(item) }, enabled = !resolving,
-                                modifier = Modifier.fillMaxWidth().testTag("home_suggestion_${item.placeId}")) {
-                                Column(Modifier.padding(12.dp)) {
-                                    Text(item.primary, fontWeight = FontWeight.Bold)
-                                    if (item.secondary.isNotBlank()) Text(item.secondary, style = MaterialTheme.typography.bodySmall)
-                                }
+                OutlinedTextField(street, { if (it.length <= AddressParts.MAX_STREET) street = it }, enabled = !busy && !resolving,
+                    singleLine = true, label = { Text(stringResource(R.string.home_street_label)) },
+                    supportingText = if (placesUp) { { Text(stringResource(R.string.home_street_hint)) } } else null,
+                    modifier = Modifier.fillMaxWidth().testTag("home_street"))
+                when (val s = suggestions) {
+                    is LookupResult.Suggestions -> if (s.items.isEmpty()) {
+                        Text(stringResource(R.string.home_no_suggestions), style = MaterialTheme.typography.bodySmall)
+                    } else s.items.forEach { item ->
+                        Card(onClick = { choose(item) }, enabled = !resolving,
+                            modifier = Modifier.fillMaxWidth().testTag("home_suggestion_${item.placeId}")) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text(item.primary, fontWeight = FontWeight.Bold)
+                                if (item.secondary.isNotBlank()) Text(item.secondary, style = MaterialTheme.typography.bodySmall)
                             }
                         }
-                        else -> Unit
                     }
-                    if (resolving) LinearProgressIndicator(Modifier.fillMaxWidth())
-                    TextButton(onClick = { manual = true }, modifier = Modifier.testTag("home_manual")) {
-                        Text(stringResource(R.string.home_manual))
-                    }
-                } else {
-                    if (!placesUp) Text(stringResource(R.string.home_places_unavailable), Modifier.testTag("home_places_unavailable")
-                        .semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyMedium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = {
-                            locating = true; noLocation = false
-                            scope.launch {
-                                try {
-                                    val position = if (pins.ensurePermission()) pins.locate() else Located.Unavailable
-                                    if (position is Located.Position && !position.isUncertain()) {
-                                        lat = position.lat; lng = position.lng; source = HomeSource.GPS; placeId = null
-                                    } else noLocation = true
-                                } finally { locating = false }
-                            }
-                        }, enabled = !busy && !locating, modifier = Modifier.testTag("home_locate")) {
-                            Text(stringResource(if (locating) R.string.home_locating else R.string.home_use_location))
-                        }
-                        if (pins.mapsReady) OutlinedButton(onClick = { picking = true }, enabled = !busy,
-                            modifier = Modifier.testTag("home_pick_on_map")) { Text(stringResource(R.string.home_pick_on_map)) }
-                    }
-                    if (noLocation) Text(stringResource(R.string.home_location_unavailable), style = MaterialTheme.typography.bodySmall)
-                    if (placesUp) TextButton(onClick = { manual = false }) { Text(stringResource(R.string.home_use_places)) }
+                    else -> Unit
                 }
+                if (resolving) LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (!placesUp) Text(stringResource(R.string.home_places_unavailable), Modifier.testTag("home_places_unavailable")
+                    .semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyMedium)
 
-                OutlinedTextField(address, { if (it.length <= 300) address = it }, enabled = !busy, minLines = 2,
-                    label = { Text(stringResource(R.string.home_address_label)) },
-                    modifier = Modifier.fillMaxWidth().testTag("home_address"))
+                // Usual Spanish fields after the street (#41).
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Detail(number, { number = it }, R.string.home_number, "home_number")
+                    Detail(block, { block = it }, R.string.home_block, "home_block")
+                    Detail(portal, { portal = it }, R.string.home_portal, "home_portal")
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Detail(staircase, { staircase = it }, R.string.home_staircase, "home_staircase")
+                    Detail(floor, { floor = it }, R.string.home_floor, "home_floor")
+                    Detail(door, { door = it }, R.string.home_door, "home_door")
+                }
+                OutlinedTextField(locality, { if (it.length <= AddressParts.MAX_LOCALITY) locality = it }, enabled = !busy,
+                    singleLine = true, label = { Text(stringResource(R.string.home_locality)) },
+                    modifier = Modifier.fillMaxWidth().testTag("home_locality"))
+
+                // Where the point came from, in words: coordinates mean nothing to people (#41).
                 Text(
-                    point?.let { stringResource(R.string.home_point, "%.5f".format(Locale.ROOT, it.lat), "%.5f".format(Locale.ROOT, it.lng)) }
-                        ?: stringResource(R.string.home_point_missing),
+                    stringResource(when {
+                        point == null -> R.string.home_point_missing
+                        source == HomeSource.PLACES -> R.string.home_point_places
+                        source == HomeSource.GPS -> R.string.home_point_gps
+                        else -> R.string.home_point_pin
+                    }),
                     Modifier.testTag("home_point"), style = MaterialTheme.typography.bodySmall,
                 )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = {
+                        locating = true; noLocation = false
+                        scope.launch {
+                            try {
+                                val position = if (pins.ensurePermission()) pins.locate() else Located.Unavailable
+                                if (position is Located.Position && !position.isUncertain()) {
+                                    lat = position.lat; lng = position.lng; source = HomeSource.GPS; placeId = null
+                                } else noLocation = true
+                            } finally { locating = false }
+                        }
+                    }, enabled = !busy && !locating, modifier = Modifier.testTag("home_locate")) {
+                        Text(stringResource(if (locating) R.string.home_locating else R.string.home_use_location))
+                    }
+                    if (pins.mapsReady) OutlinedButton(onClick = { picking = true }, enabled = !busy,
+                        modifier = Modifier.testTag("home_pick_on_map")) { Text(stringResource(R.string.home_pick_on_map)) }
+                }
+                if (noLocation) Text(stringResource(R.string.home_location_unavailable), style = MaterialTheme.typography.bodySmall)
+
                 error?.let {
                     Text(stringResource(it), color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.testTag("home_error").semantics { liveRegion = LiveRegionMode.Polite })
@@ -181,7 +213,7 @@ fun HomeAddressScreen(
                         // Saving the same home twice is harmless, so a retry after a lost answer is safe.
                         scope.launch {
                             try {
-                                session.save(HomeDraft(address, chosen, source ?: HomeSource.PIN, placeId))
+                                session.save(HomeDraft(parts, chosen, source ?: HomeSource.PIN, placeId))
                                 onDone()
                             } catch (e: Exception) {
                                 if (e is CancellationException) throw e
@@ -193,7 +225,7 @@ fun HomeAddressScreen(
                             } finally { busy = false }
                         }
                     },
-                    enabled = !busy && address.isNotBlank() && point != null,
+                    enabled = !busy && parts.valid && point != null,
                     modifier = Modifier.fillMaxWidth().testTag("home_save"),
                 ) { Text(stringResource(if (busy) R.string.home_saving else R.string.home_save)) }
                 if (required) TextButton(onClick = onSignOut, enabled = !busy, modifier = Modifier.testTag("home_sign_out")) {

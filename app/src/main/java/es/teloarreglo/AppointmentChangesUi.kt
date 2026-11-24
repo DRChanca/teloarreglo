@@ -205,6 +205,7 @@ internal fun ChangeForm(
     var address by rememberSaveable(appointment.id) { mutableStateOf(exact?.address.orEmpty()) }
     var lat by rememberSaveable(appointment.id) { mutableStateOf(exact?.let { "%.6f".format(Locale.ROOT, it.point.lat) }.orEmpty()) }
     var lng by rememberSaveable(appointment.id) { mutableStateOf(exact?.let { "%.6f".format(Locale.ROOT, it.point.lng) }.orEmpty()) }
+    var pointFrom by rememberSaveable(appointment.id) { mutableStateOf(if (exact != null) PointFrom.APPOINTMENT else null) }
     var note by rememberSaveable(appointment.id) { mutableStateOf("") }
     var mode by rememberSaveable(appointment.id) { mutableStateOf<String?>(null) }
     var key by rememberSaveable(appointment.id) { mutableStateOf<String?>(null) }
@@ -270,12 +271,19 @@ internal fun ChangeForm(
                 initial = lat.toDoubleOrNull()?.let { a -> lng.toDoubleOrNull()?.let { b -> es.teloarreglo.search.GeoPoint(a, b) } }
                     ?.takeIf { it.valid },
                 onDismiss = { picking = false },
-            ) { point -> lat = "%.6f".format(Locale.ROOT, point.lat); lng = "%.6f".format(Locale.ROOT, point.lng); picking = false }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(lat, { lat = it.take(12) }, enabled = editable, singleLine = true, keyboardOptions = decimal,
-                    label = { Text(stringResource(R.string.appointment_latitude)) }, modifier = Modifier.weight(1f).testTag("change_lat"))
-                OutlinedTextField(lng, { lng = it.take(12) }, enabled = editable, singleLine = true, keyboardOptions = decimal,
-                    label = { Text(stringResource(R.string.appointment_longitude)) }, modifier = Modifier.weight(1f).testTag("change_lng"))
+            ) { point ->
+                lat = "%.6f".format(Locale.ROOT, point.lat); lng = "%.6f".format(Locale.ROOT, point.lng); picking = false
+                pointFrom = PointFrom.PIN
+            }
+            PointFromLine(pointFrom.takeIf { lat.isNotBlank() && lng.isNotBlank() }, "change_point")
+            // Typed coordinates only as the fallback without a map (#41).
+            if (!mapsReady) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(lat, { lat = it.take(12); pointFrom = PointFrom.TYPED }, enabled = editable, singleLine = true,
+                    keyboardOptions = decimal, label = { Text(stringResource(R.string.appointment_latitude)) },
+                    modifier = Modifier.weight(1f).testTag("change_lat"))
+                OutlinedTextField(lng, { lng = it.take(12); pointFrom = PointFrom.TYPED }, enabled = editable, singleLine = true,
+                    keyboardOptions = decimal, label = { Text(stringResource(R.string.appointment_longitude)) },
+                    modifier = Modifier.weight(1f).testTag("change_lng"))
             }
         }
     }
