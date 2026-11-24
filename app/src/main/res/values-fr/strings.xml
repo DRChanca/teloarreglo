@@ -154,6 +154,7 @@
     <string name="subscription_benefit_export">Export de l’agenda</string>
     <string name="subscription_benefit_templates">Modèles de devis</string>
     <string name="subscription_benefit_featured">Emplacements « En vedette » dans les recherches de vos zones</string>
+    <string name="catalogue_featured_profile">Profil en vedette</string>
     <string name="subscription_featured_badge">En vedette</string>
     <string name="subscription_featured_title">Voici comment un emplacement promu est signalé</string>
     <string name="subscription_featured_zones">Il ne pourrait apparaître que dans les communes que vous couvrez : %1$s.</string>
@@ -286,9 +287,6 @@
     <string name="home_floor">Étage</string>
     <string name="home_door">Porte</string>
     <string name="home_locality">Code postal et ville</string>
-    <string name="home_point_places">Emplacement : celui de l’adresse choisie.</string>
-    <string name="home_point_pin">Emplacement : marqué sur la carte.</string>
-    <string name="home_point_gps">Emplacement : obtenu par votre GPS.</string>
     <string name="home_point_missing">Emplacement manquant : choisissez une adresse suggérée, utilisez votre position ou marquez-la sur la carte.</string>
     <string name="home_no_suggestions">Aucun résultat. Essayez une autre écriture ou saisissez-la à la main.</string>
     <string name="home_places_unavailable">La saisie automatique des adresses n’est pas disponible. Saisissez l’adresse et placez le point sur la carte ou utilisez votre position.</string>

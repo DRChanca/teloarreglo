@@ -151,8 +151,8 @@ private fun Section(title: Int, tag: String, items: List<Int>) {
 
 /** The visible «Destacado» label: same look in the preview, the search results and the public profile. */
 @Composable
-internal fun FeaturedBadge(modifier: Modifier = Modifier) {
-    Text(stringResource(R.string.subscription_featured_badge),
+internal fun FeaturedBadge(modifier: Modifier = Modifier, label: Int = R.string.subscription_featured_badge) {
+    Text(stringResource(label),
         color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
         modifier = modifier.background(Color(0xFF8A5A00), RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp))
 }

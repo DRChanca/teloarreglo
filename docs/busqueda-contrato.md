@@ -39,6 +39,7 @@ POST /functions/v1/search-professionals
 4. **Privacidad**: la distancia mostrada se redondea hacia arriba a tramos de 500 m (`distance_band_m`), para que no se pueda triangular el domicilio buscando desde varios puntos. Nunca se devuelven coordenadas ni celdas.
 5. **Fronteras**: si el punto está a menos de 250 m de otro concejo, la función no adivina: devuelve `confirm_concejo`.
 6. **Destacado** (#33, 23-11-2026): los perfiles con suscripción simulada activa y versión aprobada que cubren el concejo van primero (`featured: true`, entre ellos por distancia) y después el resto por proximidad; ver `suscripcion-contrato.md`.
+   El catálogo general por oficio (`catalogue`) también pone primero a los destacados y devuelve `featured` (24-11-2026, ver `suscripcion-contrato.md`).
 
 ## Datos de concejos
 

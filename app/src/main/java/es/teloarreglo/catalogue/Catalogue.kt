@@ -39,6 +39,8 @@ data class PublicProfile(
     /** Point of the approved commercial address (#17); null when there is none. */
     @SerialName("business_lat") val businessLat: Double? = null,
     @SerialName("business_lng") val businessLng: Double? = null,
+    /** «Perfil destacado» from the server rule; the catalogue lists these first (2026-11-24). */
+    val featured: Boolean = false,
 )
 
 /** Read-only approved public snapshot. Missing/unpublished details return null. */

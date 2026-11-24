@@ -2,6 +2,7 @@ package es.teloarreglo
 
 import es.teloarreglo.search.publicLocation
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -193,15 +194,21 @@ fun CatalogueScreen(
                             contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                         items(visible, key = { it.id }) { profile ->
+                            // «Perfil destacado» (2026-11-24): the server lists these first; the card stands out
+                            // with the theme's secondary container and primary outline, and always says why.
                             Card(
                                 onClick = { selected = profile.id }, modifier = Modifier.fillMaxWidth().testTag("profile_${profile.id}"),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                colors = CardDefaults.cardColors(containerColor =
+                                    if (profile.featured) MaterialTheme.colorScheme.secondaryContainer else Color.White),
+                                border = if (profile.featured) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null,
                                 shape = RoundedCornerShape(20.dp),
                             ) {
                                 Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                                     ProfileCover(profile.trades.firstOrNull().orEmpty(), profile.coverPath, covers,
                                         Modifier.width(100.dp).height(120.dp))
                                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                        if (profile.featured) FeaturedBadge(Modifier.testTag("catalogue_featured_${profile.id}"),
+                                            R.string.catalogue_featured_profile)
                                         Text(profile.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
                                             maxLines = 2, overflow = TextOverflow.Ellipsis)
                                         Text(profile.services.firstOrNull() ?: profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(),

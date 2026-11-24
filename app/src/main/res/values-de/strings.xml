@@ -154,6 +154,7 @@
     <string name="subscription_benefit_export">Export des Kalenders</string>
     <string name="subscription_benefit_templates">Vorlagen für Kostenvoranschläge</string>
     <string name="subscription_benefit_featured">„Hervorgehoben“-Plätze in Suchen Ihrer Gebiete</string>
+    <string name="catalogue_featured_profile">Hervorgehobenes Profil</string>
     <string name="subscription_featured_badge">Hervorgehoben</string>
     <string name="subscription_featured_title">So wird ein beworbener Platz gekennzeichnet</string>
     <string name="subscription_featured_zones">Er könnte nur in den Gemeinden erscheinen, die Sie abdecken: %1$s.</string>
@@ -286,9 +287,6 @@
     <string name="home_floor">Stockwerk</string>
     <string name="home_door">Tür</string>
     <string name="home_locality">Postleitzahl und Ort</string>
-    <string name="home_point_places">Standort: von der gewählten Adresse.</string>
-    <string name="home_point_pin">Standort: auf der Karte markiert.</string>
-    <string name="home_point_gps">Standort: per GPS ermittelt.</string>
     <string name="home_point_missing">Standort fehlt: Wähle eine vorgeschlagene Adresse, nutze deinen Standort oder markiere ihn auf der Karte.</string>
     <string name="home_no_suggestions">Keine Ergebnisse. Schreib sie anders oder gib sie von Hand ein.</string>
     <string name="home_places_unavailable">Die Adressvervollständigung ist nicht verfügbar. Gib die Adresse ein und markiere den Punkt auf der Karte oder nutze deinen Standort.</string>

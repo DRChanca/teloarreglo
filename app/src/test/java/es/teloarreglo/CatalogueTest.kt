@@ -78,4 +78,23 @@ class CatalogueTest {
             assertEquals("Calle Gascona, local ficticio A, Oviedo", profiles.single().businessAddress)
         } finally { client.close() }
     }
+
+    @Test fun catalogueListCarriesTheFeaturedFlagInServerOrder() = runTest {
+        val client = createSupabaseClient("https://catalogue.example.org", "public-key") {
+            install(Postgrest)
+            httpEngine = MockEngine {
+                respond(
+                    """[{"profile_id":"b","name":"Zeta","description":"","trades":["plumbing"],"services":[],
+                       "coverage":[],"languages":["es"],"phone":"","images":[],"prices":[],"featured":true},
+                       {"profile_id":"a","name":"Alfa","description":"","trades":["plumbing"],"services":[],
+                       "coverage":[],"languages":["es"],"phone":"","images":[],"prices":[],"featured":false}]""",
+                    HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            }
+        }
+        try {
+            val profiles = SupabaseCatalogue(client).list("plumbing")
+            assertEquals(listOf("b" to true, "a" to false), profiles.map { it.id to it.featured })
+        } finally { client.close() }
+    }
 }

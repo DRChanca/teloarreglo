@@ -245,6 +245,7 @@ La búsqueda tiene en cuenta dónde se realizará el trabajo y las zonas que cub
 - Relevancia, disponibilidad y reputación como criterios generales; ponderación pendiente.
 - Espacios de posicionamiento de pago identificados como «Destacado».
 - Un destacado solo aparece en zonas donde el profesional presta servicio.
+- Decisión de David (24-11-2026): en el listado principal de profesionales (catálogo por oficio, sin zona) los perfiles destacados van primero, con fondo más marcado y la etiqueta «Perfil destacado»; ahí no se aplica la regla de zona porque no hay concejo.
 - No se garantiza una primera posición permanente ni un número de clientes.
 
 En Asturias se utilizará el término «concejo» para el municipio.
