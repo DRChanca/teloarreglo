@@ -145,7 +145,7 @@ class MainActivity : AppCompatActivity() {
             } else if (profileEditor && app.professionalProfiles != null) {
                 ProfileEditorScreen(app.professionalProfiles!!, app.concejos, app.applicationScope,
                     onBack = { profileEditor = false; account = true },
-                    onStarted = { app.identity.restore() }, covers = app.covers)
+                    onStarted = { app.identity.restore() }, covers = app.covers, agenda = app.agenda)
             } else if (noticesVisible && connectedUser != null && app.notices != null) {
                 key(connectedUser) {
                     NoticesScreen(app.notices!!, app.push, connectedUser, app.applicationScope,

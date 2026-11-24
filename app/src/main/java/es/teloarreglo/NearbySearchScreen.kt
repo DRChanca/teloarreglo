@@ -348,8 +348,7 @@ private fun ManualLocation(
                         if (map == MapAvailability.READY) {
                             Text(stringResource(R.string.map_pin_hint), style = MaterialTheme.typography.bodySmall)
                             MapPointPicker(chosen.point, pin, onPin = { pinLat = it.lat; pinLng = it.lng })
-                            if (pin != null) Text(stringResource(R.string.map_pin_placed,
-                                String.format(Locale.ROOT, "%.5f", pin.lat), String.format(Locale.ROOT, "%.5f", pin.lng)),
+                            if (pin != null) Text(stringResource(R.string.map_pin_placed),
                                 Modifier.testTag("map_pin_placed"), style = MaterialTheme.typography.bodySmall)
                         } else {
                             MapUnavailableNotice(map)

@@ -43,10 +43,14 @@ class AddressLookupTest {
         assertEquals("place-uria", chosen.place.placeId)
     }
 
-    @Test fun veryShortTextDoesNotCallPlaces() = runTest {
+    @Test fun upToSevenCharactersDoNotCallPlaces() = runTest {
         val places = FakePlaces()
-        assertEquals(LookupResult.TooShort, AddressLookup(places).suggest("ca"))
+        val lookup = AddressLookup(places)
+        assertEquals(LookupResult.TooShort, lookup.suggest("ca"))
+        assertEquals(LookupResult.TooShort, lookup.suggest("  c. uría   "))
         assertTrue(places.queries.isEmpty())
+        assertTrue(lookup.suggest("c. uría 1 ") is LookupResult.Suggestions)
+        assertEquals(listOf("c. uría 1"), places.queries)
     }
 
     @Test fun withoutKeyPlacesIsUnavailableFromTheStart() = runTest {

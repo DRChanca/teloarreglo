@@ -496,6 +496,7 @@ private fun RequestForm(
     var address by rememberSaveable(conversation.id) { mutableStateOf(home?.address.orEmpty()) }
     var lat by rememberSaveable(conversation.id) { mutableStateOf(home?.let { "%.6f".format(Locale.ROOT, it.lat) }.orEmpty()) }
     var lng by rememberSaveable(conversation.id) { mutableStateOf(home?.let { "%.6f".format(Locale.ROOT, it.lng) }.orEmpty()) }
+    var pointFrom by rememberSaveable(conversation.id) { mutableStateOf(if (home != null) PointFrom.HOME else null) }
     var key by rememberSaveable(conversation.id) { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var locating by remember { mutableStateOf(false) }
@@ -533,6 +534,7 @@ private fun RequestForm(
                 val position = if (pins.ensurePermission()) pins.locate() else Located.Unavailable
                 if (position is Located.Position) {
                     lat = "%.6f".format(Locale.ROOT, position.lat); lng = "%.6f".format(Locale.ROOT, position.lng)
+                    pointFrom = PointFrom.GPS
                 } else noLocation = true
             } finally { locating = false }
         }
@@ -550,13 +552,18 @@ private fun RequestForm(
         onDismiss = { picking = false },
     ) { point ->
         lat = "%.6f".format(Locale.ROOT, point.lat); lng = "%.6f".format(Locale.ROOT, point.lng); picking = false
+        pointFrom = PointFrom.PIN
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    PointFromLine(pointFrom.takeIf { lat.isNotBlank() && lng.isNotBlank() }, "appointment_point")
+    // Without a map, typing the point is the only alternative to GPS; with a map people never see coordinates (#41).
+    if (!pins.mapsReady) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         val decimal = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-        OutlinedTextField(lat, { lat = it.take(12) }, enabled = editable, singleLine = true, keyboardOptions = decimal,
-            label = { Text(stringResource(R.string.appointment_latitude)) }, modifier = Modifier.weight(1f).testTag("appointment_lat"))
-        OutlinedTextField(lng, { lng = it.take(12) }, enabled = editable, singleLine = true, keyboardOptions = decimal,
-            label = { Text(stringResource(R.string.appointment_longitude)) }, modifier = Modifier.weight(1f).testTag("appointment_lng"))
+        OutlinedTextField(lat, { lat = it.take(12); pointFrom = PointFrom.TYPED }, enabled = editable, singleLine = true,
+            keyboardOptions = decimal, label = { Text(stringResource(R.string.appointment_latitude)) },
+            modifier = Modifier.weight(1f).testTag("appointment_lat"))
+        OutlinedTextField(lng, { lng = it.take(12); pointFrom = PointFrom.TYPED }, enabled = editable, singleLine = true,
+            keyboardOptions = decimal, label = { Text(stringResource(R.string.appointment_longitude)) },
+            modifier = Modifier.weight(1f).testTag("appointment_lng"))
     }
     if (invalid) Text(stringResource(R.string.appointment_form_invalid), color = MaterialTheme.colorScheme.error)
     SubmitArea(busy, key != null, failure, shownError, R.string.appointment_send_request, "appointment_send_request") {
@@ -583,6 +590,21 @@ private fun RequestForm(
             } finally { busy = false }
         }
     }
+}
+
+/** Where a typed-in job point came from, said in words instead of coordinates (#41). */
+internal enum class PointFrom { HOME, GPS, PIN, TYPED, APPOINTMENT }
+
+@Composable
+internal fun PointFromLine(from: PointFrom?, tag: String) {
+    Text(stringResource(when (from) {
+        null -> R.string.location_point_missing
+        PointFrom.HOME -> R.string.location_point_home
+        PointFrom.GPS -> R.string.location_point_gps
+        PointFrom.PIN -> R.string.location_point_pin
+        PointFrom.TYPED -> R.string.location_point_typed
+        PointFrom.APPOINTMENT -> R.string.location_point_appointment
+    }), Modifier.testTag(tag), style = MaterialTheme.typography.bodySmall)
 }
 
 @Composable
@@ -689,8 +711,6 @@ private fun AppointmentLocationBlock(appointment: Appointment, professional: Boo
         null -> Text(stringResource(R.string.area_loading), style = MaterialTheme.typography.bodySmall)
         is AppointmentLocation.Exact -> {
             Text(stringResource(R.string.appointment_address_label, location.address), style = MaterialTheme.typography.bodySmall)
-            Text(stringResource(R.string.appointment_pin, "%.5f".format(Locale.ROOT, location.point.lat),
-                "%.5f".format(Locale.ROOT, location.point.lng)), style = MaterialTheme.typography.bodySmall)
             if (!professional && appointment.stage == AppointmentStage.PENDING) Text(
                 stringResource(R.string.area_client_notice, appointment.place?.areaRadiusMeters ?: 400),
                 style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("area_client_notice"))

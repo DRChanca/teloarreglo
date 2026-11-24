@@ -1,5 +1,6 @@
 package es.teloarreglo
 
+import es.teloarreglo.home.AddressParts
 import es.teloarreglo.home.AwayFromHome
 import es.teloarreglo.home.HomeAddress
 import es.teloarreglo.home.distanceMeters
@@ -88,6 +89,33 @@ class HomeAddressTest {
             assertEquals("places", body["p_source"]!!.jsonPrimitive.content)
             assertEquals("ChIJ-demo", body["p_place_id"]!!.jsonPrimitive.content)
             assertEquals("33044", saved.ineCode)
+        } finally { client.close() }
+    }
+
+    @Test fun theSpanishFieldsAreSavedBesideTheReadableLineAndComeBackForEditing() = runTest {
+        var sent: JsonObject? = null
+        val stored = """{"address":"Calle Uría 10, 4º B, 33003 Oviedo","lat":43.3619,"lng":-5.8494,
+            "ine_code":"33044","concejo_name":"Oviedo","source":"pin","place_id":null,
+            "address_parts":{"street":"Calle Uría","number":"10","floor":"4","door":"B","locality":"33003 Oviedo"}}"""
+        val client = client { request -> sent = request.jsonBody(); json("[$stored]") }
+        try {
+            val parts = AddressParts(" Calle Uría ", number = "10", floor = "4", door = "B", locality = "33003 Oviedo")
+            val saved = SupabaseHomeAddresses(client).save(HomeDraft(parts, GeoPoint(43.3619, -5.8494), HomeSource.PIN))
+            val body = sent!!
+            assertEquals("Calle Uría 10, 4º B, 33003 Oviedo", body["p_address"]!!.jsonPrimitive.content)
+            val sentParts = body["p_parts"]!!.jsonObject
+            assertEquals("Calle Uría", sentParts["street"]!!.jsonPrimitive.content)
+            assertEquals("B", sentParts["door"]!!.jsonPrimitive.content)
+            assertEquals(parts.trimmed(), saved.parts)
+        } finally { client.close() }
+    }
+
+    @Test fun aHomeSavedBeforeTheFieldsExistedOpensWithItsWholeAddressAsTheStreet() = runTest {
+        val client = client { json("[$oviedo]") }
+        try {
+            val home = SupabaseHomeAddresses(client).current()!!
+            assertNull(home.parts)
+            assertEquals(AddressParts("Calle Uría 10, Oviedo"), home.editableParts)
         } finally { client.close() }
     }
 

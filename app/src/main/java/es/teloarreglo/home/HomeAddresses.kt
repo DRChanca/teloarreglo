@@ -6,6 +6,7 @@ import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -35,11 +36,26 @@ data class HomeAddress(
     @SerialName("concejo_name") val concejoName: String? = null,
     val source: HomeSource,
     @SerialName("place_id") val placeId: String? = null,
+    /** Street, número, piso, puerta… as typed (#41); null for homes saved before the fields existed. */
+    @SerialName("address_parts") val parts: AddressParts? = null,
 ) {
     val point: GeoPoint get() = GeoPoint(lat, lng)
+
+    /** The fields to edit: the saved ones, or the whole old address as the street. */
+    val editableParts: AddressParts get() = parts ?: AddressParts(address)
 }
 
-data class HomeDraft(val address: String, val point: GeoPoint, val source: HomeSource, val placeId: String? = null)
+data class HomeDraft(
+    val address: String,
+    val point: GeoPoint,
+    val source: HomeSource,
+    val placeId: String? = null,
+    val parts: AddressParts? = null,
+) {
+    /** The readable line is always built from the Spanish fields, so both are saved together (#41). */
+    constructor(parts: AddressParts, point: GeoPoint, source: HomeSource, placeId: String? = null) :
+        this(parts.text(), point, source, placeId, parts.trimmed())
+}
 
 /** Server rejections, kept apart from network uncertainty (rethrown as is). */
 enum class HomeFailure { ACCESS, INVALID }
@@ -64,6 +80,7 @@ class SupabaseHomeAddresses(private val client: SupabaseClient) : HomeAddresses 
             put("p_lng", draft.point.lng)
             put("p_source", when (draft.source) { HomeSource.PLACES -> "places"; HomeSource.PIN -> "pin"; HomeSource.GPS -> "gps" })
             put("p_place_id", draft.placeId)
+            draft.parts?.let { put("p_parts", Json.encodeToJsonElement(AddressParts.serializer(), it)) }
         }).decodeList<HomeAddress>().single()
     }
 

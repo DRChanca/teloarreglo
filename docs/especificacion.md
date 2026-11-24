@@ -472,7 +472,7 @@ La aprobación exige funcionamiento real del panel y sus permisos; no significa 
 - Un perfil pendiente o rechazado no aparece en búsquedas. El rechazo muestra un motivo al profesional y permite corregir el perfil y solicitar nueva revisión.
 - El administrador aprueba o rechaza, pero no reescribe los datos del profesional.
 - Los cambios de datos públicos de un perfil aprobado requieren nueva revisión. Hasta aprobarse sigue visible la última versión aprobada; si se rechazan, esa versión permanece. Excepción de 2026-11-23: servicios, precios orientativos y foto de portada los publica el propietario sin revisión (ver «Actualización: decisiones de David del 23 de noviembre de 2026»).
-- Revisar un cambio de perfil no elimina citas ni conversaciones. Los cambios de agenda no necesitan revisión administrativa.
+- Revisar un cambio de perfil no elimina citas ni conversaciones. Los cambios de agenda no necesitan revisión administrativa. Decisión de David (#41, 24 de noviembre de 2026): el profesional rellena su agenda semanal al presentar el perfil a revisión, no después de la aprobación; se guarda con la presentación y sigue sin necesitar revisión.
 - La comprobación comercial de estos perfiles es simulada y se explica por voz, sin exigir avisos globales de demo en la interfaz para la prueba universitaria. La narración no presenta una insignia como acreditación comercial auténtica. No se solicita documentación personal real.
 
 **Incidencias y privacidad**

@@ -35,14 +35,23 @@ class GooglePlacesAutocomplete private constructor(private val client: PlacesCli
     }
 
     override suspend fun details(suggestion: AddressSuggestion): PlaceDetails {
-        val request = FetchPlaceRequest.builder(suggestion.placeId, listOf(Place.Field.ID, Place.Field.FORMATTED_ADDRESS, Place.Field.LOCATION))
+        val request = FetchPlaceRequest.builder(suggestion.placeId, listOf(Place.Field.ID, Place.Field.FORMATTED_ADDRESS, Place.Field.LOCATION, Place.Field.ADDRESS_COMPONENTS))
             .setSessionToken(token)
             .build()
         try {
             val place = client.fetchPlace(request).await().place
             val location = checkNotNull(place.location) { "place without location" }
+            // Address components (same Essentials field group as the formatted address) split the street from
+            // its number and locality, so the form shows the Spanish fields without repeating the number (#41).
+            val components = place.addressComponents?.asList().orEmpty()
+            fun component(type: String) = components.firstOrNull { type in it.types }?.name?.takeIf { it.isNotBlank() }
+            val town = component("locality") ?: component("postal_town") ?: component("administrative_area_level_3")
+            val province = component("administrative_area_level_2")?.takeIf { it != town }
+            val locality = listOfNotNull(listOfNotNull(component("postal_code"), town).joinToString(" ").ifBlank { null }, province)
+                .joinToString(", ").ifBlank { null }
             return PlaceDetails(place.formattedAddress ?: suggestion.primary, GeoPoint(location.latitude, location.longitude),
-                place.id ?: suggestion.placeId)
+                place.id ?: suggestion.placeId, street = component("route"), number = component("street_number"),
+                locality = locality)
         } finally {
             token = AutocompleteSessionToken.newInstance()
         }

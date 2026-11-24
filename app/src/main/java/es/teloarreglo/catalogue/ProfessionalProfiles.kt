@@ -10,6 +10,9 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 
 /**
  * Public fields of the owner's profile (#30). Name, description, trades, coverage, languages, phone
@@ -57,7 +60,7 @@ data class OwnProfile(
     val review: ProfileReview,
 )
 
-enum class ProfileEditFailure { INVALID, CONFLICT, NO_PROFILE, ACCESS }
+enum class ProfileEditFailure { INVALID, INVALID_AGENDA, CONFLICT, NO_PROFILE, ACCESS }
 class ProfileEditException(val failure: ProfileEditFailure, cause: Exception) : Exception(failure.name, cause)
 
 /**
@@ -68,7 +71,8 @@ class ProfileEditException(val failure: ProfileEditFailure, cause: Exception) : 
 interface ProfessionalProfiles {
     suspend fun mine(): OwnProfile?
     suspend fun start(): OwnProfile
-    suspend fun submit(requestId: String, content: ProfileContent): ProfileReview
+    /** Presents [content] for review; [agenda], if given, is saved in the same request without review (#41). */
+    suspend fun submit(requestId: String, content: ProfileContent, agenda: ProfileAgenda? = null): ProfileReview
     suspend fun savePrivateAddress(address: String?): OwnProfile
     /** Publishes services and reference prices at once, without review. Existing appointments keep their amounts. */
     suspend fun saveOffer(services: List<String>, prices: List<ReferencePrice>): OwnProfile
@@ -86,10 +90,16 @@ class SupabaseProfessionalProfiles(private val client: SupabaseClient) : Profess
         client.postgrest.rpc("start_professional_profile").decodeAs<OwnProfile>()
     }
 
-    override suspend fun submit(requestId: String, content: ProfileContent): ProfileReview = mapped {
+    override suspend fun submit(requestId: String, content: ProfileContent, agenda: ProfileAgenda?): ProfileReview = mapped {
         client.postgrest.rpc("submit_professional_profile", buildJsonObject {
             put("p_submission", requestId)
             put("p_content", contentJson.encodeToJsonElement(ProfileContent.serializer(), content))
+            if (agenda != null) putJsonObject("p_agenda") {
+                put("default_duration_minutes", agenda.defaultDurationMinutes)
+                putJsonArray("windows") {
+                    agenda.windows.forEach { addJsonObject { put("weekday", it.weekday); put("start", it.start); put("end", it.end) } }
+                }
+            }
         }).decodeAs<ProfileReview>()
     }
 
@@ -111,6 +121,7 @@ class SupabaseProfessionalProfiles(private val client: SupabaseClient) : Profess
             error.statusCode == 401 || error.statusCode == 403 -> ProfileEditFailure.ACCESS
             "invalid_profile_content" in message || "invalid_profile_offer" in message ||
                 "invalid_private_address" in message -> ProfileEditFailure.INVALID
+            "invalid_agenda" in message -> ProfileEditFailure.INVALID_AGENDA
             "request_conflict" in message -> ProfileEditFailure.CONFLICT
             "profile_not_found" in message -> ProfileEditFailure.NO_PROFILE
             else -> null

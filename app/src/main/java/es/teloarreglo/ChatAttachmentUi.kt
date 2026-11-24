@@ -1,11 +1,13 @@
 package es.teloarreglo
 
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -90,6 +93,7 @@ internal fun ChatAttachmentControls(
                     Text(stringResource(R.string.cancel))
                 }
             }
+            is AttachmentSendState.Ready -> AttachmentConfirmation(current.prepared, sender::confirm, sender::cancel)
             is AttachmentSendState.Failed -> {
                 val text = current.kind.text()
                 Text(stringResource(when (current.failure) {
@@ -123,6 +127,33 @@ internal fun ChatAttachmentControls(
             }
             Text(stringResource(R.string.photo_limits), style = MaterialTheme.typography.bodySmall)
             Text(stringResource(R.string.video_limits), style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+/** Shows the compressed photo (or the video's length) and waits for «Enviar» or «Descartar» (#41). */
+@Composable
+private fun AttachmentConfirmation(prepared: PreparedAttachment, onSend: () -> Unit, onDiscard: () -> Unit) {
+    val video = prepared as? PreparedVideo
+    if (video != null) {
+        val seconds = (video.durationMs / 1000).toInt()
+        Text(stringResource(R.string.attachment_ready_video, "%d:%02d".format(seconds / 60, seconds % 60)),
+            Modifier.testTag("attachment_ready"))
+    } else {
+        Text(stringResource(R.string.attachment_ready_photo), Modifier.testTag("attachment_ready"))
+        val bitmap = remember(prepared) {
+            BitmapFactory.decodeByteArray(prepared.bytes, 0, prepared.bytes.size)?.asImageBitmap()
+        }
+        if (bitmap != null) Image(bitmap, stringResource(R.string.photo_message),
+            Modifier.size(220.dp, 160.dp).testTag("attachment_preview"), contentScale = ContentScale.Crop)
+    }
+    Row {
+        Button(onClick = onSend, modifier = Modifier.testTag("attachment_send")) {
+            Text(stringResource(R.string.attachment_send))
+        }
+        Spacer(Modifier.width(8.dp))
+        TextButton(onClick = onDiscard, modifier = Modifier.testTag("attachment_discard")) {
+            Text(stringResource(R.string.photo_discard))
         }
     }
 }
