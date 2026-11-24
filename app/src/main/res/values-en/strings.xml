@@ -154,6 +154,7 @@
     <string name="subscription_benefit_export">Calendar export</string>
     <string name="subscription_benefit_templates">Quote templates</string>
     <string name="subscription_benefit_featured">“Featured” slots in searches within your areas</string>
+    <string name="catalogue_featured_profile">Featured profile</string>
     <string name="subscription_featured_badge">Featured</string>
     <string name="subscription_featured_title">This is how a promoted slot is labelled</string>
     <string name="subscription_featured_zones">It could only appear in the municipalities you cover: %1$s.</string>
@@ -286,9 +287,6 @@
     <string name="home_floor">Floor</string>
     <string name="home_door">Door</string>
     <string name="home_locality">Postcode and town</string>
-    <string name="home_point_places">Location: taken from the chosen address.</string>
-    <string name="home_point_pin">Location: marked on the map.</string>
-    <string name="home_point_gps">Location: taken from your GPS.</string>
     <string name="home_point_missing">Location missing: choose a suggested address, use your location or mark it on the map.</string>
     <string name="home_no_suggestions">No results. Try writing it differently or type it by hand.</string>
     <string name="home_places_unavailable">Address autocomplete is not available. Type the address and mark the point on the map or use your location.</string>

@@ -154,6 +154,7 @@
     <string name="subscription_benefit_export">Exportación de la agenda</string>
     <string name="subscription_benefit_templates">Plantillas de presupuestos</string>
     <string name="subscription_benefit_featured">Espacios «Destacado» en las búsquedas de tus zonas</string>
+    <string name="catalogue_featured_profile">Perfil destacado</string>
     <string name="subscription_featured_badge">Destacado</string>
     <string name="subscription_featured_title">Así se identifica un espacio promocionado</string>
     <string name="subscription_featured_zones">Solo podría aparecer en los concejos que cubres: %1$s.</string>
@@ -286,9 +287,6 @@
     <string name="home_floor">Piso</string>
     <string name="home_door">Puerta</string>
     <string name="home_locality">Código postal y localidad</string>
-    <string name="home_point_places">Ubicación: la de la dirección elegida.</string>
-    <string name="home_point_pin">Ubicación: marcada en el mapa.</string>
-    <string name="home_point_gps">Ubicación: tomada con tu GPS.</string>
     <string name="home_point_missing">Falta la ubicación: elige una dirección sugerida, usa tu ubicación o márcala en el mapa.</string>
     <string name="home_no_suggestions">Sin resultados. Prueba a escribirla de otra forma o escríbela a mano.</string>
     <string name="home_places_unavailable">El autocompletado de direcciones no está disponible. Escribe la dirección y marca el punto en el mapa o usa tu ubicación.</string>
