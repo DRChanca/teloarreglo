@@ -83,11 +83,11 @@ class CoverEditorTest {
         val covers = object : ProfessionalCovers {
             override suspend fun state(profileId: String): CoverRequest? = null
             override suspend fun photo(profileId: String, requestId: String, jpeg: ByteArray) =
-                CoverRequest(requestId, CoverStatus.PENDING, "photo.jpg")
+                CoverRequest(requestId, CoverStatus.PUBLISHED, "photo.jpg")
             override suspend fun generic(profileId: String, requestId: String): CoverRequest {
                 genericKeys.add(requestId)
                 if (genericKeys.size == 1) throw IOException("response lost")
-                return CoverRequest(requestId, CoverStatus.PENDING)
+                return CoverRequest(requestId, CoverStatus.PUBLISHED)
             }
             override suspend fun imageUrl(path: String) = error("offline preview")
         }
@@ -116,7 +116,7 @@ class CoverEditorTest {
         compose.onNodeWithTag("cover_submit").performScrollTo().performClick()
         compose.onNodeWithTag("cover_state").assertDoesNotExist()
         compose.onNodeWithTag("cover_submit").assertIsNotEnabled()
-        response.complete(CoverRequest("request-1", CoverStatus.PENDING, "private.jpg"))
+        response.complete(CoverRequest("request-1", CoverStatus.PUBLISHED, "private.jpg"))
         compose.onNodeWithTag("cover_state").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("cover_submit").assertIsNotEnabled()
     }
@@ -128,7 +128,7 @@ class CoverEditorTest {
             override suspend fun photo(profileId: String, requestId: String, jpeg: ByteArray): CoverRequest {
                 attempts.add(requestId)
                 if (attempts.size == 1) throw IOException("offline")
-                return CoverRequest(requestId, CoverStatus.PENDING, "private.jpg")
+                return CoverRequest(requestId, CoverStatus.PUBLISHED, "private.jpg")
             }
             override suspend fun generic(profileId: String, requestId: String) = error("not used")
             override suspend fun imageUrl(path: String) = error("offline preview")

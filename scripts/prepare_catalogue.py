@@ -7,7 +7,7 @@ import uuid
 from configuration import ROOT
 
 NAMESPACE = uuid.UUID("c1771400-0000-4000-8000-000000000014")
-TRADES = ("plumbing", "electrical", "carpentry", "painting", "masonry", "general")
+TRADES = ("plumbing", "electrical", "carpentry", "painting", "masonry", "general", "cleaning")
 
 
 def literal(value):
@@ -16,10 +16,10 @@ def literal(value):
 
 def profiles(namespace=NAMESPACE):
     rows = json.loads((ROOT / "supabase/catalogue/profiles.json").read_text())
-    assert len(rows) == 18 and all(sum(p["trade"] == t for p in rows) == 3 for t in TRADES)
+    assert len(rows) == 21 and all(sum(p["trade"] == t for p in rows) == 3 for t in TRADES)
     details = {p["name"]: p for p in json.loads((ROOT / "supabase/catalogue/details.json").read_text())}
     if set(details) != {p["name"] for p in rows}:
-        raise ValueError("Catalogue details must match the 18 prepared profiles")
+        raise ValueError("Catalogue details must match the 21 prepared profiles")
     rows = [dict(p, **details[p["name"]]) for p in rows]
     return [(str(uuid.uuid5(namespace, str(i))), p) for i, p in enumerate(rows)]
 
@@ -45,15 +45,18 @@ def public_services(p):
     return list(dict.fromkeys(p["services"] + [price["service"] for price in reference_prices(p)[1:]]))
 
 
-def preparation_sql(owner_email, namespace=NAMESPACE):
+def preparation_sql(owner_email, namespace=NAMESPACE, start=0):
+    """start=18 prints only the cleaning profiles (#36) for a catalogue that already has the first 18."""
     rows = profiles(namespace)
-    statements = ["begin;", """create temporary table catalogue_preparation_owner (
+    statements = ["begin;"] if start else ["begin;", """create temporary table catalogue_preparation_owner (
  id uuid not null
 ) on commit drop;""", f"""insert into pg_temp.catalogue_preparation_owner(id)
  values ((select id from auth.users where email = {literal(owner_email)}
    and email_confirmed_at is not null and deleted_at is null
    and (banned_until is null or banned_until <= now())));"""]
     for i, (profile_id, p) in enumerate(rows):
+        if i < start:
+            continue
         # First profile belongs to the verified account used in the demo.
         # The other fictional profiles are explicitly unclaimed, not fake Auth users.
         owner = "(select id from pg_temp.catalogue_preparation_owner)" if i == 0 else "null"
@@ -83,6 +86,10 @@ def preparation_sql(owner_email, namespace=NAMESPACE):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--owner-email", required=True, help="existing verified demo professional account")
+    parser.add_argument("--owner-email", help="existing verified demo professional account (initial load)")
+    parser.add_argument("--only-cleaning", action="store_true",
+                        help="print only the three cleaning profiles added by #36, all unclaimed")
     args = parser.parse_args()
-    print(preparation_sql(args.owner_email))
+    if not args.only_cleaning and not args.owner_email:
+        parser.error("--owner-email is required for the initial load")
+    print(preparation_sql(args.owner_email, start=18 if args.only_cleaning else 0))

@@ -1,0 +1,557 @@
+package es.teloarreglo
+
+import androidx.compose.runtime.*
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createComposeRule
+import es.teloarreglo.appointments.*
+import es.teloarreglo.chat.Conversation
+import es.teloarreglo.search.Located
+import org.junit.Assert.assertEquals
+import org.junit.Rule
+import org.junit.Test
+import java.time.Duration
+import java.time.Instant
+
+/** In-memory stand-in with the server's observable rules: keys, versions and kept history. */
+internal class FakeAppointments : Appointments {
+    val items = mutableListOf<Appointment>()
+    val requestKeys = mutableListOf<String>()
+    var loseNextResponse = false
+    private val proposals = mutableMapOf<String, MutableList<AppointmentProposal>>()
+
+    private fun withHistory(a: Appointment) = a.copy(rawProposals = proposals[a.id].orEmpty().toList(),
+        rawChanges = changes[a.id].orEmpty().toList())
+    override suspend fun list(conversationId: String) = items.map(::withHistory)
+
+    override suspend fun request(conversationId: String, requestId: String, request: AppointmentRequest): Appointment {
+        requestKeys += requestId
+        val result = items.firstOrNull { it.requestId == requestId } ?: Appointment(
+            "a${items.size + 1}", conversationId, "client", "pro", requestId, request.problem, request.start, request.end,
+            1, AppointmentStage.PENDING, Instant.now(),
+            place = AppointmentPlace("a${items.size + 1}", true, request.address, request.latitude, request.longitude,
+                request.latitude, request.longitude, 400, "Oviedo"),
+        ).also { items.add(0, it) }
+        if (loseNextResponse) { loseNextResponse = false; throw java.io.IOException("response lost") }
+        return result
+    }
+
+    override suspend fun propose(appointmentId: String, expectedVersion: Int, requestId: String, draft: ProposalDraft): AppointmentProposal {
+        val index = items.indexOfFirst { it.id == appointmentId }
+        if (items[index].version != expectedVersion) throw AppointmentException(AppointmentFailure.STALE, Exception())
+        val history = proposals.getOrPut(appointmentId) { mutableListOf() }
+        history.replaceAll { if (it.status == ProposalStatus.PENDING) it.copy(status = ProposalStatus.SUPERSEDED) else it }
+        val proposal = AppointmentProposal("p${history.size + 1}", appointmentId, "pro", history.size + 1, requestId,
+            draft.scope, draft.start, draft.start.plus(Duration.ofMinutes(draft.durationMinutes.toLong())), draft.durationMinutes,
+            draft.amountCents, draft.visitFeeCents, draft.materialsIncluded, draft.travelIncluded, ProposalStatus.PENDING, Instant.now())
+        history += proposal
+        items[index] = items[index].copy(version = expectedVersion + 1)
+        return proposal
+    }
+
+    override suspend fun reject(proposalId: String): AppointmentProposal {
+        val (appointmentId, history) = proposals.entries.first { (_, list) -> list.any { it.id == proposalId } }
+        val i = history.indexOfFirst { it.id == proposalId }
+        history[i] = history[i].copy(status = ProposalStatus.REJECTED)
+        val index = items.indexOfFirst { it.id == appointmentId }
+        items[index] = items[index].copy(version = items[index].version + 1)
+        return history[i]
+    }
+
+    /** When true, the agenda is taken: like the server, nothing changes and SLOT_UNAVAILABLE is raised. */
+    var slotTaken = false
+    override suspend fun accept(proposalId: String): AppointmentProposal {
+        val (appointmentId, history) = proposals.entries.first { (_, list) -> list.any { it.id == proposalId } }
+        val i = history.indexOfFirst { it.id == proposalId }
+        if (history[i].status == ProposalStatus.ACCEPTED) return history[i]
+        if (slotTaken) throw AppointmentException(AppointmentFailure.SLOT_UNAVAILABLE, Exception())
+        history[i] = history[i].copy(status = ProposalStatus.ACCEPTED)
+        val index = items.indexOfFirst { it.id == appointmentId }
+        items[index] = items[index].copy(version = items[index].version + 1, stage = AppointmentStage.CONFIRMED)
+        return history[i]
+    }
+
+    val paymentKeys = mutableListOf<String>()
+    /** Like the server: one key binds one intention; a conflict or a lost answer never charges twice. */
+    override suspend fun confirm(proposalId: String, requestId: String, mode: PaymentMode): AppointmentPayment {
+        paymentKeys += requestId
+        val (appointmentId, history) = proposals.entries.first { (_, list) -> list.any { it.id == proposalId } }
+        val index = items.indexOfFirst { it.id == appointmentId }
+        items[index].payment?.let { return it }
+        if (slotTaken) throw AppointmentException(AppointmentFailure.SLOT_UNAVAILABLE, Exception())
+        val i = history.indexOfFirst { it.id == proposalId }
+        history[i] = history[i].copy(status = ProposalStatus.ACCEPTED)
+        val total = history[i].payableCents
+        val paid = if (mode == PaymentMode.INTEGRATED) total else 0
+        val payment = AppointmentPayment(appointmentId, proposalId, requestId, mode, total, paid, paid, 0, 0)
+        items[index] = items[index].copy(version = items[index].version + 1, stage = AppointmentStage.CONFIRMED, payment = payment)
+        if (loseNextResponse) { loseNextResponse = false; throw java.io.IOException("response lost") }
+        return payment
+    }
+
+    private val changes = mutableMapOf<String, MutableList<AppointmentChange>>()
+    private fun change(id: String) = changes.entries.first { (_, list) -> list.any { it.id == id } }
+
+    /** Like the server (#23): a change never touches the conditions in force until accepted. */
+    override suspend fun proposeChange(appointmentId: String, expectedVersion: Int, requestId: String, draft: ChangeDraft): AppointmentChange {
+        val index = items.indexOfFirst { it.id == appointmentId }
+        if (items[index].version != expectedVersion) throw AppointmentException(AppointmentFailure.STALE, Exception())
+        val history = changes.getOrPut(appointmentId) { mutableListOf() }
+        history.replaceAll { if (it.status == ChangeStatus.PENDING) it.copy(status = ChangeStatus.SUPERSEDED) else it }
+        val base = withHistory(items[index]).confirmedProposal!!
+        val result = AppointmentChange("c${history.size + 1}", appointmentId, "pro", history.size + 1, requestId, ChangeKind.CHANGE,
+            base.id, draft.scope, draft.start, draft.start.plus(Duration.ofMinutes(draft.durationMinutes.toLong())),
+            draft.durationMinutes, draft.amountCents, draft.visitFeeCents, draft.materialsIncluded, draft.travelIncluded,
+            status = ChangeStatus.PENDING, createdAt = Instant.now())
+        history += result
+        items[index] = items[index].copy(version = expectedVersion + 1)
+        return result
+    }
+
+    override suspend fun requestAddressCorrection(appointmentId: String, expectedVersion: Int, requestId: String, note: String) =
+        throw UnsupportedOperationException()
+
+    override suspend fun acceptChange(changeId: String, mode: PaymentMode?): AppointmentChange {
+        val (appointmentId, history) = change(changeId)
+        val i = history.indexOfFirst { it.id == changeId }
+        if (history[i].status == ChangeStatus.ACCEPTED) return history[i]
+        if (slotTaken) throw AppointmentException(AppointmentFailure.SLOT_UNAVAILABLE, Exception())
+        val c = history[i]
+        val list = proposals.getValue(appointmentId)
+        list.replaceAll { if (it.status == ProposalStatus.ACCEPTED) it.copy(status = ProposalStatus.REPLACED) else it }
+        list += AppointmentProposal("p${list.size + 1}", appointmentId, c.authorId, list.size + 1, c.id, c.scope!!, c.startAt!!,
+            c.endAt!!, c.durationMinutes!!, c.amountCents!!, c.visitFeeCents, c.materialsIncluded!!, c.travelIncluded!!,
+            ProposalStatus.ACCEPTED, Instant.now())
+        val index = items.indexOfFirst { it.id == appointmentId }
+        val payment = items[index].payment?.let { p ->
+            val diff = c.payableCents!! - p.agreedCents
+            p.copy(agreedCents = c.payableCents!!, paidCents = p.paidCents + maxOf(diff, 0), pendingCents = p.pendingCents + diff,
+                refundedCents = p.refundedCents + maxOf(-diff, 0))
+        }
+        history[i] = c.copy(status = ChangeStatus.ACCEPTED)
+        items[index] = items[index].copy(version = items[index].version + 1, payment = payment)
+        return history[i]
+    }
+
+    override suspend fun rejectChange(changeId: String): AppointmentChange {
+        val (appointmentId, history) = change(changeId)
+        val i = history.indexOfFirst { it.id == changeId }
+        history[i] = history[i].copy(status = ChangeStatus.REJECTED)
+        val index = items.indexOfFirst { it.id == appointmentId }
+        items[index] = items[index].copy(version = items[index].version + 1)
+        return history[i]
+    }
+
+    private fun marks(a: Appointment, refunded: Int = 0) =
+        AppointmentMarks(a.id, a.stage, a.version, a.startedAt, a.cancelledAt, a.cancelledBy, refunded)
+
+    override suspend fun startWork(appointmentId: String): AppointmentMarks {
+        val index = items.indexOfFirst { it.id == appointmentId }
+        val a = items[index]
+        if (a.stage == AppointmentStage.STARTED) return marks(a)
+        if (a.stage != AppointmentStage.CONFIRMED) throw AppointmentException(AppointmentFailure.STALE, Exception())
+        items[index] = a.copy(stage = AppointmentStage.STARTED, startedAt = Instant.now(), version = a.version + 1)
+        return marks(items[index])
+    }
+
+    override suspend fun cancel(appointmentId: String): AppointmentMarks {
+        val index = items.indexOfFirst { it.id == appointmentId }
+        val a = items[index]
+        if (a.stage == AppointmentStage.CANCELLED) return marks(a)
+        if (a.stage == AppointmentStage.STARTED) throw AppointmentException(AppointmentFailure.ALREADY_STARTED, Exception())
+        if (a.stage != AppointmentStage.CONFIRMED) throw AppointmentException(AppointmentFailure.STALE, Exception())
+        val refund = a.payment?.takeIf { it.mode == PaymentMode.INTEGRATED }?.pendingCents ?: 0
+        items[index] = a.copy(stage = AppointmentStage.CANCELLED, cancelledAt = Instant.now(), cancelledBy = a.clientId,
+            version = a.version + 1, payment = a.payment?.let {
+                it.copy(pendingCents = it.pendingCents - refund, refundedCents = it.refundedCents + refund) })
+        return marks(items[index], refund)
+    }
+
+    private fun completionMarks(a: Appointment, delivered: Int = 0) = CompletionMarks(a.id, a.stage, a.version, a.doneAt,
+        a.reminderDueAt, a.closeDueAt, a.completedAt, a.completion, delivered)
+
+    override suspend fun markDone(appointmentId: String): CompletionMarks {
+        val index = items.indexOfFirst { it.id == appointmentId }
+        val a = items[index]
+        if (a.stage == AppointmentStage.DONE || a.stage == AppointmentStage.COMPLETED) return completionMarks(a)
+        if (a.stage != AppointmentStage.STARTED) throw AppointmentException(AppointmentFailure.STALE, Exception())
+        val now = Instant.now()
+        items[index] = a.copy(stage = AppointmentStage.DONE, doneAt = now, reminderDueAt = now.plusSeconds(24 * 3600),
+            closeDueAt = now.plusSeconds(48 * 3600), version = a.version + 1)
+        return completionMarks(items[index])
+    }
+
+    override suspend fun confirmDone(appointmentId: String): CompletionMarks {
+        val index = items.indexOfFirst { it.id == appointmentId }
+        val a = items[index]
+        if (a.stage == AppointmentStage.COMPLETED) return completionMarks(a, a.payment?.deliveredCents ?: 0)
+        if (a.stage != AppointmentStage.DONE) throw AppointmentException(AppointmentFailure.STALE, Exception())
+        val deliver = a.payment?.takeIf { it.mode == PaymentMode.INTEGRATED }?.pendingCents ?: 0
+        items[index] = a.copy(stage = AppointmentStage.COMPLETED, completedAt = Instant.now(),
+            completion = Completion.CLIENT_CONFIRMED, version = a.version + 1, payment = a.payment?.let {
+                it.copy(pendingCents = it.pendingCents - deliver, deliveredCents = it.deliveredCents + deliver) })
+        return completionMarks(items[index], deliver)
+    }
+}
+
+class AppointmentsUiTest {
+    @get:Rule val compose = createComposeRule()
+    private val conversation = Conversation("conversation", "profile", "client", "pro", "Fontanería")
+    private val noPin = PinSource({ false }, { Located.Unavailable })
+
+    private fun waitForTag(tag: String) =
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+
+    @Test fun clientRequestsWithoutPriceAndALostResponseIsRetriedWithTheSameKey() {
+        val fake = FakeAppointments().apply { loseNextResponse = true }
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_request")
+        compose.onNodeWithTag("appointment_request").performClick()
+        compose.onNodeWithTag("appointment_problem").performTextInput("Fuga bajo el fregadero")
+        compose.onNodeWithTag("appointment_address").performTextInput("Calle Ficticia 1")
+        compose.onNodeWithTag("appointment_lat").performTextInput("43.36")
+        compose.onNodeWithTag("appointment_lng").performTextInput("-5.85")
+        compose.onNodeWithTag("appointment_send_request").performScrollTo().performClick()
+        waitForTag("appointment_error")
+        // Either the user retries or the next poll recognises the key in the history; never a second request.
+        if (compose.onAllNodesWithTag("appointment_send_request").fetchSemanticsNodes().isNotEmpty()) {
+            compose.onNodeWithTag("appointment_problem").assertIsNotEnabled()
+            compose.onNodeWithTag("appointment_send_request").performScrollTo().performClick()
+        }
+        waitForTag("appointment_a1")
+        assertEquals(1, fake.items.size)
+        assertEquals(1, fake.requestKeys.distinct().size)
+    }
+
+    private fun seeded() = FakeAppointments().apply {
+        kotlinx.coroutines.runBlocking {
+            request("conversation", "key", AppointmentRequest("Fuga", Instant.now().plusSeconds(86_400),
+                Instant.now().plusSeconds(93_600), "Calle Ficticia 1", 43.36, -5.85))
+        }
+    }
+
+    @Test fun professionalProposesAmountInExactCents() {
+        val fake = seeded()
+        compose.setContent { AppointmentsPanel(fake, "pro", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("appointment_propose").performScrollTo().performClick()
+        compose.onNodeWithTag("proposal_scope").performTextInput("Cambio de sifón")
+        compose.onNodeWithTag("proposal_amount").performTextInput("85,50")
+        compose.onNodeWithTag("proposal_send").performScrollTo().performClick()
+        waitForTag("proposal_1")
+        val current = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single().currentProposal
+        assertEquals(8550, current?.amountCents)
+    }
+
+    @Test fun clientRejectsTheFirstProposalAndItStaysInTheHistory() {
+        val fake = seeded()
+        kotlinx.coroutines.runBlocking {
+            fake.propose("a1", 1, "p-key", ProposalDraft("Cambio de sifón", Instant.now().plusSeconds(90_000), 60, 6000,
+                null, materialsIncluded = true, travelIncluded = true))
+        }
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("appointment_reject").performScrollTo().performClick()
+        compose.onNodeWithTag("appointment_reject_confirm").performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("appointment_reject").fetchSemanticsNodes().isEmpty() }
+        compose.onNodeWithTag("proposal_1").assertExists()
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(listOf(ProposalStatus.REJECTED), appointment.proposals.map { it.status })
+        assertEquals(AppointmentStage.PENDING, appointment.stage)
+    }
+
+    private fun withFreeProposal(fake: FakeAppointments) = fake.apply {
+        kotlinx.coroutines.runBlocking {
+            propose("a1", 1, "free-key", ProposalDraft("Visita gratuita", Instant.now().plusSeconds(90_000), 60, 0,
+                null, materialsIncluded = false, travelIncluded = true))
+        }
+    }
+
+    @Test fun clientAcceptsAFreeProposalAndBothSidesSeeItConfirmed() {
+        val fake = withFreeProposal(seeded())
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("appointment_accept").performScrollTo().performClick()
+        compose.onNodeWithTag("appointment_accept_confirm").performClick()
+        waitForTag("appointment_confirmed_a1")
+        compose.onAllNodesWithTag("appointment_accept").assertCountEquals(0)
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.CONFIRMED, appointment.stage)
+        assertEquals(AppointmentNotice.CONFIRMED, appointment.notice("pro"))
+    }
+
+    @Test fun aTakenSlotIsExplainedAndTheRequestStaysPending() {
+        val fake = withFreeProposal(seeded()).apply { slotTaken = true }
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("appointment_accept").performScrollTo().performClick()
+        compose.onNodeWithTag("appointment_accept_confirm").performClick()
+        waitForTag("appointment_decision_error")
+        compose.onAllNodesWithTag("appointment_confirmed_a1").assertCountEquals(0)
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.PENDING, appointment.stage)
+        assertEquals(ProposalStatus.PENDING, appointment.currentProposal?.status)
+    }
+
+    private fun withPaidProposal(fake: FakeAppointments) = fake.apply {
+        kotlinx.coroutines.runBlocking {
+            propose("a1", 1, "paid-key", ProposalDraft("Cambio de sifón", Instant.now().plusSeconds(90_000), 60, 8550,
+                null, materialsIncluded = true, travelIncluded = true))
+        }
+    }
+
+    @Test fun clientSeesTermsPaysAndALostAnswerIsNotChargedTwice() {
+        val fake = withPaidProposal(seeded()).apply { loseNextResponse = true }
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onAllNodesWithTag("appointment_accept").assertCountEquals(0)
+        compose.onNodeWithTag("payment_integrated").performScrollTo().performClick()
+        compose.onNodeWithTag("payment_terms").assertExists()
+        compose.onNodeWithText("Cambio de sifón", substring = true, useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("payment_confirm").performClick()
+        waitForTag("payment_summary_a1")
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.CONFIRMED, appointment.stage)
+        assertEquals(8550, appointment.payment?.pendingCents)
+        assertEquals(1, fake.paymentKeys.distinct().size)
+    }
+
+    @Test fun directPaymentConfirmsWithoutIntegratedMoney() {
+        val fake = withPaidProposal(seeded())
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("payment_direct").performScrollTo().performClick()
+        compose.onNodeWithTag("payment_confirm").performClick()
+        waitForTag("payment_summary_a1")
+        val payment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single().payment
+        assertEquals(PaymentMode.DIRECT, payment?.mode)
+        assertEquals(0, payment?.paidCents)
+    }
+
+    @Test fun aTakenSlotIsNotChargedAndStaysPending() {
+        val fake = withPaidProposal(seeded()).apply { slotTaken = true }
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("payment_integrated").performScrollTo().performClick()
+        compose.onNodeWithTag("payment_confirm").performClick()
+        waitForTag("appointment_decision_error")
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.PENDING, appointment.stage)
+        assertEquals(null, appointment.payment)
+    }
+
+    /** A paid, confirmed appointment (85,50 €) with a pending change from the professional to 120 €, 90 min (#23). */
+    private fun withPendingChange() = withPaidProposal(seeded()).apply {
+        kotlinx.coroutines.runBlocking {
+            confirm("p1", "pay", PaymentMode.INTEGRATED)
+            val start = list("conversation").single().confirmedProposal!!.startAt
+            proposeChange("a1", list("conversation").single().version, "change-key", ChangeDraft("Sifón y llave de paso",
+                start, 90, 12000, null, materialsIncluded = true, travelIncluded = true))
+        }
+    }
+
+    @Test fun clientSeesBeforeAndAfterAndTheDifferenceBeforeAccepting() {
+        val fake = withPendingChange()
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("change_pending").performScrollTo().assertExists()
+        compose.onNodeWithTag("change_field_amount").assertExists()
+        compose.onNodeWithTag("change_field_when").assertExists()
+        compose.onAllNodesWithTag("change_field_address").assertCountEquals(0)
+        compose.onNodeWithTag("change_effect").assertExists()
+        // Still the agreed conditions until accepted.
+        assertEquals(8550, kotlinx.coroutines.runBlocking { fake.list("conversation") }.single().confirmedProposal?.amountCents)
+        compose.onNodeWithTag("change_accept").performScrollTo().performClick()
+        compose.onNodeWithTag("change_decision_confirm").performClick()
+        waitForTag("change_history_1")
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(12000, appointment.confirmedProposal?.amountCents)
+        assertEquals(12000, appointment.payment?.paidCents)
+    }
+
+    @Test fun professionalCannotDecideItsOwnChange() {
+        val fake = withPendingChange()
+        compose.setContent { AppointmentsPanel(fake, "pro", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("change_pending").performScrollTo().assertExists()
+        compose.onAllNodesWithTag("change_accept").assertCountEquals(0)
+        compose.onAllNodesWithTag("change_reject").assertCountEquals(0)
+    }
+
+    @Test fun aTakenSlotKeepsTheWholePreviousAppointment() {
+        val fake = withPendingChange().apply { slotTaken = true }
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("change_accept").performScrollTo().performClick()
+        compose.onNodeWithTag("change_decision_confirm").performClick()
+        waitForTag("change_error")
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(8550, appointment.confirmedProposal?.amountCents)
+        assertEquals(ChangeStatus.PENDING, appointment.pendingChange?.status)
+    }
+
+    /** A paid, confirmed appointment (85,50 € integrated, still pending of delivery) (#24). */
+    private fun withPaidConfirmation() = withPaidProposal(seeded()).apply {
+        kotlinx.coroutines.runBlocking { confirm("p1", "pay", PaymentMode.INTEGRATED) }
+    }
+
+    @Test fun onlyTheProfessionalStartsAndThenNobodyCancelsWithARefund() {
+        val fake = withPaidConfirmation()
+        var account by mutableStateOf("client")
+        compose.setContent { AppointmentsPanel(fake, account, conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onAllNodesWithTag("start_work").assertCountEquals(0)
+        account = "pro"
+        waitForTag("start_work")
+        compose.onNodeWithTag("start_work").performScrollTo().performClick()
+        compose.onNodeWithTag("start_work_confirm").performClick()
+        waitForTag("started_mark_a1")
+        compose.onAllNodesWithTag("cancel_appointment").assertCountEquals(0)
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.STARTED, appointment.stage)
+        assertEquals(8550, appointment.payment?.pendingCents)
+    }
+
+    /** Extra work agreed on the spot (2026-11-23): after the start the start time is fixed, the rest can change. */
+    @Test fun afterTheStartTheProfessionalProposesExtraWorkAndTheClientPaysTheDifference() {
+        val fake = withPaidConfirmation().apply {
+            items[0] = items[0].copy(referencePrices = listOf(
+                es.teloarreglo.catalogue.ReferencePrice("Fuga", "Una hora", "hour", 3500)))
+            kotlinx.coroutines.runBlocking { startWork("a1") }
+        }
+        var account by mutableStateOf("pro")
+        compose.setContent { AppointmentsPanel(fake, account, conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        waitForTag("kept_prices_a1")
+        compose.onNodeWithTag("running_change_hint").assertExists()
+        compose.onAllNodesWithTag("change_request_correction").assertCountEquals(0)
+        compose.onNodeWithTag("change_propose").performScrollTo().performClick()
+        waitForTag("change_start_fixed")
+        compose.onAllNodesWithTag("change_start").assertCountEquals(0)
+        compose.onNodeWithTag("change_amount").performTextReplacement("95,50")
+        compose.onNodeWithTag("change_send").performScrollTo().performClick()
+        waitForTag("change_pending")
+        account = "client"
+        waitForTag("change_accept")
+        compose.onNodeWithTag("change_accept").performScrollTo().performClick()
+        compose.onNodeWithTag("change_decision_confirm").performClick()
+        compose.waitUntil(5_000) { kotlinx.coroutines.runBlocking { fake.list("conversation") }.single().pendingChange == null }
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.STARTED, appointment.stage)
+        assertEquals(9550, appointment.payment?.paidCents)
+        // The new conditions keep the original start time.
+        assertEquals(appointment.proposals.first().startAt, appointment.confirmedProposal?.startAt)
+    }
+
+    /** #25: the professional marks done, the client sees the deadline and the delivery before confirming. */
+    @Test fun professionalMarksDoneAndTheClientConfirmsTheSimulatedDelivery() {
+        val fake = withPaidConfirmation().apply { kotlinx.coroutines.runBlocking { startWork("a1") } }
+        var account by mutableStateOf("client")
+        compose.setContent { AppointmentsPanel(fake, account, conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onAllNodesWithTag("mark_done").assertCountEquals(0)
+        compose.onAllNodesWithTag("confirm_done").assertCountEquals(0)
+        account = "pro"
+        waitForTag("mark_done")
+        compose.onNodeWithTag("mark_done").performScrollTo().performClick()
+        compose.onNodeWithTag("mark_done_confirm").performClick()
+        waitForTag("done_deadline_a1")
+        compose.onAllNodesWithTag("confirm_done").assertCountEquals(0)
+        assertEquals(8550, kotlinx.coroutines.runBlocking { fake.list("conversation") }.single().payment?.pendingCents)
+        account = "client"
+        waitForTag("confirm_done")
+        compose.onNodeWithTag("confirm_done").performScrollTo().performClick()
+        compose.onNodeWithTag("completion_effect").assertExists()
+        compose.onNodeWithTag("confirm_done_confirm").performClick()
+        waitForTag("delivered_a1")
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.COMPLETED, appointment.stage)
+        assertEquals(8550, appointment.payment?.deliveredCents)
+        assertEquals(0, appointment.payment?.pendingCents)
+    }
+
+    @Test fun clientSeesTheFullRefundBeforeCancellingAndTheHourIsReleased() {
+        val fake = withPaidConfirmation()
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("cancel_appointment").performScrollTo().performClick()
+        compose.onNodeWithTag("cancel_effect").assertExists()
+        compose.onNodeWithTag("cancel_appointment_confirm").performClick()
+        waitForTag("cancelled_mark_a1")
+        val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
+        assertEquals(AppointmentStage.CANCELLED, appointment.stage)
+        assertEquals(8550, appointment.payment?.refundedCents)
+        assertEquals(0, appointment.payment?.pendingCents)
+    }
+
+    /** #26: after the start the client opens an incident only after the visibility notice; delivery stays pending. */
+    @Test fun clientOpensAnIncidentAfterTheStartAndBothAddEvidence() {
+        val fake = withPaidConfirmation().apply { kotlinx.coroutines.runBlocking { startWork("a1") } }
+        val incidents = FakeIncidents()
+        val withIncidents = object : Appointments by fake {
+            override suspend fun list(conversationId: String) =
+                fake.list(conversationId).map { a -> a.copy(rawIncidents = incidents.items.filter { it.appointmentId == a.id }) }
+        }
+        val tools = IncidentTools(incidents)
+        var account by mutableStateOf("client")
+        compose.setContent { AppointmentsPanel(withIncidents, account, conversation, rememberCoroutineScope(), noPin, tools) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("incident_open").performScrollTo().performClick()
+        compose.onNodeWithTag("incident_kind_cancellation").performClick()
+        compose.onNodeWithTag("incident_description").performTextInput("Ya no puedo seguir")
+        compose.onNodeWithTag("incident_visibility").assertExists()
+        compose.onNodeWithTag("incident_open_confirm").assertIsNotEnabled()
+        compose.onNodeWithTag("incident_visibility_accept").performClick()
+        compose.onNodeWithTag("incident_open_confirm").performClick()
+        waitForTag("incident_i1")
+        compose.onAllNodesWithTag("incident_open").assertCountEquals(0)
+        assertEquals(8550, kotlinx.coroutines.runBlocking { withIncidents.list("conversation") }.single().payment?.pendingCents)
+        account = "pro"
+        // Outside a chat only a note can be written; messages are selected in the chat (ChatEvidenceUiTest).
+        waitForTag("incident_add_note")
+        compose.onAllNodesWithTag("incident_add_evidence").assertCountEquals(0)
+        compose.onNodeWithTag("incident_add_note").performScrollTo().performClick()
+        compose.onNodeWithTag("evidence_note").performTextInput("Llegó a las 12")
+        compose.onNodeWithTag("evidence_send").assertIsNotEnabled()
+        compose.onNodeWithTag("incident_visibility_accept").performClick()
+        compose.onNodeWithTag("evidence_send").performClick()
+        waitForTag("evidence_e1")
+        compose.onNodeWithTag("evidence_kind_e1").assertTextEquals("Nota")
+        assertEquals(listOf("Llegó a las 12"), incidents.items.single().evidence.map { it.note })
+    }
+}
+
+/** Like the server: one open incident per appointment, keys return the first result, evidence is append-only. */
+private class FakeIncidents : Incidents {
+    var items = listOf<Incident>()
+    override suspend fun open(appointmentId: String, requestId: String, kind: IncidentKind, description: String): Incident {
+        items.firstOrNull { it.requestId == requestId }?.let { return it }
+        if (items.any { it.appointmentId == appointmentId && it.isOpen })
+            throw IncidentException(IncidentFailure.ALREADY_OPEN, Exception())
+        return Incident("i${items.size + 1}", appointmentId, "client", requestId, kind, description,
+            if (kind == IncidentKind.QUALITY) Performance.ACKNOWLEDGED else Performance.DISPUTED, IncidentStatus.OPEN,
+            AppointmentStage.STARTED, PaymentMode.INTEGRATED, 8550, 0, true, Instant.now()).also { items = items + it }
+    }
+    override suspend fun addEvidence(incidentId: String, requestId: String, draft: EvidenceDraft): IncidentEvidence {
+        val incident = items.first { it.id == incidentId }
+        val evidence = IncidentEvidence("e${incident.evidence.size + 1}", incidentId, "pro", requestId,
+            if (draft is EvidenceDraft.Note) EvidenceKind.NOTE else EvidenceKind.MESSAGE, (draft as? EvidenceDraft.Note)?.text,
+            (draft as? EvidenceDraft.Message)?.messageId, "pro", "Llego a las 10", createdAt = Instant.now())
+        items = items.map { if (it.id == incidentId) it.copy(rawEvidence = it.evidence + evidence) else it }
+        return evidence
+    }
+}

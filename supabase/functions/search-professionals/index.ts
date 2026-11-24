@@ -1,11 +1,12 @@
 // POST /functions/v1/search-professionals
 // { "lat": 43.36, "lng": -5.85, "trade": "plumbing", "ine_code"?: "33044", "limit"?: 20 }
 // Public search (no sign-in needed). Never returns coordinates, cells or exact
-// distances: only profile IDs in order and a rounded distance band.
+// distances: only profile IDs in order, a rounded distance band and whether the
+// result is «Destacado» (active simulated subscription, approved coverage of this concejo).
 import { createClient } from "@supabase/supabase-js";
-import { type Candidate, distanceBand, searchByRings } from "./search.ts";
+import { type Candidate, distanceBand, distanceM, featuredFirst, searchByRings } from "./search.ts";
 
-const TRADES = ["plumbing", "electrical", "carpentry", "painting", "masonry", "general"];
+const TRADES = ["plumbing", "electrical", "carpentry", "painting", "masonry", "general", "cleaning"];
 const MAX_LIMIT = 50;
 
 /**
@@ -82,12 +83,19 @@ Deno.serve(async (request) => {
       if (r.error) throw r.error;
       return r.data as Candidate[];
     };
-    const search = await searchByRings({ lat, lng }, Number(count.data), lookup, limit);
+    // «Destacado» first: only subscribers whose approved coverage includes this concejo (server rule).
+    const promoted = await db.rpc("featured_candidates", { p_ine_code: concejo.ine_code, p_trade: trade });
+    if (promoted.error) throw promoted.error;
+    const featured = (promoted.data as Candidate[])
+      .map((c) => ({ profile_id: c.profile_id, distance_m: distanceM(lat, lng, c.lat, c.lng) }));
+    const search = await searchByRings({ lat, lng }, Number(count.data), lookup, limit + featured.length);
     return reply(200, {
       status: "ok",
       concejo: { ine_code: concejo.ine_code, name: concejo.name },
       method: search.method,
-      results: search.results.map((r) => ({ profile_id: r.profile_id, distance_band_m: distanceBand(r.distance_m) })),
+      results: featuredFirst(featured, search.results, limit).map((r) => ({
+        profile_id: r.profile_id, distance_band_m: distanceBand(r.distance_m), featured: r.featured,
+      })),
     });
   } catch (error) {
     // Server log only (code and message, never keys or coordinates); the client gets a

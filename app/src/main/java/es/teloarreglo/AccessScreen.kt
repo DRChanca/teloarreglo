@@ -82,6 +82,14 @@ fun AccessScreen(
     onProfile: ((String) -> Unit)? = null,
     operationScope: CoroutineScope = rememberCoroutineScope(),
     googleAuth: ComposeAuth? = null,
+    profileReviews: es.teloarreglo.catalogue.ProfileReviews? = null,
+    subscriptions: es.teloarreglo.subscription.Subscriptions? = null,
+    agenda: es.teloarreglo.appointments.Agenda? = null,
+    /** Home address summary and its change action (#37), shown to a connected account. */
+    homeSlot: (@Composable () -> Unit)? = null,
+    /** The person's name and its change action (#40), shown to a connected account. */
+    nameSlot: (@Composable () -> Unit)? = null,
+    onEditProfile: (() -> Unit)? = null,
 ) {
     val state by identity.state.collectAsStateWithLifecycle()
     val scope = operationScope
@@ -89,6 +97,7 @@ fun AccessScreen(
     val errorInView = remember { BringIntoViewRequester() }
     var form by rememberSaveable { mutableStateOf(Form.SIGN_IN) }
     var email by rememberSaveable { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf("") }
     // A password is never saved into the instance state or preferences.
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
@@ -185,6 +194,23 @@ fun AccessScreen(
                                     )
                                     Text(stringResource(R.string.account_hint))
                                     Text(stringResource(R.string.catalogue_can_hire))
+                                    nameSlot?.invoke()
+                                    homeSlot?.invoke()
+                                    if (onEditProfile != null) {
+                                        Button(onClick = onEditProfile, modifier = Modifier.fillMaxWidth().testTag("profile_edit_open")) {
+                                            Text(stringResource(if (state.account?.professionalProfileId == null) R.string.profile_edit_offer
+                                                else R.string.profile_edit_open))
+                                        }
+                                    }
+                                    if (state.account?.professionalProfileId != null && profileReviews != null) {
+                                        ProfileReviewCard(profileReviews)
+                                    }
+                                    if (state.account?.professionalProfileId != null && subscriptions != null) {
+                                        SubscriptionCard(subscriptions, scope)
+                                    }
+                                    if (state.account?.professionalProfileId != null && agenda != null) {
+                                        AgendaCard(agenda, scope)
+                                    }
                                     state.account?.professionalProfileId?.let { id ->
                                         if (onProfile != null) {
                                             TextButton(onClick = { onProfile(id) }) {
@@ -270,11 +296,12 @@ fun AccessScreen(
                                     Form.SIGN_UP -> {
                                         Text(stringResource(R.string.sign_up_title), style = MaterialTheme.typography.headlineSmall)
                                         Text(stringResource(R.string.sign_up_hint))
+                                        AccountNameField(name, { name = it }, enabled = !state.busy)
                                         EmailField()
                                         PasswordField(R.string.password, "password")
                                         Text(stringResource(R.string.password_rule), style = MaterialTheme.typography.bodySmall)
                                         PrimaryButton(state.busy, R.string.create_account, "signUp") {
-                                            submit { identity.signUp(email.trim(), it) }
+                                            submit { identity.signUp(email.trim(), it, name) }
                                         }
                                         if (google != null) {
                                             Text(stringResource(R.string.or), Modifier.align(Alignment.CenterHorizontally))
@@ -382,6 +409,7 @@ private fun AccessError.message(): Int = when (this) {
     AccessError.RATE_LIMITED -> R.string.error_rate_limited
     AccessError.WEAK_PASSWORD -> R.string.error_weak_password
     AccessError.GOOGLE -> R.string.error_google
+    AccessError.NAME -> R.string.account_name_invalid
 }
 
 private fun AccessNotice.message(): Int = when (this) {

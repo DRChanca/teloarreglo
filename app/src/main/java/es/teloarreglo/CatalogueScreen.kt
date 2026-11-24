@@ -1,5 +1,6 @@
 package es.teloarreglo
 
+import es.teloarreglo.search.publicLocation
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -35,7 +36,8 @@ import java.text.NumberFormat
 import java.util.Locale
 import androidx.compose.ui.platform.LocalConfiguration
 
-private val trades = listOf("plumbing", "electrical", "carpentry", "painting", "masonry", "general")
+/** Trade keys offered in the catalogue and nearby search; must match the DB constraint and Edge Function. */
+internal val catalogueTrades = listOf("plumbing", "electrical", "carpentry", "painting", "masonry", "general", "cleaning")
 private val green = Color(0xFF246451)
 private val canvas = Color(0xFFF7F8F5)
 
@@ -48,6 +50,10 @@ fun CatalogueScreen(
     onContact: ((String) -> Unit)? = null,
     onChats: (() -> Unit)? = null,
     onNearby: (() -> Unit)? = null,
+    /** Published reviews shown on the profile (#28); null hides them. */
+    reviews: es.teloarreglo.appointments.Reviews? = null,
+    onNotices: (() -> Unit)? = null,
+    unreadNotices: Int = 0,
 ) {
     var trade by rememberSaveable { mutableStateOf<String?>(null) }
     var selected by rememberSaveable(initialProfileId) { mutableStateOf(initialProfileId) }
@@ -115,6 +121,10 @@ fun CatalogueScreen(
                         Text(stringResource(R.string.catalogue_nearby))
                     }
                     if (onChats != null) TextButton(onClick = onChats) { Text(stringResource(R.string.chat_title)) }
+                    if (onNotices != null) TextButton(onClick = onNotices, Modifier.testTag("catalogue_notices")) {
+                        Text(if (unreadNotices > 0) stringResource(R.string.notices_open_count, unreadNotices)
+                            else stringResource(R.string.notices_open))
+                    }
                     TextButton(onClick = onAccount) { Text(stringResource(R.string.catalogue_account)) }
                 }
                 if (selected == null) {
@@ -141,7 +151,7 @@ fun CatalogueScreen(
                     ) {
                         FilterChip(selected = trade == null, onClick = { trade = null },
                             label = { Text(stringResource(R.string.trade_all)) })
-                        trades.forEach { key ->
+                        catalogueTrades.forEach { key ->
                             FilterChip(selected = trade == key, onClick = { trade = key },
                                 modifier = Modifier.testTag("trade_$key"), label = { Text(stringResource(tradeLabel(key))) })
                         }
@@ -170,9 +180,10 @@ fun CatalogueScreen(
                             }
                         }
                     }
-                    selected != null -> ProfileDetail(profiles.single(), covers,
+                    selected != null -> ProfileDetail(profiles.single(), covers, catalogue,
                         onEdit = if (selected == ownedProfileId && covers != null) ({ editing = true }) else null,
-                        onContact = if (selected != ownedProfileId) onContact?.let { contact -> { contact(profiles.single().id) } } else null)
+                        onContact = if (selected != ownedProfileId) onContact?.let { contact -> { contact(profiles.single().id) } } else null,
+                        reviews = reviews)
                     else -> {
                         Text(pluralStringResource(R.plurals.catalogue_results, visible.size, visible.size),
                             Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
@@ -215,13 +226,24 @@ fun CatalogueScreen(
 }
 
 @Composable
-private fun ProfileDetail(profile: PublicProfile, covers: ProfessionalCovers?, onEdit: (() -> Unit)?, onContact: (() -> Unit)?) {
+private fun ProfileDetail(
+    profile: PublicProfile, covers: ProfessionalCovers?, catalogue: Catalogue,
+    onEdit: (() -> Unit)?, onContact: (() -> Unit)?, reviews: es.teloarreglo.appointments.Reviews? = null,
+) {
     val locale = LocalConfiguration.current.locales[0]
+    // «Destacado» (#33) from the server rule; a failed check shows no badge rather than a false one.
+    val featured by produceState(false, profile.id) {
+        value = try { catalogue.featured(profile.id) } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            false
+        }
+    }
     LazyColumn(
         modifier = Modifier.testTag("profile_detail"),
         contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
+            if (featured) FeaturedBadge(Modifier.testTag("profile_featured"))
             Text(profile.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(), color = green)
             Rating(profile)
@@ -240,6 +262,7 @@ private fun ProfileDetail(profile: PublicProfile, covers: ProfessionalCovers?, o
             item {
                 Section(R.string.catalogue_address)
                 androidx.compose.foundation.text.selection.SelectionContainer { Text(address) }
+                profile.publicLocation()?.let { point -> MapDirectionsButton(point) }
             }
         }
         item {
@@ -273,12 +296,14 @@ private fun ProfileDetail(profile: PublicProfile, covers: ProfessionalCovers?, o
                     Text(price.service, fontWeight = FontWeight.Bold)
                     Text(priceText(price),
                         style = MaterialTheme.typography.titleLarge, color = green)
-                    Text(price.scope)
-                    Text(stringResource(R.string.catalogue_includes, price.includes))
-                    Text(stringResource(R.string.catalogue_excludes, price.excludes))
+                    // Owners publish prices directly (2026-11-23); optional texts may be empty.
+                    if (price.scope.isNotBlank()) Text(price.scope)
+                    if (price.includes.isNotBlank()) Text(stringResource(R.string.catalogue_includes, price.includes))
+                    if (price.excludes.isNotBlank()) Text(stringResource(R.string.catalogue_excludes, price.excludes))
                 }
             }
         }
+        if (reviews != null) item { ProfileReviewList(profile.id, reviews) }
     }
 }
 
@@ -300,7 +325,7 @@ private fun Rating(profile: PublicProfile) {
 }
 
 @Composable
-private fun priceText(price: ReferencePrice): String {
+internal fun priceText(price: ReferencePrice): String {
     if (price.amountCents == 0) return stringResource(R.string.catalogue_free)
     val locale = LocalConfiguration.current.locales[0]
     val money = NumberFormat.getCurrencyInstance(locale).apply { currency = java.util.Currency.getInstance("EUR") }
@@ -317,12 +342,24 @@ internal fun tradeLabel(key: String): Int = when (key) {
     "carpentry" -> R.string.trade_carpentry
     "painting" -> R.string.trade_painting
     "masonry" -> R.string.trade_masonry
+    "cleaning" -> R.string.trade_cleaning
     else -> R.string.trade_general
 }
 
-private fun unitLabel(key: String): Int = when (key) {
+internal fun unitLabel(key: String): Int = when (key) {
     "hour" -> R.string.price_hour
     "sqm" -> R.string.price_sqm
     "unit" -> R.string.price_unit
     else -> R.string.price_job
+}
+
+/** Directions to an approved public commercial point only (#17); a missing app is reported. */
+@Composable
+private fun MapDirectionsButton(point: es.teloarreglo.search.GeoPoint) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var failed by remember { mutableStateOf(false) }
+    OutlinedButton(onClick = { failed = !openExternalMaps(context, point) }, modifier = Modifier.testTag("map_directions")) {
+        Text(stringResource(R.string.map_directions))
+    }
+    if (failed) Text(stringResource(R.string.map_no_app), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("map_no_app"))
 }

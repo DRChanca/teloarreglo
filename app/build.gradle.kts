@@ -18,6 +18,15 @@ val publicNames = setOf(
     "PRESENTATION_SUPABASE_URL", "PRESENTATION_SUPABASE_PUBLISHABLE_KEY",
     // Public OAuth web client ID for native Google sign-in (its secret lives only in Supabase).
     "GOOGLE_WEB_CLIENT_ID",
+    // Google Maps SDK key (#17): public by design (ships in the APK), protected by its
+    // Android app + SHA-1 and API restrictions in Google Cloud. Empty hides the map.
+    // The same key serves Places (New) autocomplete for the home address (#37); without it,
+    // or with Places not enabled on the key, the app falls back to pin/GPS + typed address.
+    "GOOGLE_MAPS_API",
+    // Firebase Cloud Messaging client identifiers (#32), the same public values google-services.json would
+    // ship. The sending credential (service account) lives only in the deliver-push Edge Function secret.
+    // Empty: no push, notices stay in the app.
+    "FCM_PROJECT_ID", "FCM_API_KEY", "FCM_SENDER_ID", "TEST_FCM_APP_ID", "PRESENTATION_FCM_APP_ID",
 )
 fun dotenvValue(raw: String, lineNumber: Int): String {
     val result = StringBuilder()
@@ -69,6 +78,12 @@ fun publicConfig(name: String): String {
         "$name must use HTTPS"
     }
     require(value.none { it.isISOControl() }) { "$name must not contain control characters" }
+    require(!name.endsWith("FCM_APP_ID") || value.isEmpty() || Regex("1:[0-9]+:android:[0-9a-f]+").matches(value)) {
+        "$name must be the public Firebase Android app ID"
+    }
+    require(name != "FCM_API_KEY" || value.isEmpty() || value.startsWith("AIza")) {
+        "$name must be the public Firebase API key, never a service account"
+    }
     require(name != "GOOGLE_WEB_CLIENT_ID" || value.isEmpty() || value.endsWith(".apps.googleusercontent.com")) {
         "$name must be the public OAuth web client ID, never its secret"
     }
@@ -91,6 +106,12 @@ android {
         val googleWebClientId = publicConfig("GOOGLE_WEB_CLIENT_ID")
             .ifEmpty { "852089134796-mihgv1588q6lq17lbovpupgq6i7ljhsd.apps.googleusercontent.com" }
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
+        val mapsApiKey = publicConfig("GOOGLE_MAPS_API")
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
+        buildConfigField("String", "MAPS_API_KEY", "\"$mapsApiKey\"")
+        for (name in listOf("FCM_PROJECT_ID", "FCM_API_KEY", "FCM_SENDER_ID")) {
+            buildConfigField("String", name, "\"${publicConfig(name)}\"")
+        }
     }
     // Shared debug signing: every machine and CI produce the same SHA-1, registered once
     // in Google Cloud for Google sign-in. Debug only (standard "android" passwords);
@@ -113,12 +134,14 @@ android {
             applicationIdSuffix = ".pruebas"
             buildConfigField("String", "SUPABASE_URL", "\"${publicConfig("TEST_SUPABASE_URL")}\"")
             buildConfigField("String", "SUPABASE_KEY", "\"${publicConfig("TEST_SUPABASE_PUBLISHABLE_KEY")}\"")
+            buildConfigField("String", "FCM_APP_ID", "\"${publicConfig("TEST_FCM_APP_ID")}\"")
         }
         create("presentacion") {
             dimension = "environment"
             applicationIdSuffix = ".presentacion"
             buildConfigField("String", "SUPABASE_URL", "\"${publicConfig("PRESENTATION_SUPABASE_URL")}\"")
             buildConfigField("String", "SUPABASE_KEY", "\"${publicConfig("PRESENTATION_SUPABASE_PUBLISHABLE_KEY")}\"")
+            buildConfigField("String", "FCM_APP_ID", "\"${publicConfig("PRESENTATION_FCM_APP_ID")}\"")
         }
     }
     buildFeatures {
@@ -150,6 +173,16 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
     implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("io.ktor:ktor-client-okhttp:3.1.3")
+    implementation("com.google.maps.android:maps-compose:6.6.0")
+    implementation("com.google.android.libraries.places:places:4.4.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
+    implementation("androidx.media3:media3-transformer:1.6.1")
+    implementation("androidx.media3:media3-effect:1.6.1")
+    implementation("androidx.media3:media3-common:1.6.1")
+    implementation("androidx.media3:media3-container:1.6.1")
+    implementation("androidx.media3:media3-exoplayer:1.6.1")
+    implementation("androidx.media3:media3-ui:1.6.1")
+    implementation("com.google.firebase:firebase-messaging:24.1.1")
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.ktor:ktor-client-mock:3.1.3")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")

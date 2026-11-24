@@ -1,0 +1,952 @@
+# Solicitudes de cita y propuestas — #20
+
+## Interfaz compartida
+
+Migración nueva: `20261122002000_appointments.sql` (bloque reservado de #20).
+No modifica migraciones anteriores ni carga, borra o reinicia datos preparados.
+No se ha desplegado ni escrito en la base alojada.
+
+Tablas (todas con RLS, sin INSERT/UPDATE/DELETE para las cuentas de la app):
+
+- `public.appointments`: `id`, `conversation_id`, `profile_id`, `client_id`,
+  `professional_id`, `request_id`, `problem`, `requested_start`,
+  `requested_end` (intervalo `[inicio, fin)` en UTC), `address`, `latitude`,
+  `longitude`, `version` (token de concurrencia), `stage`, `created_at`.
+  Lectura solo para cliente y profesional de la cita.
+- `public.appointment_proposals`: `id`, `appointment_id`, `author_id`,
+  `version` (1, 2, 3… por cita), `request_id`, `scope`, `start_at`, `end_at`,
+  `duration_minutes`, `amount_cents`, `visit_fee_cents` (null = sin coste de
+  visita aparte), `materials_included`, `travel_included`, `status`,
+  `created_at`, `decided_at`. Lectura para los participantes de su cita.
+  Como máximo una propuesta `pending` por cita (índice único parcial).
+- `public.appointment_events`: avisos persistidos `requested`, `proposed`,
+  `rejected` con `actor_id`, `recipient_id`, `proposal_id` y hora de servidor.
+  Lectura para actor y destinatario. Pensado para que #32 entregue push a
+  partir de eventos ya confirmados; no es fuente de verdad del estado.
+
+Restricciones con nombre para que otros tickets las amplíen con
+`alter table … drop constraint … add constraint …` en una migración nueva:
+`appointments_stage_check` (hoy solo `pending`),
+`appointment_proposals_status_check` (`pending`, `rejected`, `superseded`) y
+`appointment_events_kind_check`. Aceptar (#21/#22) añadirá `accepted` y las
+etapas confirmadas. Nada de #20 reserva tiempo: no hay restricción de solape
+sobre solicitudes ni propuestas; la reserva y su exclusión pertenecen a #21.
+
+### RPC (todas `security definer`, actor derivado de `auth.uid()`, sin acceso anónimo)
+
+- `request_appointment(p_conversation_id uuid, p_request_id uuid, p_problem text,
+  p_start timestamptz, p_end timestamptz, p_address text, p_lat double precision,
+  p_lng double precision)` → fila de `appointments`.
+  Solo el cliente de la conversación. Sin precio. Inicio futuro según la hora del
+  servidor, fin posterior y como mucho 24 h. El punto debe estar en un concejo
+  (o a ≤ 250 m) cubierto por la versión publicada del perfil. Mismo
+  `p_request_id` y datos → misma cita; datos distintos → `retry_conflict`.
+- `propose_appointment(p_appointment_id uuid, p_expected_version integer,
+  p_request_id uuid, p_scope text, p_start timestamptz, p_duration_minutes integer,
+  p_amount_cents integer, p_visit_fee_cents integer, p_materials_included boolean,
+  p_travel_included boolean)` → fila de `appointment_proposals`.
+  Solo el profesional de la cita. Importe 0–1 000 000 € en céntimos
+  (0 = visita gratuita), duración 15–1440 min, inicio futuro. Requiere
+  `p_expected_version = appointments.version`; si no coincide → `stale_version`.
+  Una versión nueva sustituye (`superseded`) a la pendiente; no confirma ni
+  reserva. Repetir la misma clave y contenido devuelve la misma propuesta,
+  aunque la cita ya haya avanzado.
+- `reject_proposal(p_proposal_id uuid)` → propuesta `rejected`.
+  Solo el cliente. Idempotente; rechazar una versión sustituida → `stale_version`.
+  La cita sigue `pending` y sin reserva; el historial se conserva.
+
+Cada operación con efecto incrementa `appointments.version` y escribe un evento.
+
+### Errores estables
+
+| HTTP | SQLSTATE | `message` | Android (`AppointmentFailure`) |
+| --- | --- | --- | --- |
+| 401 | 28000 | `authentication_required` | `ACCESS` |
+| 403 | 42501 | `permission_denied` (cita o conversación ajena, rol equivocado) | `ACCESS` |
+| 400 | 22023 | `invalid_appointment` / `invalid_proposal` | `INVALID` |
+| 400 | 22023 | `out_of_coverage` | `OUT_OF_COVERAGE` |
+| 400 | 22023 | `retry_conflict` | `RETRY_CONFLICT` |
+| 409 | PT409 | `stale_version` / `incompatible_state` | `STALE` |
+
+`PT409` hace que PostgREST responda 409; `40001` produciría un 500.
+Los fallos de red se propagan sin traducir: la app conserva la clave y no
+muestra la operación como enviada.
+
+### Lectura desde Android
+
+`GET appointments?select=<columnas legibles>,appointment_proposals(*)&conversation_id=eq.UUID&order=created_at.desc`
+y después `rpc/appointment_places` para el lugar. Desde #38, `select=*` responde 403 porque `address`,
+`latitude` y `longitude` no son columnas legibles (ver «Zona aproximada — #38»).
+La frontera Kotlin es `es.teloarreglo.appointments.Appointments`
+(`list`, `request`, `propose`, `reject`), con `Appointment.currentProposal` y
+`Appointment.notice(accountId)` para el estado que corresponde a cada rol.
+`parseEuroCents` convierte la entrada del formulario en céntimos sin coma flotante.
+
+## Privacidad de la dirección
+
+La dirección exacta y las coordenadas solo existen en `appointments`, creada al
+solicitar, y desde #38 solo se leen con `appointment_places` (abajo). `conversations`, `approved_profiles`, la búsqueda y la Edge Function
+no la contienen ni la consultan. El rol administrativo no tiene excepción: la
+revisión de incidencias (#26/#30) deberá añadir su propia frontera explícita.
+
+## Interfaz Android
+
+`AppointmentsPanel` se inserta en la conversación abierta mediante el parámetro
+opcional `appointmentsSlot` de `ChatRoute`/`ChatScreen`. Muestra el aviso vigente
+y abre un diálogo a pantalla completa con:
+
+- cliente: solicitar (problema, fecha, franja, dirección, coordenadas por GPS
+  puntual o escritas a mano; sin precio) y rechazar la versión vigente con
+  confirmación;
+- profesional: enviar propuesta o nueva versión (alcance, fecha, hora,
+  duración, importe, coste de visita opcional, materiales y desplazamiento);
+- ambos: historial de versiones con «Vigente · pendiente», «Rechazada» o
+  «Sustituida» y el texto fijo «Pendiente: no está confirmada ni reserva la hora».
+
+Consulta el servidor cada 2,5 s mientras está visible, como el chat. Una
+respuesta perdida conserva la clave en `rememberSaveable` y bloquea el
+formulario hasta reintentar o encontrar esa clave en el historial. A diferencia
+del chat, esta clave no se cifra en disco: si el sistema mata el proceso
+durante un envío incierto, el usuario verá el historial real del servidor al
+volver y no se duplicará nada ya registrado. El selector de punto en mapa llegó con #17
+(«Elegir el punto en el mapa» cuando hay mapa; sin mapa, coordenadas escritas). Ver
+[mapa-contrato.md](mapa-contrato.md).
+
+## Comprobación reproducible
+
+```bash
+supabase db reset --local && supabase test db
+python3 scripts/contract_appointments.py --local
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AppointmentsTest'
+python3 scripts/android.py check
+python3 scripts/android.py ui-test --serial SERIAL_DESECHABLE   # incluye AppointmentsUiTest
+```
+
+Resultados: [comprobación](comprobacion-citas.md).
+
+## Agenda y confirmación gratuita — #21
+
+Migración nueva: `20261123002100_agenda_confirmation.sql`. Amplía por nombre
+`appointments_stage_check` (+`confirmed`), `appointment_proposals_status_check`
+(+`accepted`) y `appointment_events_kind_check` (+`accepted`). Activa `btree_gist`.
+
+Tablas (RLS, lectura solo para el profesional dueño, sin escritura directa):
+
+- `public.agenda_settings`: una agenda por perfil; `default_duration_minutes`
+  (15–1440) y `timezone` fijo `Europe/Madrid`.
+- `public.availability_windows`: franjas semanales `weekday` ISO 1–7,
+  `start_time` < `end_time` (hora local de Madrid, como mucho hasta 23:59).
+- `public.agenda_reservations`: todo lo que ocupa la agenda, `kind`
+  `appointment` (con `appointment_id` único y `proposal_id`) o `block` (con
+  `request_id`). `during tstzrange` semiabierto `[inicio, fin)` y restricción
+  `agenda_reservations_no_overlap exclude using gist (profile_id with =, during with &&)`:
+  citas confirmadas y bloqueos no se solapan entre sí; contiguos sí se tocan.
+  Pago integrado (#22) y cambios (#23) deben reservar por esta tabla.
+
+RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo):
+
+- `my_agenda()` → `{profile_id, timezone, default_duration_minutes, windows[{weekday,start,end}],
+  blocks[{id,start_at,end_at,reason}], bookings[{appointment_id,start_at,end_at}]}` (bloqueos y
+  citas futuros). Sin perfil profesional → `42501 permission_denied`.
+- `save_agenda(p_default_duration_minutes integer, p_windows jsonb)` → igual que `my_agenda`.
+  Sustituye todo el horario semanal (reintento idempotente). Errores `22023 invalid_agenda`.
+  Las citas ya confirmadas conservan su reserva aunque cambie el horario.
+- `add_agenda_block(p_request_id uuid, p_start, p_end, p_reason text)` → fila de reserva.
+  Máximo 31 días; misma clave y datos → mismo bloqueo; otros datos → `retry_conflict`;
+  solape → `PT409 slot_unavailable`; datos no válidos → `22023 invalid_block`.
+- `remove_agenda_block(p_block_id uuid)` → `{id, removed: true}`. Idempotente; solo
+  borra bloqueos propios.
+- `accept_proposal(p_proposal_id uuid)` → propuesta `accepted`. Solo el cliente de la
+  cita. Requiere propuesta vigente (`pending`; si no, `PT409 stale_version`), cita
+  `pending` (`incompatible_state`), importe 0 y sin coste de visita (`22023 payment_required`),
+  inicio futuro (`PT409 proposal_expired`) e intervalo dentro de una franja de
+  disponibilidad y sin solapes (`PT409 slot_unavailable`). Bloquea la cita
+  (`for update`) y después la agenda del perfil (`private.lock_agenda`, bloqueo consultivo
+  de transacción que también toman `save_agenda` y los bloqueos); propuesta, etapa
+  `confirmed`, `version + 1`, reserva y evento `accepted` al profesional se aplican
+  juntos o nada. Aceptar de nuevo devuelve el mismo resultado sin duplicar avisos.
+  Las demás solicitudes siguen `pending` y pueden recibir otra versión.
+
+Android (`AppointmentFailure`): `slot_unavailable` → `SLOT_UNAVAILABLE`;
+`proposal_expired` → `STALE`; `payment_required` → `INVALID` (la app no ofrece aceptar
+propuestas con coste). Frontera nueva `es.teloarreglo.appointments.Agenda`
+(`load`, `save`, `addBlock`, `removeBlock`) con `AgendaFailure`
+(`ACCESS`, `INVALID`, `SLOT_UNAVAILABLE`, `RETRY_CONFLICT`).
+
+Interfaz: `AgendaCard` en la pantalla de cuenta del profesional (duración habitual,
+una franja por día de la semana, bloqueos con clave de reintento y citas confirmadas).
+En `AppointmentsPanel` el cliente ve «Aceptar y confirmar la visita» solo en propuestas
+gratuitas, con diálogo que explica que se reservará el horario; ambas cuentas ven
+«Cita confirmada» y «Confirmada: fecha, min. El horario está reservado.».
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> python3 scripts/contract_agenda.py --local
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AgendaTest'
+```
+
+Resultados: [comprobación de agenda](comprobacion-agenda.md).
+
+## Zona aproximada — #38
+
+Migración nueva: `20261123003800_approximate_appointment_area.sql`.
+No modifica migraciones anteriores ni carga, borra o reinicia datos preparados.
+No se ha desplegado ni escrito en la base alojada.
+
+Regla: mientras la cita no está confirmada, el profesional solo conoce un círculo de 400 m y el concejo.
+La dirección y las coordenadas exactas se le entregan cuando la etapa pasa a `confirmed`.
+
+Columnas nuevas de `public.appointments` (legibles por los dos participantes):
+
+| Columna | Notas |
+| --- | --- |
+| `area_lat`, `area_lng` | Centro desplazado al azar, uniforme en un disco de 300 m alrededor de `latitude/longitude` (`private.approximate_center`, `st_project` sobre el esferoide). La casa queda siempre dentro del círculo |
+| `area_radius_m` | Siempre 400 |
+| `area_ine_code` | Concejo del punto: el cubierto por el perfil que admitió la solicitud o, si no, el más cercano a ≤ 250 m |
+| `location_shared_at` | Primera vez que la etapa fue `confirmed`. No se borra en etapas posteriores |
+
+El disparador `appointments_area` (`before insert or update`) calcula el centro una sola vez al crear la
+fila. Lo conserva en cualquier actualización, aunque se intente sobrescribir, y solo lo recalcula si
+cambian `latitude/longitude`, por ejemplo con un cambio de dirección aceptado (#23). También fija
+`location_shared_at` con la primera confirmación. Una confirmación pagada (#22) que ponga
+`stage = 'confirmed'` revela el lugar sin más cambios. Una etapa previa nueva, como «pendiente de
+pago», no lo revela.
+
+Privilegios de columna: `authenticated` ya no tiene `select` sobre la tabla entera, sino sobre todas
+las columnas salvo `address`, `latitude` y `longitude`. La política `participants_read` no cambia.
+Por eso `select *`, `to_jsonb(fila)` y los filtros sobre esas columnas responden `42501` (HTTP 403)
+para cualquier cuenta, también para el cliente y también tras confirmar. Las funciones
+`security definer` (#20–#25) siguen leyéndolas sin cambios.
+
+- `appointment_places(p_conversation_id uuid)` → filas `appointment_id, exact, address, latitude,
+  longitude, area_lat, area_lng, area_radius_m, ine_code, concejo_name`, de las citas de esa
+  conversación en las que participa quien llama (las más recientes primero). `exact` es verdadero para
+  el cliente y, con `location_shared_at`, para el profesional. Si es falso, `address`, `latitude` y
+  `longitude` son `null`. Una tercera cuenta recibe 0 filas; `anon` no puede llamarla (`42501`).
+
+Vías revisadas (pgTAP `appointment_area.test.sql`): tabla `appointments` (columnas, `*`, fila
+completa, filtros), `request_appointment` (solo el cliente), `propose_appointment`,
+`appointment_proposals`, `appointment_events` (incluido el aviso `accepted`), `conversations`,
+`chat_messages`, `conversation_inbox()`, `my_notices()`, `my_agenda()`, `agenda_reservations` y
+`home_addresses`. Ninguna contiene la dirección ni las coordenadas exactas para el profesional antes
+de confirmar.
+
+Para otros tickets: cualquier vista, RPC o evento nuevo que devuelva datos de la cita al profesional
+no debe incluir `address/latitude/longitude` si `location_shared_at` es nulo. Puede usar
+`appointment_places` o las columnas `area_*`. La revisión administrativa de incidencias (#26/#30)
+sigue sin excepción y debe añadir su propia frontera.
+
+Android: `Appointments.list` pide las columnas legibles y después `appointment_places`, y rellena
+`Appointment.place` (`AppointmentPlace`) y `Appointment.location`:
+`AppointmentLocation.Exact(address, point)` o `Approximate(center, radiusMeters, concejoName)`.
+`AppointmentLocationBlock` muestra:
+
+- si es exacta, la dirección, las coordenadas y «Cómo llegar». El cliente, mientras la cita está
+  pendiente, ve además «Hasta confirmar la cita, el profesional solo ve una zona aproximada de 400 m».
+- si es aproximada, «Zona aproximada de 400 m en <concejo>», el círculo en Google Maps
+  (`ApproximateAreaMap`, sin marcador) cuando hay mapa, y «La dirección exacta se mostrará cuando se
+  confirme la cita». No ofrece «Cómo llegar».
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_appointments.py --local && python3 contract_agenda.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AppointmentsTest'
+```
+
+Resultados: [comprobación de la zona aproximada](comprobacion-zona-aproximada.md).
+
+## Confirmación con pago simulado o pago directo — #22
+
+Migración nueva: `20261123002200_paid_confirmation.sql`. El pago es **simulado**: no hay pasarela,
+proveedor, tarjeta, banco ni dinero real. No se ha desplegado ni escrito en la base alojada.
+
+Tablas (RLS, lectura para cliente y profesional de la cita, sin escritura directa):
+
+- `public.appointment_payments`: una fila por cita confirmada con coste. `appointment_id` (PK),
+  `proposal_id`, `client_id`, `professional_id`, `request_id` (clave de reintento, única por cliente),
+  `mode` (`integrated` | `direct`), y en céntimos `agreed_cents`, `paid_cents`, `pending_cents`,
+  `refunded_cents`, `delivered_cents`; `simulated` siempre `true`; `created_at`. Restricciones:
+  `paid = pending + refunded + delivered` (`appointment_payments_balance`) y en `direct` todo el
+  dinero integrado es 0 (`appointment_payments_direct_check`). Sin columnas de tarjeta, banco o factura
+  (pgTAP `columns_are`).
+- `public.payment_movements`: historial solo de inserción. `kind` `paid` | `refunded` | `delivered`
+  (`payment_movements_kind_check`), `amount_cents > 0`, `actor_id`, `created_at`. #22 solo escribe
+  `paid`; devoluciones (#23/#24/#26) y entregas (#25/#27) deben actualizar el saldo y añadir su
+  movimiento en la misma transacción.
+
+RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo):
+
+- `confirm_proposal(p_proposal_id uuid, p_request_id uuid, p_mode text)` → fila de
+  `appointment_payments`. Solo el cliente de la cita, sobre la versión vigente. Toma el bloqueo de la
+  cita y después `private.lock_agenda`, como `accept_proposal`. Aceptación (`accepted`), etapa
+  `confirmed`, `version + 1`, reserva en `agenda_reservations`, aviso `accepted` al profesional, fila
+  de pago y, en `integrated`, el movimiento `paid` se aplican juntos o nada.
+  - Importe: `greatest(amount_cents, visit_fee_cents)`, es decir, el precio acordado o el coste de
+    visita si solo se propuso ese. `integrated`: `paid = pending = importe`, nada entregado ni devuelto.
+    `direct`: se registra `agreed_cents` y ningún movimiento; la app no cobra ni certifica el pago.
+  - Idempotencia: la clave identifica una intención (propuesta + modalidad). Misma clave → mismo
+    resultado; misma clave con otra propuesta o modalidad → `22023 retry_conflict`. Una clave nueva
+    para la misma propuesta ya confirmada con la misma modalidad recupera el resultado original (una
+    respuesta perdida nunca crea un segundo pago); con otra modalidad → `PT409 incompatible_state`.
+  - Errores: `22023 invalid_payment` (modalidad o clave nulas o desconocidas),
+    `22023 payment_not_required` (propuesta gratuita: usar `accept_proposal`),
+    `PT409 stale_version`, `incompatible_state`, `proposal_expired`, `slot_unavailable`,
+    `42501 permission_denied`. Un conflicto no cobra ni deja efectos parciales.
+
+`accept_proposal` se redefine con el mismo comportamiento; la comprobación de agenda y la reserva
+pasan a `private.reserve_proposal(appointments, appointment_proposals)`, que también usa #22 y deben
+usar los cambios de #23. Al pasar a `confirmed`, el disparador de #38 comparte la dirección exacta con
+el profesional igual que en la confirmación gratuita.
+
+Android: `Appointments.confirm(proposalId, requestId, PaymentMode)` → `AppointmentPayment`.
+`list` añade `appointment_payments(*)` y rellena `Appointment.payment`. `AppointmentProposal.payableCents`
+da el importe que se paga. `payment_not_required` e `invalid_payment` → `INVALID`.
+Interfaz (`AppointmentsPanel`): ante una versión con coste, el cliente ve «Pagar X y confirmar» y
+«Pagaré X directamente al profesional». El diálogo muestra alcance, fecha, duración e importe vigentes
+y explica la modalidad antes de aceptar. La clave se guarda en `rememberSaveable` y, si la respuesta se
+pierde, solo se puede reintentar la misma modalidad; la siguiente consulta que vea la cita confirmada
+libera la clave. Ambas cuentas ven el saldo («Pagado · Pendiente de entrega · Devuelto · Entregado») o
+«Pago directo acordado». Textos `payment_*` en ES/EN/FR/DE. No hay banner global de demo: la
+simulación se explica por voz.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_payments.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AppointmentsTest'
+```
+
+Resultados: [comprobación de pagos](comprobacion-pagos.md).
+
+## Precio guardado en la cita — decisión del 23 de noviembre de 2026
+
+Regla: un precio pactado con un cliente no cambia para ese cliente. Migración nueva
+`20261123004300_appointment_kept_prices.sql`; no edita las anteriores ni cambia firmas de RPC.
+
+Revisión del estado anterior (#20, #21, #22): ninguna RPC de citas leía el precio del perfil en vivo.
+`request_appointment` no guardaba precio y `propose_appointment` guarda `amount_cents` y
+`visit_fee_cents` en la propia propuesta; `accept_proposal` y `confirm_proposal` (#22) solo leen la
+propuesta (`greatest(amount_cents, visit_fee_cents)`) y guardan el importe en `appointment_payments`.
+
+- `public.appointments.reference_prices jsonb` (columna nueva, legible por los dos participantes, como
+  las demás salvo el lugar exacto): copia de los precios orientativos publicados del perfil **en el
+  momento de la solicitud**, la fija el disparador `appointments_kept_prices` al insertar. Las solicitudes
+  existentes reciben los precios aprobados actuales: hasta este cambio los propietarios no podían
+  editarlos, así que son los vigentes al solicitar. `request_appointment` la devuelve en su JSON.
+- Cambiarla después falla siempre, incluso con SQL de confianza: `42501 price_locked`.
+- Una propuesta decidida (`accepted`, `rejected`, `superseded`) no puede cambiar `amount_cents` ni
+  `visit_fee_cents` (`42501 price_locked`). Ninguna RPC reescribe importes: un cambio de precio es una
+  propuesta nueva con aceptación expresa (#23).
+- `save_professional_offer` y las versiones aprobadas solo tocan el perfil: nunca citas, solicitudes ni
+  propuestas.
+
+**Para #22 (pago simulado) y siguientes:** el cobro usa el importe guardado en la propuesta aceptada
+(`appointment_proposals.amount_cents` y `visit_fee_cents`, copiado a `appointment_payments.agreed_cents`),
+nunca `approved_profiles.prices`. Así lo hace ya `confirm_proposal`; #23–#27 deben seguir igual. Cuando el
+cliente pide sin propuesta, la referencia es `appointments.reference_prices`. Un movimiento simulado no
+debe leer el precio del perfil.
+
+~~Android no muestra todavía `reference_prices`.~~ Corregido el 23 de noviembre (ver «Cambios con el trabajo
+comenzado y precios guardados en el chat»): `Appointments.list` la pide y el chat la muestra.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree>   # incluye appointment_prices.test.sql
+```
+
+
+## Cambios de condiciones — #23
+
+Migración nueva: `20261123012300_appointment_changes.sql`. No edita migraciones anteriores ni cambia firmas
+de RPC existentes. No se ha desplegado ni escrito en la base alojada. El dinero sigue siendo simulado.
+
+Regla: una cita confirmada solo cambia cuando la otra parte acepta expresamente una versión concreta. Mientras
+el cambio está pendiente, o si se rechaza o falla, siguen vigentes la propuesta aceptada, la reserva de agenda,
+la dirección y el pago. El profesional nunca sustituye la dirección del cliente; solo puede pedir que la corrija.
+
+Cambios en el esquema:
+
+- `appointment_proposals_status_check` + `replaced`: el acuerdo que estaba vigente hasta que un cambio aceptado
+  lo sustituyó. Sigue habiendo como máximo una propuesta `accepted` por cita: la de las condiciones vigentes.
+- `public.appointment_changes` (RLS: lectura para cliente y profesional de citas ya confirmadas, sin escritura
+  directa). `kind` `change` (condiciones nuevas completas: `scope`, `start_at`, `end_at`, `duration_minutes`,
+  `amount_cents`, `visit_fee_cents`, `materials_included`, `travel_included`; `address/latitude/longitude` solo
+  si el cliente cambia la dirección, con `previous_*` para el historial) o `address_correction` (solo `note`).
+  `version` 1, 2, 3… por cita, `request_id` único por autor, `base_proposal_id` (condiciones que modifica),
+  `payment_mode` (si una cita gratuita pasa a tener coste), `status` `pending | accepted | rejected | superseded`,
+  `result_proposal_id`. Como máximo un cambio `pending` por cita (índice parcial).
+- `appointment_events` + columna `change_id` y tipos `change_proposed`, `change_accepted`, `change_rejected`,
+  `address_correction_requested`.
+- `payment_movements` + columna `change_id` única: como mucho un movimiento por cambio.
+- `appointment_payments.agreed_cents` admite 0 (una reducción puede devolverlo todo).
+
+RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo):
+
+- `propose_change(p_appointment_id, p_expected_version, p_request_id, p_scope, p_start, p_duration_minutes,
+  p_amount_cents, p_visit_fee_cents, p_materials_included, p_travel_included, p_address = null, p_lat = null,
+  p_lng = null, p_note = null, p_mode = null)` → fila de `appointment_changes`. Cualquiera de los dos
+  participantes, solo con la cita `confirmed` (`PT409 incompatible_state`) y `p_expected_version` vigente
+  (`PT409 stale_version`). Dirección solo del cliente (`42501 address_owner_only`) y dentro de la cobertura
+  (`22023 out_of_coverage`). Condiciones idénticas → `22023 no_change`; datos no válidos o nueva hora pasada →
+  `22023 invalid_change`. Si la cita no tenía pago y el cliente añade coste, `p_mode` es obligatorio
+  (`22023 invalid_payment`). Misma clave y contenido → mismo cambio; otro contenido → `retry_conflict`.
+  Sustituye (`superseded`) el cambio pendiente; no toca nada vigente.
+- `request_address_correction(p_appointment_id, p_expected_version, p_request_id, p_note)` → cambio
+  `address_correction`. Solo el profesional. El cliente responde proponiendo un cambio con dirección (que la
+  sustituye) o la descarta con `reject_change`.
+- `accept_change(p_change_id, p_mode = null)` → cambio `accepted`. Solo la otra parte (el autor recibe
+  `42501`). Toma el bloqueo de la cita y después `private.lock_agenda`, como `accept_proposal`. Versión no
+  vigente → `PT409 stale_version`; petición de corrección → `22023 invalid_change`. Si cambia el intervalo:
+  nueva hora futura (`PT409 proposal_expired`), dentro de una franja y sin solapes (`PT409 slot_unavailable`).
+  Si cambia la dirección: cobertura (`22023 out_of_coverage`). Después, en la misma transacción: propuesta
+  nueva `accepted` con las condiciones del cambio (la anterior pasa a `replaced`), reserva movida, dirección
+  actualizada (el disparador de #38 recalcula la zona aproximada), pago y aviso `change_accepted`. Cualquier
+  fallo deja la cita anterior íntegra y el cambio `pending`. Aceptar otra vez devuelve el mismo resultado.
+  - Integrado: aumento → movimiento `paid` por la diferencia (`paid` y `pending` suben) antes del trabajo
+    adicional; reducción → movimiento `refunded` (`pending` baja, `refunded` sube). Una reducción mayor que lo
+    pendiente de entrega → `PT409 incompatible_state`.
+  - Directo: solo cambia `agreed_cents`; ningún movimiento.
+  - Cita gratuita que pasa a tener coste: se crea el pago con el modo del cliente (`payment_mode` de su
+    cambio o `p_mode` al aceptar el del profesional; sin modo → `22023 invalid_payment`).
+- `reject_change(p_change_id)` → cambio `rejected`. Solo la otra parte. Idempotente; versión no vigente →
+  `stale_version`. Conserva historial y condiciones.
+
+Android: `Appointments.proposeChange`, `requestAddressCorrection`, `acceptChange(changeId, mode?)`,
+`rejectChange`; `list` añade `appointment_changes(*)` y rellena `Appointment.changes` y `pendingChange`.
+`Appointment.changeEffect(change)` → `ChangeEffect` (`PayDifference`, `Refund`, `DirectAgreement`,
+`ChooseMode`, `NewPayment`, `None`) para explicar el dinero antes de decidir. Avisos nuevos
+`DECIDE_CHANGE`, `AWAITING_CHANGE`, `CORRECT_ADDRESS`. `no_change` e `invalid_change` → `INVALID`;
+`address_owner_only` (403) → `ACCESS`.
+
+Interfaz (`AppointmentChangesUi.kt`, dentro de la tarjeta de una cita confirmada): «Proponer un cambio» abre un
+formulario con las condiciones vigentes; el cliente puede marcar «Cambiar la dirección» y, si añade coste a una
+cita gratuita, elegir cómo pagará. El profesional tiene además «Pedir al cliente que corrija la dirección». El
+cambio pendiente muestra solo los campos que cambian («Antes: … → Propuesto: …»), el efecto en el dinero y que
+lo acordado sigue vigente; la otra parte acepta o rechaza con confirmación. Historial «Cambio N · estado».
+Textos `change_*` en ES/EN/FR/DE.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_changes.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AppointmentsTest'
+```
+
+Resultados: [comprobación de cambios](comprobacion-cambios.md).
+
+## Comenzar trabajo y cancelar antes del inicio — #24
+
+Migración nueva: `20261123012400_appointment_start_cancel.sql`. No edita migraciones anteriores ni cambia firmas
+de RPC existentes. No se ha desplegado ni escrito en la base alojada. El dinero sigue siendo simulado.
+
+Regla: «Comenzar trabajo» separa una cita confirmada de un trabajo iniciado. Antes del inicio cualquiera de las dos
+partes cancela sin penalización; después no hay cancelación con devolución automática y un problema se tramita
+como incidencia (#26), sin inventar resolución.
+
+Cambios en el esquema:
+
+- `appointments_stage_check` + `started` y `cancelled`. Columnas nuevas legibles por los dos participantes (privilegio
+  de columna, como #38): `started_at`, `cancelled_at`, `cancelled_by` (hora y cuenta de servidor).
+- `appointment_events_kind_check` + `started` (al cliente) y `cancelled` (a la otra parte).
+- `payment_movements.cancellation boolean`: marca la devolución de una cancelación; índice único parcial
+  `payment_movements_one_cancellation`, como mucho una por cita.
+
+RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo). Ambas devuelven
+`{id, stage, version, started_at, cancelled_at, cancelled_by, refunded_cents}` (nunca el lugar exacto):
+
+- `start_work(p_appointment_id uuid)`. Solo el profesional de la cita (`42501 permission_denied`, también para citas
+  ajenas o inexistentes) y solo con la cita `confirmed` (`PT409 incompatible_state`). Pone `started`, `started_at`,
+  `version + 1`, cierra como `superseded` un cambio pendiente (comenzar no acepta costes nuevos) y avisa al cliente.
+  No mueve dinero. Repetirla devuelve la misma marca. ~~Tras el inicio, los cambios de #23 responden
+  `incompatible_state`.~~ Sustituido el 23 de noviembre por `20261123012500` (sección siguiente): comenzar solo
+  cierra el cambio pendiente que mueve la hora o la dirección, o una petición de corrección.
+- `cancel_appointment(p_appointment_id uuid)`. Cliente o profesional, cita `confirmed`. Toma el bloqueo de la cita y
+  después `private.lock_agenda`, como `accept_proposal`. En una sola transacción: borra la reserva de
+  `agenda_reservations` (la hora vuelve a estar libre), cierra un cambio pendiente, y si el pago es integrado con
+  pendiente > 0 añade un movimiento `refunded` con `cancellation = true` por todo lo pendiente y deja `pending = 0`.
+  Pago directo: no se toca (`agreed_cents` se conserva, ningún movimiento). Gratuita: no se crea pago. Pone
+  `cancelled`, `cancelled_at`, `cancelled_by`, `version + 1` y avisa a la otra parte. Repetirla (por cualquiera de
+  las dos partes) devuelve la primera cancelación sin otra devolución ni otro aviso. Errores:
+  `PT409 already_started` si ya comenzó, `PT409 incompatible_state` si no está confirmada.
+
+Carrera inicio/cancelación: las dos operaciones bloquean la fila de la cita, así que gana la primera y la otra
+recibe 409 (`already_started` o `incompatible_state`) sin efectos parciales.
+
+Android: `Appointments.startWork(appointmentId)` y `cancel(appointmentId)` → `AppointmentMarks`. `AppointmentStage`
++ `STARTED`, `CANCELLED`; `Appointment.startedAt/cancelledAt/cancelledBy`, `canStart(account)`, `canCancel(account)`
+y `cancellationEffect` (`CancellationEffect.Refund`, `DirectNotRefunded`, `None`). Avisos `STARTED` y `CANCELLED`.
+`already_started` → `AppointmentFailure.ALREADY_STARTED`.
+
+Interfaz (`AppointmentStartCancelUi.kt`, dentro de la tarjeta de la cita): el profesional ve «Comenzar trabajo» con
+un diálogo que explica que después no habrá cancelación con devolución automática y que comenzar no autoriza
+costes. Ambas partes ven «Cancelar la cita» antes del inicio; el diálogo muestra lo que se devolverá (o que el pago
+directo no lo devuelve la app, o que no hay dinero) y que se libera la hora. Ambas cuentas ven «Trabajo comenzado
+el …» o «Cancelada por ti / por la otra parte el …». Textos `start_cancel_*` en ES/EN/FR/DE.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_start_cancel.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AppointmentsTest'
+```
+
+Resultados: [comprobación de inicio y cancelación](comprobacion-inicio-cancelacion.md).
+
+## Cambios con el trabajo comenzado y precios guardados en el chat — decisiones del 23 de noviembre de 2026
+
+Migración nueva: `20261123012500_changes_during_job.sql` (`create or replace` de `propose_change`,
+`request_address_correction`, `accept_change` y `start_work`; mismas firmas y permisos). No edita migraciones
+anteriores. No se ha desplegado ni escrito en la base alojada. El dinero sigue siendo simulado.
+
+Regla A (trabajo extra acordado en el momento): con la cita `started`, cualquiera de las dos partes propone y la
+otra acepta o rechaza otro precio, alcance, duración o inclusiones, con las mismas reglas que #23.
+
+- `propose_change`: admite `confirmed` y `started`. Con `started`, un `p_start` distinto del vigente o una
+  dirección nueva → `PT409 already_started`. `cancelled` o `pending` → `PT409 incompatible_state`, como antes.
+- `accept_change`: admite `confirmed` y `started`. Con `started`, un cambio que mueve la hora o la dirección →
+  `PT409 already_started` (defensa: comenzar ya los cierra). Dinero igual que #23: integrado, al aceptar se cobra
+  (simulado) la diferencia del aumento o se devuelve la de la reducción (sin superar lo pendiente de entrega);
+  directo, solo `agreed_cents`. Una duración nueva mueve el final de la reserva y debe caber en la franja de
+  disponibilidad y sin solapes (`PT409 slot_unavailable`), como antes de comenzar.
+- `request_address_correction`: con `started` → `PT409 already_started`.
+- `start_work`: ya no cierra todo cambio pendiente. Cierra (`superseded`) solo el que mueve la hora de inicio o la
+  dirección y la petición de corrección de dirección; un cambio de precio, alcance, duración o inclusiones sigue
+  `pending` y puede aceptarse durante el trabajo.
+- `cancel_appointment` sin cambios: solo antes de comenzar y sigue cerrando cualquier cambio pendiente. Una cita
+  cancelada no admite cambios.
+
+Regla B (precios del perfil): un cambio de precios del perfil vale para el catálogo, los chats sin solicitud y las
+solicitudes nuevas. Cada solicitud ya enviada conserva `appointments.reference_prices` (migración `20261123004300`) y cada propuesta su
+importe. Vía de lectura: la columna ya era legible por los dos participantes (privilegio de columna y la RLS de
+`appointments`); no hace falta RPC ni vista nueva. Una tercera cuenta no ve la fila.
+
+Android: `Appointments.list` añade `reference_prices` a las columnas leídas; `Appointment.referencePrices`
+(`List<ReferencePrice>`, vacía si no había precios). `canProposeChange(account)` (participante y `CONFIRMED` o
+`STARTED`), `startAndAddressMayChange` (solo `CONFIRMED`) y `canRequestAddressCorrection(account)` (profesional y
+`CONFIRMED`). Con `STARTED` y un cambio pendiente, el aviso es `DECIDE_CHANGE` / `AWAITING_CHANGE`; sin cambio,
+`STARTED`.
+
+Interfaz: la tarjeta de cada solicitud muestra «Precios de referencia de esta solicitud» (los guardados, no los del
+perfil) y el formulario de propuesta del profesional también; las tarjetas de propuesta ya mostraban su importe.
+Con el trabajo comenzado sigue visible «Proponer un cambio», con un aviso de que la hora y la dirección ya no
+cambian; el formulario muestra el inicio fijo, sin campos de fecha, hora ni dirección, y no hay «Pedir corrección».
+`already_started` en un cambio muestra su propio texto. Textos `kept_prices_*` y `running_change_*` en ES/EN/FR/DE.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_start_cancel.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AppointmentsTest'
+```
+
+Resultados: [comprobación de cambios en curso](comprobacion-cambios-en-curso.md).
+
+## Marcar realizado y confirmar la entrega manual — #25
+
+Migración nueva: `20261123012600_appointment_completion.sql`. No edita migraciones anteriores ni cambia firmas de RPC
+existentes. No se ha desplegado ni escrito en la base alojada. El dinero sigue siendo simulado.
+
+Regla: «Realizado» del profesional fija en servidor el origen de los plazos y no entrega nada. Solo el cliente confirma;
+la confirmación entrega una sola vez lo pendiente del pago integrado si no hay incidencia bloqueante. Directo y gratuito
+finalizan igual, sin inventar dinero gestionado por la app.
+
+Cambios en el esquema:
+
+- `appointments_stage_check` + `done` (marcado realizado, esperando al cliente) y `completed` (finalizada). Columnas
+  nuevas legibles por los dos participantes (privilegio de columna, como #38): `done_at` (instante de servidor de la
+  marca), `reminder_due_at` (`done_at + 24 h`), `close_due_at` (`done_at + 48 h`), `completed_at` y `completion`
+  (`client_confirmed` | `no_answer`). Restricciones `appointments_done_mark` y `appointments_completed_mark`.
+- `appointment_events_kind_check` + `done` (al cliente) y `completed` (a la otra parte; con `actor_id` nulo y un aviso
+  a cada participante cuando cierra el reloj). `actor_id` admite nulo solo para `completed`
+  (`appointment_events_system_actor`).
+- `payment_movements_one_delivery`: índice único parcial, como mucho un movimiento `delivered` por cita, entregue quien
+  entregue (cliente, reloj o administración).
+
+RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo). Ambas devuelven
+`{id, stage, version, done_at, reminder_due_at, close_due_at, completed_at, completion, delivered_cents}` (nunca el lugar
+exacto):
+
+- `mark_done(p_appointment_id uuid)`. Solo el profesional de la cita (`42501 permission_denied`, también para citas
+  ajenas o inexistentes) y solo con la cita `started` (`PT409 incompatible_state`). Cierra como `superseded` un cambio
+  pendiente (las condiciones vigentes son las de la propuesta aceptada), pone `done`, `done_at`, los vencimientos,
+  `version + 1` y avisa al cliente (`done`). No mueve dinero. Repetirla (también tras finalizar) devuelve la misma marca
+  sin otro aviso.
+- `confirm_done(p_appointment_id uuid)`. Solo el cliente de la cita (`42501`). Con la cita `completed` devuelve el
+  primer resultado; si no está `done` → `PT409 incompatible_state` (confirmación prematura). Si no, delega en la
+  invariante compartida.
+
+Invariante compartida para #26, #27 y #31 (no hay una segunda implementación del saldo):
+
+- `private.complete_appointment(p_appointment_id uuid, p_actor uuid, p_completion text)` → mismas marcas. Solo
+  servidor (sin permiso para `authenticated`). `client_confirmed` exige `p_actor` = cliente; `no_answer` exige
+  `p_actor` nulo y `now() >= close_due_at` (`PT409 not_due`). Bloquea la fila de la cita y después la del pago. Si ya
+  está `completed` devuelve el primer resultado; si no está `done` → `incompatible_state`; si
+  `private.delivery_blocked(id)` → `PT409 incident_blocking`. En integrado con pendiente > 0 añade el movimiento
+  `delivered` por todo lo pendiente (`pending = 0`, `delivered += pendiente`); en directo o gratuita, ninguno. Pone
+  `completed`, `completed_at`, `completion`, `version + 1` y los avisos.
+- `private.delivery_blocked(p_appointment_id uuid) returns boolean`: `false` en #25. #26 (ver más abajo) lo redefine con
+  `create or replace` para que una incidencia abierta bloquee la entrega, también la del reloj.
+- `private.completion_deadlines(p_done_at)`: 24 h y 48 h. El intervalo corto de pruebas de #27 debe aislarse; no hay
+  parámetro de usuario que cambie los plazos.
+
+Carreras: `mark_done`, `confirm_done`, cancelación, cambios y el futuro reloj bloquean primero la fila de la cita, así que
+se serializan; la segunda confirmación ve `completed` y devuelve el primer resultado, y el índice único impide una segunda
+entrega en cualquier caso. Tras la marca, `propose_change` y `cancel_appointment` responden
+`incompatible_state`, y el cambio que estuviera pendiente ya quedó cerrado.
+
+Android: `Appointments.markDone(appointmentId)` y `confirmDone(appointmentId)` → `CompletionMarks`. `AppointmentStage`
++ `DONE`, `COMPLETED`; `Completion` (`CLIENT_CONFIRMED`, `NO_ANSWER`); `Appointment.doneAt/reminderDueAt/closeDueAt/
+completedAt/completion`, `canMarkDone(account)`, `canConfirmDone(account)` y `completionEffect`
+(`CompletionEffect.Deliver`, `DirectNotHandled`, `None`). Avisos `CONFIRM_DONE`, `AWAITING_CONFIRMATION`, `COMPLETED`,
+`COMPLETED_NO_ANSWER`. `incident_blocking` → `AppointmentFailure.INCIDENT_BLOCKING`.
+
+Interfaz (`AppointmentCompletionUi.kt`, dentro de la tarjeta de la cita): el profesional ve «Marcar como realizado» con un
+diálogo que explica que el pago no se entrega todavía. Ambas cuentas ven «Marcado como realizado el …» y la fecha de
+cierre automático del servidor. El cliente ve «Confirmar que se ha realizado», con un diálogo que muestra lo que se
+entregará (o que el pago directo no pasa por la app, o que no hay dinero). Después ambas ven «Finalizada con tu
+confirmación / con la confirmación del cliente el …» y «Entregado al profesional: … (simulado)». Textos `completion_*` en
+ES/EN/FR/DE.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_completion.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AppointmentsTest'
+```
+
+Resultados: [comprobación de realizado](comprobacion-realizado.md).
+
+## Agenda sin horario y comprobación al proponer (corrección, 23 de noviembre de 2026)
+
+Motivo: en la base alojada un cliente pagó una propuesta y recibió «Esa hora ya no está libre…»
+(`slot_unavailable`) porque el perfil profesional no tenía ninguna franja en `availability_windows`:
+la comprobación de franja fallaba siempre y solo se descubría al confirmar.
+
+Migración: `supabase/migrations/20261123012610_agenda_open_hours.sql`.
+
+- **Sin franjas, sin límite de horario.** Si el perfil no tiene ninguna fila en `availability_windows`
+  (nunca guardó horario o guardó `[]`), no se restringe la hora; solo cuentan las reservas y bloqueos
+  de `agenda_reservations`. En cuanto existe una franja, la cita debe caber entera en una franja como antes.
+- **Motivos distintos.** Fuera del horario configurado → `PT409 outside_hours`; solape con una cita
+  confirmada o un bloqueo → `PT409 slot_unavailable`. Regla única en `private.agenda_slot_problem`
+  / `private.check_agenda_slot(p_profile_id, p_start, p_end, p_appointment_id)` (el último parámetro
+  ignora la reserva de esa misma cita al moverla).
+- **Comprobación al enviar.** Un disparador `before insert` (`private.check_sent_interval`) comprueba
+  cada propuesta nueva `pending` (`propose_appointment`, #20) y cada cambio `kind = 'change'` cuyo
+  intervalo difiere del vigente (`propose_change`, #23, cualquiera de los dos participantes). El autor
+  recibe el error al momento y no se guarda nada. Las RPC de #20/#23 no se han redefinido.
+- **Comprobación al confirmar.** Se mantiene (carreras): `private.reserve_proposal` (usada por
+  `accept_proposal` y `confirm_proposal`) y `accept_change` usan la misma regla, además de la restricción
+  de exclusión. Un bloqueo o cita confirmada entre la propuesta y el pago sigue impidiendo confirmar sin cobrar.
+
+Android: `outside_hours` → `AppointmentFailure.OUTSIDE_HOURS`. Al enviar una propuesta o un cambio de
+hora, el profesional lee «fuera de tu horario» / «ocupada en tu agenda» (`agenda_send_error_*`); el
+cliente que cambia la hora lee la versión sobre la agenda del profesional (`agenda_send_error_*_client`).
+Al confirmar, el cliente distingue `appointment_error_hours` de `appointment_error_slot`. «Mi agenda»
+avisa (`agenda_no_hours`) de que sin horario guardado no se limita la hora.
+
+Aviso para ramas paralelas: si otra migración posterior redefine `accept_change` o `reserve_proposal`
+copiando el texto de 20261123012500/002200, debe conservar `private.check_agenda_slot` en lugar de la
+comprobación de franjas en línea.
+
+Resultados: [comprobación de agenda y Destacado](comprobacion-agenda-destacado.md).
+## Incidencias y pruebas privadas — #26
+
+Migración nueva: `20261123012700_incidents.sql`. No edita migraciones anteriores ni cambia firmas de RPC existentes; solo
+redefine con `create or replace` el punto de extensión `private.delivery_blocked` de #25. No se ha desplegado ni escrito en
+la base alojada. El dinero sigue siendo simulado.
+
+Regla: una incidencia nunca mueve dinero ni cambia la etapa de la cita; espera la revisión administrativa (#31). Abierta antes
+de la finalización bloquea la entrega (confirmación del cliente, reloj #27 y cualquier llamada a
+`private.complete_appointment`). Abierta después del cierre es una comunicación: no bloquea ni revierte nada. Etapa de la
+cita, realización reconocida o discutida, revisión de la incidencia y saldo se guardan por separado.
+
+Esquema:
+
+- `public.incidents` (RLS: lectura para cliente y profesional de la cita y para administradores; sin escritura directa).
+  `kind` `cancellation` (petición de cancelación con el trabajo comenzado; solo con la cita `started`) | `quality` (el servicio
+  ocurrió, se discute la calidad) | `not_performed` (se discute si ocurrió). `performance` generada: `acknowledged` solo para
+  `quality`, `disputed` para las demás. `status` `open` | `resolved` (la resolución y sus columnas las añade #31). Contexto al
+  abrir, inmutable: `appointment_stage`, `payment_mode`, `pending_cents`, `delivered_cents` (nulos si la cita es gratuita) y
+  `blocks_delivery` (`stage <> 'completed'`). `description` 1–2000. Una sola abierta por cita (`incidents_one_open`); clave
+  `(opened_by, request_id)`. El disparador `incidents_keep_history` impide cambiar o borrar todo salvo `status`
+  (`42501 incident_history_locked`), también con SQL de confianza.
+- `public.incident_evidence` (misma lectura). Solo inserción (`incident_evidence_append_only` → `42501 evidence_locked`).
+  `kind` `message` (copia del mensaje aportado: `message_id`, `message_author_id`, `message_body`, `message_created_at`,
+  `attachment_kind`, `attachment_path`, `attachment_type`) | `note` (`note` 1–2000). Únicos `(incident_id, author_id,
+  request_id)` y `(incident_id, message_id)`.
+- `appointment_events_kind_check` + `incident_opened` e `incident_evidence` (a la otra parte). #32 debe conservar estos tipos
+  si redefine la restricción.
+- `private.delivery_blocked(id)` = existe una incidencia `open` con `blocks_delivery`.
+
+RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo):
+
+- `open_incident(p_appointment_id uuid, p_request_id uuid, p_kind text, p_description text, p_visibility_acknowledged boolean)`
+  → fila de `incidents`. Cliente o profesional de la cita (`42501 permission_denied`, también si no existe o para un
+  administrador). Sin el aviso aceptado → `22023 visibility_not_acknowledged`. Tipo o descripción inválidos →
+  `22023 invalid_incident`. Misma clave → mismo resultado; con otro contenido → `22023 retry_conflict`. Etapa distinta de
+  `started`/`done`/`completed`, o `cancellation` fuera de `started` → `PT409 incompatible_state` (antes del inicio se cancela con
+  devolución, #24). Ya hay una abierta → `PT409 incident_open` (se aportan pruebas a esa). Avisa a la otra parte.
+- `add_incident_evidence(p_incident_id uuid, p_request_id uuid, p_message_id uuid, p_note text, p_visibility_acknowledged boolean)`
+  → fila de `incident_evidence`. Solo participantes (`42501`). Exactamente uno de mensaje o nota → si no `22023 invalid_evidence`.
+  Un mensaje de otra conversación → `42501`. Incidencia no abierta → `PT409 incident_closed`. Aportar un mensaje ya aportado
+  devuelve esa prueba. Misma clave → mismo resultado; otro contenido → `retry_conflict`. Avisa a la otra parte.
+- `can_read_incident(p_incident_id)` y `can_read_incident_evidence(p_path)`: comprobaciones usadas por RLS y Storage.
+
+Storage: política nueva `incident_evidence_read` en `storage.objects` (bucket `chat-attachments`, solo SELECT): un archivo del chat
+es legible por la revisión solo si se aportó a una incidencia que puede leer. `can_read_chat_attachment` no cambia: el
+administrador sigue sin acceso al chat ni a los adjuntos no aportados.
+
+Carreras: `open_incident`, `add_incident_evidence`, `confirm_done` y el reloj bloquean primero la fila de la cita. Una incidencia
+confirmada antes impide la entrega posterior; si la confirmación llega primero, la incidencia queda como comunicación tras el
+cierre (`appointment_stage = completed`, `blocks_delivery = false`).
+
+Para #31: lectura administrativa ya disponible para `incidents` e `incident_evidence` (y sus archivos). La cita, condiciones y
+movimientos para el administrador siguen sin concederse aquí. La resolución debe cambiar `status` (único campo modificable) y
+entregar/devolver con la invariante de #25, no con lógica propia.
+
+Android: `appointments/Incidents.kt` (`Incidents.open`, `addEvidence(EvidenceDraft.Message|Note)`, `Incident`,
+`IncidentEvidence`, `IncidentFailure`). `Appointments.list` embebe `incidents(*,incident_evidence(*))`; `Appointment.incidents`,
+`openIncident`, `blockingIncident`, `canOpenIncident`, `incidentKinds`, `canAddEvidence`. Con incidencia bloqueante
+`canConfirmDone` es falso y el aviso es `INCIDENT_OPEN`. Interfaz `AppointmentIncidentUi.kt` dentro de la tarjeta: «Comunicar
+una incidencia» (tipo, descripción, efecto económico y aviso de visibilidad con casilla obligatoria) y, por incidencia, estado,
+realización reconocida/discutida, efecto y pruebas, cada una rotulada «Mensaje del chat» (autor, hora del mensaje y contenido
+citado: texto, foto o vídeo) o «Nota». Textos `incident_*` en ES/EN/FR/DE.
+
+Rediseño del 23 de noviembre de 2026 (sin cambios en el servidor): los mensajes ya no se eligen en una lista dentro de la
+tarjeta. «Elegir mensajes del chat» cierra el panel y abre el modo selección en el propio chat, como en WhatsApp; también se
+entra manteniendo pulsado un mensaje cuando hay una incidencia abierta a la que la cuenta puede aportar. Se marcan varios con
+toques, la barra superior muestra cuántos hay y «Añadir a la incidencia»; los ya aportados aparecen como «En la incidencia» y no
+se pueden volver a marcar. Una búsqueda del chat (lupa) resalta coincidencias sin distinguir mayúsculas ni acentos y salta entre
+ellas, también durante la selección. Al confirmar, con el mismo aviso de visibilidad, se llama a `add_incident_evidence` una vez
+por mensaje, con una clave derivada de incidencia y mensaje (`messageEvidenceKey`), así que un reintento tras una respuesta
+perdida no duplica nada; si una llamada falla, lo añadido sale de la selección y el resto queda marcado para reintentar. La
+tarjeta conserva «Añadir nota». Lógica pura en `chat/MessageSelection.kt` (`MessageSelection`, `MessageSearch`) e
+`Incidents.addMessages`; interfaz en `ChatEvidenceUi.kt` y `ChatScreen.kt`, unida al panel por `ChatEvidenceLink`.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_incidents.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.IncidentsTest'
+```
+
+Resultados: [comprobación de incidencias](comprobacion-incidencias.md).
+
+## Reseñas — #28
+
+Migración nueva: `20261123012800_reviews.sql`. No edita migraciones anteriores ni cambia firmas de RPC existentes. No se ha
+desplegado ni escrito en la base alojada. La Edge Function `search-professionals` no cambia.
+
+Regla: el cliente de la cita publica una reseña (1–5 estrellas y comentario) por cita, solo cuando consta que el servicio se
+realizó; nunca se genera sola. Directo y gratuito se reseñan igual. La habilitación la decide el servidor y no se deduce del
+dinero:
+
+| `state` | Cuándo |
+| --- | --- |
+| `enabled` | Cita `completed` (confirmación del cliente o cierre sin respuesta, #25/#27); o `done` con una queja de calidad (`performance = acknowledged`), aunque el pago siga retenido; o decisión administrativa `performed` |
+| `published` | Ya existe su reseña (solo en `review_states`) |
+| `not_done` | `pending`, `confirmed`, `cancelled` o solo `started` |
+| `awaiting_confirmation` | `done` sin confirmar ni queja de calidad: el cliente confirma primero |
+| `performance_disputed` | La última incidencia que discute la realización (`not_performed` o `cancellation`) o tiene decisión sobre ella sigue sin decidir o con `missing_evidence` |
+| `not_performed` | Esa última decisión es `not_performed` |
+
+Esquema:
+
+- `public.incidents.performance_decision` (`performed` | `not_performed` | `missing_evidence`, nulo hasta decidir): **punto de
+  extensión para #31**. La resolución administrativa lo fija aparte del reparto del dinero; no lo bloquea
+  `incidents_keep_history`.
+- `public.reviews` (RLS: lectura `anon` y `authenticated`; sin escritura directa): `id`, `profile_id`, `stars` 1–5, `comment`
+  1–2000, `created_at`. Solo lo público: ni cita, ni autor, ni dirección, ni chat. Disparador `reviews_locked`
+  (`42501 review_locked`): ni el profesional ni el SQL de confianza la editan o borran.
+- `private.review_sources` (sin permisos): `review_id`, `appointment_id` único (una por cita), `author_id`, `request_id`;
+  único `(author_id, request_id)`.
+- `approved_profiles.rating`/`review_count`: recalculados en la misma transacción a partir de `public.reviews` (media
+  redondeada a 2 decimales). La aprobación de perfiles (#29) no los toca.
+- `appointment_events_kind_check` + `review_published` (al profesional). #32 lo convierte en aviso sin cambios.
+
+RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo):
+
+- `publish_review(p_appointment_id uuid, p_request_id uuid, p_stars integer, p_comment text, p_privacy_acknowledged boolean)`
+  → `{id, appointment_id, profile_id, stars, comment, created_at}`. Bloquea primero la fila de la cita (como `confirm_done`,
+  `open_incident` y el reloj). Solo el cliente (`42501 permission_denied`, también profesional, terceros o cita inexistente).
+  Sin el aviso de datos privados → `22023 privacy_not_acknowledged`; estrellas o comentario inválidos → `22023 invalid_review`.
+  Misma clave y contenido → misma reseña; otro contenido → `22023 retry_conflict`. Otra clave con reseña ya publicada →
+  `PT409 review_exists`. No habilitada → `PT409` con el `state` como mensaje (`not_done`, `awaiting_confirmation`,
+  `performance_disputed`, `not_performed`). Publicar no confirma la cita ni entrega dinero.
+- `review_states(p_conversation_id uuid)` → filas `{appointment_id, state, review}` de las citas de la conversación en las que
+  participa quien llama (vacío para terceros).
+- `private.review_eligibility(p_appointment_id)`: la regla anterior, solo servidor.
+
+Lectura pública: `GET /rest/v1/reviews?profile_id=eq.<id>&order=created_at.desc` y el agregado de `approved_profiles`.
+
+Android: `appointments/Reviews.kt` (`Reviews.states`, `publish`, `forProfile`; `ReviewState`, `Review`,
+`AppointmentReviewState`, `ReviewFailure`). `AppointmentReviewUi.kt` dentro de la tarjeta de la cita: el cliente ve «Escribir
+una reseña» solo con `enabled` (estrellas, comentario y aviso de contenido público con casilla obligatoria; una respuesta
+perdida conserva la clave y bloquea el contenido), o el motivo de espera. Ambas partes ven la reseña publicada.
+`ProfileReviewList.kt` en el perfil público, bajo el agregado ya existente. Aviso `NoticeTopic.REVIEW`. Textos `review_*` en
+`values*/reviews.xml` (ES/EN/FR/DE).
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_reviews.py --local'
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.ReviewsTest'
+```
+
+Resultados: [comprobación de reseñas](comprobacion-resenas.md).
+
+## Cierre automático y recordatorios desde el servidor — #27
+
+Migración nueva: `20261123012900_completion_clock.sql`. No edita migraciones anteriores. Redefine `public.mark_done`
+con la misma firma y el mismo resultado; solo cambia de dónde salen los vencimientos.
+
+El reloj es `private.run_completion_clock(p_limit integer default 200) returns jsonb`. Lo ejecuta Supabase Cron
+(`pg_cron`) cada minuto como SQL dentro de la base. No hay ninguna función esperando ni ningún reloj de Android. Ninguna
+cuenta de la app puede llamarlo (no tiene permisos para `public`, `anon`, `authenticated` ni `service_role`). Cada
+ejecución hace lo siguiente:
+
+1. **Cierre sin respuesta.** Toma las citas `done` con `close_due_at <= now()` y sin incidencia bloqueante
+   (`private.delivery_blocked`). Usa `for update skip locked` y llama a `private.complete_appointment(id, null,
+   'no_answer')` (#25). Esa es la única lógica que entrega lo pendiente del pago integrado simulado, y lo hace una sola
+   vez. Directo y gratuito cierran sin movimientos. Avisa con `completed` a las dos partes. Un fallo en una cita se
+   deshace solo para esa cita, queda registrado como `failed` y no detiene las demás.
+2. **Recordatorio.** Toma las citas `done` con `reminder_due_at <= now() < close_due_at`, sin `reminded_at` y sin
+   incidencia bloqueante. Inserta un único evento `reminder` (actor nulo, destinatario el cliente) y fija
+   `appointments.reminded_at`. Un índice único impide un segundo recordatorio por cita. Por #32, el evento se convierte
+   en aviso persistido y en push sin más código. Android ya muestra «Recordatorio: confirma el trabajo realizado o
+   comunica una incidencia».
+3. Devuelve `{reminded, closed, failed, blocked}`. `blocked` cuenta las citas vencidas que espera una incidencia.
+
+Recuperación: cada ejecución trata todo lo ya vencido, así que la siguiente ejecución, tras una caída de Cron o de la base,
+recupera lo atrasado. Una cita que ha superado los dos vencimientos se cierra sin recordatorio tardío. Repetir una
+ejecución no duplica eventos ni entregas.
+
+Carreras: el reloj bloquea la fila de la cita igual que `confirm_done`, `open_incident` y la futura administración (#31).
+Si una confirmación o una incidencia está en curso, `skip locked` salta la cita y la ejecución del minuto siguiente
+la ve ya resuelta. Si el reloj llega primero, la confirmación tardía devuelve el cierre `no_answer` ya hecho, y la
+incidencia tardía queda como comunicación posterior al cierre (`blocks_delivery = false`).
+
+Tablas privadas, sin acceso de cliente:
+
+- `private.completion_clock_log(id, ran_at, appointment_id, action in ('reminded','closed','failed'), detail)`: registro
+  de lo que ha hecho el reloj. Sirve de evidencia de una ejecución real y no guarda nombres, direcciones ni importes. Se
+  conservan 30 días.
+- `private.completion_trial_accounts(user_id, added_at)`: prueba aislada del intervalo corto. Solo una cita cuyo cliente
+  **y** profesional figuren aquí recibe el recordatorio a los 2 min y el cierre a los 5 min de «Realizado». En el resto
+  se mantienen 24 h y 48 h (`private.completion_deadlines`). Lo cambia David con SQL de confianza para cuentas de
+  prueba desechables. No hay botón, parámetro de la app ni RPC que acelere el reloj.
+- `private.appointment_completion_deadlines(p_appointment_id, p_done_at)`: vencimientos de una cita (prueba o 24/48 h).
+  Lo usa `mark_done`.
+
+Eventos: `appointment_events.kind` admite `reminder`, que se añade a la lista existente sin quitar otros tipos.
+`actor_id` admite nulo para `completed` y `reminder`.
+
+Android no cambia de interfaz. `Appointment.silentCloseAt` devuelve el `close_due_at` solo mientras el reloj vaya a
+aplicarlo: cita `done` y sin incidencia bloqueante. Con una incidencia ya no se anuncia el cierre automático. Al reabrir
+la app, la lista muestra «Finalizada sin confirmación del cliente el …» (`COMPLETED_NO_ANSWER`, #25), y los avisos
+`reminder` y `completed` siguen en «Avisos».
+
+### Programación (paso manual de David, por proyecto)
+
+No está en migraciones porque activa una extensión y un trabajo del proyecto alojado. Hay que hacerlo una vez, después
+de desplegar la migración, con el SQL Editor o con *Integrations → Cron* del panel:
+
+```sql
+create extension if not exists pg_cron;   -- o activar «Cron» en Integrations
+select cron.schedule('completion-clock', '* * * * *', 'select private.run_completion_clock()');
+-- Comprobación:
+select jobid, schedule, active from cron.job where jobname = 'completion-clock';
+select status, return_message, start_time from cron.job_run_details
+ where jobid = (select jobid from cron.job where jobname = 'completion-clock') order by start_time desc limit 5;
+-- Lo que ha hecho el reloj:
+select ran_at, appointment_id, action, detail from private.completion_clock_log order by id desc limit 20;
+```
+
+Prueba real aislada con el intervalo corto, con cuentas desechables y nunca con las cuentas preparadas:
+
+```sql
+insert into private.completion_trial_accounts(user_id) values ('<cliente de prueba>'), ('<profesional de prueba>');
+-- … recorrido en las apps y cierre de ambas …
+delete from private.completion_trial_accounts;   -- al terminar
+```
+
+`pg_cron` aparece como disponible en Supabase Free. Ni este documento ni la prueba local garantizan su disponibilidad
+ni su puntualidad en el plan gratuito.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'python3 scripts/contract_clock.py --local'
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'python3 scripts/contract_clock.py --local --real'
+```
+
+Resultados: [comprobación del cierre automático](comprobacion-cierre-automatico.md).
+
+## Resolución administrativa de incidencias — #31
+
+Migración nueva: `20261123013100_incident_resolution.sql`. No edita migraciones anteriores. Redefine con `create or replace`
+`private.delivery_blocked` (#26) y `private.complete_appointment` (#25, mismas firmas). Añade el tipo de aviso
+`incident_decision` leyendo la restricción vigente, como #27, para conservar los tipos de otras ramas. Crea
+`incidents.performance_decision` solo si #28 no la creó ya, con la misma definición. No se ha desplegado ni escrito en la
+base alojada. El dinero sigue siendo simulado.
+
+Regla: el administrador toma dos decisiones independientes y definitivas, cada una con motivo obligatorio, actor y fecha
+de servidor. Ninguna se edita ni se borra después.
+
+- **Reparto** del saldo integrado pendiente: `deliver` (todo al profesional), `refund` (todo al cliente) o `split`
+  (una parte al cliente y el resto al profesional). Nunca supera el pendiente. Solo existe mientras la incidencia bloquea
+  la entrega y hay pago integrado con pendiente > 0 (`can_settle`). Tras la entrega, con pago directo o con visita
+  gratuita no hay saldo bajo control del panel ni botones de dinero.
+- **Realización**: `performed` | `not_performed` | `missing_evidence` en `incidents.performance_decision`. Decide la
+  reseña (#28) y nunca se deduce del dinero: una devolución total no significa «no realizado».
+
+La incidencia pasa a `resolved` (`resolved_at` lo pone el servidor) cuando consta la realización y no queda dinero
+pendiente por repartir. El orden de las decisiones es libre. Con la realización decidida y el dinero aún pendiente, la
+incidencia sigue abierta y sigue bloqueando la entrega.
+
+Esquema (columnas nuevas en `public.incidents`, legibles por los participantes y por administración con la RLS de #26):
+`performance_reason`, `performance_decided_by`, `performance_decided_at`, `settlement`, `settlement_refunded_cents`,
+`settlement_delivered_cents`, `settlement_reason`, `settled_by`, `settled_at` y `resolved_at`. El disparador
+`incidents_keep_resolution` impide cambiar una decisión ejecutada o reabrir una resuelta (`42501
+incident_resolution_locked`), también con SQL de confianza. `appointments.completion` admite `administration`, y una cita
+cerrada así puede no tener las marcas de «Realizado» porque se cierra desde `started`.
+
+Coordinación con la entrega y el reloj:
+
+- `admin_settle_incident` registra el reparto. Si hay devolución, añade el movimiento `refunded` con el administrador como
+  actor. Después llama a `private.complete_appointment(id, administrador, 'administration')`, que entrega el resto con un
+  único movimiento `delivered` y cierra la cita (`completed`) desde `started` o `done`. `delivery_blocked` ya no cuenta
+  una incidencia con reparto registrado. La entrega sigue pasando por un único punto.
+- Si una cita sigue `done` cuando la incidencia se resuelve sin dinero pendiente (directa o gratuita), la resolución la
+  cierra también como `administration`. Así el reloj (#27) no la cierra después como `no_answer`, porque el cliente sí
+  respondió. Con la incidencia abierta el reloj la sigue saltando.
+- Una cita `started` sin dinero que repartir sigue `started`. El profesional marca «Realizado» y empiezan 48 h nuevas.
+- Todas las operaciones toman primero el bloqueo de la fila de la cita y después el del pago, como `confirm_done`,
+  `open_incident` y el reloj. Dos repartos simultáneos terminan con uno aceptado y otro `decision_already_recorded`. Una
+  confirmación simultánea recibe `incident_blocking` o el resultado ya cerrado. En ningún caso hay movimientos duplicados.
+
+RPC (`security definer`, solo administradores según `private.administrators`, nunca sobre una cita propia):
+
+- `admin_incidents(p_status text default 'open')`: `open` | `resolved` | `all`. Devuelve un array con lo único que ve la
+  revisión:
+  - la incidencia, con el rol de quien la abrió y su contexto al abrirse;
+  - `can_settle`, las dos decisiones y el correo del administrador que tomó cada una;
+  - `appointment`: problema, perfil público, franja solicitada, etapa y marcas;
+  - `conditions`: la propuesta `accepted` vigente;
+  - `payment` y `movements`, con el actor expresado como rol;
+  - `evidence`: las pruebas aportadas, con su autor expresado como rol.
+  Nunca incluye dirección, coordenadas, otros mensajes del chat ni identificadores de cuenta de los participantes.
+- `admin_settle_incident(p_incident_id uuid, p_outcome text, p_refund_cents integer, p_expected_pending_cents integer,
+  p_reason text)`. `p_refund_cents` solo cuenta en `split` y debe ser > 0 y < pendiente. `p_expected_pending_cents` es el
+  saldo que vio el administrador; si ha cambiado, no se ejecuta nada.
+- `admin_decide_incident_performance(p_incident_id uuid, p_decision text, p_reason text)`.
+
+Las dos operaciones son idempotentes: repetir la misma decisión del mismo administrador devuelve la fila. Cada decisión
+avisa a ambos participantes con `incident_decision` en `appointment_events`, que #32 convierte en aviso y push
+(«Novedad en una incidencia»). Al cerrar también se emiten los `completed` de #25.
+
+Errores: `42501 permission_denied` (sin rol administrativo o participante de la cita), `22023 reason_required`,
+`invalid_settlement`, `invalid_decision`, `invalid_status` e `incident_not_found`. Con `PT409`:
+`decision_already_recorded`, `incident_closed`, `nothing_pending` y `balance_changed`.
+
+Panel (`panel/src/Incidents.tsx`, pestaña «Incidencias»): muestra la cita, las condiciones, el saldo, los movimientos y las
+pruebas. Las fotos y los vídeos se abren con una URL firmada de 5 min, y Storage solo firma archivos aportados. Para el
+reparto se elige una opción, se escribe el importe parcial en euros y el motivo, y se pasa por un resumen de confirmación
+antes de ejecutar. La realización tiene su propio formulario, con el mismo resumen. Las decisiones ejecutadas se muestran
+con actor, fecha y motivo, sin botones. Sin saldo se explica por qué: entregado antes, pago directo o gratuita. No se
+promete ningún plazo de atención. Textos en ES/EN/FR/DE.
+
+Android: `Incident` añade `settlement`, sus importes, motivo y fecha, `performanceDecision`, su motivo y fecha, y
+`resolvedAt`. `Completion.ADMINISTRATION` produce el aviso `COMPLETED_BY_ADMINISTRATION`. `blockingIncident` ignora una
+incidencia con reparto registrado. La tarjeta de la incidencia muestra cada decisión con su motivo y fecha, y si solo
+falta una, que la incidencia sigue abierta. Textos `resolution_*` en ES/EN/FR/DE.
+
+```bash
+/Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_incident_resolution.py --local'
+cd panel && npm run check
+./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.IncidentsTest'
+```
+
+Resultados: [comprobación de la resolución de incidencias](comprobacion-resolucion-incidencias.md).

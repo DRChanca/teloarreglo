@@ -16,8 +16,8 @@ data class ReferencePrice(
     val scope: String,
     val unit: String,
     @SerialName("amount_cents") val amountCents: Int,
-    val includes: String,
-    val excludes: String,
+    val includes: String = "",
+    val excludes: String = "",
 )
 
 @Serializable
@@ -36,12 +36,17 @@ data class PublicProfile(
     @SerialName("review_count") val reviewCount: Int = 0,
     @SerialName("business_address") val businessAddress: String? = null,
     @SerialName("cover_path") val coverPath: String? = null,
+    /** Point of the approved commercial address (#17); null when there is none. */
+    @SerialName("business_lat") val businessLat: Double? = null,
+    @SerialName("business_lng") val businessLng: Double? = null,
 )
 
 /** Read-only approved public snapshot. Missing/unpublished details return null. */
 interface Catalogue {
     suspend fun list(trade: String? = null): List<PublicProfile>
     suspend fun profile(id: String): PublicProfile?
+    /** «Destacado» badge (#33): an approved profile with an active simulated subscription. */
+    suspend fun featured(id: String): Boolean = false
 }
 
 class SupabaseCatalogue(private val client: SupabaseClient) : Catalogue {
@@ -53,4 +58,7 @@ class SupabaseCatalogue(private val client: SupabaseClient) : Catalogue {
     override suspend fun profile(id: String): PublicProfile? =
         client.postgrest.rpc("catalogue", buildJsonObject { put("p_id", id) })
             .decodeList<PublicProfile>().singleOrNull()
+
+    override suspend fun featured(id: String): Boolean =
+        client.postgrest.rpc("is_featured", buildJsonObject { put("p_profile_id", id) }).decodeAs<Boolean>()
 }

@@ -19,4 +19,6 @@
     <string name="chat_other">Autre compte</string>
     <string name="chat_client">Client · %1$s</string>
     <string name="chat_access">Connectez-vous pour contacter ce professionnel.</string>
+    <string name="chat_tick_delivered">Remis sur l\'autre téléphone</string>
+    <string name="chat_tick_read">Lu</string>
 </resources>

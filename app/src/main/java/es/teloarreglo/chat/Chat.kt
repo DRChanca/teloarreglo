@@ -4,7 +4,9 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.exceptions.RestException
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.serialization.SerialName
+import java.time.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -16,7 +18,15 @@ data class Conversation(
     @SerialName("client_id") val clientId: String,
     @SerialName("professional_id") val professionalId: String,
     val name: String,
+    // Inbox only (#39): the client's self-declared name, never the email, and the
+    // caller's own unread count, both computed by the server.
+    @SerialName("client_name") val clientName: String? = null,
+    @SerialName("unread_count") val unreadCount: Int = 0,
 )
+
+/** The other participant: the client's name for the professional, the business for the client. */
+fun Conversation.counterpartName(accountId: String): String? =
+    if (professionalId == accountId) clientName else name
 
 @Serializable
 data class ChatMessage(
@@ -26,6 +36,11 @@ data class ChatMessage(
     @SerialName("request_id") val requestId: String,
     val body: String,
     @SerialName("created_at") val createdAt: String,
+    // Private attachment (#18/#19); open it through ChatAttachments.url.
+    @SerialName("attachment_kind") val attachmentKind: String? = null,
+    @SerialName("attachment_path") val attachmentPath: String? = null,
+    @SerialName("attachment_type") val attachmentType: String? = null,
+    @SerialName("attachment_size") val attachmentSize: Long? = null,
 )
 
 enum class SendFailure { ACCESS, INVALID_TEXT, CONFLICT }
@@ -37,7 +52,47 @@ interface Chat {
     suspend fun conversations(): List<Conversation>
     suspend fun messages(conversationId: String): List<ChatMessage>
     suspend fun send(conversationId: String, requestId: String, body: String): ChatMessage
+    /** Marks read up to the newest persisted message, only for the caller. */
+    suspend fun markRead(conversationId: String) {}
+    /** This device received the conversation up to its newest message (fetched or pushed): the sender's second tick. */
+    suspend fun markDelivered(conversationId: String) {}
+    /** The inbox was fetched: every conversation of the caller is delivered up to now. */
+    suspend fun markAllDelivered() {}
+    /** The other participant's marks, for the ticks on the caller's own messages. */
+    suspend fun receipts(conversationId: String): Receipts = Receipts()
 }
+
+/** The other participant's delivery and read marks; null until they exist. Read implies delivered. */
+@Serializable
+data class Receipts(
+    @SerialName("delivered_at") val deliveredAt: String? = null,
+    @SerialName("read_at") val readAt: String? = null,
+)
+
+/** WhatsApp ticks: one grey = stored on the server, two grey = delivered to the other phone, two blue = read. */
+enum class Tick { SENT, DELIVERED, READ }
+
+fun Receipts.tickOf(message: ChatMessage): Tick {
+    val sent = Instant.parse(message.createdAt)
+    fun covers(mark: String?) = mark != null && !Instant.parse(mark).isBefore(sent)
+    return when {
+        covers(readAt) -> Tick.READ
+        covers(deliveredAt) -> Tick.DELIVERED
+        else -> Tick.SENT
+    }
+}
+
+/**
+ * The conversation currently on screen, set by the chat while it is visible. A message push for it is not shown
+ * as a system notification; it only wakes the chat's refresh through [pushes].
+ */
+object OpenConversation {
+    @Volatile var id: String? = null
+    val pushes = MutableSharedFlow<String>(extraBufferCapacity = 8)
+}
+
+fun showsNotification(kind: String?, conversationId: String?, open: String?): Boolean =
+    !(kind == "message" && conversationId != null && conversationId == open)
 
 class SupabaseChat(private val client: SupabaseClient) : Chat {
     override suspend fun open(profileId: String): Conversation =
@@ -46,7 +101,28 @@ class SupabaseChat(private val client: SupabaseClient) : Chat {
         }).decodeAs()
 
     override suspend fun conversations(): List<Conversation> =
-        client.postgrest["conversations"].select { order("created_at", Order.DESCENDING) }.decodeList()
+        client.postgrest.rpc("conversation_inbox").decodeAs()
+
+    override suspend fun markRead(conversationId: String) {
+        client.postgrest.rpc("mark_conversation_read", buildJsonObject {
+            put("p_conversation_id", conversationId)
+        })
+    }
+
+    override suspend fun markDelivered(conversationId: String) {
+        client.postgrest.rpc("mark_conversation_delivered", buildJsonObject {
+            put("p_conversation_id", conversationId)
+        })
+    }
+
+    override suspend fun markAllDelivered() {
+        client.postgrest.rpc("mark_conversations_delivered")
+    }
+
+    override suspend fun receipts(conversationId: String): Receipts =
+        client.postgrest.rpc("conversation_receipts", buildJsonObject {
+            put("p_conversation_id", conversationId)
+        }).decodeAs()
 
     // Explicit pages avoid PostgREST's row cap silently dropping older messages.
     override suspend fun messages(conversationId: String): List<ChatMessage> = buildList {

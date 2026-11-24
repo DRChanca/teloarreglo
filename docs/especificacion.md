@@ -25,9 +25,38 @@ de separar pruebas y presentación en dos proyectos.
   sustituidas por esta decisión. La configuración técnica inicial del ticket de
   acceso conserva dos variantes de APK, pero el asistente sincroniza sus alias
   de configuración con la misma conexión y cuenta; no son dos proyectos.
+
+## Actualización: solo se usa la variante de presentación
+
+Decisión de David, 23 de noviembre de 2026: la única variante de la aplicación
+que se instala, prueba y presenta es **`es.teloarreglo.presentacion`**.
+
+- Firebase Cloud Messaging se configura en **un único proyecto Firebase** con
+  **una sola app Android registrada**, `es.teloarreglo.presentacion`. Firebase
+  solo entrega notificaciones push; no guarda datos de la aplicación, que siguen
+  en la única base Supabase.
+- En `.env` basta con `FCM_PROJECT_ID`, `FCM_API_KEY`, `FCM_SENDER_ID` y
+  `PRESENTATION_FCM_APP_ID`. `TEST_FCM_APP_ID` puede quedar vacío: la variante
+  `pruebas` compila igual, pero sin notificaciones push.
+- La variante `pruebas` se conserva en el código para compilaciones y pruebas
+  automáticas, pero no es objetivo de verificación manual ni de la presentación.
 - El intervalo reducido de 5 minutos no se aplica globalmente a esta base ni a
   sus citas preparadas. Su comprobación deberá aislarse sin exigir un segundo
   proyecto alojado, antes de desplegarla. Se mantienen 24/48 horas por defecto.
+
+## Actualización: decisiones de David del 23 de noviembre de 2026
+
+Estas decisiones sustituyen lo anterior incompatible en este documento, en los contratos y en las issues #19 y #30.
+
+- **Vídeos del chat (#19):** duración máxima de **40 segundos** (antes un minuto). Se mantiene el margen de 499 ms, así que se aceptan hasta 40,499 s. El servidor no puede leer la duración: la comprueba la app antes de comprimir y otra vez sobre la copia comprimida. El resto de límites no cambia (720p, 20 MB, MP4).
+- **Servicios y precios orientativos (#30):** los edita la cuenta propietaria del perfil profesional desde su editor y **se publican directamente, sin revisión** del administrador. Nombre, descripción, oficios, concejos, idiomas, teléfono y dirección comercial siguen el flujo de revisión de #30. Si el perfil aún no está aprobado, se guardan y aparecen cuando se publique. Aprobar después una versión antigua no devuelve precios anteriores.
+- **Foto de portada:** el propietario la cambia y **se publica directamente, sin revisión**. Se mantienen la compresión (1600 px, JPEG de hasta 2 MB, sin EXIF/GPS), la validación de formato y tamaño en Storage y en el servidor, y los permisos: solo el propietario cambia la portada de su perfil. Si el perfil aún no está aprobado, la foto se guarda y se muestra cuando el perfil se publique. El panel no revisa portadas.
+- **Precio pactado:** un precio pactado con un cliente no cambia para ese cliente. Cuando se genera una cita, la base de datos guarda el importe en el momento en que se fija:
+  - si lo pide el cliente, los precios orientativos vigentes cuando hace la solicitud;
+  - si lo ofrece el negocio, el importe de la propuesta.
+  Ninguna edición posterior del perfil cambia el importe de una cita, solicitud o propuesta que ya exista. El pago simulado (#22) cobra el importe guardado en la propuesta aceptada, nunca el precio del perfil.
+  Un cambio de precios del perfil vale para todos los demás: catálogo, chats sin solicitud y solicitudes nuevas. En el chat, cada solicitud ya enviada muestra los precios guardados con ella (no los del perfil) y cada propuesta muestra su propio importe.
+- **Cambios con el trabajo comenzado:** tras «Comenzar trabajo», cualquiera de las partes puede seguir proponiendo y aceptando otro precio, alcance, duración o inclusiones (trabajo extra acordado en el momento). Se aplican las mismas reglas de dinero que antes de comenzar (#23): con pago integrado simulado, al aceptar se cobra la diferencia del aumento o se devuelve la de la reducción; con pago directo solo se registra el acuerdo. Una duración nueva debe seguir cabiendo en la agenda. No se permite cambiar la hora de inicio ni la dirección, ni pedir corrección de dirección. Al comenzar, un cambio pendiente que solo toca precio, alcance, duración o inclusiones sigue pendiente; uno que mueve la hora de inicio o la dirección, y una petición de corrección de dirección, se cierran sin aplicarse. Cancelar (solo antes de comenzar) sigue cerrando cualquier cambio pendiente. Una cita cancelada no admite cambios.
 
 ## Actualización: objetivo inmediato de demostración universitaria
 
@@ -56,12 +85,13 @@ Esta sección tiene prioridad sobre las referencias posteriores al alcance del p
 
 Las reglas de este apartado sustituyen las propuestas anteriores incompatibles sobre búsqueda, confirmación y momento del pago, tanto para el flujo demostrado como para la visión que se explicará del producto. El dinero sigue siendo simulado en la demo; la viabilidad del flujo real requiere nueva validación del proveedor.
 
-- Catálogo de demostración: 18 profesionales ficticios, tres de cada uno de los seis oficios iniciales, con servicios, concejos y precios variados.
+- Catálogo de demostración: 21 profesionales ficticios, tres de cada uno de los siete oficios (los seis iniciales más limpieza, [#36](https://github.com/DRChanca/teloarreglo/issues/36)), con servicios, concejos y precios variados.
 - La historia principal muestra una reparación de fontanería en Oviedo: búsqueda, perfil, conversación con foto y vídeo reales, propuesta de reparación con fecha y precio, confirmación mediante pago simulado, finalización y reseña.
 - Demostración con la aplicación Android funcionando en dos emuladores: uno para el cliente y otro para el profesional, con persistencia compartida. No basta una maqueta navegable.
 - Cuatro idiomas en la interfaz entregada; vídeo narrado en castellano y demostración breve del selector.
 - Escena de suscripción de 5 €/mes con sus ventajas; sin cobros reales.
-- Búsqueda por proximidad desde el GPS, con mapa y lista y alternativa de ubicación manual para denegación del permiso o trabajo en otra dirección.
+- Búsqueda por proximidad desde la dirección de casa guardada (o el GPS a petición), con mapa y lista y alternativa de ubicación manual para denegación del permiso o trabajo en otra dirección.
+- Dirección de casa (#37): tras entrar, si la cuenta no la tiene, se pide antes de continuar, con autocompletado de Google Places; sin Places, pin o GPS con la dirección escrita a mano. Es privada (solo su propietario). Si el GPS indica más de 5 km de distancia, se pregunta una vez por sesión si cambiarla o buscar desde donde se está. La solicitud de cita la propone y se puede editar.
 - Primero se filtra por cobertura del lugar del trabajo; después se ordena por distancia a la ubicación profesional registrada, no por seguimiento en directo.
 - Organización espacial H3 en servidor mediante h3-js, ampliando desde la celda de búsqueda a sus vecinas y calculando distancia geográfica entre coordenadas originales para ordenar; no distancia por carretera. Validar la integración en Supabase Edge Functions y los bordes de celda según la arquitectura acordada.
 - La propuesta del profesional especifica alcance, precio y hora. Para pago integrado, el cliente paga el total para confirmar la cita.
@@ -99,7 +129,7 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 
 **Inicio, finalización e incidencias**
 
-- El profesional dispone de una acción «Comenzar trabajo», visible para el cliente, que distingue el inicio de la confirmación de cita y de la marca de realizado. No autoriza costes adicionales.
+- El profesional dispone de una acción «Comenzar trabajo», visible para el cliente, que distingue el inicio de la confirmación de cita y de la marca de realizado. Por sí sola no autoriza costes adicionales: un coste extra durante el trabajo se propone y acepta como cambio (ver «Cambios con el trabajo comenzado», 2026-11-23).
 - Antes de comenzar, cualquiera de las partes puede cancelar sin penalización y con devolución total del pago integrado simulado.
 - Tras comenzar, la solicitud de cancelación se trata como incidencia; el dinero queda pendiente de resolución, sin devolución ni entrega automática.
 - El profesional marca «Realizado»; el cliente puede confirmar o comunicar una incidencia. La confirmación libera el pago integrado simulado.
@@ -119,11 +149,11 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 
 **Privacidad, multimedia y conservación**
 
-- Solo las dos personas implicadas pueden leer la conversación y sus adjuntos privados. La excepción administrativa del apartado 14 permite revisar los datos necesarios de una cita con incidencia y las pruebas aportadas expresamente, sin acceso general al chat. El domicilio exacto no aparece en la búsqueda ni al abrir el chat: se comparte al solicitar la cita.
+- Solo las dos personas implicadas pueden leer la conversación y sus adjuntos privados. La excepción administrativa del apartado 14 permite revisar los datos necesarios de una cita con incidencia y las pruebas aportadas expresamente, sin acceso general al chat. El domicilio exacto no aparece en la búsqueda ni al abrir el chat. Al solicitar la cita, el profesional solo ve una zona aproximada de 400 m y el concejo; la dirección y las coordenadas exactas las ve cuando la cita se confirma (#38).
 - Cada persona actúa en su nombre. El profesional propone condiciones, comienza y marca realizado; el cliente acepta las condiciones y confirma la realización. Los permisos deben comprobarse realmente, no solo ocultar botones.
 - Fotos y vídeos se pueden enviar y abrir desde el primer contacto, antes de cualquier respuesta o aceptación del profesional.
 - Compresión integrada automática con progreso y posibilidad de cancelar, sin modificar el original del teléfono. Si falla o el resultado supera los límites, se explica y no se envía silenciosamente el original.
-- Para la demo: vídeos de hasta un minuto; fotos de hasta 1600 píxeles en su lado mayor y vídeos de hasta 720p, sin ampliar archivos de menor resolución. Máximos tras comprimir: 2 MB por foto y 20 MB por vídeo. Formatos iniciales JPEG/PNG y MP4 compatible, compresión Android y Media3 Transformer; comprobar compatibilidad real según la arquitectura acordada.
+- Para la demo: vídeos de hasta 40 segundos (decisión de 2026-11-23; antes un minuto), con un margen de 499 ms para que un clip que la galería muestra como «0:40» no se rechace; fotos de hasta 1600 píxeles en su lado mayor y vídeos de hasta 720p, sin ampliar archivos de menor resolución. Máximos tras comprimir: 2 MB por foto y 20 MB por vídeo. Formatos iniciales JPEG/PNG y MP4 compatible, compresión Android y Media3 Transformer; comprobar compatibilidad real según la arquitectura acordada.
 - Se conservan entre sesiones los perfiles y operaciones preparados en la aplicación. No se añade una operación de reinicio ni borrado automático para la presentación.
 - Se utilizan cuentas, direcciones y contenidos ficticios o autorizados sin exponer información privada de terceros. El carácter ficticio de perfiles y las simulaciones de pagos, suscripción y comprobación comercial se explican por voz, sin exigir avisos globales de demo en la interfaz para la presentación universitaria.
 - Durante la preparación y presentación se conservan mensajes, adjuntos y propuestas sin edición ni borrado individual. No supone conservación indefinida en el producto final: la política de borrado comercial sigue pendiente.
@@ -131,7 +161,7 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 
 #### Criterios observables del recorrido acordado
 
-- El catálogo contiene 18 perfiles ficticios de seis oficios y permite comparar sus servicios.
+- El catálogo contiene 21 perfiles ficticios de siete oficios y permite comparar sus servicios.
 - La ubicación se obtiene mediante permiso GPS o entrada manual; los resultados se muestran en lista y mapa y respetan la cobertura de servicio.
 - Una acción de una cuenta se refleja en la otra sin editar datos manualmente fuera de la aplicación.
 - Las conversaciones permiten enviar y abrir una foto y un vídeo reales.
@@ -203,6 +233,7 @@ Categorías iniciales:
 4. Pintura.
 5. Albañilería.
 6. Reparaciones generales.
+7. Limpieza (añadida por [#36](https://github.com/DRChanca/teloarreglo/issues/36)).
 
 Un profesional puede seleccionar varias categorías y describir los servicios que ofrece.
 
@@ -236,7 +267,7 @@ Se recogerá una dirección para obtener su concejo o municipio. Los profesional
 
 El profesional seleccionará los municipios o concejos donde presta servicio.
 
-La dirección exacta del cliente nunca será pública: se comparte con el profesional al solicitar una cita. Para buscar bastará con una zona o localidad.
+La dirección exacta del cliente nunca será pública. Decisión de 2026-11-23 (#38): mientras la cita está solicitada o propuesta, el profesional solo ve un círculo de 400 m y el concejo; la dirección y las coordenadas exactas, con «Cómo llegar», se le muestran cuando la cita se confirma. El centro del círculo lo calcula el servidor una sola vez al crear la solicitud, desplazado al azar hasta 300 m de la casa (distribución uniforme en el disco), de modo que la casa queda siempre dentro del círculo pero no necesariamente en su centro, y repetir la consulta no permite deducirla. La protección está en el servidor: las cuentas de la app no pueden leer las columnas de dirección y coordenadas de la cita, y la única vía es una función que solo las entrega al cliente y, tras la confirmación, al profesional. Sin clave de Google Maps, la app muestra el texto «zona aproximada de 400 m en <concejo>». Para buscar bastará con una zona o localidad. La dirección de casa del cliente (#37) se guarda de forma privada, solo legible por su propietario, y únicamente se comparte si el cliente la deja en una solicitud de cita.
 
 ## 6. Revisión y verificación de profesionales
 
@@ -278,6 +309,8 @@ Cada entrada debe explicar:
 
 Si una visita tiene coste aunque no se realice una reparación, debe comunicarse antes de confirmar la cita.
 
+Un precio pactado con un cliente no cambia para ese cliente (decisión de 2026-11-23): la cita guarda el importe en el momento en que se fija y ninguna edición posterior del perfil lo modifica.
+
 Las propuestas en el chat permiten dejar constancia del trabajo y del importe aceptados. Si aparece un coste adicional, el profesional debe comunicar el nuevo importe y obtener aceptación expresa antes de cobrarlo en la aplicación.
 
 Investigación de apoyo: [Servicios por oficio](investigacion-servicios.md). Sus propuestas de catálogo no constituyen una clasificación demostrada de demanda en Asturias.
@@ -291,7 +324,7 @@ Una cita es una cita: no se crean tipos separados para «valoración» y «reali
 ### Solicitud y confirmación
 
 - El cliente consulta disponibilidad y solicita una hora de inicio.
-- Aporta descripción del problema y dirección del trabajo.
+- Aporta descripción del problema y dirección del trabajo. Hasta la confirmación, el profesional solo ve una zona aproximada de 400 m y el concejo (#38).
 - La solicitud aparece como «Pendiente de confirmación».
 - Solicitar una hora no la reserva definitivamente.
 - El profesional configura una duración habitual y puede ajustarla al revisar la solicitud.
@@ -438,7 +471,7 @@ La aprobación exige funcionamiento real del panel y sus permisos; no significa 
 - El catálogo puede estar precargado y aprobado; se dispone además de un perfil de prueba para comprobar aprobación, rechazo y nueva presentación.
 - Un perfil pendiente o rechazado no aparece en búsquedas. El rechazo muestra un motivo al profesional y permite corregir el perfil y solicitar nueva revisión.
 - El administrador aprueba o rechaza, pero no reescribe los datos del profesional.
-- Los cambios de datos públicos de un perfil aprobado requieren nueva revisión. Hasta aprobarse sigue visible la última versión aprobada; si se rechazan, esa versión permanece.
+- Los cambios de datos públicos de un perfil aprobado requieren nueva revisión. Hasta aprobarse sigue visible la última versión aprobada; si se rechazan, esa versión permanece. Excepción de 2026-11-23: servicios, precios orientativos y foto de portada los publica el propietario sin revisión (ver «Actualización: decisiones de David del 23 de noviembre de 2026»).
 - Revisar un cambio de perfil no elimina citas ni conversaciones. Los cambios de agenda no necesitan revisión administrativa.
 - La comprobación comercial de estos perfiles es simulada y se explica por voz, sin exigir avisos globales de demo en la interfaz para la prueba universitaria. La narración no presenta una insignia como acreditación comercial auténtica. No se solicita documentación personal real.
 
@@ -512,7 +545,7 @@ Fuera del alcance inicial:
 ### Tecnología y proveedores
 
 - Provisionar y comprobar la arquitectura elegida: Kotlin/Compose, Supabase Free, React/TypeScript y Cloudflare Pages Free; fijar versiones compatibles, sin dar por validada la implementación.
-- Configurar y comprobar Supabase Auth, SMTP Brevo, FCM y Google Maps. Concejo mediante GPS/pin y polígonos IGN/CNIG con PostGIS, con confirmación en fronteras; sin geocodificación de direcciones inicialmente.
+- Configurar y comprobar Supabase Auth, SMTP Brevo, FCM y Google Maps. Concejo mediante GPS/pin y polígonos IGN/CNIG con PostGIS, con confirmación en fronteras. Decisión de 2026-11-23 (#37): la dirección de casa se introduce con autocompletado de Google Places (API New, de pago por uso, con la misma clave de Maps); si Places no está disponible, pin o GPS con texto manual. El concejo se sigue obteniendo en servidor a partir del punto, no del texto.
 - Proveedor de pagos apto para plataforma de profesionales.
 - Flujo de liquidaciones, devoluciones, contracargos y costes asociados.
 - Facturación y gestión de suscripciones conforme a las reglas de distribución de Android.

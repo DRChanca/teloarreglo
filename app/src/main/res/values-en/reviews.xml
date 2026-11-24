@@ -1,0 +1,22 @@
+<resources>
+    <string name="review_section">Reviews</string>
+    <string name="review_none">No client reviews yet.</string>
+    <string name="review_load_error">Reviews could not be loaded.</string>
+    <string name="review_stars">%1$d out of 5 stars</string>
+    <string name="review_publish">Write a review</string>
+    <string name="review_title">Service review</string>
+    <string name="review_comment">Comment</string>
+    <string name="review_privacy">The review will be public on the professional\'s profile. Do not include faces, addresses, phone numbers or other private data.</string>
+    <string name="review_privacy_accept">I understand the review will be public</string>
+    <string name="review_send">Publish review</string>
+    <string name="review_retry">Retry publishing</string>
+    <string name="review_published_mine">Your published review</string>
+    <string name="review_published_client">Client\'s review</string>
+    <string name="review_awaiting_confirmation">You can write a review once you confirm the job was done.</string>
+    <string name="review_disputed">The review waits until administration checks whether the service happened.</string>
+    <string name="review_not_performed">Administration recorded that the service did not happen: it cannot be reviewed.</string>
+    <string name="review_error_invalid">Choose 1 to 5 stars, write a comment and accept the notice.</string>
+    <string name="review_error_exists">This appointment already has a review; only one is published.</string>
+    <string name="review_error_network">It is unknown whether it was published. Retry: it will not be published twice.</string>
+    <string name="review_notice">The client published a review</string>
+</resources>
