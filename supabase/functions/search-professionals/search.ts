@@ -125,7 +125,7 @@ export function rankByDistance(from: { lat: number; lng: number }, candidates: Z
     distance_m: distanceM(from.lat, from.lng, c.lat, c.lng),
     featured: c.featured && c.in_zone,
     in_zone: c.in_zone,
-    response_band: c.response_band ?? null,
+    response_band: c.response_band,
   }));
   return [
     ...placed.filter((p) => p.featured).sort(compare),
