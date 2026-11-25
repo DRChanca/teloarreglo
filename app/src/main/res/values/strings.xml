@@ -200,6 +200,9 @@
     <string name="map_directions">Cómo llegar con Google Maps</string>
     <string name="map_open_appointment">Cómo llegar</string>
     <string name="map_no_app">No hay ninguna aplicación para abrir Google Maps. Instala Google Maps o un navegador.</string>
+    <string name="call_button">Llamar</string>
+    <string name="call_description">Llamar al %1$s</string>
+    <string name="call_no_app">No hay ninguna aplicación de teléfono para llamar.</string>
     <string name="map_pick_on_map">Elegir el punto en el mapa</string>
     <string name="map_pick_confirm">Usar este punto</string>
     <string name="map_pin_not_address">El punto no sustituye la dirección: escribe la calle y el número.</string>

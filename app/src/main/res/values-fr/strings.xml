@@ -200,6 +200,9 @@
     <string name="map_directions">Itinéraire avec Google Maps</string>
     <string name="map_open_appointment">Itinéraire</string>
     <string name="map_no_app">Aucune application ne peut ouvrir Google Maps. Installez Google Maps ou un navigateur.</string>
+    <string name="call_button">Appeler</string>
+    <string name="call_description">Appeler le %1$s</string>
+    <string name="call_no_app">Aucune application de téléphone n\'est disponible pour appeler.</string>
     <string name="map_pick_on_map">Choisir le point sur la carte</string>
     <string name="map_pick_confirm">Utiliser ce point</string>
     <string name="map_pin_not_address">Le point ne remplace pas l\'adresse : saisissez la rue et le numéro.</string>
