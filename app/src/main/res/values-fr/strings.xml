@@ -532,6 +532,7 @@
     <string name="notices_topic_cancelled">Rendez-vous annulé</string>
     <string name="notices_topic_done">Travail marqué comme réalisé : confirmez-le ou signalez un problème</string>
     <string name="notices_topic_reminder">Rappel : confirmez le travail réalisé ou signalez un problème</string>
+    <string name="notices_topic_call_client">Votre rendez-vous commence bientôt : appelez le client</string>
     <string name="notices_topic_completed">Rendez-vous terminé</string>
     <string name="notices_topic_incident">Nouveauté sur un incident</string>
     <string name="notices_topic_appointment">Nouveauté sur un rendez-vous</string>

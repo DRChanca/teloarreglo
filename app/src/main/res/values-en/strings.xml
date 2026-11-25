@@ -532,6 +532,7 @@
     <string name="notices_topic_cancelled">Appointment cancelled</string>
     <string name="notices_topic_done">Work marked as done: confirm it or report a problem</string>
     <string name="notices_topic_reminder">Reminder: confirm the work was done or report a problem</string>
+    <string name="notices_topic_call_client">Your appointment starts soon: call the client</string>
     <string name="notices_topic_completed">Appointment completed</string>
     <string name="notices_topic_incident">Update on a problem report</string>
     <string name="notices_topic_appointment">Appointment update</string>

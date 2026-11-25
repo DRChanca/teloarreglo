@@ -532,6 +532,7 @@
     <string name="notices_topic_cancelled">Termin storniert</string>
     <string name="notices_topic_done">Arbeit als erledigt markiert: bestätige sie oder melde ein Problem</string>
     <string name="notices_topic_reminder">Erinnerung: Bestätige die erledigte Arbeit oder melde ein Problem</string>
+    <string name="notices_topic_call_client">Dein Termin beginnt bald: Ruf den Kunden an</string>
     <string name="notices_topic_completed">Termin abgeschlossen</string>
     <string name="notices_topic_incident">Neuigkeit zu einer Problemmeldung</string>
     <string name="notices_topic_appointment">Neuigkeit zu einem Termin</string>
