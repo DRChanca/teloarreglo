@@ -264,7 +264,6 @@
     <string name="profile_edit_error_conflict">Este envío ya se registró con otros datos. Vuelve a presentarlo para crear una nueva versión.</string>
     <string name="profile_edit_error_access">Tu sesión no permite modificar este perfil. Vuelve a entrar en tu cuenta.</string>
     <string name="profile_edit_error_network">No se pudo confirmar con el servidor. No se muestra como presentado; reintenta.</string>
-    <string name="profile_edit_private_title">Dirección privada</string>
     <string name="profile_edit_private_address">Tu dirección</string>
     <string name="profile_edit_private_hint">No se publica ni se envía a revisión. Solo tú la ves.</string>
     <string name="profile_edit_private_save">Guardar dirección privada</string>
@@ -352,7 +351,6 @@
     <string name="payment_direct_confirm">Confirmar el acuerdo</string>
     <string name="payment_integrated_summary">Pagado: %1$s · Pendiente de entrega: %2$s · Devuelto: %3$s · Entregado: %4$s</string>
     <string name="payment_direct_summary">Pago directo acordado: %1$s. Se paga al profesional fuera de la app; Teloarreglo no lo cobra ni lo certifica.</string>
-    <string name="profile_offer_title">Servicios y precios orientativos</string>
     <string name="profile_offer_hint">Se publican en cuanto los guardas, sin revisión. Las citas, solicitudes y propuestas que ya existen conservan su precio.</string>
     <string name="profile_offer_unpublished_hint">Se mostrarán en el catálogo cuando se apruebe tu perfil.</string>
     <string name="profile_offer_price">Precio %1$d</string>

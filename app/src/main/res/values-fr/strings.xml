@@ -264,7 +264,6 @@
     <string name="profile_edit_error_conflict">Cet envoi a déjà été enregistré avec d’autres données. Soumettez à nouveau pour créer une nouvelle version.</string>
     <string name="profile_edit_error_access">Votre session ne permet pas de modifier ce profil. Reconnectez-vous à votre compte.</string>
     <string name="profile_edit_error_network">Le serveur n’a pas pu confirmer. Il n’apparaît pas comme soumis ; réessayez.</string>
-    <string name="profile_edit_private_title">Adresse privée</string>
     <string name="profile_edit_private_address">Votre adresse</string>
     <string name="profile_edit_private_hint">Elle n’est ni publiée ni envoyée à la vérification. Vous seul la voyez.</string>
     <string name="profile_edit_private_save">Enregistrer l’adresse privée</string>
@@ -352,7 +351,6 @@
     <string name="payment_direct_confirm">Confirmer l\'accord</string>
     <string name="payment_integrated_summary">Payé : %1$s · En attente de versement : %2$s · Remboursé : %3$s · Versé : %4$s</string>
     <string name="payment_direct_summary">Paiement direct convenu : %1$s. Payé au professionnel hors de l\'app ; Teloarreglo ne l\'encaisse ni ne le certifie.</string>
-    <string name="profile_offer_title">Services et prix indicatifs</string>
     <string name="profile_offer_hint">Ils sont publiés dès que vous les enregistrez, sans examen. Les rendez-vous, demandes et propositions existants conservent leur prix.</string>
     <string name="profile_offer_unpublished_hint">Ils apparaîtront dans le catalogue une fois votre profil approuvé.</string>
     <string name="profile_offer_price">Prix %1$d</string>

@@ -1,6 +1,8 @@
 package es.teloarreglo
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -99,6 +101,9 @@ fun ProfileEditorScreen(
     var agendaFailed by remember { mutableStateOf(false) }
     var agendaAttempt by remember { mutableIntStateOf(0) }
     var showAgendaProblem by remember { mutableStateOf(false) }
+    val ui = rememberCoroutineScope()
+    val fieldInView = remember { ProfileField.entries.associateWith { BringIntoViewRequester() } }
+    val agendaInView = remember { BringIntoViewRequester() }
 
     // The saved agenda is where the form starts; until it loads, nothing would replace it by mistake.
     LaunchedEffect(agenda, agendaAttempt, own != null) {
@@ -171,59 +176,73 @@ fun ProfileEditorScreen(
                     perform(EditorSection.REVIEW) { profiles.start(); onStarted(); attempt++; R.string.profile_edit_started }
                 }
                 draft != null -> {
-                    ReviewState(current)
+                    val missing = draft.missingFields()
+                    val agendaDraft = agendaJson?.let { Json.decodeFromString(AgendaDraft.serializer(), it) }
+                    // A first presentation carries the agenda (#41), so an incomplete one is also listed.
+                    val agendaMissing = agenda != null && !current.review.published && agendaDraft != null && agendaDraft.toAgenda() == null
+                    val missingNames = missing.map { stringResource(missingLabel(it)) } +
+                        if (agendaMissing) listOf(stringResource(R.string.profile_missing_agenda)) else emptyList()
+                    ReviewState(current, missingNames)
                     if (covers != null) {
                         OutlinedButton(onClick = { editingCover = true }, enabled = !busy,
                             modifier = Modifier.fillMaxWidth().testTag("profile_edit_cover")) {
                             Text(stringResource(R.string.profile_edit_cover))
                         }
                     }
-                    ContentForm(draft, !busy, concejos, ::edit, showMissing)
-                    val missing = draft.missingFields()
-                    if (showMissing && missing.isNotEmpty()) {
-                        Text(stringResource(R.string.profile_edit_missing), color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.testTag("profile_edit_missing"))
-                    }
-                    val agendaDraft = agendaJson?.let { Json.decodeFromString(AgendaDraft.serializer(), it) }
-                    if (agenda != null) AgendaSection(agendaDraft, agendaFailed, !busy, showAgendaProblem,
-                        onRetry = { agendaAttempt++ },
-                        onChange = { agendaJson = Json.encodeToString(AgendaDraft.serializer(), it); outcome = null })
-                    Text(stringResource(if (current.review.published) R.string.profile_edit_submit_hint_published
-                        else R.string.profile_edit_submit_hint_first), style = MaterialTheme.typography.bodySmall)
-                    Button(enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("profile_edit_submit"), onClick = {
-                        showMissing = true
-                        // A first presentation carries the agenda (#41); later ones send it if it is complete.
-                        val weekly = agendaDraft?.toAgenda()
-                        showAgendaProblem = agenda != null && weekly == null && !current.review.published
-                        if (missing.isNotEmpty() || showAgendaProblem) return@Button
-                        val previous = pendingJson?.let { Json.decodeFromString(PendingSubmission.serializer(), it) }
-                        val pending = previous?.takeIf { it.content == draft } ?: PendingSubmission(UUID.randomUUID().toString(), draft)
-                        pendingJson = Json.encodeToString(PendingSubmission.serializer(), pending)
-                        perform(EditorSection.REVIEW) {
-                            profiles.submit(pending.requestId, pending.content, weekly)
-                            pendingJson = null; attempt++
-                            R.string.profile_edit_submitted
+                    // Three blocks, each saved by the button at its end, so publication rules are not confused (#47).
+                    EditorBlock(R.string.profile_block_public, "profile_block_public") {
+                        ContentForm(draft, !busy, concejos, ::edit, showMissing, fieldInView)
+                        if (showMissing && missing.isNotEmpty()) {
+                            Text(stringResource(R.string.profile_edit_missing), color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.testTag("profile_edit_missing"))
                         }
-                    }) { Text(stringResource(if (busy) R.string.working else R.string.profile_edit_submit)) }
-                    if (section == EditorSection.REVIEW) Status(busy, outcome, failure)
-                    HorizontalDivider()
-                    val drafts = pricesJson?.let { Json.decodeFromString(PRICE_DRAFTS, it) } ?: emptyList()
-                    OfferSection(servicesText.orEmpty(), drafts, current.review.published, !busy,
-                        onServices = { servicesText = it; outcome = null },
-                        onPrices = { pricesJson = Json.encodeToString(PRICE_DRAFTS, it); outcome = null },
-                        onSave = { prices ->
-                            perform(EditorSection.OFFER) {
-                                own = profiles.saveOffer(parseServices(servicesText.orEmpty()), prices)
-                                R.string.profile_offer_saved
+                        if (agenda != null) AgendaSection(agendaDraft, agendaFailed, !busy, showAgendaProblem, agendaInView,
+                            onRetry = { agendaAttempt++ },
+                            onChange = { agendaJson = Json.encodeToString(AgendaDraft.serializer(), it); outcome = null })
+                        Text(stringResource(if (current.review.published) R.string.profile_edit_submit_hint_published
+                            else R.string.profile_edit_submit_hint_first), style = MaterialTheme.typography.bodySmall)
+                        Button(enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("profile_edit_submit"), onClick = {
+                            showMissing = true
+                            // A first presentation carries the agenda (#41); later ones send it if it is complete.
+                            val weekly = agendaDraft?.toAgenda()
+                            showAgendaProblem = agenda != null && weekly == null && !current.review.published
+                            if (missing.isNotEmpty() || showAgendaProblem) {
+                                // Take the person to the first thing to fix, not only colour it.
+                                val target = missing.firstOrNull()?.let { fieldInView.getValue(it) } ?: agendaInView
+                                ui.launch { target.bringIntoView() }
+                                return@Button
                             }
-                        })
-                    if (section == EditorSection.OFFER) Status(busy, outcome, failure)
-                    HorizontalDivider()
-                    PrivateAddress(privateAddress.orEmpty(), !busy, { privateAddress = it; outcome = null }) {
-                        perform(EditorSection.ADDRESS) { profiles.savePrivateAddress(privateAddress); R.string.profile_edit_private_saved }
+                            val previous = pendingJson?.let { Json.decodeFromString(PendingSubmission.serializer(), it) }
+                            val pending = previous?.takeIf { it.content == draft } ?: PendingSubmission(UUID.randomUUID().toString(), draft)
+                            pendingJson = Json.encodeToString(PendingSubmission.serializer(), pending)
+                            perform(EditorSection.REVIEW) {
+                                profiles.submit(pending.requestId, pending.content, weekly)
+                                pendingJson = null; attempt++
+                                R.string.profile_edit_submitted
+                            }
+                        }) { Text(stringResource(if (busy) R.string.working else R.string.profile_edit_submit)) }
+                        if (section == EditorSection.REVIEW) Status(busy, outcome, failure)
+                        if (agenda != null) Text(stringResource(R.string.profile_edit_agenda_note), style = MaterialTheme.typography.bodySmall)
                     }
-                    if (section == EditorSection.ADDRESS) Status(busy, outcome, failure)
-                    Text(stringResource(R.string.profile_edit_agenda_note), style = MaterialTheme.typography.bodySmall)
+                    EditorBlock(R.string.profile_block_offer, "profile_block_offer") {
+                        val drafts = pricesJson?.let { Json.decodeFromString(PRICE_DRAFTS, it) } ?: emptyList()
+                        OfferSection(servicesText.orEmpty(), drafts, current.review.published, !busy,
+                            onServices = { servicesText = it; outcome = null },
+                            onPrices = { pricesJson = Json.encodeToString(PRICE_DRAFTS, it); outcome = null },
+                            onSave = { prices ->
+                                perform(EditorSection.OFFER) {
+                                    own = profiles.saveOffer(parseServices(servicesText.orEmpty()), prices)
+                                    R.string.profile_offer_saved
+                                }
+                            })
+                        if (section == EditorSection.OFFER) Status(busy, outcome, failure)
+                    }
+                    EditorBlock(R.string.profile_block_address, "profile_block_address") {
+                        PrivateAddress(privateAddress.orEmpty(), !busy, { privateAddress = it; outcome = null }) {
+                            perform(EditorSection.ADDRESS) { profiles.savePrivateAddress(privateAddress); R.string.profile_edit_private_saved }
+                        }
+                        if (section == EditorSection.ADDRESS) Status(busy, outcome, failure)
+                    }
                 }
             }
             if (current == null) Status(busy, outcome, failure)
@@ -234,12 +253,12 @@ fun ProfileEditorScreen(
 /** Weekly hours and usual duration, sent with the presentation (#41). */
 @Composable
 private fun AgendaSection(
-    draft: AgendaDraft?, failed: Boolean, enabled: Boolean, showProblem: Boolean,
+    draft: AgendaDraft?, failed: Boolean, enabled: Boolean, showProblem: Boolean, inView: BringIntoViewRequester,
     onRetry: () -> Unit, onChange: (AgendaDraft) -> Unit,
 ) {
     HorizontalDivider()
     Text(stringResource(R.string.profile_edit_agenda_title), style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.semantics { heading() })
+        modifier = Modifier.bringIntoViewRequester(inView).semantics { heading() })
     Text(stringResource(R.string.profile_edit_agenda_hint), style = MaterialTheme.typography.bodySmall)
     if (failed) {
         Text(stringResource(R.string.agenda_load_error), color = MaterialTheme.colorScheme.error)
@@ -252,13 +271,19 @@ private fun AgendaSection(
         label = { Text(stringResource(R.string.agenda_duration)) }, modifier = Modifier.fillMaxWidth().testTag("profile_agenda_duration"))
     draft.days.forEachIndexed { index, day ->
         fun change(updated: AgendaDay) = onChange(draft.copy(days = draft.days.toMutableList().also { it[index] = updated }))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        // The day on its own line and its two hours below, so nothing is cut with large text (#47).
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(day.open, { change(day.copy(open = it)) }, enabled = enabled, modifier = Modifier.testTag("profile_agenda_day_${index + 1}"))
-            Text(java.time.DayOfWeek.of(index + 1).getDisplayName(java.time.format.TextStyle.SHORT, locale), Modifier.width(48.dp))
+            Text(java.time.DayOfWeek.of(index + 1).getDisplayName(java.time.format.TextStyle.FULL, locale)
+                .replaceFirstChar { it.titlecase(locale) }, Modifier.weight(1f))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(day.from, { change(day.copy(from = it.take(5))) }, enabled = enabled && day.open, singleLine = true,
-                label = { Text(stringResource(R.string.appointment_from)) }, modifier = Modifier.weight(1f).testTag("profile_agenda_from_${index + 1}"))
+                label = { Text(stringResource(R.string.appointment_from)) }, placeholder = { Text("09:00") },
+                modifier = Modifier.weight(1f).testTag("profile_agenda_from_${index + 1}"))
             OutlinedTextField(day.to, { change(day.copy(to = it.take(5))) }, enabled = enabled && day.open, singleLine = true,
-                label = { Text(stringResource(R.string.appointment_to)) }, modifier = Modifier.weight(1f).testTag("profile_agenda_to_${index + 1}"))
+                label = { Text(stringResource(R.string.appointment_to)) }, placeholder = { Text("14:00") },
+                modifier = Modifier.weight(1f).testTag("profile_agenda_to_${index + 1}"))
         }
     }
     if (showProblem && draft.toAgenda() == null) Text(stringResource(R.string.profile_edit_agenda_missing),
@@ -283,7 +308,7 @@ private fun StartProfile(busy: Boolean, onStart: () -> Unit) {
 }
 
 @Composable
-private fun ReviewState(own: OwnProfile) {
+private fun ReviewState(own: OwnProfile, missing: List<String>) {
     val summary = own.review.summary()
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -294,6 +319,9 @@ private fun ReviewState(own: OwnProfile) {
                     modifier = Modifier.testTag("profile_edit_reason")) }
                 Text(stringResource(R.string.profile_edit_correct_hint), style = MaterialTheme.typography.bodySmall)
             }
+            // What still stops the presentation (historia 15), named in words rather than only by colour.
+            if (missing.isNotEmpty()) Text(stringResource(R.string.profile_missing_list, missing.joinToString(", ")),
+                fontWeight = FontWeight.Bold, modifier = Modifier.testTag("profile_edit_missing_list"))
         }
     }
 }
@@ -312,16 +340,18 @@ internal fun reviewMessage(summary: ReviewSummary): Int = when (summary) {
 private fun ContentForm(
     draft: ProfileContent, enabled: Boolean, concejos: ConcejoDirectory?,
     edit: ((ProfileContent) -> ProfileContent) -> Unit, showMissing: Boolean,
+    inView: Map<ProfileField, BringIntoViewRequester>,
 ) {
     val missing = if (showMissing) draft.missingFields() else emptySet()
     OutlinedTextField(draft.name, { v -> edit { it.copy(name = v.take(120)) } }, enabled = enabled, singleLine = true,
         isError = ProfileField.NAME in missing, label = { Text(stringResource(R.string.profile_edit_name)) },
-        modifier = Modifier.fillMaxWidth().testTag("profile_edit_name"))
+        supportingText = fieldError(ProfileField.NAME, missing),
+        modifier = Modifier.fillMaxWidth().bringIntoViewRequester(inView.getValue(ProfileField.NAME)).testTag("profile_edit_name"))
     OutlinedTextField(draft.description, { v -> edit { it.copy(description = v.take(4000)) } }, enabled = enabled,
         minLines = 3, label = { Text(stringResource(R.string.profile_edit_description)) },
         modifier = Modifier.fillMaxWidth().testTag("profile_edit_description"))
 
-    Label(R.string.profile_edit_trades, ProfileField.TRADES in missing)
+    Label(R.string.profile_edit_trades, ProfileField.TRADES, missing, inView)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         TRADES.forEach { key ->
             FilterChip(selected = key in draft.trades, enabled = enabled, modifier = Modifier.testTag("profile_edit_trade_$key"),
@@ -329,10 +359,10 @@ private fun ContentForm(
                 label = { Text(stringResource(tradeLabel(key))) })
         }
     }
-    Label(R.string.profile_edit_coverage, ProfileField.COVERAGE in missing)
+    Label(R.string.profile_edit_coverage, ProfileField.COVERAGE, missing, inView)
     CoveragePicker(draft.coverage, enabled, concejos) { coverage -> edit { it.copy(coverage = coverage) } }
 
-    Label(R.string.profile_edit_languages, ProfileField.LANGUAGES in missing)
+    Label(R.string.profile_edit_languages, ProfileField.LANGUAGES, missing, inView)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         (LANGUAGES + draft.languages.filter { it !in LANGUAGES }).forEach { code ->
             val name = Locale.forLanguageTag(code).let { it.getDisplayLanguage(it) }.replaceFirstChar { it.titlecase() }
@@ -344,7 +374,8 @@ private fun ContentForm(
     OutlinedTextField(draft.phone, { v -> edit { it.copy(phone = v.filter { c -> c.isDigit() || c == ' ' || c == '+' }.take(20)) } },
         enabled = enabled, singleLine = true, isError = ProfileField.PHONE in missing,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-        label = { Text(stringResource(R.string.profile_edit_phone)) }, modifier = Modifier.fillMaxWidth().testTag("profile_edit_phone"))
+        label = { Text(stringResource(R.string.profile_edit_phone)) }, supportingText = fieldError(ProfileField.PHONE, missing),
+        modifier = Modifier.fillMaxWidth().bringIntoViewRequester(inView.getValue(ProfileField.PHONE)).testTag("profile_edit_phone"))
 
     // Privacy: a business address is published only if the owner chooses to.
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -360,9 +391,50 @@ private fun ContentForm(
     Text(stringResource(R.string.profile_edit_business_hint), style = MaterialTheme.typography.bodySmall)
 }
 
+/** A group title; when the group is missing, the problem is said in words below it, not only by colour (#47). */
 @Composable
-private fun Label(text: Int, error: Boolean) = Text(stringResource(text), style = MaterialTheme.typography.titleSmall,
-    color = if (error) MaterialTheme.colorScheme.error else Color.Unspecified)
+private fun Label(text: Int, field: ProfileField, missing: Set<ProfileField>, inView: Map<ProfileField, BringIntoViewRequester>) {
+    val error = field in missing
+    Column(Modifier.bringIntoViewRequester(inView.getValue(field))) {
+        Text(stringResource(text), style = MaterialTheme.typography.titleSmall,
+            color = if (error) MaterialTheme.colorScheme.error else Color.Unspecified)
+        if (error) Text(stringResource(fieldErrorText(field)), color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag(fieldErrorTag(field)))
+    }
+}
+
+private fun fieldError(field: ProfileField, missing: Set<ProfileField>): (@Composable () -> Unit)? =
+    if (field in missing) { { Text(stringResource(fieldErrorText(field)), Modifier.testTag(fieldErrorTag(field))) } } else null
+
+private fun fieldErrorTag(field: ProfileField) = "profile_edit_${field.name.lowercase()}_error"
+
+private fun fieldErrorText(field: ProfileField): Int = when (field) {
+    ProfileField.NAME -> R.string.profile_field_name_error
+    ProfileField.TRADES -> R.string.profile_field_trades_error
+    ProfileField.COVERAGE -> R.string.profile_field_coverage_error
+    ProfileField.LANGUAGES -> R.string.profile_field_languages_error
+    ProfileField.PHONE -> R.string.profile_field_phone_error
+}
+
+private fun missingLabel(field: ProfileField): Int = when (field) {
+    ProfileField.NAME -> R.string.profile_missing_name
+    ProfileField.TRADES -> R.string.profile_missing_trades
+    ProfileField.COVERAGE -> R.string.profile_missing_coverage
+    ProfileField.LANGUAGES -> R.string.profile_missing_languages
+    ProfileField.PHONE -> R.string.profile_missing_phone
+}
+
+/** One of the editor's three blocks: a titled card whose own button, at its end, saves what it holds (#47). */
+@Composable
+private fun EditorBlock(title: Int, tag: String, content: @Composable ColumnScope.() -> Unit) {
+    Card(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().testTag(tag),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+        Column(Modifier.padding(TeloTheme.spacing.large), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.medium)) {
+            Text(stringResource(title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+            content()
+        }
+    }
+}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -410,8 +482,6 @@ private fun OfferSection(
     onServices: (String) -> Unit, onPrices: (List<PriceDraft>) -> Unit, onSave: (List<ReferencePrice>) -> Unit,
 ) {
     var showInvalid by rememberSaveable { mutableStateOf(false) }
-    Text(stringResource(R.string.profile_offer_title), style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.semantics { heading() })
     Text(stringResource(R.string.profile_offer_hint), style = MaterialTheme.typography.bodySmall)
     if (!published) Text(stringResource(R.string.profile_offer_unpublished_hint), style = MaterialTheme.typography.bodySmall)
     OutlinedTextField(services, { onServices(it) }, enabled = enabled, minLines = 2,
@@ -466,12 +536,11 @@ private fun OfferSection(
 
 @Composable
 private fun PrivateAddress(value: String, enabled: Boolean, onChange: (String) -> Unit, onSave: () -> Unit) {
-    Text(stringResource(R.string.profile_edit_private_title), style = MaterialTheme.typography.titleSmall)
     OutlinedTextField(value, { onChange(it.take(240)) }, enabled = enabled, singleLine = true,
         label = { Text(stringResource(R.string.profile_edit_private_address)) },
         supportingText = { Text(stringResource(R.string.profile_edit_private_hint)) },
         modifier = Modifier.fillMaxWidth().testTag("profile_edit_private_address"))
-    OutlinedButton(onClick = onSave, enabled = enabled, modifier = Modifier.testTag("profile_edit_private_save")) {
+    OutlinedButton(onClick = onSave, enabled = enabled, modifier = Modifier.fillMaxWidth().testTag("profile_edit_private_save")) {
         Text(stringResource(R.string.profile_edit_private_save))
     }
 }
