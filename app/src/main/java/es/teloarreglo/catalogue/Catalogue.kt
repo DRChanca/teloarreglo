@@ -41,6 +41,11 @@ data class PublicProfile(
     @SerialName("business_lng") val businessLng: Double? = null,
     /** «Perfil destacado» from the server rule; the catalogue lists these first (2026-11-24). */
     val featured: Boolean = false,
+    /**
+     * «Tiempo de respuesta» band from the server (#76): instant, under_30m, under_1h, under_3h, same_day or
+     * over_day; null without data or from an older server. Never message times.
+     */
+    @SerialName("response_band") val responseBand: String? = null,
 )
 
 /** Read-only approved public snapshot. Missing/unpublished details return null. */
