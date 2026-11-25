@@ -88,98 +88,96 @@ internal fun CoverEditorScreen(
             failed = true
         }
     }
-    TeloTheme {
-        Surface(Modifier.fillMaxSize()) {
-            Column(
-                Modifier.windowInsetsPadding(WindowInsets.safeDrawing).verticalScroll(rememberScrollState()).padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                TextButton(onClick = goBack, modifier = Modifier.testTag("cover_back")) {
-                    Text(stringResource(R.string.catalogue_back))
+    Surface(Modifier.fillMaxSize()) {
+        Column(
+            Modifier.windowInsetsPadding(WindowInsets.safeDrawing).verticalScroll(rememberScrollState()).padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            TextButton(onClick = goBack, modifier = Modifier.testTag("cover_back")) {
+                Text(stringResource(R.string.catalogue_back))
+            }
+            Text(stringResource(R.string.cover_edit), style = MaterialTheme.typography.headlineMedium)
+            Text(profile.name, style = MaterialTheme.typography.titleLarge)
+            ProfileCover(profile.trades.firstOrNull().orEmpty(),
+                if (unsent) null else if (request != null) request?.objectPath else profile.coverPath, covers,
+                Modifier.fillMaxWidth().height(200.dp), preview = if (unsent) selected?.jpeg else null)
+            Text(stringResource(R.string.cover_review_hint))
+            Text(stringResource(R.string.cover_limits), style = MaterialTheme.typography.bodySmall)
+            if ((!loaded && !failed) || busy || preparing) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    CircularProgressIndicator(Modifier.size(24.dp))
+                    Text(stringResource(if (preparing) R.string.cover_preparing else R.string.working))
                 }
-                Text(stringResource(R.string.cover_edit), style = MaterialTheme.typography.headlineMedium)
-                Text(profile.name, style = MaterialTheme.typography.titleLarge)
-                ProfileCover(profile.trades.firstOrNull().orEmpty(),
-                    if (unsent) null else if (request != null) request?.objectPath else profile.coverPath, covers,
-                    Modifier.fillMaxWidth().height(200.dp), preview = if (unsent) selected?.jpeg else null)
-                Text(stringResource(R.string.cover_review_hint))
-                Text(stringResource(R.string.cover_limits), style = MaterialTheme.typography.bodySmall)
-                if ((!loaded && !failed) || busy || preparing) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        CircularProgressIndicator(Modifier.size(24.dp))
-                        Text(stringResource(if (preparing) R.string.cover_preparing else R.string.working))
+            }
+            if (unsent) Text(stringResource(R.string.cover_unsent), Modifier.testTag("cover_unsent")
+                .semantics { liveRegion = LiveRegionMode.Polite })
+            if (request != null && loaded && !unsent) {
+                Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp).testTag("cover_state")
+                        .semantics { liveRegion = LiveRegionMode.Polite }) {
+                        Text(stringResource(when (request?.status) {
+                            CoverStatus.PUBLISHED -> R.string.cover_published
+                            CoverStatus.PENDING -> R.string.cover_pending
+                            CoverStatus.APPROVED -> R.string.cover_approved
+                            CoverStatus.REJECTED -> R.string.cover_rejected
+                            else -> R.string.cover_review_hint
+                        }))
+                        request?.reason?.let { Text(it) }
                     }
                 }
-                if (unsent) Text(stringResource(R.string.cover_unsent), Modifier.testTag("cover_unsent")
-                    .semantics { liveRegion = LiveRegionMode.Polite })
-                if (request != null && loaded && !unsent) {
-                    Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) {
-                        Column(Modifier.fillMaxWidth().padding(16.dp).testTag("cover_state")
-                            .semantics { liveRegion = LiveRegionMode.Polite }) {
-                            Text(stringResource(when (request?.status) {
-                                CoverStatus.PUBLISHED -> R.string.cover_published
-                                CoverStatus.PENDING -> R.string.cover_pending
-                                CoverStatus.APPROVED -> R.string.cover_approved
-                                CoverStatus.REJECTED -> R.string.cover_rejected
-                                else -> R.string.cover_review_hint
-                            }))
-                            request?.reason?.let { Text(it) }
-                        }
-                    }
+            }
+            if (invalid) Text(stringResource(R.string.cover_invalid), color = MaterialTheme.colorScheme.error)
+            if (failed) {
+                Text(stringResource(R.string.cover_error), color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.testTag("cover_error").semantics { liveRegion = LiveRegionMode.Polite })
+            }
+            if (failed || request != null) {
+                OutlinedButton(onClick = { refresh++ }, enabled = !busy && !preparing) {
+                    Text(stringResource(R.string.cover_check))
                 }
-                if (invalid) Text(stringResource(R.string.cover_invalid), color = MaterialTheme.colorScheme.error)
-                if (failed) {
-                    Text(stringResource(R.string.cover_error), color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.testTag("cover_error").semantics { liveRegion = LiveRegionMode.Polite })
-                }
-                if (failed || request != null) {
-                    OutlinedButton(onClick = { refresh++ }, enabled = !busy && !preparing) {
-                        Text(stringResource(R.string.cover_check))
-                    }
-                }
-                OutlinedButton(onClick = { genericId = null; onPickPhoto() },
-                    enabled = !busy && !preparing, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.cover_choose))
-                }
-                Button(
-                    enabled = loaded && unsent && !busy && !preparing && !invalid,
-                    modifier = Modifier.fillMaxWidth().testTag("cover_submit"),
-                    onClick = {
-                        genericId = null
-                        selected?.let { photo -> scope.launch {
-                            busy = true; failed = false
-                            try { request = covers.photo(profile.id, photo.requestId, photo.jpeg) }
-                            catch (error: Exception) {
-                                if (error is CancellationException) throw error
-                                failed = true
-                            } finally { busy = false }
-                        } }
-                    },
-                ) { Text(stringResource(R.string.cover_submit)) }
-                TextButton(modifier = Modifier.testTag("cover_generic"), enabled = loaded && !busy && !preparing &&
-                    !(request?.status in setOf(CoverStatus.PENDING, CoverStatus.PUBLISHED) && request?.objectPath == null && !unsent), onClick = {
-                    val id = genericId ?: UUID.randomUUID().toString().also { genericId = it }
-                    scope.launch {
+            }
+            OutlinedButton(onClick = { genericId = null; onPickPhoto() },
+                enabled = !busy && !preparing, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.cover_choose))
+            }
+            Button(
+                enabled = loaded && unsent && !busy && !preparing && !invalid,
+                modifier = Modifier.fillMaxWidth().testTag("cover_submit"),
+                onClick = {
+                    genericId = null
+                    selected?.let { photo -> scope.launch {
                         busy = true; failed = false
-                        try {
-                            request = covers.generic(profile.id, id)
-                            discardedSelection = selected?.requestId
-                            genericId = null
-                        }
+                        try { request = covers.photo(profile.id, photo.requestId, photo.jpeg) }
                         catch (error: Exception) {
                             if (error is CancellationException) throw error
                             failed = true
                         } finally { busy = false }
+                    } }
+                },
+            ) { Text(stringResource(R.string.cover_submit)) }
+            TextButton(modifier = Modifier.testTag("cover_generic"), enabled = loaded && !busy && !preparing &&
+                !(request?.status in setOf(CoverStatus.PENDING, CoverStatus.PUBLISHED) && request?.objectPath == null && !unsent), onClick = {
+                val id = genericId ?: UUID.randomUUID().toString().also { genericId = it }
+                scope.launch {
+                    busy = true; failed = false
+                    try {
+                        request = covers.generic(profile.id, id)
+                        discardedSelection = selected?.requestId
+                        genericId = null
                     }
-                }) { Text(stringResource(R.string.cover_use_generic)) }
-            }
-            if (leave) AlertDialog(
-                onDismissRequest = { leave = false },
-                title = { Text(stringResource(R.string.cover_leave_title)) },
-                text = { Text(stringResource(R.string.cover_leave_hint)) },
-                confirmButton = { TextButton(onClick = onBack) { Text(stringResource(R.string.cover_leave)) } },
-                dismissButton = { TextButton(onClick = { leave = false }) { Text(stringResource(R.string.cover_stay)) } },
-            )
+                    catch (error: Exception) {
+                        if (error is CancellationException) throw error
+                        failed = true
+                    } finally { busy = false }
+                }
+            }) { Text(stringResource(R.string.cover_use_generic)) }
         }
+        if (leave) AlertDialog(
+            onDismissRequest = { leave = false },
+            title = { Text(stringResource(R.string.cover_leave_title)) },
+            text = { Text(stringResource(R.string.cover_leave_hint)) },
+            confirmButton = { TextButton(onClick = onBack) { Text(stringResource(R.string.cover_leave)) } },
+            dismissButton = { TextButton(onClick = { leave = false }) { Text(stringResource(R.string.cover_stay)) } },
+        )
     }
 }

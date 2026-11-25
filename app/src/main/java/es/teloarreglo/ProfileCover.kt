@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -48,13 +49,12 @@ internal fun ProfileCover(
                 loading = { TradeArtwork(trade, Modifier.fillMaxSize()) },
                 error = {
                     TradeArtwork(trade, Modifier.fillMaxSize())
-                    Text(stringResource(R.string.cover_image_unavailable))
+                    UnavailableLabel(Modifier.align(Alignment.BottomStart))
                 },
             )
         } else {
             TradeArtwork(trade, Modifier.fillMaxSize())
-            if (unavailable) Text(stringResource(R.string.cover_image_unavailable),
-                modifier = Modifier.align(Alignment.BottomStart).background(Color.White.copy(alpha = .9f)).padding(6.dp))
+            if (unavailable) UnavailableLabel(Modifier.align(Alignment.BottomStart))
         }
     }
 }
@@ -154,4 +154,11 @@ private fun TradeArtwork(trade: String, modifier: Modifier) {
             }
         }
     }
+}
+
+/** Over the trade artwork (same colours in both themes), so the label carries its own themed background. */
+@Composable
+private fun UnavailableLabel(modifier: Modifier) {
+    Text(stringResource(R.string.cover_image_unavailable), color = MaterialTheme.colorScheme.onSurface,
+        modifier = modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = .9f)).padding(6.dp))
 }

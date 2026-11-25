@@ -164,125 +164,123 @@ fun NearbySearchScreen(
         }
     }
 
-    TeloTheme {
-        val here = away
-        if (here != null && home != null) AwayFromHomeDialog(home.point, here,
-            onChangeHome = { away = null; onChangeHome?.invoke() ?: searchFromHome() },
-            onSearchHere = { away = null; scope.launch { runSearch(here, null) } },
-            onKeepHome = { away = null; searchFromHome() })
-        Surface(Modifier.fillMaxSize(), color = Color(0xFFF7F8F5)) {
-            // One scrollable list for header and results: on small screens results stay reachable.
-            LazyColumn(
-                Modifier.windowInsetsPadding(WindowInsets.safeDrawing).testTag("nearby_screen"),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                item { TextButton(onClick = onBack, modifier = Modifier.testTag("nearby_back")) { Text(stringResource(R.string.nearby_back)) } }
-                item { Text(stringResource(R.string.nearby_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold) }
-                item { Text(stringResource(R.string.nearby_hint)) }
-                item {
-                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(selected = trade == null, onClick = { trade = null }, label = { Text(stringResource(R.string.trade_all)) })
-                        catalogueTrades.forEach { key ->
-                            FilterChip(selected = trade == key, onClick = { trade = key },
-                                modifier = Modifier.testTag("nearby_trade_$key"), label = { Text(stringResource(tradeLabel(key))) })
+    val here = away
+    if (here != null && home != null) AwayFromHomeDialog(home.point, here,
+        onChangeHome = { away = null; onChangeHome?.invoke() ?: searchFromHome() },
+        onSearchHere = { away = null; scope.launch { runSearch(here, null) } },
+        onKeepHome = { away = null; searchFromHome() })
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        // One scrollable list for header and results: on small screens results stay reachable.
+        LazyColumn(
+            Modifier.windowInsetsPadding(WindowInsets.safeDrawing).testTag("nearby_screen"),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item { TextButton(onClick = onBack, modifier = Modifier.testTag("nearby_back")) { Text(stringResource(R.string.nearby_back)) } }
+            item { Text(stringResource(R.string.nearby_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold) }
+            item { Text(stringResource(R.string.nearby_hint)) }
+            item {
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = trade == null, onClick = { trade = null }, label = { Text(stringResource(R.string.trade_all)) })
+                    catalogueTrades.forEach { key ->
+                        FilterChip(selected = trade == key, onClick = { trade = key },
+                            modifier = Modifier.testTag("nearby_trade_$key"), label = { Text(stringResource(tradeLabel(key))) })
+                    }
+                }
+            }
+            if (home != null) item {
+                val busy = state == NearbyState.Locating || state == NearbyState.Searching
+                Card(Modifier.fillMaxWidth().testTag("nearby_home")) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(R.string.home_searching_from, home.address), style = MaterialTheme.typography.bodyMedium)
+                        OutlinedButton(onClick = { searchFromHome() }, enabled = !busy,
+                            modifier = Modifier.fillMaxWidth().testTag("nearby_from_home")) {
+                            Text(stringResource(R.string.home_search_from_home))
                         }
                     }
                 }
-                if (home != null) item {
-                    val busy = state == NearbyState.Locating || state == NearbyState.Searching
-                    Card(Modifier.fillMaxWidth().testTag("nearby_home")) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(stringResource(R.string.home_searching_from, home.address), style = MaterialTheme.typography.bodyMedium)
-                            OutlinedButton(onClick = { searchFromHome() }, enabled = !busy,
-                                modifier = Modifier.fillMaxWidth().testTag("nearby_from_home")) {
-                                Text(stringResource(R.string.home_search_from_home))
-                            }
-                        }
-                    }
+            }
+            item {
+                val busy = state == NearbyState.Locating || state == NearbyState.Searching
+                Button(onClick = { start() }, enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("nearby_locate")) {
+                    Text(stringResource(R.string.nearby_use_location))
                 }
-                item {
-                    val busy = state == NearbyState.Locating || state == NearbyState.Searching
-                    Button(onClick = { start() }, enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("nearby_locate")) {
-                        Text(stringResource(R.string.nearby_use_location))
-                    }
+            }
+            item { Text(stringResource(R.string.nearby_privacy), style = MaterialTheme.typography.bodySmall) }
+            if (concejos != null) item {
+                val busy = state == NearbyState.Locating || state == NearbyState.Searching
+                if (!manual) OutlinedButton(onClick = { manual = true }, enabled = !busy,
+                    modifier = Modifier.fillMaxWidth().testTag("map_manual")) { Text(stringResource(R.string.map_manual)) }
+                else ManualLocation(concejos, map, busy, onCancel = { manual = false }) { anchor, point ->
+                    lastPosition = point
+                    scope.launch { runSearch(point, anchor.ineCode) }
                 }
-                item { Text(stringResource(R.string.nearby_privacy), style = MaterialTheme.typography.bodySmall) }
-                if (concejos != null) item {
-                    val busy = state == NearbyState.Locating || state == NearbyState.Searching
-                    if (!manual) OutlinedButton(onClick = { manual = true }, enabled = !busy,
-                        modifier = Modifier.fillMaxWidth().testTag("map_manual")) { Text(stringResource(R.string.map_manual)) }
-                    else ManualLocation(concejos, map, busy, onCancel = { manual = false }) { anchor, point ->
-                        lastPosition = point
-                        scope.launch { runSearch(point, anchor.ineCode) }
-                    }
-                }
+            }
 
-                when (val s = state) {
-                    NearbyState.Idle -> Unit
-                    NearbyState.Locating, NearbyState.Searching -> item {
-                        Row(Modifier.testTag("nearby_loading"), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            CircularProgressIndicator()
-                            Text(stringResource(if (s == NearbyState.Locating) R.string.nearby_locating else R.string.nearby_searching))
+            when (val s = state) {
+                NearbyState.Idle -> Unit
+                NearbyState.Locating, NearbyState.Searching -> item {
+                    Row(Modifier.testTag("nearby_loading"), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        CircularProgressIndicator()
+                        Text(stringResource(if (s == NearbyState.Locating) R.string.nearby_locating else R.string.nearby_searching))
+                    }
+                }
+                NearbyState.PermissionDenied -> item { Notice("nearby_denied", R.string.nearby_denied) }
+                NearbyState.LocationUnavailable -> item { Notice("nearby_unavailable", R.string.nearby_unavailable) }
+                NearbyState.Uncertain -> item { Notice("nearby_uncertain", R.string.nearby_uncertain) }
+                NearbyState.OutsideArea -> item { Notice("nearby_outside", R.string.nearby_outside) }
+                is NearbyState.Confirm -> item {
+                    Column(Modifier.testTag("nearby_confirm"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(R.string.nearby_confirm), Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                        s.options.forEach { option ->
+                            OutlinedButton(
+                                onClick = { lastPosition?.let { p -> scope.launch { runSearch(p, option.ineCode) } } },
+                                modifier = Modifier.fillMaxWidth().testTag("nearby_confirm_${option.ineCode}"),
+                            ) { Text(option.name) }
                         }
                     }
-                    NearbyState.PermissionDenied -> item { Notice("nearby_denied", R.string.nearby_denied) }
-                    NearbyState.LocationUnavailable -> item { Notice("nearby_unavailable", R.string.nearby_unavailable) }
-                    NearbyState.Uncertain -> item { Notice("nearby_uncertain", R.string.nearby_uncertain) }
-                    NearbyState.OutsideArea -> item { Notice("nearby_outside", R.string.nearby_outside) }
-                    is NearbyState.Confirm -> item {
-                        Column(Modifier.testTag("nearby_confirm"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(stringResource(R.string.nearby_confirm), Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-                            s.options.forEach { option ->
-                                OutlinedButton(
-                                    onClick = { lastPosition?.let { p -> scope.launch { runSearch(p, option.ineCode) } } },
-                                    modifier = Modifier.fillMaxWidth().testTag("nearby_confirm_${option.ineCode}"),
-                                ) { Text(option.name) }
-                            }
+                }
+                is NearbyState.Failed -> item {
+                    Column(Modifier.testTag("nearby_error"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(when (s.reason) {
+                            SearchError.NETWORK -> R.string.nearby_error_network
+                            else -> R.string.nearby_error_service
+                        }), color = MaterialTheme.colorScheme.error, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                        Button(onClick = { start() }, modifier = Modifier.testTag("nearby_retry")) { Text(stringResource(R.string.retry)) }
+                    }
+                }
+                is NearbyState.Results -> if (s.rows.isEmpty()) {
+                    item { Notice("nearby_empty", R.string.nearby_empty, s.concejo.name) }
+                } else {
+                    item {
+                        Text(stringResource(R.string.nearby_results, s.concejo.name), Modifier.testTag("nearby_concejo"),
+                            style = MaterialTheme.typography.titleMedium)
+                    }
+                    item {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(selected = !showMap, onClick = { showMap = false },
+                                modifier = Modifier.testTag("map_toggle_list"), label = { Text(stringResource(R.string.map_toggle_list)) })
+                            FilterChip(selected = showMap, onClick = { showMap = true },
+                                modifier = Modifier.testTag("map_toggle_map"), label = { Text(stringResource(R.string.map_toggle_map)) })
                         }
                     }
-                    is NearbyState.Failed -> item {
-                        Column(Modifier.testTag("nearby_error"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(stringResource(when (s.reason) {
-                                SearchError.NETWORK -> R.string.nearby_error_network
-                                else -> R.string.nearby_error_service
-                            }), color = MaterialTheme.colorScheme.error, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-                            Button(onClick = { start() }, modifier = Modifier.testTag("nearby_retry")) { Text(stringResource(R.string.retry)) }
+                    if (showMap) item {
+                        val view = mapView(s.rows, s.featured)
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (map == MapAvailability.READY) ResultsMap(view, s.from, onOpenProfile) else MapUnavailableNotice(map)
+                            Text(
+                                if (view.markers.isEmpty()) stringResource(R.string.map_none_public)
+                                else stringResource(R.string.map_list_only, view.listOnly, s.rows.size),
+                                Modifier.testTag("map_coverage"), style = MaterialTheme.typography.bodySmall,
+                            )
                         }
                     }
-                    is NearbyState.Results -> if (s.rows.isEmpty()) {
-                        item { Notice("nearby_empty", R.string.nearby_empty, s.concejo.name) }
-                    } else {
-                        item {
-                            Text(stringResource(R.string.nearby_results, s.concejo.name), Modifier.testTag("nearby_concejo"),
-                                style = MaterialTheme.typography.titleMedium)
-                        }
-                        item {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                FilterChip(selected = !showMap, onClick = { showMap = false },
-                                    modifier = Modifier.testTag("map_toggle_list"), label = { Text(stringResource(R.string.map_toggle_list)) })
-                                FilterChip(selected = showMap, onClick = { showMap = true },
-                                    modifier = Modifier.testTag("map_toggle_map"), label = { Text(stringResource(R.string.map_toggle_map)) })
-                            }
-                        }
-                        if (showMap) item {
-                            val view = mapView(s.rows, s.featured)
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                if (map == MapAvailability.READY) ResultsMap(view, s.from, onOpenProfile) else MapUnavailableNotice(map)
-                                Text(
-                                    if (view.markers.isEmpty()) stringResource(R.string.map_none_public)
-                                    else stringResource(R.string.map_list_only, view.listOnly, s.rows.size),
-                                    Modifier.testTag("map_coverage"), style = MaterialTheme.typography.bodySmall,
-                                )
-                            }
-                        }
-                        items(s.rows, key = { it.first.id }) { (profile, band) ->
-                            Card(onClick = { onOpenProfile(profile.id) }, modifier = Modifier.fillMaxWidth().testTag("nearby_${profile.id}")) {
-                                Column(Modifier.padding(16.dp)) {
-                                    if (profile.id in s.featured) FeaturedBadge(Modifier.testTag("nearby_featured_${profile.id}"))
-                                    Text(profile.name, fontWeight = FontWeight.Bold)
-                                    Text(distanceText(band), Modifier.testTag("nearby_distance_${profile.id}"))
-                                }
+                    items(s.rows, key = { it.first.id }) { (profile, band) ->
+                        Card(onClick = { onOpenProfile(profile.id) }, modifier = Modifier.fillMaxWidth().testTag("nearby_${profile.id}")) {
+                            Column(Modifier.padding(16.dp)) {
+                                if (profile.id in s.featured) FeaturedBadge(Modifier.testTag("nearby_featured_${profile.id}"))
+                                Text(profile.name, fontWeight = FontWeight.Bold)
+                                Text(distanceText(band), Modifier.testTag("nearby_distance_${profile.id}"))
                             }
                         }
                     }

@@ -53,7 +53,7 @@ fun ProfileReviewCard(reviews: ProfileReviews) {
         loading = false
     }
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF4F1)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth().testTag("profile_review"),
     ) {

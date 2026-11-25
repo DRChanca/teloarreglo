@@ -70,7 +70,7 @@ fun SubscriptionCard(subscriptions: Subscriptions, operationScope: CoroutineScop
         loading = false
     }
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F1E8)),
+        colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.subscriptionContainer, contentColor = TeloTheme.extended.onSubscriptionContainer),
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth().testTag("subscription"),
     ) {
@@ -153,8 +153,8 @@ private fun Section(title: Int, tag: String, items: List<Int>) {
 @Composable
 internal fun FeaturedBadge(modifier: Modifier = Modifier, label: Int = R.string.subscription_featured_badge) {
     Text(stringResource(label),
-        color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
-        modifier = modifier.background(Color(0xFF8A5A00), RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp))
+        color = TeloTheme.extended.onFeaturedBadge, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
+        modifier = modifier.background(TeloTheme.extended.featuredBadge, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp))
 }
 
 /** A labelled sample, never a real ranking: zones come from the approved coverage only. */

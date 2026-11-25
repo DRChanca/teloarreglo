@@ -91,33 +91,31 @@ fun AccountNameScreen(session: AccountNameSession, scope: CoroutineScope, onSign
     var typed by rememberSaveable { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<Int?>(null) }
-    TeloTheme {
-        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            Column(
-                Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()
-                    .verticalScroll(rememberScrollState()).padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Column(Modifier.widthIn(max = 480.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(stringResource(R.string.account_name_title), style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold)
-                    Text(stringResource(R.string.account_name_intro))
-                    AccountNameField(typed, { typed = it; error = null }, enabled = !busy)
-                    Button(
-                        enabled = !busy && cleanAccountName(typed) != null,
-                        onClick = {
-                            busy = true
-                            scope.launch { try { error = saveName(session, typed) } finally { busy = false } }
-                        },
-                        modifier = Modifier.fillMaxWidth().testTag("account_name_save"),
-                    ) {
-                        if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
-                        else Text(stringResource(R.string.account_name_save))
-                    }
-                    error?.let { NameError(it) }
-                    TextButton(onClick = onSignOut, enabled = !busy, modifier = Modifier.testTag("account_name_sign_out")) {
-                        Text(stringResource(R.string.sign_out))
-                    }
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Column(
+            Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()
+                .verticalScroll(rememberScrollState()).padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Column(Modifier.widthIn(max = 480.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(stringResource(R.string.account_name_title), style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.account_name_intro))
+                AccountNameField(typed, { typed = it; error = null }, enabled = !busy)
+                Button(
+                    enabled = !busy && cleanAccountName(typed) != null,
+                    onClick = {
+                        busy = true
+                        scope.launch { try { error = saveName(session, typed) } finally { busy = false } }
+                    },
+                    modifier = Modifier.fillMaxWidth().testTag("account_name_save"),
+                ) {
+                    if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    else Text(stringResource(R.string.account_name_save))
+                }
+                error?.let { NameError(it) }
+                TextButton(onClick = onSignOut, enabled = !busy, modifier = Modifier.testTag("account_name_sign_out")) {
+                    Text(stringResource(R.string.sign_out))
                 }
             }
         }

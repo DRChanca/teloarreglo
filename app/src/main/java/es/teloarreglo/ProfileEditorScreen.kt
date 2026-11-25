@@ -152,83 +152,81 @@ fun ProfileEditorScreen(
         }
     }
 
-    TeloTheme {
-        Surface(Modifier.fillMaxSize(), color = Color(0xFFF7F8F5)) {
-            Column(
-                Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()
-                    .verticalScroll(rememberScrollState()).padding(16.dp).testTag("profile_editor"),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                TextButton(onClick = onBack, Modifier.testTag("profile_edit_back")) { Text(stringResource(R.string.catalogue_back)) }
-                Text(stringResource(R.string.profile_edit_title), style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
-                when {
-                    loadFailed -> {
-                        Text(stringResource(R.string.profile_edit_load_error), color = MaterialTheme.colorScheme.error)
-                        Button(onClick = { attempt++ }, Modifier.testTag("profile_edit_retry")) { Text(stringResource(R.string.retry)) }
-                    }
-                    !loaded -> LinearProgressIndicator(Modifier.fillMaxWidth())
-                    current == null -> StartProfile(busy) {
-                        perform(EditorSection.REVIEW) { profiles.start(); onStarted(); attempt++; R.string.profile_edit_started }
-                    }
-                    draft != null -> {
-                        ReviewState(current)
-                        if (covers != null) {
-                            OutlinedButton(onClick = { editingCover = true }, enabled = !busy,
-                                modifier = Modifier.fillMaxWidth().testTag("profile_edit_cover")) {
-                                Text(stringResource(R.string.profile_edit_cover))
-                            }
-                        }
-                        ContentForm(draft, !busy, concejos, ::edit, showMissing)
-                        val missing = draft.missingFields()
-                        if (showMissing && missing.isNotEmpty()) {
-                            Text(stringResource(R.string.profile_edit_missing), color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.testTag("profile_edit_missing"))
-                        }
-                        val agendaDraft = agendaJson?.let { Json.decodeFromString(AgendaDraft.serializer(), it) }
-                        if (agenda != null) AgendaSection(agendaDraft, agendaFailed, !busy, showAgendaProblem,
-                            onRetry = { agendaAttempt++ },
-                            onChange = { agendaJson = Json.encodeToString(AgendaDraft.serializer(), it); outcome = null })
-                        Text(stringResource(if (current.review.published) R.string.profile_edit_submit_hint_published
-                            else R.string.profile_edit_submit_hint_first), style = MaterialTheme.typography.bodySmall)
-                        Button(enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("profile_edit_submit"), onClick = {
-                            showMissing = true
-                            // A first presentation carries the agenda (#41); later ones send it if it is complete.
-                            val weekly = agendaDraft?.toAgenda()
-                            showAgendaProblem = agenda != null && weekly == null && !current.review.published
-                            if (missing.isNotEmpty() || showAgendaProblem) return@Button
-                            val previous = pendingJson?.let { Json.decodeFromString(PendingSubmission.serializer(), it) }
-                            val pending = previous?.takeIf { it.content == draft } ?: PendingSubmission(UUID.randomUUID().toString(), draft)
-                            pendingJson = Json.encodeToString(PendingSubmission.serializer(), pending)
-                            perform(EditorSection.REVIEW) {
-                                profiles.submit(pending.requestId, pending.content, weekly)
-                                pendingJson = null; attempt++
-                                R.string.profile_edit_submitted
-                            }
-                        }) { Text(stringResource(if (busy) R.string.working else R.string.profile_edit_submit)) }
-                        if (section == EditorSection.REVIEW) Status(busy, outcome, failure)
-                        HorizontalDivider()
-                        val drafts = pricesJson?.let { Json.decodeFromString(PRICE_DRAFTS, it) } ?: emptyList()
-                        OfferSection(servicesText.orEmpty(), drafts, current.review.published, !busy,
-                            onServices = { servicesText = it; outcome = null },
-                            onPrices = { pricesJson = Json.encodeToString(PRICE_DRAFTS, it); outcome = null },
-                            onSave = { prices ->
-                                perform(EditorSection.OFFER) {
-                                    own = profiles.saveOffer(parseServices(servicesText.orEmpty()), prices)
-                                    R.string.profile_offer_saved
-                                }
-                            })
-                        if (section == EditorSection.OFFER) Status(busy, outcome, failure)
-                        HorizontalDivider()
-                        PrivateAddress(privateAddress.orEmpty(), !busy, { privateAddress = it; outcome = null }) {
-                            perform(EditorSection.ADDRESS) { profiles.savePrivateAddress(privateAddress); R.string.profile_edit_private_saved }
-                        }
-                        if (section == EditorSection.ADDRESS) Status(busy, outcome, failure)
-                        Text(stringResource(R.string.profile_edit_agenda_note), style = MaterialTheme.typography.bodySmall)
-                    }
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Column(
+            Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()
+                .verticalScroll(rememberScrollState()).padding(16.dp).testTag("profile_editor"),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            TextButton(onClick = onBack, Modifier.testTag("profile_edit_back")) { Text(stringResource(R.string.catalogue_back)) }
+            Text(stringResource(R.string.profile_edit_title), style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
+            when {
+                loadFailed -> {
+                    Text(stringResource(R.string.profile_edit_load_error), color = MaterialTheme.colorScheme.error)
+                    Button(onClick = { attempt++ }, Modifier.testTag("profile_edit_retry")) { Text(stringResource(R.string.retry)) }
                 }
-                if (current == null) Status(busy, outcome, failure)
+                !loaded -> LinearProgressIndicator(Modifier.fillMaxWidth())
+                current == null -> StartProfile(busy) {
+                    perform(EditorSection.REVIEW) { profiles.start(); onStarted(); attempt++; R.string.profile_edit_started }
+                }
+                draft != null -> {
+                    ReviewState(current)
+                    if (covers != null) {
+                        OutlinedButton(onClick = { editingCover = true }, enabled = !busy,
+                            modifier = Modifier.fillMaxWidth().testTag("profile_edit_cover")) {
+                            Text(stringResource(R.string.profile_edit_cover))
+                        }
+                    }
+                    ContentForm(draft, !busy, concejos, ::edit, showMissing)
+                    val missing = draft.missingFields()
+                    if (showMissing && missing.isNotEmpty()) {
+                        Text(stringResource(R.string.profile_edit_missing), color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.testTag("profile_edit_missing"))
+                    }
+                    val agendaDraft = agendaJson?.let { Json.decodeFromString(AgendaDraft.serializer(), it) }
+                    if (agenda != null) AgendaSection(agendaDraft, agendaFailed, !busy, showAgendaProblem,
+                        onRetry = { agendaAttempt++ },
+                        onChange = { agendaJson = Json.encodeToString(AgendaDraft.serializer(), it); outcome = null })
+                    Text(stringResource(if (current.review.published) R.string.profile_edit_submit_hint_published
+                        else R.string.profile_edit_submit_hint_first), style = MaterialTheme.typography.bodySmall)
+                    Button(enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("profile_edit_submit"), onClick = {
+                        showMissing = true
+                        // A first presentation carries the agenda (#41); later ones send it if it is complete.
+                        val weekly = agendaDraft?.toAgenda()
+                        showAgendaProblem = agenda != null && weekly == null && !current.review.published
+                        if (missing.isNotEmpty() || showAgendaProblem) return@Button
+                        val previous = pendingJson?.let { Json.decodeFromString(PendingSubmission.serializer(), it) }
+                        val pending = previous?.takeIf { it.content == draft } ?: PendingSubmission(UUID.randomUUID().toString(), draft)
+                        pendingJson = Json.encodeToString(PendingSubmission.serializer(), pending)
+                        perform(EditorSection.REVIEW) {
+                            profiles.submit(pending.requestId, pending.content, weekly)
+                            pendingJson = null; attempt++
+                            R.string.profile_edit_submitted
+                        }
+                    }) { Text(stringResource(if (busy) R.string.working else R.string.profile_edit_submit)) }
+                    if (section == EditorSection.REVIEW) Status(busy, outcome, failure)
+                    HorizontalDivider()
+                    val drafts = pricesJson?.let { Json.decodeFromString(PRICE_DRAFTS, it) } ?: emptyList()
+                    OfferSection(servicesText.orEmpty(), drafts, current.review.published, !busy,
+                        onServices = { servicesText = it; outcome = null },
+                        onPrices = { pricesJson = Json.encodeToString(PRICE_DRAFTS, it); outcome = null },
+                        onSave = { prices ->
+                            perform(EditorSection.OFFER) {
+                                own = profiles.saveOffer(parseServices(servicesText.orEmpty()), prices)
+                                R.string.profile_offer_saved
+                            }
+                        })
+                    if (section == EditorSection.OFFER) Status(busy, outcome, failure)
+                    HorizontalDivider()
+                    PrivateAddress(privateAddress.orEmpty(), !busy, { privateAddress = it; outcome = null }) {
+                        perform(EditorSection.ADDRESS) { profiles.savePrivateAddress(privateAddress); R.string.profile_edit_private_saved }
+                    }
+                    if (section == EditorSection.ADDRESS) Status(busy, outcome, failure)
+                    Text(stringResource(R.string.profile_edit_agenda_note), style = MaterialTheme.typography.bodySmall)
+                }
             }
+            if (current == null) Status(busy, outcome, failure)
         }
     }
 }
@@ -287,7 +285,7 @@ private fun StartProfile(busy: Boolean, onStart: () -> Unit) {
 @Composable
 private fun ReviewState(own: OwnProfile) {
     val summary = own.review.summary()
-    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF4F1)), modifier = Modifier.fillMaxWidth()) {
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(stringResource(reviewMessage(summary)), modifier = Modifier.testTag("profile_edit_review"))
             if (summary == ReviewSummary.REJECTED_FIRST || summary == ReviewSummary.REJECTED_CHANGE) {
@@ -422,7 +420,7 @@ private fun OfferSection(
         modifier = Modifier.fillMaxWidth().testTag("profile_edit_services"))
     prices.forEachIndexed { index, price ->
         fun change(update: (PriceDraft) -> PriceDraft) = onPrices(prices.toMutableList().also { it[index] = update(price) })
-        Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF4F1)), modifier = Modifier.fillMaxWidth()) {
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(12.dp).testTag("profile_offer_price_$index"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.profile_offer_price, index + 1), style = MaterialTheme.typography.titleSmall)
                 OutlinedTextField(price.service, { v -> change { it.copy(service = v.take(120)) } }, enabled = enabled,

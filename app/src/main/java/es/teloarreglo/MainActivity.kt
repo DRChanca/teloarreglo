@@ -8,6 +8,7 @@ import es.teloarreglo.search.currentLocation
 import es.teloarreglo.search.hasLocationPermission
 import kotlinx.coroutines.CompletableDeferred
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
@@ -56,11 +57,14 @@ class MainActivity : AppCompatActivity() {
     private val openNotices = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Bars drawn by the app: their icons follow the active light/dark theme (#45).
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         // After a configuration change the link was already handled; codes are single use.
         if (savedInstanceState == null) handleAuthLink(intent)
         if (intent?.getBooleanExtra(es.teloarreglo.notices.EXTRA_OPEN_NOTICES, false) == true) openNotices.value = true
-        setContent {
+        // One theme for the whole app, following the system light/dark mode (#45).
+        setContent { TeloTheme {
             var account by rememberSaveable { mutableStateOf(false) }
             var ownProfile by rememberSaveable { mutableStateOf<String?>(null) }
             var chatVisible by rememberSaveable { mutableStateOf(false) }
@@ -216,7 +220,7 @@ class MainActivity : AppCompatActivity() {
                     unreadNotices = unreadNotices,
                     reviews = app.reviews)
             }
-        }
+        } }
     }
 
     override fun onNewIntent(intent: Intent) {

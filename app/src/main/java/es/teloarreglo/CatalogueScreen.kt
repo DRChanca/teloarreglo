@@ -39,8 +39,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 
 /** Trade keys offered in the catalogue and nearby search; must match the DB constraint and Edge Function. */
 internal val catalogueTrades = listOf("plumbing", "electrical", "carpentry", "painting", "masonry", "general", "cleaning")
-private val green = Color(0xFF246451)
-private val canvas = Color(0xFFF7F8F5)
 
 @Composable
 fun CatalogueScreen(
@@ -99,132 +97,130 @@ fun CatalogueScreen(
     val visible = profiles.filter { p ->
         searchable(p.name + " " + p.services.joinToString(" ")).contains(searchable(search.trim()))
     }
-    TeloTheme {
-        Surface(Modifier.fillMaxSize(), color = canvas) {
-            Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()) {
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                 if (selected != null) {
+                    TextButton(onClick = { selected = null }, Modifier.testTag("back_catalogue")) {
+                        Text(stringResource(R.string.catalogue_back))
+                    }
+                 } else {
+                    Text("teloarreglo", modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                 }
+                LanguageMenu(onLanguageChange)
+            }
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.End) {
+                if (onNearby != null) TextButton(onClick = onNearby, modifier = Modifier.testTag("catalogue_nearby")) {
+                    Text(stringResource(R.string.catalogue_nearby))
+                }
+                if (onChats != null) TextButton(onClick = onChats) { Text(stringResource(R.string.chat_title)) }
+                if (onNotices != null) TextButton(onClick = onNotices, Modifier.testTag("catalogue_notices")) {
+                    Text(if (unreadNotices > 0) stringResource(R.string.notices_open_count, unreadNotices)
+                        else stringResource(R.string.notices_open))
+                }
+                TextButton(onClick = onAccount) { Text(stringResource(R.string.catalogue_account)) }
+            }
+            if (selected == null) {
+                Text(
+                    stringResource(R.string.catalogue_title), Modifier.padding(20.dp),
+                        style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold,
+                )
+                OutlinedTextField(
+                    value = search, onValueChange = { search = it },
+                    label = { Text(stringResource(R.string.catalogue_search)) }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("catalogue_search"),
+                    trailingIcon = {
+                        if (search.isNotEmpty()) IconButton(onClick = { search = "" },
+                            modifier = Modifier.semantics { contentDescription = clearSearchLabel }) {
+                            Text("×")
+                        }
+                    },
+                )
                 Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                    Modifier.horizontalScroll(tradeScroll).padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                     if (selected != null) {
-                        TextButton(onClick = { selected = null }, Modifier.testTag("back_catalogue")) {
-                            Text(stringResource(R.string.catalogue_back))
+                    FilterChip(selected = trade == null, onClick = { trade = null },
+                        label = { Text(stringResource(R.string.trade_all)) })
+                    catalogueTrades.forEach { key ->
+                        FilterChip(selected = trade == key, onClick = { trade = key },
+                            modifier = Modifier.testTag("trade_$key"), label = { Text(stringResource(tradeLabel(key))) })
+                    }
+                }
+            }
+            when {
+                loading || completedRequest != request -> Column(Modifier.padding(24.dp).testTag("catalogue_loading")) {
+                    CircularProgressIndicator()
+                    Text(stringResource(R.string.catalogue_loading))
+                }
+                failed -> Column(Modifier.padding(24.dp)) {
+                    Text(stringResource(R.string.catalogue_error), Modifier.testTag("catalogue_error"))
+                    Button(onClick = { retry++ }, Modifier.testTag("catalogue_retry")) {
+                        Text(stringResource(R.string.retry))
+                    }
+                }
+                profiles.isEmpty() || (selected == null && visible.isEmpty()) -> Column(Modifier.padding(24.dp)) {
+                    Text(stringResource(when {
+                        selected != null -> R.string.catalogue_unpublished
+                        profiles.isNotEmpty() -> R.string.catalogue_filtered_empty
+                        else -> R.string.catalogue_empty
+                    }), Modifier.testTag("catalogue_empty"))
+                    if (selected == null && (trade != null || search.isNotEmpty())) {
+                        TextButton(onClick = { trade = null; search = ""; keyboard?.hide() }, Modifier.testTag("catalogue_reset")) {
+                            Text(stringResource(R.string.catalogue_reset_filters))
                         }
-                     } else {
-                        Text("teloarreglo", modifier = Modifier.weight(1f), color = green,
-                            fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-                     }
-                    LanguageMenu(onLanguageChange)
-                }
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.End) {
-                    if (onNearby != null) TextButton(onClick = onNearby, modifier = Modifier.testTag("catalogue_nearby")) {
-                        Text(stringResource(R.string.catalogue_nearby))
                     }
-                    if (onChats != null) TextButton(onClick = onChats) { Text(stringResource(R.string.chat_title)) }
-                    if (onNotices != null) TextButton(onClick = onNotices, Modifier.testTag("catalogue_notices")) {
-                        Text(if (unreadNotices > 0) stringResource(R.string.notices_open_count, unreadNotices)
-                            else stringResource(R.string.notices_open))
-                    }
-                    TextButton(onClick = onAccount) { Text(stringResource(R.string.catalogue_account)) }
                 }
-                if (selected == null) {
-                    Text(
-                        stringResource(R.string.catalogue_title), Modifier.padding(20.dp),
-                            style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold,
-                    )
-                    OutlinedTextField(
-                        value = search, onValueChange = { search = it },
-                        label = { Text(stringResource(R.string.catalogue_search)) }, singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("catalogue_search"),
-                        trailingIcon = {
-                            if (search.isNotEmpty()) IconButton(onClick = { search = "" },
-                                modifier = Modifier.semantics { contentDescription = clearSearchLabel }) {
-                                Text("×")
-                            }
-                        },
-                    )
-                    Row(
-                        Modifier.horizontalScroll(tradeScroll).padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                selected != null -> ProfileDetail(profiles.single(), covers, catalogue,
+                    onEdit = if (selected == ownedProfileId && covers != null) ({ editing = true }) else null,
+                    onContact = if (selected != ownedProfileId) onContact?.let { contact -> { contact(profiles.single().id) } } else null,
+                    reviews = reviews)
+                else -> {
+                    Text(pluralStringResource(R.plurals.catalogue_results, visible.size, visible.size),
+                        Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelLarge)
+                    LazyColumn(
+                        state = listState, modifier = Modifier.testTag("catalogue_list"),
+                        contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        FilterChip(selected = trade == null, onClick = { trade = null },
-                            label = { Text(stringResource(R.string.trade_all)) })
-                        catalogueTrades.forEach { key ->
-                            FilterChip(selected = trade == key, onClick = { trade = key },
-                                modifier = Modifier.testTag("trade_$key"), label = { Text(stringResource(tradeLabel(key))) })
-                        }
-                    }
-                }
-                when {
-                    loading || completedRequest != request -> Column(Modifier.padding(24.dp).testTag("catalogue_loading")) {
-                        CircularProgressIndicator()
-                        Text(stringResource(R.string.catalogue_loading))
-                    }
-                    failed -> Column(Modifier.padding(24.dp)) {
-                        Text(stringResource(R.string.catalogue_error), Modifier.testTag("catalogue_error"))
-                        Button(onClick = { retry++ }, Modifier.testTag("catalogue_retry")) {
-                            Text(stringResource(R.string.retry))
-                        }
-                    }
-                    profiles.isEmpty() || (selected == null && visible.isEmpty()) -> Column(Modifier.padding(24.dp)) {
-                        Text(stringResource(when {
-                            selected != null -> R.string.catalogue_unpublished
-                            profiles.isNotEmpty() -> R.string.catalogue_filtered_empty
-                            else -> R.string.catalogue_empty
-                        }), Modifier.testTag("catalogue_empty"))
-                        if (selected == null && (trade != null || search.isNotEmpty())) {
-                            TextButton(onClick = { trade = null; search = ""; keyboard?.hide() }, Modifier.testTag("catalogue_reset")) {
-                                Text(stringResource(R.string.catalogue_reset_filters))
-                            }
-                        }
-                    }
-                    selected != null -> ProfileDetail(profiles.single(), covers, catalogue,
-                        onEdit = if (selected == ownedProfileId && covers != null) ({ editing = true }) else null,
-                        onContact = if (selected != ownedProfileId) onContact?.let { contact -> { contact(profiles.single().id) } } else null,
-                        reviews = reviews)
-                    else -> {
-                        Text(pluralStringResource(R.plurals.catalogue_results, visible.size, visible.size),
-                            Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelLarge)
-                        LazyColumn(
-                            state = listState, modifier = Modifier.testTag("catalogue_list"),
-                            contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
+                    items(visible, key = { it.id }) { profile ->
+                        // «Perfil destacado» (2026-11-24): the server lists these first; the card stands out
+                        // with the theme's secondary container and primary outline, and always says why.
+                        Card(
+                            onClick = { selected = profile.id }, modifier = Modifier.fillMaxWidth().testTag("profile_${profile.id}"),
+                            colors = CardDefaults.cardColors(containerColor =
+                                if (profile.featured) MaterialTheme.colorScheme.secondaryContainer else TeloTheme.extended.card),
+                            border = if (profile.featured) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null,
+                            shape = RoundedCornerShape(20.dp),
                         ) {
-                        items(visible, key = { it.id }) { profile ->
-                            // «Perfil destacado» (2026-11-24): the server lists these first; the card stands out
-                            // with the theme's secondary container and primary outline, and always says why.
-                            Card(
-                                onClick = { selected = profile.id }, modifier = Modifier.fillMaxWidth().testTag("profile_${profile.id}"),
-                                colors = CardDefaults.cardColors(containerColor =
-                                    if (profile.featured) MaterialTheme.colorScheme.secondaryContainer else Color.White),
-                                border = if (profile.featured) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null,
-                                shape = RoundedCornerShape(20.dp),
-                            ) {
-                                Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                                    ProfileCover(profile.trades.firstOrNull().orEmpty(), profile.coverPath, covers,
-                                        Modifier.width(100.dp).height(120.dp))
-                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                        if (profile.featured) FeaturedBadge(Modifier.testTag("catalogue_featured_${profile.id}"),
-                                            R.string.catalogue_featured_profile)
-                                        Text(profile.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
-                                            maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                        Text(profile.services.firstOrNull() ?: profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(),
-                                            style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                        Text(profile.coverage.joinToString { it.name }, style = MaterialTheme.typography.bodySmall,
-                                            maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                        profile.prices.firstOrNull()?.let { price ->
-                                            Text(stringResource(R.string.catalogue_reference, priceText(price)),
-                                                color = green, style = MaterialTheme.typography.labelLarge)
-                                        }
-                                        Rating(profile)
+                            Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                ProfileCover(profile.trades.firstOrNull().orEmpty(), profile.coverPath, covers,
+                                    Modifier.width(100.dp).height(120.dp))
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                    if (profile.featured) FeaturedBadge(Modifier.testTag("catalogue_featured_${profile.id}"),
+                                        R.string.catalogue_featured_profile)
+                                    Text(profile.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    Text(profile.services.firstOrNull() ?: profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(),
+                                        style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    Text(profile.coverage.joinToString { it.name }, style = MaterialTheme.typography.bodySmall,
+                                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    profile.prices.firstOrNull()?.let { price ->
+                                        Text(stringResource(R.string.catalogue_reference, priceText(price)),
+                                            color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
                                     }
+                                    Rating(profile)
                                 }
                             }
                         }
-                        }
+                    }
                     }
                 }
             }
@@ -252,7 +248,7 @@ private fun ProfileDetail(
         item {
             if (featured) FeaturedBadge(Modifier.testTag("profile_featured"))
             Text(profile.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(), color = green)
+            Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(), color = MaterialTheme.colorScheme.primary)
             Rating(profile)
             if (onContact != null) Button(onClick = onContact, modifier = Modifier.fillMaxWidth().testTag("chat_contact")) {
                 Text(stringResource(R.string.chat_contact))
@@ -298,11 +294,11 @@ private fun ProfileDetail(
             if (profile.prices.isEmpty()) Text(stringResource(R.string.catalogue_no_prices))
         }
         items(profile.prices) { price ->
-            Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+            Card(colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card)) {
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(price.service, fontWeight = FontWeight.Bold)
                     Text(priceText(price),
-                        style = MaterialTheme.typography.titleLarge, color = green)
+                        style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
                     // Owners publish prices directly (2026-11-23); optional texts may be empty.
                     if (price.scope.isNotBlank()) Text(price.scope)
                     if (price.includes.isNotBlank()) Text(stringResource(R.string.catalogue_includes, price.includes))

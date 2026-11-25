@@ -1,0 +1,4 @@
+<resources>
+    <!-- Dark background of TeloTheme, so the splash and window never flash light in dark mode (#45). -->
+    <color name="window_background">#0F1512</color>
+</resources>

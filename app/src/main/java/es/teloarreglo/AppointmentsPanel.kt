@@ -107,38 +107,36 @@ fun AppointmentsPanel(
     }
     val shown = sheet ?: return
     Dialog(onDismissRequest = { sheet = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        TeloTheme {
-            Surface(Modifier.fillMaxSize()) {
-                Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding().padding(16.dp)
-                    .verticalScroll(rememberScrollState())) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = { sheet = if (shown == "list") null else "list" }) {
-                            Text(stringResource(if (shown == "list") R.string.appointment_close else R.string.catalogue_back))
-                        }
-                        Text(stringResource(R.string.appointment_title), style = MaterialTheme.typography.titleLarge)
+        Surface(Modifier.fillMaxSize()) {
+            Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding().padding(16.dp)
+                .verticalScroll(rememberScrollState())) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { sheet = if (shown == "list") null else "list" }) {
+                        Text(stringResource(if (shown == "list") R.string.appointment_close else R.string.catalogue_back))
                     }
-                    when {
-                        shown == "request" -> RequestForm(appointments, conversation, scope, pins, current,
-                            onDone = { refresh++; sheet = "list" })
-                        shown.startsWith("propose:") -> current.firstOrNull { it.id == shown.removePrefix("propose:") }
-                            ?.let { ProposalForm(appointments, it, scope, current, onDone = { refresh++; sheet = "list" }) }
-                        shown.startsWith("change:") -> current.firstOrNull { it.id == shown.removePrefix("change:") }
-                            ?.let { ChangeForm(appointments, it, accountId, scope, current, pins.mapsReady,
-                                onDone = { refresh++; sheet = "list" }) }
-                        shown.startsWith("correction:") -> current.firstOrNull { it.id == shown.removePrefix("correction:") }
-                            ?.let { CorrectionForm(appointments, it, scope, current, onDone = { refresh++; sheet = "list" }) }
-                        else -> {
-                            if (isClient) Button(onClick = { sheet = "request" }, modifier = Modifier.testTag("appointment_new_request")) {
-                                Text(stringResource(R.string.appointment_new_request))
-                            }
-                            current.forEach { appointment ->
-                                AppointmentDetails(appointment, accountId, appointments, scope, pins.mapsReady,
-                                    onPropose = { sheet = "propose:${appointment.id}" }, onChanged = { refresh++ },
-                                    onChange = { sheet = "change:${appointment.id}" },
-                                    onCorrection = { sheet = "correction:${appointment.id}" }, incidentTools = incidentTools,
-                                    reviews = reviews, reviewState = reviewStates[appointment.id],
-                                    onChooseMessages = chooseMessages)
-                            }
+                    Text(stringResource(R.string.appointment_title), style = MaterialTheme.typography.titleLarge)
+                }
+                when {
+                    shown == "request" -> RequestForm(appointments, conversation, scope, pins, current,
+                        onDone = { refresh++; sheet = "list" })
+                    shown.startsWith("propose:") -> current.firstOrNull { it.id == shown.removePrefix("propose:") }
+                        ?.let { ProposalForm(appointments, it, scope, current, onDone = { refresh++; sheet = "list" }) }
+                    shown.startsWith("change:") -> current.firstOrNull { it.id == shown.removePrefix("change:") }
+                        ?.let { ChangeForm(appointments, it, accountId, scope, current, pins.mapsReady,
+                            onDone = { refresh++; sheet = "list" }) }
+                    shown.startsWith("correction:") -> current.firstOrNull { it.id == shown.removePrefix("correction:") }
+                        ?.let { CorrectionForm(appointments, it, scope, current, onDone = { refresh++; sheet = "list" }) }
+                    else -> {
+                        if (isClient) Button(onClick = { sheet = "request" }, modifier = Modifier.testTag("appointment_new_request")) {
+                            Text(stringResource(R.string.appointment_new_request))
+                        }
+                        current.forEach { appointment ->
+                            AppointmentDetails(appointment, accountId, appointments, scope, pins.mapsReady,
+                                onPropose = { sheet = "propose:${appointment.id}" }, onChanged = { refresh++ },
+                                onChange = { sheet = "change:${appointment.id}" },
+                                onCorrection = { sheet = "correction:${appointment.id}" }, incidentTools = incidentTools,
+                                reviews = reviews, reviewState = reviewStates[appointment.id],
+                                onChooseMessages = chooseMessages)
                         }
                     }
                 }

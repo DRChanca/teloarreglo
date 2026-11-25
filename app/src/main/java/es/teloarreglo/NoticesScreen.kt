@@ -84,45 +84,43 @@ fun NoticesScreen(
         try { items = notices.list() } catch (e: CancellationException) { throw e } catch (_: Exception) { failed = true }
     }
     LaunchedEffect(accountId) { push?.sync(accountId) }
-    TeloTheme {
-        Surface(Modifier.fillMaxSize()) {
-            Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 16.dp)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.catalogue_back)) }
-                    Text(stringResource(R.string.notices_title), Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    TextButton(onClick = { attempt++ }, Modifier.testTag("notices_refresh")) {
-                        Text(stringResource(R.string.notices_refresh))
-                    }
+    Surface(Modifier.fillMaxSize()) {
+        Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 16.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onBack) { Text(stringResource(R.string.catalogue_back)) }
+                Text(stringResource(R.string.notices_title), Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                TextButton(onClick = { attempt++ }, Modifier.testTag("notices_refresh")) {
+                    Text(stringResource(R.string.notices_refresh))
                 }
-                PushCard(push, operationScope, askPermission)
-                Spacer(Modifier.size(12.dp))
-                val current = items
-                when {
-                    failed && current == null -> Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
-                        Text(stringResource(R.string.notices_error))
-                        Button(onClick = { attempt++ }) { Text(stringResource(R.string.retry)) }
-                    }
-                    current == null -> Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                    current.isEmpty() -> Text(stringResource(R.string.notices_empty), Modifier.padding(vertical = 24.dp))
-                    else -> LazyColumn(Modifier.testTag("notices_list")) {
-                        if (failed) item { Text(stringResource(R.string.notices_error), color = MaterialTheme.colorScheme.error) }
-                        items(current, key = { it.id }) { notice ->
-                            NoticeRow(notice) {
-                                items = current.map { if (it.id == notice.id) it.copy(read = true) else it }
-                                operationScope.launch {
-                                    try { notices.markRead(listOf(notice.id)) } catch (e: CancellationException) { throw e } catch (_: Exception) { }
-                                }
-                                val conversation = notice.conversationId
-                                when {
-                                    conversation != null -> onOpenConversation(conversation)
-                                    notice.kind == "profile_review" -> onOpenAccount()
-                                }
+            }
+            PushCard(push, operationScope, askPermission)
+            Spacer(Modifier.size(12.dp))
+            val current = items
+            when {
+                failed && current == null -> Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
+                    Text(stringResource(R.string.notices_error))
+                    Button(onClick = { attempt++ }) { Text(stringResource(R.string.retry)) }
+                }
+                current == null -> Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+                current.isEmpty() -> Text(stringResource(R.string.notices_empty), Modifier.padding(vertical = 24.dp))
+                else -> LazyColumn(Modifier.testTag("notices_list")) {
+                    if (failed) item { Text(stringResource(R.string.notices_error), color = MaterialTheme.colorScheme.error) }
+                    items(current, key = { it.id }) { notice ->
+                        NoticeRow(notice) {
+                            items = current.map { if (it.id == notice.id) it.copy(read = true) else it }
+                            operationScope.launch {
+                                try { notices.markRead(listOf(notice.id)) } catch (e: CancellationException) { throw e } catch (_: Exception) { }
                             }
-                            HorizontalDivider()
+                            val conversation = notice.conversationId
+                            when {
+                                conversation != null -> onOpenConversation(conversation)
+                                notice.kind == "profile_review" -> onOpenAccount()
+                            }
                         }
+                        HorizontalDivider()
                     }
                 }
             }
@@ -164,7 +162,7 @@ private fun PushCard(push: PushRegistration?, operationScope: CoroutineScope, as
         busy = true
         operationScope.launch { try { action() } finally { busy = false } }
     }
-    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF4F1)), shape = RoundedCornerShape(16.dp),
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer), shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth().testTag("notices_push")) {
         Column(Modifier.padding(16.dp).semantics { liveRegion = LiveRegionMode.Polite },
             verticalArrangement = Arrangement.spacedBy(8.dp)) {

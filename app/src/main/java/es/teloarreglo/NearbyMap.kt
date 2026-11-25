@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -34,6 +35,7 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.Circle
+import com.google.maps.android.compose.ComposeMapColorScheme
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
@@ -99,6 +101,7 @@ fun ResultsMap(view: MapView, from: GeoPoint, onOpenProfile: (String) -> Unit) {
         GoogleMap(
             cameraPositionState = camera,
             uiSettings = MapUiSettings(zoomControlsEnabled = true, mapToolbarEnabled = false),
+            mapColorScheme = mapColorScheme(),
             onMapLoaded = { loaded = true },
         ) {
             Marker(
@@ -134,6 +137,7 @@ fun MapPointPicker(center: GeoPoint, pin: GeoPoint?, onPin: (GeoPoint) -> Unit, 
         GoogleMap(
             cameraPositionState = camera,
             uiSettings = MapUiSettings(zoomControlsEnabled = true, mapToolbarEnabled = false),
+            mapColorScheme = mapColorScheme(),
             onMapLoaded = { loaded = true },
             onMapClick = { onPin(GeoPoint(it.latitude, it.longitude)) },
         ) {
@@ -153,6 +157,7 @@ fun ApproximateAreaMap(center: GeoPoint, radiusMeters: Int, modifier: Modifier =
         GoogleMap(
             cameraPositionState = camera,
             uiSettings = MapUiSettings(zoomControlsEnabled = true, mapToolbarEnabled = false),
+            mapColorScheme = mapColorScheme(),
             onMapLoaded = { loaded = true },
         ) {
             Circle(center = center.latLng(), radius = radiusMeters.toDouble(), strokeColor = color,
@@ -161,3 +166,8 @@ fun ApproximateAreaMap(center: GeoPoint, radiusMeters: Int, modifier: Modifier =
         Box(Modifier.align(Alignment.TopCenter)) { LoadWatch(loaded) }
     }
 }
+
+/** The map follows the active theme (#45): a dark map inside dark screens, never a white rectangle. */
+@Composable
+private fun mapColorScheme(): ComposeMapColorScheme =
+    if (MaterialTheme.colorScheme.background.luminance() < .5f) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT
