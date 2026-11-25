@@ -9,9 +9,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
-import es.teloarreglo.catalogue.Catalogue
-import es.teloarreglo.catalogue.Coverage
-import es.teloarreglo.catalogue.PublicProfile
 import es.teloarreglo.home.HomeAddress
 import es.teloarreglo.home.HomeSource
 import es.teloarreglo.search.Concejo
@@ -41,9 +38,8 @@ import org.junit.Test
 class SearchFiltersUiTest {
     @get:Rule val compose = createComposeRule()
 
-    private fun fake(id: String, name: String, rating: Double? = 4.5, reviews: Int = if (rating == null) 0 else 3) =
-        PublicProfile(id, name, "d", listOf("plumbing"), listOf("Fugas"), listOf(Coverage("33044", "Oviedo")),
-            listOf("es"), "+34 000 000 000", listOf("plumbing"), emptyList(), rating = rating, reviewCount = reviews)
+    /** Rated 4,5 unless said otherwise. */
+    private fun fake(id: String, name: String, rating: Double? = 4.5) = fakeProfile(id, name, rating = rating)
 
     private var profiles = listOf(
         fake("featured", "Destacado Lejano"), fake("near", "Fontanería Nalón"),
@@ -51,20 +47,7 @@ class SearchFiltersUiTest {
         fake("unrated", "Sin Reseñas", rating = null), fake("nowhere", "Sin Ubicación"),
     )
 
-    private val catalogue = object : Catalogue {
-        override suspend fun list(trade: String?) = profiles
-        override suspend fun profile(id: String) = profiles.firstOrNull { it.id == id }
-    }
-
-    private class FakeSearch(private val outcome: SearchOutcome) : ProfessionalSearch {
-        var calls = 0
-        val trades = mutableListOf<String?>()
-        override suspend fun search(lat: Double, lng: Double, trade: String?, ineCode: String?, limit: Int): SearchOutcome {
-            calls++
-            trades += trade
-            return outcome
-        }
-    }
+    private val catalogue = FakeCatalogue { profiles }
 
     private val oviedo = Concejo("33044", "Oviedo")
 
@@ -210,7 +193,7 @@ class SearchFiltersUiTest {
         apply()
         compose.onNodeWithTag("filters_open").assertTextEquals(text(R.string.filters_button_active, 3))
         compose.onNodeWithTag("trade_plumbing").assertIsSelected()
-        compose.waitUntil(5_000) { search.trades.lastOrNull() == "plumbing" }
+        compose.waitUntil(5_000) { search.sentTrades.lastOrNull() == "plumbing" }
     }
 
     @Test fun theOrderIsKeptAndTheTextFilterCombinesWithTheFilters() {
@@ -238,7 +221,26 @@ class SearchFiltersUiTest {
         compose.onNodeWithTag("filters_empty").assertTextEquals(text(R.string.filters_empty))
         none("catalogue_empty")
         compose.onNodeWithTag("filters_empty_reset").performClick()
-        present("near", "nowhere")
+        // Only the filters go: the text stays and still applies.
+        compose.onNodeWithTag("catalogue_search").assertTextContains("Borde")
+        present("edge", "beyond")
+        none("profile_near")
+        compose.onNodeWithTag("filters_open").assertTextEquals(text(R.string.filters_button))
+    }
+
+    @Test fun whenTheTextAloneLeavesNobodyTheResetShowsTheTextMessage() {
+        show()
+        waitFor("nearby_distance_near")
+        openFilters()
+        compose.onNodeWithTag("filters_trade_plumbing").performClick()
+        distance(0)
+        apply()
+        type("Nadie se llama así")
+        waitFor("filters_empty")
+        compose.onNodeWithTag("filters_empty_reset").performClick()
+        waitFor("catalogue_empty")
+        compose.onNodeWithTag("catalogue_empty").assertTextEquals(text(R.string.catalogue_filtered_empty))
+        none("filters_empty")
         compose.onNodeWithTag("filters_open").assertTextEquals(text(R.string.filters_button))
     }
 
