@@ -78,8 +78,9 @@ internal fun CompletionSection(
             TextButton(onClick = { askMark = false; run { appointments.markDone(appointment.id) } },
                 modifier = Modifier.testTag("mark_done_confirm")) { Text(stringResource(R.string.completion_mark)) }
         })
-    if (askConfirm) AlertDialog(onDismissRequest = { askConfirm = false },
-        title = { Text(stringResource(R.string.completion_confirm_title)) },
+    // Irreversible (#47): it finalises the appointment and, if paid in the app, delivers the money.
+    if (askConfirm) DestructiveConfirmDialog(
+        title = stringResource(R.string.completion_confirm_title),
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("completion_effect")) {
                 Text(when (val effect = appointment.completionEffect) {
@@ -90,9 +91,9 @@ internal fun CompletionSection(
                 Text(stringResource(R.string.completion_final))
             }
         },
-        dismissButton = { TextButton(onClick = { askConfirm = false }) { Text(stringResource(R.string.completion_not_yet)) } },
-        confirmButton = {
-            TextButton(onClick = { askConfirm = false; run { appointments.confirmDone(appointment.id) } },
-                modifier = Modifier.testTag("confirm_done_confirm")) { Text(stringResource(R.string.completion_confirm)) }
-        })
+        confirmLabel = stringResource(R.string.completion_confirm),
+        onConfirm = { askConfirm = false; run { appointments.confirmDone(appointment.id) } },
+        onDismiss = { askConfirm = false },
+        dismissLabel = stringResource(R.string.completion_not_yet),
+        confirmTag = "confirm_done_confirm", dismissTag = "confirm_done_dismiss")
 }

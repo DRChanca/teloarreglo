@@ -68,8 +68,8 @@ internal fun StartCancelSection(
             TextButton(onClick = { askStart = false; run { appointments.startWork(appointment.id) } },
                 modifier = Modifier.testTag("start_work_confirm")) { Text(stringResource(R.string.start_cancel_start)) }
         })
-    if (askCancel) AlertDialog(onDismissRequest = { askCancel = false },
-        title = { Text(stringResource(R.string.start_cancel_cancel_title)) },
+    if (askCancel) DestructiveConfirmDialog(
+        title = stringResource(R.string.start_cancel_cancel_title),
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("cancel_effect")) {
                 Text(when (val effect = appointment.cancellationEffect) {
@@ -81,9 +81,9 @@ internal fun StartCancelSection(
                 Text(stringResource(R.string.start_cancel_release))
             }
         },
-        dismissButton = { TextButton(onClick = { askCancel = false }) { Text(stringResource(R.string.start_cancel_keep)) } },
-        confirmButton = {
-            TextButton(onClick = { askCancel = false; run { appointments.cancel(appointment.id) } },
-                modifier = Modifier.testTag("cancel_appointment_confirm")) { Text(stringResource(R.string.start_cancel_cancel)) }
-        })
+        confirmLabel = stringResource(R.string.start_cancel_cancel),
+        onConfirm = { askCancel = false; run { appointments.cancel(appointment.id) } },
+        onDismiss = { askCancel = false },
+        dismissLabel = stringResource(R.string.start_cancel_keep),
+        confirmTag = "cancel_appointment_confirm", dismissTag = "cancel_appointment_dismiss")
 }

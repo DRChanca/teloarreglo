@@ -195,6 +195,7 @@ internal class FakeAppointments : Appointments {
 
 class AppointmentsUiTest {
     @get:Rule val compose = createComposeRule()
+    private val resources = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext.resources
     private val conversation = Conversation("conversation", "profile", "client", "pro", "Fontanería")
     private val noPin = PinSource({ false }, { Located.Unavailable })
 
@@ -255,6 +256,9 @@ class AppointmentsUiTest {
         compose.onNodeWithTag("appointment_reject").performScrollTo().performClick()
         compose.onNodeWithTag("appointment_reject_confirm").performClick()
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("appointment_reject").fetchSemanticsNodes().isEmpty() }
+        // A rejected version is history (#47): folded until asked for.
+        compose.onAllNodesWithTag("proposal_1").assertCountEquals(0)
+        compose.onNodeWithTag("appointment_history_toggle_a1").performScrollTo().performClick()
         compose.onNodeWithTag("proposal_1").assertExists()
         val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
         assertEquals(listOf(ProposalStatus.REJECTED), appointment.proposals.map { it.status })
@@ -280,6 +284,34 @@ class AppointmentsUiTest {
         val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
         assertEquals(AppointmentStage.CONFIRMED, appointment.stage)
         assertEquals(AppointmentNotice.CONFIRMED, appointment.notice("pro"))
+    }
+
+    /** #47: the client's turn leads the card; the decision comes before the details. */
+    @Test fun aPendingProposalPutsTheClientsTurnAndAcceptFirst() {
+        val fake = withFreeProposal(seeded())
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("appointment_turn_a1").assertTextEquals(resources.getString(R.string.appointment_turn_yours))
+        compose.onNodeWithTag("appointment_accept").assertIsDisplayed()
+        val accept = compose.onNodeWithTag("appointment_accept").fetchSemanticsNode().boundsInRoot.top
+        val window = compose.onNodeWithTag("appointment_window_a1").fetchSemanticsNode().boundsInRoot.top
+        assert(accept < window) { "accept ($accept) must come before the requested window ($window)" }
+        // The proposal in force stays unfolded: its amount is what is being accepted.
+        compose.onNodeWithTag("proposal_1").assertExists()
+    }
+
+    @Test fun rejectingAProposalAsksWithATitleAndKeepsItOnCancel() {
+        val fake = withFreeProposal(seeded())
+        compose.setContent { AppointmentsPanel(fake, "client", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("appointment_reject").performScrollTo().performClick()
+        compose.onNodeWithText(resources.getString(R.string.appointment_reject_title)).assertIsDisplayed()
+        compose.onNodeWithTag("appointment_reject_dismiss").performClick()
+        compose.onAllNodesWithTag("appointment_reject_confirm").assertCountEquals(0)
+        assertEquals(ProposalStatus.PENDING,
+            kotlinx.coroutines.runBlocking { fake.list("conversation") }.single().currentProposal?.status)
     }
 
     @Test fun aTakenSlotIsExplainedAndTheRequestStaysPending() {
@@ -433,6 +465,8 @@ class AppointmentsUiTest {
         compose.setContent { AppointmentsPanel(fake, account, conversation, rememberCoroutineScope(), noPin) }
         waitForTag("appointment_card")
         compose.onNodeWithTag("appointment_card").performClick()
+        waitForTag("kept_prices_toggle_a1")
+        compose.onNodeWithTag("kept_prices_toggle_a1").performScrollTo().performClick()
         waitForTag("kept_prices_a1")
         compose.onNodeWithTag("running_change_hint").assertExists()
         compose.onAllNodesWithTag("change_request_correction").assertCountEquals(0)

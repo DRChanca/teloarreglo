@@ -49,6 +49,7 @@ fun ChatRoute(
     appointmentsSlot: (@Composable (Conversation) -> Unit)? = null,
     attachments: ChatAttachments? = null,
     evidence: ChatEvidenceLink? = null,
+    onBrowse: (() -> Unit)? = null,
 ) {
     var failed by remember(profileId) { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
@@ -62,7 +63,7 @@ fun ChatRoute(
             }
         }
     }
-    if (profileId == null) ChatScreen(chat, accountId, conversation, onOpened, onBack, appointmentsSlot, attachments, evidence)
+    if (profileId == null) ChatScreen(chat, accountId, conversation, onOpened, onBack, appointmentsSlot, attachments, evidence, onBrowse)
     else {
         BackHandler(onBack = onBack)
         Surface(Modifier.fillMaxSize()) {
@@ -89,6 +90,8 @@ fun ChatScreen(
     appointmentsSlot: (@Composable (Conversation) -> Unit)? = null,
     attachments: ChatAttachments? = null,
     evidence: ChatEvidenceLink? = null,
+    /** Opens the catalogue from an empty inbox (#47); null shows only the sentence. */
+    onBrowse: (() -> Unit)? = null,
 ) {
     BackHandler(onBack = onBack)
     var selection by rememberSaveable(accountId, conversation?.id, stateSaver = MessageSelectionSaver) {
@@ -297,7 +300,13 @@ fun ChatScreen(
                 TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.retry)) }
             }
             if (conversation == null) {
-                if (!loading && !failed && conversations.isEmpty()) Text(stringResource(R.string.chat_empty))
+                if (!loading && !failed && conversations.isEmpty()) {
+                    Text(stringResource(R.string.chat_empty))
+                    if (onBrowse != null) Button(onClick = onBrowse,
+                        modifier = Modifier.padding(top = TeloTheme.spacing.small).testTag("chat_empty_browse")) {
+                        Text(stringResource(R.string.chat_empty_browse))
+                    }
+                }
                 LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(conversations, key = { it.id }) { item ->
                         ConversationRow(item, accountId) { onSelect(item) }

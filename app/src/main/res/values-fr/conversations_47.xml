@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_empty_browse">Trouver des professionnels</string>
+    <string name="appointment_turn_yours">À vous</string>
+    <string name="appointment_turn_waiting">En attente de l\'autre partie</string>
+    <string name="appointment_history_show">Voir l\'historique (%1$d)</string>
+    <string name="appointment_history_hide">Masquer l\'historique</string>
+    <string name="kept_prices_show">Voir les prix de référence</string>
+    <string name="kept_prices_hide">Masquer les prix de référence</string>
+    <string name="appointment_accept_title">Accepter la proposition ?</string>
+    <string name="appointment_reject_title">Refuser la proposition ?</string>
+    <string name="change_accept_title">Accepter la modification ?</string>
+    <string name="change_reject_title">Refuser la modification ?</string>
+</resources>
