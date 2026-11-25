@@ -45,6 +45,8 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.time.LocalTime
+import java.time.format.DateTimeParseException
+import java.util.Locale
 import kotlinx.coroutines.launch
 
 /** Minutes between two options of the minute wheel (#64). */
@@ -52,13 +54,13 @@ internal const val WHEEL_MINUTE_STEP = 5
 
 /** A time of day as the wheels show it; [text] is how the cita forms keep it ("HH:mm"). */
 internal data class WheelTime(val hour: Int, val minute: Int) {
-    val text: String get() = "%02d:%02d".format(hour, minute)
+    val text: String get() = "%02d:%02d".format(Locale.ROOT, hour, minute)
 }
 
 /** Where the wheels open for a form time; one that cannot be read opens at 09:00. */
 internal fun wheelTime(text: String): WheelTime = try {
     LocalTime.parse(text.trim()).let { WheelTime(it.hour, it.minute) }
-} catch (_: Exception) { WheelTime(9, 0) }
+} catch (_: DateTimeParseException) { WheelTime(9, 0) }
 
 /**
  * The minute wheel: every [step] minutes, plus the [current] minute when it falls between two steps, so
@@ -138,7 +140,7 @@ private fun Wheel(values: List<Int>, initial: Int, tag: String, onSelected: (Int
                     .semantics { selected = chosen }
                     .clickable { scope.launch { state.animateScrollToItem(index) } },
                     contentAlignment = Alignment.Center) {
-                    Text("%02d".format(value),
+                    Text("%02d".format(Locale.ROOT, value),
                         style = if (chosen) MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold)
                             else MaterialTheme.typography.titleMedium,
                         color = if (chosen) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
