@@ -27,11 +27,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import kotlin.math.PI
 import kotlin.math.cos
@@ -48,52 +46,52 @@ fun ratingStars(rating: Double): RatingStars {
 }
 
 /**
- * A profile's Valoración (#51): [compact] «★ 4,5 (12)» for a search card, otherwise five stars rounded to the
- * half star plus mean and count. Without reviews it says «Sin reseñas». Read aloud as one «4,5 de 5, 12 reseñas».
+ * A profile's Valoración (#51): five stars rounded to the half star plus mean and count. [compact], for a search
+ * card, draws smaller stars filled in gold over grey (#67); otherwise outlined in the primary colour. Without
+ * reviews it says «Sin reseñas». Read aloud as one «4,5 de 5, 12 reseñas».
  */
 @Composable
 fun ProfileRating(rating: Double?, reviewCount: Int, compact: Boolean, modifier: Modifier = Modifier) {
-    val style = MaterialTheme.typography.bodySmall
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     if (rating == null) {
-        Text(stringResource(R.string.catalogue_no_reviews), modifier, style = style, color = muted)
+        Text(stringResource(R.string.catalogue_no_reviews), modifier, style = MaterialTheme.typography.bodySmall, color = muted)
         return
     }
     val locale = LocalConfiguration.current.locales[0]
     val figures = "${String.format(locale, "%.1f", rating)} ($reviewCount)"
     val description = pluralStringResource(R.plurals.catalogue_rating, reviewCount, rating, reviewCount)
-    val star = MaterialTheme.colorScheme.primary
-    if (compact) {
-        Text(
-            buildAnnotatedString {
-                withStyle(SpanStyle(color = star)) { append("★") }
-                append(" $figures")
-            },
-            modifier.clearAndSetSemantics { contentDescription = description; text = AnnotatedString("★ $figures") },
-            style = style, color = muted,
-        )
-        return
-    }
     Row(
         modifier.semantics(mergeDescendants = true) { contentDescription = description; text = AnnotatedString(figures) },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RatingStarRow(ratingStars(rating), star)
+        if (compact) {
+            RatingStarRow(ratingStars(rating), TeloTheme.extended.ratingStar,
+                emptyColor = TeloTheme.extended.ratingStarEmpty, size = CompactStarSize)
+        } else {
+            RatingStarRow(ratingStars(rating), MaterialTheme.colorScheme.primary)
+        }
         Spacer(Modifier.width(TeloTheme.spacing.small))
-        Text(figures, Modifier.clearAndSetSemantics {}, style = MaterialTheme.typography.bodyMedium, color = muted)
+        Text(figures, Modifier.clearAndSetSemantics {}, color = muted,
+            style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium)
     }
 }
 
 /** Size of a Valoración star, in sp so it follows the reader's font scale but not the screen's density (#66). */
 private val StarSize = 18.sp
 
+/** Smaller stars for a search card, next to bodySmall text (#67). */
+private val CompactStarSize = 14.sp
+
 /**
  * Five stars in equal slots with the extraSmall gap (#66): [stars] full, then a half star, then empty ones.
+ * The filled part is [color]; the rest is outlined in [color], or filled in [emptyColor] when given (#67).
  * Each star is tagged star_full/half/empty; the row adds no semantics, so its caller describes the rating.
  */
 @Composable
-internal fun RatingStarRow(stars: RatingStars, color: Color, modifier: Modifier = Modifier) {
-    val size = with(LocalDensity.current) { StarSize.toDp() }
+internal fun RatingStarRow(
+    stars: RatingStars, color: Color, modifier: Modifier = Modifier, emptyColor: Color? = null, size: TextUnit = StarSize,
+) {
+    val side = with(LocalDensity.current) { size.toDp() }
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall),
         verticalAlignment = Alignment.CenterVertically) {
         repeat(5) { index ->
@@ -102,7 +100,7 @@ internal fun RatingStarRow(stars: RatingStars, color: Color, modifier: Modifier 
                 index == stars.full && stars.half -> StarFill.HALF
                 else -> StarFill.EMPTY
             }
-            Star(fill, color, size, Modifier.testTag("star_${fill.name.lowercase()}").clearAndSetSemantics {})
+            Star(fill, color, side, Modifier.testTag("star_${fill.name.lowercase()}").clearAndSetSemantics {}, emptyColor)
         }
     }
 }
@@ -111,15 +109,15 @@ internal fun RatingStarRow(stars: RatingStars, color: Color, modifier: Modifier 
 internal enum class StarFill { FULL, HALF, EMPTY }
 
 /**
- * One star drawn as a vector, so its width never depends on a font's glyphs: outlined, with its starting
- * half (or all of it) filled in [color].
+ * One star drawn as a vector, so its width never depends on a font's glyphs: its starting half (or all of it)
+ * filled in [color]; the rest outlined in [color], or, with [emptyColor], filled in that colour without outline.
  */
 @Composable
-internal fun Star(fill: StarFill, color: Color, size: Dp, modifier: Modifier = Modifier) {
+internal fun Star(fill: StarFill, color: Color, size: Dp, modifier: Modifier = Modifier, emptyColor: Color? = null) {
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Canvas(modifier.size(size)) {
         val path = starPath(this.size.minDimension)
-        val stroke = this.size.minDimension / 12
+        if (emptyColor != null) drawPath(path, emptyColor)
         when (fill) {
             StarFill.FULL -> drawPath(path, color)
             StarFill.HALF -> {
@@ -128,7 +126,9 @@ internal fun Star(fill: StarFill, color: Color, size: Dp, modifier: Modifier = M
             }
             StarFill.EMPTY -> Unit
         }
-        drawPath(path, color, style = Stroke(width = stroke, join = StrokeJoin.Round))
+        if (emptyColor == null) {
+            drawPath(path, color, style = Stroke(width = this.size.minDimension / 12, join = StrokeJoin.Round))
+        }
     }
 }
 

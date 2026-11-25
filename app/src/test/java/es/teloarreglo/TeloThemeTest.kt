@@ -49,6 +49,26 @@ class TeloThemeTest {
     }
 
     @Test
+    fun ratingStarsAreGoldOnEveryCardInBothThemes() {
+        for (dark in listOf(false, true)) {
+            val colors = teloColors(dark)
+            val theme = if (dark) "dark" else "light"
+            val gold = colors.extended.ratingStar
+            assertTrue("$theme star must be gold: $gold", gold.red > gold.green && gold.green > gold.blue)
+            // #67: filled stars stand out (WCAG 1.4.11, 3:1) on a plain card and on a «Perfil destacado» card.
+            for ((name, card) in mapOf("card" to colors.extended.card, "featured" to colors.scheme.secondaryContainer)) {
+                val ratio = contrast(gold, card)
+                assertTrue("$theme star vs $name: $ratio", ratio >= 3.0)
+            }
+            val empty = colors.extended.ratingStarEmpty
+            val channels = listOf(empty.red, empty.green, empty.blue)
+            assertTrue("$theme empty star must be grey: $empty", channels.max() - channels.min() < 0.06f)
+            val apart = contrast(gold, empty)
+            assertTrue("$theme filled vs empty star: $apart", apart >= 2.0)
+        }
+    }
+
+    @Test
     fun screenAndSectionTitlesAreBoldWithoutEachScreenAskingForIt() {
         val type = teloTypography
         for ((role, style) in mapOf(
