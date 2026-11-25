@@ -14,6 +14,7 @@ class ConfirmDialogTest {
 
     @Test
     fun aDestructiveConfirmationKeepsTheErrorColour() {
+        assertEquals(Color(0xFFB3261E), confirmActionColor(teloColors(dark = false).scheme, destructive = true))
         assertEquals(Color(0xFFFFB4AB), confirmActionColor(teloColors(dark = true).scheme, destructive = true))
     }
 }

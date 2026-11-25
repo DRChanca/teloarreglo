@@ -30,15 +30,16 @@ fun DestructiveConfirmDialog(
     dismissTag: String = "destructive_dismiss",
     busy: Boolean = false,
     confirmEnabled: Boolean = true,
-) = IrreversibleConfirmDialog(title, text, confirmLabel, onConfirm, onDismiss, modifier, dismissLabel, confirmTag,
-    dismissTag, busy, confirmEnabled, destructive = true)
+) = ConfirmDialog(title = title, text = text, confirmLabel = confirmLabel, onConfirm = onConfirm, onDismiss = onDismiss,
+    modifier = modifier, dismissLabel = dismissLabel, confirmTag = confirmTag, dismissTag = dismissTag, busy = busy,
+    confirmEnabled = confirmEnabled, destructive = true)
 
 /**
  * The same irreversible confirmation as [DestructiveConfirmDialog] for a positive action, such as confirming that
  * the work is done (#65): the confirm button keeps the primary colour of the other positive actions.
  */
 @Composable
-fun IrreversibleConfirmDialog(
+fun PositiveConfirmDialog(
     title: String,
     text: @Composable () -> Unit,
     confirmLabel: String,
@@ -46,11 +47,28 @@ fun IrreversibleConfirmDialog(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     dismissLabel: String = stringResource(R.string.cancel),
-    confirmTag: String = "destructive_confirm",
-    dismissTag: String = "destructive_dismiss",
+    confirmTag: String = "positive_confirm",
+    dismissTag: String = "positive_dismiss",
     busy: Boolean = false,
     confirmEnabled: Boolean = true,
-    destructive: Boolean = false,
+) = ConfirmDialog(title = title, text = text, confirmLabel = confirmLabel, onConfirm = onConfirm, onDismiss = onDismiss,
+    modifier = modifier, dismissLabel = dismissLabel, confirmTag = confirmTag, dismissTag = dismissTag, busy = busy,
+    confirmEnabled = confirmEnabled, destructive = false)
+
+@Composable
+private fun ConfirmDialog(
+    title: String,
+    text: @Composable () -> Unit,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier,
+    dismissLabel: String,
+    confirmTag: String,
+    dismissTag: String,
+    busy: Boolean,
+    confirmEnabled: Boolean,
+    destructive: Boolean,
 ) {
     AlertDialog(
         onDismissRequest = { if (!busy) onDismiss() },
