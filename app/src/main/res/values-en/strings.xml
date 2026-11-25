@@ -337,6 +337,14 @@
     <string name="account_name_invalid">Enter your name, 1 to 80 characters.</string>
     <string name="account_name_access">Your session has expired. Sign in again.</string>
     <string name="account_name_network">The name could not be saved. Check your connection and try again.</string>
+    <string name="contact_phone_label">Contact phone</string>
+    <string name="contact_phone_title">What number can we call you on?</string>
+    <string name="contact_phone_intro">The professionals you confirm an appointment with will use this number to contact you.</string>
+    <string name="contact_phone_hint">9 digits if Spanish, or with + and your country code</string>
+    <string name="contact_phone_save">Save phone</string>
+    <string name="contact_phone_invalid">Enter a 9-digit Spanish number or a number with + and its country code.</string>
+    <string name="contact_phone_access">Your session has expired. Sign in again.</string>
+    <string name="contact_phone_network">The phone could not be saved. Check your connection and try again.</string>
     <string name="payment_integrated">Pay %1$s and confirm</string>
     <string name="payment_direct">I will pay %1$s directly to the professional</string>
     <string name="payment_retry">Retry the confirmation (%1$s)</string>

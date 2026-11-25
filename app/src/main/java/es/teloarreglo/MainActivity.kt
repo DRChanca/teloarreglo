@@ -27,6 +27,7 @@ import es.teloarreglo.identity.AccessError
 import es.teloarreglo.identity.AccessStage
 import es.teloarreglo.home.HomeStatus
 import es.teloarreglo.identity.AccountNameStatus
+import es.teloarreglo.identity.ContactPhoneStatus
 
 class MainActivity : AppCompatActivity() {
     private var permissionAnswer: CompletableDeferred<Boolean>? = null
@@ -144,6 +145,15 @@ class MainActivity : AppCompatActivity() {
             LaunchedEffect(access, home) { app.searchSession?.onAccess(access, home) }
             val mustGiveHome = homeSession != null && connectedUser != null && homeStatus == HomeStatus.Missing &&
                 access.account?.isAdministrator != true && !emailLinkPending
+            // Contact phone (#74): third mandatory step, after the name and the home, when the server confirms it is missing.
+            val phoneSession = app.contactPhoneSession
+            val phoneStatus by (phoneSession?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(ContactPhoneStatus.Unknown) })
+                .collectAsStateWithLifecycle()
+            LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
+                if (access.stage != AccessStage.CHECKING) phoneSession?.load(connectedUser)
+            }
+            val mustGivePhone = phoneSession != null && connectedUser != null && phoneStatus == ContactPhoneStatus.Missing &&
+                access.account?.isAdministrator != true && !emailLinkPending
             val changeLanguage: (String) -> Unit = { tag ->
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
             }
@@ -159,10 +169,11 @@ class MainActivity : AppCompatActivity() {
             }
             val screen = nav.screen(Session(
                 connected = connectedUser != null && app.chat != null && app.notices != null,
-                mustGiveName = mustGiveName, mustGiveHome = mustGiveHome, emailLinkPending = emailLinkPending,
+                mustGiveName = mustGiveName, mustGiveHome = mustGiveHome, mustGivePhone = mustGivePhone,
+                emailLinkPending = emailLinkPending,
             ))
             // Back from a tab goes Home; at Home it leaves the app. Mandatory steps keep the system default.
-            val mandatory = screen == MainScreen.NAME_STEP || screen == MainScreen.HOME_STEP
+            val mandatory = screen == MainScreen.NAME_STEP || screen == MainScreen.HOME_STEP || screen == MainScreen.PHONE_STEP
             BackHandler(enabled = !mandatory && nav.back() != null) { nav.back()?.let { nav = it } }
             Scaffold(
                 // Each screen handles the system insets itself; the scaffold only reserves the bar.
@@ -176,6 +187,10 @@ class MainActivity : AppCompatActivity() {
                     when (screen) {
                         MainScreen.NAME_STEP -> key(connectedUser) {
                             AccountNameScreen(nameSession!!, app.applicationScope,
+                                onSignOut = { app.applicationScope.launch { app.identity.signOut() } })
+                        }
+                        MainScreen.PHONE_STEP -> key(connectedUser) {
+                            ContactPhoneScreen(phoneSession!!, app.applicationScope,
                                 onSignOut = { app.applicationScope.launch { app.identity.signOut() } })
                         }
                         MainScreen.HOME_STEP, MainScreen.HOME_EDITOR -> key(connectedUser) {
@@ -265,6 +280,8 @@ class MainActivity : AppCompatActivity() {
             app.homeSession?.takeIf { it.status.value == HomeStatus.Failed }
                 ?.load(app.identity.state.value.account?.userId)
             app.accountNameSession?.takeIf { it.status.value == AccountNameStatus.Failed }
+                ?.load(app.identity.state.value.account?.userId)
+            app.contactPhoneSession?.takeIf { it.status.value == ContactPhoneStatus.Failed }
                 ?.load(app.identity.state.value.account?.userId)
         }
     }

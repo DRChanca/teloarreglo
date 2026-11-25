@@ -337,6 +337,14 @@
     <string name="account_name_invalid">Escribe tu nombre, de 1 a 80 caracteres.</string>
     <string name="account_name_access">Tu sesión ha caducado. Vuelve a entrar.</string>
     <string name="account_name_network">No se pudo guardar el nombre. Comprueba la conexión y vuelve a intentarlo.</string>
+    <string name="contact_phone_label">Teléfono de contacto</string>
+    <string name="contact_phone_title">¿En qué número podemos llamarte?</string>
+    <string name="contact_phone_intro">Los profesionales con los que confirmes una cita usarán este número para contactarte.</string>
+    <string name="contact_phone_hint">9 dígitos si es español, o con + y el prefijo de tu país</string>
+    <string name="contact_phone_save">Guardar teléfono</string>
+    <string name="contact_phone_invalid">Escribe un móvil español de 9 dígitos o un número con + y el prefijo de su país.</string>
+    <string name="contact_phone_access">Tu sesión ha caducado. Vuelve a entrar.</string>
+    <string name="contact_phone_network">No se pudo guardar el teléfono. Comprueba la conexión y vuelve a intentarlo.</string>
     <string name="payment_integrated">Pagar %1$s y confirmar</string>
     <string name="payment_direct">Pagaré %1$s directamente al profesional</string>
     <string name="payment_retry">Reintentar la confirmación (%1$s)</string>
