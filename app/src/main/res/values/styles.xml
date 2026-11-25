@@ -5,4 +5,11 @@
     <style name="Theme.Teloarreglo" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/window_background</item>
     </style>
+    <!-- Start splash (#58): the woodpecker on the window background; MainActivity decides whether it is held. -->
+    <style name="Theme.Teloarreglo.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/window_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_woodpecker</item>
+        <item name="windowSplashScreenAnimationDuration">1000</item>
+        <item name="postSplashScreenTheme">@style/Theme.Teloarreglo</item>
+    </style>
 </resources>
