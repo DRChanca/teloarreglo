@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Konto und Zugang (#47, Gruppe 2). -->
+<resources>
+    <string name="account_section_account">Dein Konto</string>
+    <string name="account_section_professional">Berufsprofil</string>
+    <string name="agenda_error_days">Prüfe die Zeiten für: %1$s. Nutze HH:MM und lass das Ende nach dem Beginn liegen.</string>
+    <string name="agenda_error_duration">Gib 15 bis 1440 Minuten ein.</string>
+</resources>
