@@ -131,7 +131,7 @@ class MainActivity : AppCompatActivity() {
                 // Each screen handles the system insets itself; the scaffold only reserves the bar.
                 contentWindowInsets = WindowInsets(0),
                 bottomBar = {
-                    if (screen.showsBar) MainBottomBar(nav.tab, nearbyAvailable = app.search != null,
+                    if (screen.showsBar) MainBottomBar(nav.tab,
                         unreadNotices = unreadNotices, onSelect = { nav = nav.open(it) })
                 },
             ) { padding ->
@@ -194,19 +194,19 @@ class MainActivity : AppCompatActivity() {
                             nameSlot = nameSession?.let { session -> { AccountNameCard(session, app.applicationScope) } },
                             homeSlot = homeSession?.let { session -> { HomeSummaryCard(session, onChange = { nav = nav.editHome() }) } },
                             onEditProfile = app.professionalProfiles?.let { { nav = nav.editProfile() } })
-                        MainScreen.NEARBY -> app.search?.let { search ->
-                            NearbySearchScreen(search, app.catalogue,
-                                ensurePermission = { ensureLocationPermission() },
-                                locate = { currentLocation(this@MainActivity) },
-                                onOpenProfile = { nav = nav.showProfile(it) },
-                                concejos = app.concejos, map = remember { deviceMapAvailability(this@MainActivity) },
-                                home = home, askIfAway = { homeSession?.askIfAway(it) == true },
-                                onChangeHome = { nav = nav.editHome() })
-                        }
                         MainScreen.CATALOGUE -> CatalogueScreen(app.catalogue,
                             initialProfileId = nav.profile, covers = app.covers, ownedProfileId = owner,
                             onContact = { nav = nav.showProfile(it).contact(it) },
-                            reviews = app.reviews)
+                            reviews = app.reviews,
+                            // Single search (ADR 0001): from the saved home, GPS or a concejo, by distance.
+                            proximitySource = app.search?.let { search ->
+                                ProximitySource(search,
+                                    ensurePermission = { ensureLocationPermission() },
+                                    locate = { currentLocation(this@MainActivity) },
+                                    concejos = app.concejos, map = remember { deviceMapAvailability(this@MainActivity) },
+                                    home = home, askIfAway = { homeSession?.askIfAway(it) == true },
+                                    onChangeHome = { nav = nav.editHome() })
+                            })
                     }
                 }
             }

@@ -1,19 +1,27 @@
 <resources xmlns:tools="http://schemas.android.com/tools" tools:locale="es">
-    <string name="nearby_title">Profesionales cerca del trabajo</string>
-    <string name="nearby_hint">Usamos tu ubicación una sola vez para saber el concejo y ordenar por cercanía a quienes trabajan allí.</string>
     <string name="nearby_use_location">Usar mi ubicación</string>
     <string name="nearby_privacy">No guardamos tu ubicación ni la seguimos. Las distancias son en línea recta y aproximadas.</string>
-    <string name="nearby_locating">Buscando tu ubicación…</string>
-    <string name="nearby_searching">Buscando profesionales…</string>
     <string name="nearby_denied">Sin permiso de ubicación no podemos buscar cerca de ti. Puedes elegir el concejo y marcar el lugar en el mapa a mano.</string>
     <string name="nearby_unavailable">No pudimos obtener tu ubicación. Activa la ubicación e inténtalo de nuevo, o elige el concejo a mano en el mapa.</string>
     <string name="nearby_uncertain">Tu ubicación es demasiado imprecisa para saber el concejo. Inténtalo al aire libre o elige el concejo a mano en el mapa.</string>
     <string name="nearby_outside">Ese lugar está fuera de Asturias. Por ahora solo hay profesionales en Asturias.</string>
     <string name="nearby_confirm">Estás cerca del límite entre concejos. ¿Dónde es el trabajo?</string>
-    <string name="nearby_results">Trabajan en %1$s</string>
-    <string name="nearby_empty">No hay profesionales de este oficio que trabajen en %1$s.</string>
     <string name="nearby_distance_under_1km">A menos de 1 km</string>
     <string name="nearby_distance_about">A unos %1$s km</string>
-    <string name="nearby_error_network">No pudimos conectar. Comprueba tu conexión e inténtalo de nuevo.</string>
-    <string name="nearby_error_service">La búsqueda no está disponible en este momento. Inténtalo de nuevo.</string>
+    <!-- Single search ordered by distance (ADR 0001). -->
+    <string name="search_sort_nearby">Ordenar por cercanía</string>
+    <string name="search_near_home">Cerca de tu casa</string>
+    <string name="search_near_home_in">Cerca de tu casa · %1$s</string>
+    <string name="search_near_here">Cerca de tu ubicación</string>
+    <string name="search_near_here_in">Cerca de tu ubicación · %1$s</string>
+    <string name="search_near_manual">Cerca de: %1$s</string>
+    <string name="search_change">Cambiar</string>
+    <string name="search_change_close">Cerrar</string>
+    <string name="search_change_home">Cambiar la dirección de casa</string>
+    <string name="search_away_km">Estás a unos %1$s km de casa.</string>
+    <string name="search_away_dismiss">Seguir buscando desde casa</string>
+    <string name="search_order_failed">No hemos podido ordenar por cercanía.</string>
+    <string name="search_order_failed_network">Sin conexión: no hemos podido ordenar por cercanía.</string>
+    <string name="search_out_of_zone">No suele trabajar en %1$s</string>
+    <string name="profile_out_of_zone">No suele trabajar en %1$s. Puedes escribirle igualmente y acordar el trabajo.</string>
 </resources>

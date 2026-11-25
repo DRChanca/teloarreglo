@@ -1,7 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Bottom bar (#46) and account preferences. -->
-    <string name="tab_home">Start</string>
-    <string name="tab_nearby">In der Nähe</string>
+    <!-- Bottom bar (#46; «Buscar» replaces Inicio and Cerca, ADR 0001) and account preferences. -->
+    <string name="tab_search">Suchen</string>
+    <string name="tab_chats">Unterhaltungen</string>
+    <string name="tab_notices">Hinweise</string>
+    <string name="tab_account">Konto</string>
+    <!-- Spoken name of a tab with a count: «Avisos, 2 avisos sin leer». -->
+    <string name="tab_with_unread">%1$s, %2$s</string>
     <string name="preferences_title">Einstellungen</string>
     <plurals name="tab_notices_unread">
         <item quantity="one">%d ungelesener Hinweis</item>

@@ -293,27 +293,3 @@ private fun HomeConcejoLine(home: HomeAddress) {
         style = MaterialTheme.typography.bodySmall,
     )
 }
-
-/**
- * "You are far from home": asked at most once per session, only on the device. Change the home,
- * search from here, or keep searching from home.
- */
-@Composable
-fun AwayFromHomeDialog(home: GeoPoint, here: GeoPoint, onChangeHome: () -> Unit, onSearchHere: () -> Unit, onKeepHome: () -> Unit) {
-    val km = String.format(Locale.getDefault(), "%.0f", distanceMeters(home, here) / 1000)
-    AlertDialog(
-        onDismissRequest = onKeepHome,
-        modifier = Modifier.testTag("home_far"),
-        title = { Text(stringResource(R.string.home_far_title)) },
-        text = { Text(stringResource(R.string.home_far_text, km)) },
-        confirmButton = {
-            TextButton(onClick = onSearchHere, modifier = Modifier.testTag("home_far_here")) { Text(stringResource(R.string.home_far_here)) }
-        },
-        dismissButton = {
-            Row {
-                TextButton(onClick = onChangeHome, modifier = Modifier.testTag("home_far_change")) { Text(stringResource(R.string.home_change)) }
-                TextButton(onClick = onKeepHome, modifier = Modifier.testTag("home_far_keep")) { Text(stringResource(R.string.home_far_keep)) }
-            }
-        },
-    )
-}

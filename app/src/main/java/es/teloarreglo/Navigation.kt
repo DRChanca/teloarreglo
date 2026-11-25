@@ -1,16 +1,26 @@
 package es.teloarreglo
 
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.runtime.saveable.Saver
 import es.teloarreglo.chat.Conversation
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-/** Destinations of the bottom bar (#46), always in this order. */
-enum class Tab { HOME, NEARBY, CHATS, NOTICES, ACCOUNT }
+/**
+ * Destinations of the bottom bar (#46), always in this order. HOME is the single search (ADR 0001,
+ * labelled «Buscar»): the separate «Cerca» tab was merged into it.
+ */
+enum class Tab(@DrawableRes val icon: Int, @StringRes val label: Int) {
+    HOME(R.drawable.ic_tab_search, R.string.tab_search),
+    CHATS(R.drawable.ic_tab_chats, R.string.tab_chats),
+    NOTICES(R.drawable.ic_tab_notices, R.string.tab_notices),
+    ACCOUNT(R.drawable.ic_tab_account, R.string.tab_account),
+}
 
 /** What the main activity shows; only the main screens keep the bottom bar. */
 enum class MainScreen(val showsBar: Boolean) {
-    CATALOGUE(true), NEARBY(true), CHATS(true), NOTICES(true), ACCESS(true),
+    CATALOGUE(true), CHATS(true), NOTICES(true), ACCESS(true),
     CONVERSATION(false), NAME_STEP(false), HOME_STEP(false), HOME_EDITOR(false), PROFILE_EDITOR(false),
     /** An email link (new password or invalid link) that must be answered before navigating. */
     EMAIL_LINK(false),
@@ -55,7 +65,6 @@ data class Navigation(
         profileEditor -> MainScreen.PROFILE_EDITOR
         session.emailLinkPending -> MainScreen.EMAIL_LINK
         tab == Tab.HOME -> MainScreen.CATALOGUE
-        tab == Tab.NEARBY -> MainScreen.NEARBY
         !session.connected -> MainScreen.ACCESS
         tab == Tab.NOTICES -> MainScreen.NOTICES
         tab == Tab.CHATS -> if (conversation != null || contactProfile != null) MainScreen.CONVERSATION else MainScreen.CHATS

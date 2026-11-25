@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notices_open_conversation">Unterhaltung öffnen</string>
+    <string name="notices_open_account">Konto ansehen</string>
+    <string name="notices_conversation_missing">Wir konnten diese Unterhaltung nicht finden. Sie ist möglicherweise nicht mehr verfügbar.</string>
+</resources>

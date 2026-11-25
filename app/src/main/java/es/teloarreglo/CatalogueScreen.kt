@@ -31,6 +31,8 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import es.teloarreglo.catalogue.Catalogue
 import es.teloarreglo.catalogue.PublicProfile
+import es.teloarreglo.catalogue.Coverage
+import androidx.compose.ui.semantics.heading
 import es.teloarreglo.catalogue.ProfessionalCovers
 import es.teloarreglo.catalogue.ReferencePrice
 import es.teloarreglo.catalogue.ProfileSection
@@ -52,6 +54,8 @@ fun CatalogueScreen(
     onContact: ((String) -> Unit)? = null,
     /** Published reviews shown on the profile (#28); null hides them. */
     reviews: es.teloarreglo.appointments.Reviews? = null,
+    /** Distance order of the single search (ADR 0001); null keeps the catalogue order. */
+    proximitySource: ProximitySource? = null,
 ) {
     var trade by rememberSaveable { mutableStateOf<String?>(null) }
     var selected by rememberSaveable(initialProfileId) { mutableStateOf(initialProfileId) }
@@ -93,9 +97,18 @@ fun CatalogueScreen(
         CoverEditorRoute(profile, covers, onBack = { editing = false; retry++ })
         return
     }
-    val visible = profiles.filter { p ->
-        searchable(p.name + " " + p.services.joinToString(" ")).contains(searchable(search.trim()))
+    val proximity = rememberProximity(proximitySource, catalogue, trade)
+    var showMap by rememberSaveable { mutableStateOf(false) }
+    val ranked = proximity?.results
+    // The single search (ADR 0001): the distance order when there is one, the catalogue order otherwise.
+    val rows = ranked?.rows ?: profiles.map { SearchRow(it, null, true) }
+    val visible = rows.filter { row ->
+        searchable(row.profile.name + " " + row.profile.services.joinToString(" ")).contains(searchable(search.trim()))
     }
+    val catalogueWaiting = loading || completedRequest != request
+    // The concejo the search is about, for «No suele trabajar en …» on the profile.
+    val searchConcejo = ranked?.concejo?.let { Coverage(it.ineCode, it.name) }
+        ?: proximitySource?.home?.let { h -> h.ineCode?.let { Coverage(it, h.concejoName ?: it) } }
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()) {
             // Sections live in the bottom bar (#46); the header keeps the brand or the way back.
@@ -114,8 +127,10 @@ fun CatalogueScreen(
             }
             if (selected == null) {
                 Text(
-                    stringResource(R.string.catalogue_title), Modifier.padding(20.dp),
-                        style = MaterialTheme.typography.headlineMedium,
+                    stringResource(R.string.catalogue_title),
+                    Modifier.padding(horizontal = TeloTheme.spacing.screen, vertical = TeloTheme.spacing.medium)
+                        .semantics { heading() },
+                    style = MaterialTheme.typography.headlineSmall,
                 )
                 OutlinedTextField(
                     value = search, onValueChange = { search = it },
@@ -141,75 +156,108 @@ fun CatalogueScreen(
                             modifier = Modifier.testTag("trade_$key"), label = { Text(stringResource(tradeLabel(key))) })
                     }
                 }
-            }
-            when {
-                loading || completedRequest != request -> Column(Modifier.padding(24.dp).testTag("catalogue_loading")) {
+                LazyColumn(
+                    state = listState, modifier = Modifier.testTag("catalogue_list"),
+                    contentPadding = PaddingValues(TeloTheme.spacing.screen),
+                    verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.medium),
+                ) {
+                    if (proximity != null) item(key = "proximity") { ProximityHeader(proximity, showMap) { showMap = it } }
+                    when {
+                        // Skeleton until the order is known: cards never jump once shown.
+                        proximity?.busy == true || (ranked == null && catalogueWaiting) -> items(4) { SkeletonCard() }
+                        ranked == null && failed -> item {
+                            Column(Modifier.padding(8.dp)) {
+                                Text(stringResource(R.string.catalogue_error), Modifier.testTag("catalogue_error"))
+                                Button(onClick = { retry++ }, Modifier.testTag("catalogue_retry")) { Text(stringResource(R.string.retry)) }
+                            }
+                        }
+                        visible.isEmpty() -> item {
+                            Column(Modifier.padding(8.dp)) {
+                                Text(stringResource(if (rows.isNotEmpty()) R.string.catalogue_filtered_empty else R.string.catalogue_empty),
+                                    Modifier.testTag("catalogue_empty"))
+                                if (trade != null || search.isNotEmpty()) {
+                                    TextButton(onClick = { trade = null; search = ""; keyboard?.hide() }, Modifier.testTag("catalogue_reset")) {
+                                        Text(stringResource(R.string.catalogue_reset_filters))
+                                    }
+                                }
+                            }
+                        }
+                        else -> {
+                            item(key = "count") {
+                                Text(pluralStringResource(R.plurals.catalogue_results, visible.size, visible.size),
+                                    style = MaterialTheme.typography.labelLarge)
+                            }
+                            if (showMap && ranked != null) item(key = "map") { ProximityMap(proximity, ranked) { selected = it } }
+                            items(visible, key = { it.profile.id }) { row ->
+                                val highlighted = if (ranked != null) row.profile.id in ranked.featured else row.profile.featured
+                                ProfileCard(row, highlighted, ranked?.concejo?.name, covers) { selected = row.profile.id }
+                            }
+                        }
+                    }
+                }
+            } else when {
+                catalogueWaiting -> Column(Modifier.padding(24.dp).testTag("catalogue_loading")) {
                     CircularProgressIndicator()
                     Text(stringResource(R.string.catalogue_loading))
                 }
                 failed -> Column(Modifier.padding(24.dp)) {
                     Text(stringResource(R.string.catalogue_error), Modifier.testTag("catalogue_error"))
-                    Button(onClick = { retry++ }, Modifier.testTag("catalogue_retry")) {
-                        Text(stringResource(R.string.retry))
-                    }
+                    Button(onClick = { retry++ }, Modifier.testTag("catalogue_retry")) { Text(stringResource(R.string.retry)) }
                 }
-                profiles.isEmpty() || (selected == null && visible.isEmpty()) -> Column(Modifier.padding(24.dp)) {
-                    Text(stringResource(when {
-                        selected != null -> R.string.catalogue_unpublished
-                        profiles.isNotEmpty() -> R.string.catalogue_filtered_empty
-                        else -> R.string.catalogue_empty
-                    }), Modifier.testTag("catalogue_empty"))
-                    if (selected == null && (trade != null || search.isNotEmpty())) {
-                        TextButton(onClick = { trade = null; search = ""; keyboard?.hide() }, Modifier.testTag("catalogue_reset")) {
-                            Text(stringResource(R.string.catalogue_reset_filters))
-                        }
-                    }
+                profiles.isEmpty() -> Column(Modifier.padding(24.dp)) {
+                    Text(stringResource(R.string.catalogue_unpublished), Modifier.testTag("catalogue_empty"))
                 }
-                selected != null -> ProfileDetail(profiles.single(), covers, catalogue,
+                else -> ProfileDetail(profiles.single(), covers, catalogue,
                     onEdit = if (selected == ownedProfileId && covers != null) ({ editing = true }) else null,
                     onContact = if (selected != ownedProfileId) onContact?.let { contact -> { contact(profiles.single().id) } } else null,
-                    reviews = reviews)
-                else -> {
-                    Text(pluralStringResource(R.plurals.catalogue_results, visible.size, visible.size),
-                        Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelLarge)
-                    LazyColumn(
-                        state = listState, modifier = Modifier.testTag("catalogue_list"),
-                        contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                    items(visible, key = { it.id }) { profile ->
-                        // «Perfil destacado» (2026-11-24): the server lists these first; the card stands out
-                        // with the theme's secondary container and primary outline, and always says why.
-                        Card(
-                            onClick = { selected = profile.id }, modifier = Modifier.fillMaxWidth().testTag("profile_${profile.id}"),
-                            colors = CardDefaults.cardColors(containerColor =
-                                if (profile.featured) MaterialTheme.colorScheme.secondaryContainer else TeloTheme.extended.card),
-                            border = if (profile.featured) BorderStroke(1.5.dp, TeloTheme.extended.featuredBorder) else null,
-                            shape = RoundedCornerShape(20.dp),
-                        ) {
-                            Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                                ProfileCover(profile.trades.firstOrNull().orEmpty(), profile.coverPath, covers,
-                                    Modifier.width(100.dp).height(120.dp))
-                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                    if (profile.featured) FeaturedBadge(Modifier.testTag("catalogue_featured_${profile.id}"),
-                                        R.string.catalogue_featured_profile)
-                                    Text(profile.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
-                                        maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                    Text(profile.services.firstOrNull() ?: profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(),
-                                        style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                    Text(profile.coverage.joinToString { it.name }, style = MaterialTheme.typography.bodySmall,
-                                        maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                    profile.prices.firstOrNull()?.let { price ->
-                                        Text(stringResource(R.string.catalogue_reference, priceText(price)),
-                                            color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
-                                    }
-                                    Rating(profile)
-                                }
-                            }
-                        }
-                    }
-                    }
+                    reviews = reviews,
+                    outsideZoneOf = searchConcejo?.takeIf { c -> selected != ownedProfileId && profiles.single().coverage.none { it.code == c.code } })
+            }
+        }
+    }
+}
+
+/**
+ * One result: «Perfil destacado» (2026-11-24) stands out with the theme's secondary container and primary
+ * outline and always says why; only a «Destacado» of the searched concejo's zone is [highlighted] (ADR 0001).
+ * With a distance order the card shows the rounded band and, out of zone, «No suele trabajar en …».
+ */
+@Composable
+private fun ProfileCard(row: SearchRow, highlighted: Boolean, concejo: String?, covers: ProfessionalCovers?, onOpen: () -> Unit) {
+    val profile = row.profile
+    Card(
+        onClick = onOpen, modifier = Modifier.fillMaxWidth().testTag("profile_${profile.id}"),
+        colors = CardDefaults.cardColors(containerColor =
+            if (highlighted) MaterialTheme.colorScheme.secondaryContainer else TeloTheme.extended.card),
+        border = if (highlighted) BorderStroke(1.5.dp, TeloTheme.extended.featuredBorder) else null,
+        shape = MaterialTheme.shapes.large,
+    ) {
+        Row(Modifier.fillMaxWidth().padding(TeloTheme.spacing.medium), horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.medium)) {
+            ProfileCover(profile.trades.firstOrNull().orEmpty(), profile.coverPath, covers,
+                Modifier.width(100.dp).height(120.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                if (highlighted) FeaturedBadge(Modifier.testTag("catalogue_featured_${profile.id}"),
+                    R.string.catalogue_featured_profile)
+                Text(profile.name, style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(profile.services.firstOrNull() ?: profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(),
+                    style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                row.bandM?.let { band ->
+                    Text(distanceText(band), Modifier.testTag("nearby_distance_${profile.id}"),
+                        style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                if (!row.inZone && concejo != null) {
+                    Text(stringResource(R.string.search_out_of_zone, concejo), Modifier.testTag("out_of_zone_${profile.id}"),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    Text(profile.coverage.joinToString { it.name }, style = MaterialTheme.typography.bodySmall,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                profile.prices.firstOrNull()?.let { price ->
+                    Text(stringResource(R.string.catalogue_reference, priceText(price)),
+                        color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+                }
+                Rating(profile)
             }
         }
     }
@@ -219,6 +267,8 @@ fun CatalogueScreen(
 private fun ProfileDetail(
     profile: PublicProfile, covers: ProfessionalCovers?, catalogue: Catalogue,
     onEdit: (() -> Unit)?, onContact: (() -> Unit)?, reviews: es.teloarreglo.appointments.Reviews? = null,
+    /** Concejo of the search when it is outside this profile's work zone: informs, never blocks (ADR 0001). */
+    outsideZoneOf: Coverage? = null,
 ) {
     val locale = LocalConfiguration.current.locales[0]
     // «Destacado» (#33) from the server rule; a failed check shows no badge rather than a false one.
@@ -254,6 +304,11 @@ private fun ProfileDetail(
                             Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(),
                                 color = MaterialTheme.colorScheme.primary)
                             Rating(profile)
+                            outsideZoneOf?.let { concejo ->
+                                Text(stringResource(R.string.profile_out_of_zone, concejo.name),
+                                    Modifier.testTag("profile_out_of_zone"), style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
                     }
                     ProfileSection.DESCRIPTION -> item {

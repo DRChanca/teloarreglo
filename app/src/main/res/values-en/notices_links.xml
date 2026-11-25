@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notices_open_conversation">Open conversation</string>
+    <string name="notices_open_account">View account</string>
+    <string name="notices_conversation_missing">We could not find that conversation. It may no longer be available.</string>
+</resources>
