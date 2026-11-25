@@ -3,8 +3,8 @@
 Número privado y obligatorio de la cuenta (spec [#71](https://github.com/DRChanca/teloarreglo/issues/71);
 vocabulario «Teléfono de contacto» en `GLOSSARY.md`). Tiene la misma protección que la casa (#37):
 solo su propietario lo lee y lo escribe. Ninguna búsqueda, chat, solicitud, catálogo ni vista pública
-lo expone. Solo el profesional de una cita confirmada lo recibirá, a través de la función de la
-dirección exacta de la cita (#79).
+lo expone. Solo el profesional de una cita confirmada o comenzada lo recibe, a través de la función
+de la dirección exacta de la cita (`appointment_places.contact_phone`, #79; ver `citas-contrato.md`).
 
 ## Interfaz compartida
 

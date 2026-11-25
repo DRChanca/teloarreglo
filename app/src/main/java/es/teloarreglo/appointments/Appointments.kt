@@ -113,6 +113,11 @@ data class AppointmentPlace(
     @SerialName("area_lng") val areaLng: Double,
     @SerialName("area_radius_m") val areaRadiusMeters: Int,
     @SerialName("concejo_name") val concejoName: String? = null,
+    /**
+     * The client's contact phone, read live by the server (#79): always for the client; for the professional only
+     * while the appointment is confirmed or started. Null otherwise or when the client has none.
+     */
+    @SerialName("contact_phone") val contactPhone: String? = null,
 ) {
     val location: AppointmentLocation get() =
         if (exact && address != null && latitude != null && longitude != null)
@@ -126,6 +131,8 @@ sealed interface AppointmentLocation {
     /** Only a circle of [radiusMeters] around [center] and the concejo; no directions. */
     data class Approximate(val center: GeoPoint, val radiusMeters: Int, val concejoName: String?) : AppointmentLocation
 }
+
+private val CALLABLE_STAGES = setOf(AppointmentStage.CONFIRMED, AppointmentStage.STARTED)
 
 /** Readable only by its client and professional; the exact place comes apart, in [place]. */
 @Serializable
@@ -167,6 +174,14 @@ data class Appointment(
     @Transient val place: AppointmentPlace? = null,
 ) {
     val location: AppointmentLocation? get() = place?.location
+
+    /**
+     * The number behind «Llamar» next to the exact address (#79): only for the professional, while the appointment
+     * is confirmed or started, with the exact place shown and a number given by the server. Null hides the button.
+     */
+    fun callPhone(professional: Boolean): String? = place?.contactPhone?.takeIf {
+        professional && it.isNotBlank() && stage in CALLABLE_STAGES && location is AppointmentLocation.Exact
+    }
 
     /** Whole history, oldest version first. Rejected and superseded versions are kept. */
     val proposals get() = rawProposals.sortedBy { it.version }
@@ -453,6 +468,12 @@ class AppointmentException(val failure: AppointmentFailure, cause: Exception) : 
  */
 interface Appointments {
     suspend fun list(conversationId: String): List<Appointment>
+    /**
+     * The client's contact phone for [appointmentId], read now from `appointment_places` (#79), never stored.
+     * Null when this account may not read it (professional outside confirmed or started), the client has none or
+     * the appointment is not in [conversationId]. For «Llamar» in the call notice (#81).
+     */
+    suspend fun contactPhone(conversationId: String, appointmentId: String): String?
     suspend fun request(conversationId: String, requestId: String, request: AppointmentRequest): Appointment
     suspend fun propose(appointmentId: String, expectedVersion: Int, requestId: String, draft: ProposalDraft): AppointmentProposal
     suspend fun reject(proposalId: String): AppointmentProposal
@@ -510,10 +531,17 @@ class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
             filter { eq("conversation_id", conversationId) }
             order("created_at", Order.DESCENDING)
         }.decodeList<Appointment>()
-        val places = client.postgrest.rpc("appointment_places", buildJsonObject { put("p_conversation_id", conversationId) })
-            .decodeList<AppointmentPlace>().associateBy { it.appointmentId }
+        val places = places(conversationId).associateBy { it.appointmentId }
         rows.map { it.copy(place = places[it.id]) }
     }
+
+    override suspend fun contactPhone(conversationId: String, appointmentId: String): String? = mapped {
+        places(conversationId).firstOrNull { it.appointmentId == appointmentId }?.contactPhone?.takeIf { it.isNotBlank() }
+    }
+
+    private suspend fun places(conversationId: String) =
+        client.postgrest.rpc("appointment_places", buildJsonObject { put("p_conversation_id", conversationId) })
+            .decodeList<AppointmentPlace>()
 
     override suspend fun request(conversationId: String, requestId: String, request: AppointmentRequest) = mapped {
         client.postgrest.rpc("request_appointment", buildJsonObject {
