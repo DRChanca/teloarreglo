@@ -18,6 +18,12 @@
     <string name="catalogue_includes">Incluye: %1$s</string>
     <string name="catalogue_excludes">Aparte: %1$s</string>
     <string name="catalogue_no_reviews">Sin reseñas</string>
+    <string name="response_band_instant">Responde al instante</string>
+    <string name="response_band_under_30m">Responde en menos de 30 min</string>
+    <string name="response_band_under_1h">Responde en menos de 1 h</string>
+    <string name="response_band_under_3h">Responde en menos de 3 h</string>
+    <string name="response_band_same_day">Responde en el día</string>
+    <string name="response_band_over_day">Suele tardar más de un día</string>
     <plurals name="catalogue_rating">
         <item quantity="one">%1$.1f de 5, %2$d reseña</item>
         <item quantity="many">%1$.1f de 5, %2$d reseñas</item>

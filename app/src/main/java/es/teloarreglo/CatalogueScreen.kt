@@ -256,6 +256,7 @@ fun CatalogueScreen(
  * outline, rounded corners, and always says why; other cards are square (#51). Only a «Destacado» of the
  * searched concejo's zone is [highlighted] (ADR 0001).
  * With a distance order the card shows the rounded band and, out of zone, «No suele trabajar en …».
+ * Under the Valoración, its «Tiempo de respuesta» when there is data (#80).
  */
 @Composable
 private fun ProfileCard(row: SearchRow, highlighted: Boolean, concejo: String?, covers: ProfessionalCovers?, onOpen: () -> Unit) {
@@ -293,6 +294,8 @@ private fun ProfileCard(row: SearchRow, highlighted: Boolean, concejo: String?, 
                         color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
                 }
                 ProfileRating(profile.rating, profile.reviewCount, compact = true, Modifier.testTag("rating_${profile.id}"))
+                ResponseTime(row.responseBand, Modifier.testTag("response_time_${profile.id}"),
+                    style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -339,6 +342,7 @@ private fun ProfileDetail(
                             Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(),
                                 color = MaterialTheme.colorScheme.primary)
                             ProfileRating(profile.rating, profile.reviewCount, compact = false, Modifier.testTag("profile_rating"))
+                            ResponseTime(profile.responseBand, Modifier.testTag("profile_response_time"))
                             outsideZoneOf?.let { concejo ->
                                 Text(stringResource(R.string.profile_out_of_zone, concejo.name),
                                     Modifier.testTag("profile_out_of_zone"), style = MaterialTheme.typography.bodyMedium,

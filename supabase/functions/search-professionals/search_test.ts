@@ -4,7 +4,7 @@ import { featuredFirst, rankByDistance } from "./search.ts";
 Deno.test("single search: featured in zone first, then everyone by distance, featured out of zone not raised", () => {
   const from = { lat: 43.3614, lng: -5.8494 }; // Oviedo
   const c = (id: string, km: number, in_zone: boolean, featured = false) =>
-    ({ profile_id: id, lat: from.lat + km / 111.2, lng: from.lng, in_zone, featured });
+    ({ profile_id: id, lat: from.lat + km / 111.2, lng: from.lng, in_zone, featured, response_band: null });
   const ranked = rankByDistance(from, [
     c("zone-far", 9, true),
     c("neighbour-near", 2, false),
@@ -24,11 +24,25 @@ Deno.test("single search: featured in zone first, then everyone by distance, fea
 Deno.test("single search: the limit counts featured and the rest together", () => {
   const from = { lat: 43.36, lng: -5.85 };
   const ranked = rankByDistance(from, [
-    { profile_id: "a", lat: 43.37, lng: -5.85, in_zone: true, featured: true },
-    { profile_id: "b", lat: 43.361, lng: -5.85, in_zone: false, featured: false },
-    { profile_id: "c", lat: 43.40, lng: -5.85, in_zone: true, featured: false },
+    { profile_id: "a", lat: 43.37, lng: -5.85, in_zone: true, featured: true, response_band: null },
+    { profile_id: "b", lat: 43.361, lng: -5.85, in_zone: false, featured: false, response_band: null },
+    { profile_id: "c", lat: 43.40, lng: -5.85, in_zone: true, featured: false, response_band: null },
   ], 2);
   assertEquals(ranked.map((r) => r.profile_id), ["a", "b"]);
+});
+
+Deno.test("single search: the response band passes through unchanged and never changes the order", () => {
+  const from = { lat: 43.36, lng: -5.85 };
+  const ranked = rankByDistance(from, [
+    { profile_id: "slow-near", lat: 43.361, lng: -5.85, in_zone: true, featured: false, response_band: "over_day" },
+    { profile_id: "fast-far", lat: 43.40, lng: -5.85, in_zone: true, featured: false, response_band: "instant" },
+    { profile_id: "none-mid", lat: 43.37, lng: -5.85, in_zone: true, featured: false, response_band: null },
+  ], 10);
+  assertEquals(ranked.map((r) => [r.profile_id, r.response_band]), [
+    ["slow-near", "over_day"],
+    ["none-mid", null],
+    ["fast-far", "instant"],
+  ]);
 });
 
 function assertEquals(actual: unknown, expected: unknown) {
