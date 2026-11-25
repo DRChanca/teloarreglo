@@ -505,8 +505,6 @@
     <string name="incident_evidence_send">Einreichen</string>
     <string name="incident_notice_open">Es gibt einen offenen Vorfall: Die ausstehende Zahlung wird erst nach der Prüfung ausgezahlt.</string>
     <string name="notices_title">Hinweise</string>
-    <string name="notices_open">Hinweise</string>
-    <string name="notices_open_count">Hinweise (%1$d)</string>
     <string name="notices_empty">Du hast noch keine Hinweise.</string>
     <string name="notices_error">Die Hinweise konnten nicht geladen werden. Prüfe die Verbindung.</string>
     <string name="notices_refresh">Aktualisieren</string>

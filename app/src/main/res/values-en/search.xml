@@ -1,5 +1,4 @@
 <resources xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
-    <string name="catalogue_nearby">Near me</string>
     <string name="nearby_back">Back to catalogue</string>
     <string name="nearby_title">Professionals near the job</string>
     <string name="nearby_hint">We use your location once to find the concejo and sort those who work there by distance.</string>

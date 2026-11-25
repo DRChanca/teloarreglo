@@ -505,8 +505,6 @@
     <string name="incident_evidence_send">Aportar</string>
     <string name="incident_notice_open">Hay una incidencia abierta: el pago pendiente no se entregará hasta su revisión.</string>
     <string name="notices_title">Avisos</string>
-    <string name="notices_open">Avisos</string>
-    <string name="notices_open_count">Avisos (%1$d)</string>
     <string name="notices_empty">No tienes avisos todavía.</string>
     <string name="notices_error">No se pudieron cargar los avisos. Comprueba la conexión.</string>
     <string name="notices_refresh">Actualizar</string>

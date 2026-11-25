@@ -52,7 +52,7 @@ class CatalogueUiTest {
         compose.setContent { CatalogueScreen(object : Catalogue {
             override suspend fun list(trade: String?) = rows
             override suspend fun profile(id: String) = rows.first { it.id == id }
-        }, onAccount = {}, onLanguageChange = {}) }
+        }) }
         compose.onNodeWithTag("catalogue_list").performScrollToNode(hasTestTag("profile_profile-20"))
         compose.onNodeWithTag("profile_profile-20").performClick()
         compose.onNodeWithText("Negocio 20").assertIsDisplayed()
@@ -65,7 +65,7 @@ class CatalogueUiTest {
         compose.setContent { CatalogueScreen(object : Catalogue {
             override suspend fun list(trade: String?) = listOf(plumber)
             override suspend fun profile(id: String) = plumber
-        }, onAccount = {}, onLanguageChange = {}) }
+        }) }
         compose.onNodeWithTag("catalogue_search").performTextInput("No existe")
         compose.onNodeWithTag("catalogue_search").performImeAction()
         compose.waitUntil(timeoutMillis = 5_000) {
@@ -88,7 +88,7 @@ class CatalogueUiTest {
         compose.setContent { CatalogueScreen(object : Catalogue {
             override suspend fun list(trade: String?) = listOf(profile)
             override suspend fun profile(id: String) = profile
-        }, onAccount = {}, onLanguageChange = {}, initialProfileId = profile.id) }
+        }, initialProfileId = profile.id) }
         compose.onNodeWithText("Calle Gascona, local ficticio A, Oviedo").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("profile_languages").assertDoesNotExist()
     }
@@ -98,7 +98,7 @@ class CatalogueUiTest {
             override suspend fun list(trade: String?) = if (trade == null || trade == "plumbing")
                 listOf(plumber, plumber.copy(id = "profile-15", name = "Agua Clara")) else emptyList()
             override suspend fun profile(id: String) = plumber
-        }, onAccount = {}, onLanguageChange = {}) }
+        }) }
         compose.onNodeWithTag("profile_profile-14").assertIsDisplayed()
         screenshot("catalogue-list")
         compose.onNodeWithTag("trade_plumbing").performClick()
@@ -127,7 +127,7 @@ class CatalogueUiTest {
                 return emptyList()
             }
             override suspend fun profile(id: String): PublicProfile? = null
-        }, onAccount = {}, onLanguageChange = {}) }
+        }) }
         compose.onNodeWithTag("catalogue_error").assertIsDisplayed()
         compose.onNodeWithTag("catalogue_empty").assertDoesNotExist()
         offline = false
@@ -140,7 +140,7 @@ class CatalogueUiTest {
         compose.setContent { CatalogueScreen(object : Catalogue {
             override suspend fun list(trade: String?) = response.await()
             override suspend fun profile(id: String): PublicProfile? = null
-        }, onAccount = {}, onLanguageChange = {}) }
+        }) }
         compose.onNodeWithTag("catalogue_loading").assertIsDisplayed()
         compose.onNodeWithTag("catalogue_empty").assertDoesNotExist()
         response.complete(emptyList())

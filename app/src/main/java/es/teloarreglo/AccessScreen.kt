@@ -131,13 +131,8 @@ fun AccessScreen(
                 .verticalScroll(rememberScrollState()).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Row(
-                Modifier.fillMaxWidth().widthIn(max = 480.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+            Row(Modifier.fillMaxWidth().widthIn(max = 480.dp)) {
                 Text("teloarreglo", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                LanguageMenu(onLanguageChange)
             }
             Spacer(Modifier.height(48.dp))
             if (onCatalogue != null) {
@@ -344,6 +339,17 @@ fun AccessScreen(
                             )
                         }
                     }
+                }
+            }
+            // Preferences (#46): also offered to visitors, under the sign-in form.
+            Card(
+                colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card),
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier.padding(top = 24.dp).widthIn(max = 480.dp).fillMaxWidth().testTag("preferences"),
+            ) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
+                    Text(stringResource(R.string.preferences_title), style = MaterialTheme.typography.titleMedium)
+                    LanguageMenu(onLanguageChange)
                 }
             }
             Spacer(Modifier.height(24.dp))

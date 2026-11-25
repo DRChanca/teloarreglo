@@ -505,8 +505,6 @@
     <string name="incident_evidence_send">Fournir</string>
     <string name="incident_notice_open">Un incident est ouvert : le paiement en attente ne sera pas versé avant son examen.</string>
     <string name="notices_title">Avis</string>
-    <string name="notices_open">Avis</string>
-    <string name="notices_open_count">Avis (%1$d)</string>
     <string name="notices_empty">Vous n’avez encore aucun avis.</string>
     <string name="notices_error">Impossible de charger les avis. Vérifiez la connexion.</string>
     <string name="notices_refresh">Actualiser</string>

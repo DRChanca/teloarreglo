@@ -1,0 +1,10 @@
+<resources>
+    <!-- Bottom bar (#46) and account preferences. -->
+    <string name="tab_home">Home</string>
+    <string name="tab_nearby">Nearby</string>
+    <string name="preferences_title">Preferences</string>
+    <plurals name="tab_notices_unread">
+        <item quantity="one">%d unread notice</item>
+        <item quantity="other">%d unread notices</item>
+    </plurals>
+</resources>

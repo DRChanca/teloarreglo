@@ -1,5 +1,4 @@
 <resources xmlns:tools="http://schemas.android.com/tools" tools:locale="es">
-    <string name="catalogue_nearby">Cerca de mí</string>
     <string name="nearby_back">Volver al catálogo</string>
     <string name="nearby_title">Profesionales cerca del trabajo</string>
     <string name="nearby_hint">Usamos tu ubicación una sola vez para saber el concejo y ordenar por cercanía a quienes trabajan allí.</string>

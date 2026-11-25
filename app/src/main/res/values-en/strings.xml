@@ -505,8 +505,6 @@
     <string name="incident_evidence_send">Provide</string>
     <string name="incident_notice_open">There is an open incident: the pending payment will not be released until it is reviewed.</string>
     <string name="notices_title">Notices</string>
-    <string name="notices_open">Notices</string>
-    <string name="notices_open_count">Notices (%1$d)</string>
     <string name="notices_empty">You have no notices yet.</string>
     <string name="notices_error">Notices could not be loaded. Check your connection.</string>
     <string name="notices_refresh">Refresh</string>

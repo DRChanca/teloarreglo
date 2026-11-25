@@ -42,17 +42,13 @@ internal val catalogueTrades = listOf("plumbing", "electrical", "carpentry", "pa
 
 @Composable
 fun CatalogueScreen(
-    catalogue: Catalogue, onAccount: () -> Unit, onLanguageChange: (String) -> Unit,
+    catalogue: Catalogue,
     initialProfileId: String? = null,
     covers: ProfessionalCovers? = null,
     ownedProfileId: String? = null,
     onContact: ((String) -> Unit)? = null,
-    onChats: (() -> Unit)? = null,
-    onNearby: (() -> Unit)? = null,
     /** Published reviews shown on the profile (#28); null hides them. */
     reviews: es.teloarreglo.appointments.Reviews? = null,
-    onNotices: (() -> Unit)? = null,
-    unreadNotices: Int = 0,
 ) {
     var trade by rememberSaveable { mutableStateOf<String?>(null) }
     var selected by rememberSaveable(initialProfileId) { mutableStateOf(initialProfileId) }
@@ -99,31 +95,19 @@ fun CatalogueScreen(
     }
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()) {
+            // Sections live in the bottom bar (#46); the header keeps the brand or the way back.
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                 if (selected != null) {
+                if (selected != null) {
                     TextButton(onClick = { selected = null }, Modifier.testTag("back_catalogue")) {
                         Text(stringResource(R.string.catalogue_back))
                     }
-                 } else {
-                    Text("teloarreglo", modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.primary,
+                } else {
+                    Text("teloarreglo", color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-                 }
-                LanguageMenu(onLanguageChange)
-            }
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.End) {
-                if (onNearby != null) TextButton(onClick = onNearby, modifier = Modifier.testTag("catalogue_nearby")) {
-                    Text(stringResource(R.string.catalogue_nearby))
                 }
-                if (onChats != null) TextButton(onClick = onChats) { Text(stringResource(R.string.chat_title)) }
-                if (onNotices != null) TextButton(onClick = onNotices, Modifier.testTag("catalogue_notices")) {
-                    Text(if (unreadNotices > 0) stringResource(R.string.notices_open_count, unreadNotices)
-                        else stringResource(R.string.notices_open))
-                }
-                TextButton(onClick = onAccount) { Text(stringResource(R.string.catalogue_account)) }
             }
             if (selected == null) {
                 Text(
