@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -222,7 +223,8 @@ fun CatalogueScreen(
 
 /**
  * One result: «Perfil destacado» (2026-11-24) stands out with the theme's secondary container and primary
- * outline and always says why; only a «Destacado» of the searched concejo's zone is [highlighted] (ADR 0001).
+ * outline, rounded corners, and always says why; other cards are square (#51). Only a «Destacado» of the
+ * searched concejo's zone is [highlighted] (ADR 0001).
  * With a distance order the card shows the rounded band and, out of zone, «No suele trabajar en …».
  */
 @Composable
@@ -233,7 +235,7 @@ private fun ProfileCard(row: SearchRow, highlighted: Boolean, concejo: String?, 
         colors = CardDefaults.cardColors(containerColor =
             if (highlighted) MaterialTheme.colorScheme.secondaryContainer else TeloTheme.extended.card),
         border = if (highlighted) BorderStroke(1.5.dp, TeloTheme.extended.featuredBorder) else null,
-        shape = MaterialTheme.shapes.large,
+        shape = if (highlighted) MaterialTheme.shapes.large else RectangleShape,
     ) {
         Row(Modifier.fillMaxWidth().padding(TeloTheme.spacing.medium), horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.medium)) {
             ProfileCover(profile.trades.firstOrNull().orEmpty(), profile.coverPath, covers,

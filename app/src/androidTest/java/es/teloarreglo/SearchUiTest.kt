@@ -23,7 +23,12 @@ import es.teloarreglo.search.NearbyResult
 import es.teloarreglo.search.ProfessionalSearch
 import es.teloarreglo.search.SearchError
 import es.teloarreglo.search.SearchOutcome
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.captureToImage
+import kotlinx.coroutines.awaitCancellation
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
@@ -120,6 +125,43 @@ class SearchUiTest {
         waitFor("out_of_zone_neighbour")
         none("out_of_zone_near")
         none("catalogue_featured_neighbour")
+    }
+
+    /** Whether the card's top-left corner is painted like the middle of its top edge: a square corner. */
+    private fun squareCorners(tag: String): Boolean {
+        val image = compose.onAllNodes(hasTestTag(tag))[0].captureToImage().asAndroidBitmap()
+        return image.getPixel(1, 1) == image.getPixel(image.width / 2, 1)
+    }
+
+    @Test fun onlyTheHighlightedCardIsRoundedAndSaysPerfilDestacado() {
+        val featured = profiles + fake("star", "Fontanería Estrella", featured = true)
+        compose.setContent {
+            CatalogueScreen(object : Catalogue {
+                override suspend fun list(trade: String?) = featured
+                override suspend fun profile(id: String) = featured.firstOrNull { it.id == id }
+            }, proximitySource = ProximitySource(FakeSearch(SearchOutcome.Found(oviedoConcejo, listOf(
+                NearbyResult("star", 300, featured = true), NearbyResult("near", 500),
+                NearbyResult("neighbour", 1500, featured = false, inZone = false)))),
+                ensurePermission = { true }, locate = { oviedo }, concejos = concejos, map = MapAvailability.NO_KEY, home = home))
+        }
+        waitFor("nearby_distance_star")
+        compose.onNodeWithTag("catalogue_featured_star", useUnmergedTree = true).assertIsDisplayed()
+        none("catalogue_featured_near")
+        none("catalogue_featured_neighbour")
+        assertFalse(squareCorners("profile_star"))
+        assertTrue(squareCorners("profile_near"))
+        scrollTo("profile_neighbour")
+        assertTrue(squareCorners("profile_neighbour"))
+    }
+
+    @Test fun theLoadingSkeletonHasTheShapeOfANormalCard() {
+        val pending = object : ProfessionalSearch {
+            override suspend fun search(lat: Double, lng: Double, trade: String?, ineCode: String?, limit: Int): SearchOutcome =
+                awaitCancellation()
+        }
+        show(pending, home = home)
+        waitFor("search_skeleton")
+        assertTrue(squareCorners("search_skeleton"))
     }
 
     @Test fun visitorsSeeTheCatalogueUntilTheyAskToSortByDistance() {
