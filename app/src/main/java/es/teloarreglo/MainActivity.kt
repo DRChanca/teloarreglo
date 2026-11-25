@@ -118,11 +118,7 @@ class MainActivity : AppCompatActivity() {
                 access.account?.isAdministrator != true && !emailLinkPending
             val home = (homeStatus as? HomeStatus.Present)?.home
             // Search from home (#59): started as soon as the account and its home are known, during the splash.
-            // Not while checking: every return to the foreground checks the session again.
-            LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser, access.account?.isAdministrator, home) {
-                if (access.stage != AccessStage.CHECKING)
-                    app.searchSession?.onAccount(connectedUser, access.account?.isAdministrator == true, home)
-            }
+            LaunchedEffect(access, home) { app.searchSession?.onAccess(access, home) }
             val mustGiveHome = homeSession != null && connectedUser != null && homeStatus == HomeStatus.Missing &&
                 access.account?.isAdministrator != true && !emailLinkPending
             val changeLanguage: (String) -> Unit = { tag ->

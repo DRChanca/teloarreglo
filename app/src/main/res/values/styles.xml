@@ -9,7 +9,7 @@
     <style name="Theme.Teloarreglo.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/window_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/avd_woodpecker</item>
-        <item name="windowSplashScreenAnimationDuration">1000</item>
+        <item name="windowSplashScreenAnimationDuration">@integer/splash_animation_millis</item>
         <item name="postSplashScreenTheme">@style/Theme.Teloarreglo</item>
     </style>
 </resources>

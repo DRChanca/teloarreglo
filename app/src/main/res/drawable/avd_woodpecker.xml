@@ -1,25 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Start splash (#58): three pecks with recoil and a final flash, 1000 ms. Starts with the head back. -->
+<!--
+Start splash (#57): in @integer/splash_animation_millis the woodpecker flies in from off the left of the
+visible circle flapping its wing (45 %), lands on the still trunk, pecks it twice with recoil (2 × 20 %) and rests.
+-->
 <animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt">
     <aapt:attr name="android:drawable">
         <vector android:width="108dp" android:height="108dp"
             android:viewportWidth="108" android:viewportHeight="108">
             <path android:fillColor="@color/woodpecker_trunk" android:pathData="@string/woodpecker_trunk_path" />
-            <path android:fillColor="@color/woodpecker_body" android:pathData="@string/woodpecker_body_path" />
-            <group android:name="head" android:pivotX="50" android:pivotY="45" android:rotation="-25">
-                <path android:fillColor="@color/woodpecker_body" android:fillType="evenOdd"
-                    android:pathData="@string/woodpecker_head_path" />
-                <path android:fillColor="@color/woodpecker_body" android:pathData="@string/woodpecker_beak_path" />
-                <path android:fillColor="@color/woodpecker_crest" android:pathData="@string/woodpecker_crest_path" />
-            </group>
-            <group android:name="spark" android:pivotX="64.5" android:pivotY="38" android:scaleX="0" android:scaleY="0">
-                <path android:name="spark_path" android:fillColor="@color/woodpecker_body"
-                    android:pathData="@string/woodpecker_spark_path" />
+            <!-- Starts 50 to the left and 10 up: the whole bird is outside the visible circle (radius 33). -->
+            <group android:name="bird" android:translateX="-50" android:translateY="-10">
+                <path android:fillColor="@color/woodpecker_body" android:pathData="@string/woodpecker_body_path" />
+                <group android:name="wing" android:pivotX="50" android:pivotY="46.5" android:rotation="130">
+                    <path android:fillColor="@color/woodpecker_body" android:pathData="@string/woodpecker_wing_path" />
+                </group>
+                <group android:name="head" android:pivotX="50" android:pivotY="45" android:rotation="-25">
+                    <path android:fillColor="@color/woodpecker_body" android:fillType="evenOdd"
+                        android:pathData="@string/woodpecker_head_path" />
+                    <path android:fillColor="@color/woodpecker_body" android:pathData="@string/woodpecker_beak_path" />
+                    <path android:fillColor="@color/woodpecker_crest" android:pathData="@string/woodpecker_crest_path" />
+                </group>
             </group>
         </vector>
     </aapt:attr>
+    <target android:name="bird" android:animation="@animator/woodpecker_flight" />
+    <target android:name="wing" android:animation="@animator/woodpecker_wing" />
     <target android:name="head" android:animation="@animator/woodpecker_pecks" />
-    <target android:name="spark" android:animation="@animator/woodpecker_spark_scale" />
-    <target android:name="spark_path" android:animation="@animator/woodpecker_spark_fade" />
 </animated-vector>

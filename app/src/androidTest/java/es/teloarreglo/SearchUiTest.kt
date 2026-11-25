@@ -37,6 +37,12 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import androidx.compose.ui.test.assertIsSelected
+import es.teloarreglo.identity.AccessStage
+import es.teloarreglo.identity.AccessState
+import es.teloarreglo.identity.Account
+import org.junit.After
 
 /**
  * The single search (ADR 0001): the catalogue screen ordered by distance from home, GPS or a concejo.
@@ -298,30 +304,66 @@ class SearchUiTest {
         compose.onNodeWithTag("nearby_locate").assertIsDisplayed()
     }
 
-    @Test fun aSearchAlreadyPreloadedIsShownWithoutSkeletonsNorAnotherCallAndSurvivesChangingTab() {
-        // #59: the app searched from home during the start animation; the screen only shows it.
-        val search = FakeSearch(SearchOutcome.Found(oviedoConcejo, listOf(NearbyResult("near", 500), NearbyResult("far", 12500))))
-        val session = AppSearchSession(search, catalogue, CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate))
-        compose.runOnUiThread { session.onAccount(userId = "u1", administrator = false, home = home) }
+    /** The app's coroutines in these tests (#59); cancelled after each test. */
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    @After fun cancelAppScope() = appScope.cancel()
+
+    private var onSearchTab by mutableStateOf(true)
+
+    /** An app search preloaded from home, as during the start animation, shown on the search tab. */
+    private fun showPreloaded(search: FakeSearch): AppSearchSession {
+        val session = AppSearchSession(search, catalogue, appScope)
+        compose.runOnUiThread {
+            session.onAccess(AccessState(AccessStage.CONNECTED, Account("u1", "u1@example.com")), home)
+        }
         compose.waitUntil(5_000) { session.proximity.state is NearbyState.Results }
-        var onSearch by mutableStateOf(true)
         compose.setContent {
-            if (onSearch) CatalogueScreen(catalogue, searchSession = session, proximitySource = ProximitySource(search,
+            if (onSearchTab) CatalogueScreen(catalogue, searchSession = session, proximitySource = ProximitySource(search,
                 ensurePermission = { permissionAsks++; true }, locate = { oviedo },
                 concejos = concejos, map = MapAvailability.NO_KEY, home = home))
             else Text("Mensajes")
         }
+        return session
+    }
+
+    private fun changeTabAndBack() {
+        compose.runOnUiThread { onSearchTab = false }
+        compose.waitForIdle()
+        compose.runOnUiThread { onSearchTab = true }
+        compose.waitForIdle()
+    }
+
+    private fun nearAndFar() = SearchOutcome.Found(oviedoConcejo, listOf(NearbyResult("near", 500), NearbyResult("far", 12500)))
+
+    @Test fun aSearchAlreadyPreloadedIsShownWithoutSkeletonsNorAnotherCallAndSurvivesChangingTab() {
+        // #59: the app searched from home during the start animation; the screen only shows it.
+        val search = FakeSearch(nearAndFar())
+        showPreloaded(search)
         compose.onNodeWithTag("nearby_distance_near", useUnmergedTree = true).assertIsDisplayed()
         none("search_skeleton")
 
-        compose.runOnUiThread { onSearch = false }
-        compose.waitForIdle()
-        compose.runOnUiThread { onSearch = true }
-        compose.waitForIdle()
+        changeTabAndBack()
 
         compose.onNodeWithTag("nearby_distance_near", useUnmergedTree = true).assertIsDisplayed()
         none("search_skeleton")
         assertEquals(1, search.calls)
         assertEquals(0, permissionAsks)
+    }
+
+    @Test fun theChosenTradeIsKeptWhenChangingTabWithoutSearchingAgain() {
+        // Spec #57, story 10: returning to «Buscar» keeps the search as it was, trade included.
+        val search = FakeSearch(nearAndFar())
+        val session = showPreloaded(search)
+        compose.onNodeWithTag("trade_plumbing").performClick()
+        compose.waitUntil(5_000) { search.calls == 2 && session.proximity.state is NearbyState.Results }
+
+        changeTabAndBack()
+
+        compose.onNodeWithTag("trade_plumbing").assertIsSelected()
+        compose.onNodeWithTag("nearby_distance_near", useUnmergedTree = true).assertIsDisplayed()
+        none("search_skeleton")
+        assertEquals(2, search.calls)
+        assertEquals(listOf(null, "plumbing"), search.sentTrades)
     }
 }
