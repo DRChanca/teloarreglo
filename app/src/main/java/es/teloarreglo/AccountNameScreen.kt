@@ -136,6 +136,7 @@ fun AccountNameCard(session: AccountNameSession, scope: CoroutineScope) {
             Text(stringResource(R.string.account_name_label), style = MaterialTheme.typography.titleMedium)
             if (editing) {
                 AccountNameField(typed, { typed = it; error = null }, enabled = !busy)
+                error?.let { NameError(it) } // Under the field it refers to (#47).
                 Button(
                     enabled = !busy && cleanAccountName(typed) != null,
                     onClick = {
@@ -147,7 +148,6 @@ fun AccountNameCard(session: AccountNameSession, scope: CoroutineScope) {
                     modifier = Modifier.fillMaxWidth().testTag("account_name_save"),
                 ) { Text(stringResource(if (busy) R.string.working else R.string.account_name_save)) }
                 TextButton(onClick = { editing = false; error = null }, enabled = !busy) { Text(stringResource(R.string.cancel)) }
-                error?.let { NameError(it) }
             } else {
                 Text(
                     current ?: stringResource(R.string.account_name_none),

@@ -1,6 +1,14 @@
 package es.teloarreglo
 
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.isHeading
+import androidx.compose.ui.test.onNodeWithText
+import androidx.test.platform.app.InstrumentationRegistry
+import es.teloarreglo.identity.Account
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -78,6 +86,41 @@ class AccessTest {
         awaitTag("error")
         compose.onNodeWithTag("error").assertIsDisplayed()
         compose.onNodeWithTag("signIn").assertIsDisplayed()
+    }
+
+    @Test fun incorrectCredentialsMarkTheFieldsTheyReferTo() {
+        val identity = TestIdentity()
+        compose.setContent { AccessScreen(identity = identity, onLanguageChange = {}) }
+        compose.onNodeWithTag("email").performTextInput("cliente@example.org")
+        compose.onNodeWithTag("password").performTextInput("incorrecta")
+        compose.onNodeWithTag("signIn").performScrollTo().performClick()
+        awaitTag("error")
+        compose.onNodeWithTag("password").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Error))
+        compose.onNodeWithTag("email").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Error))
+    }
+
+    @Test fun aNetworkFailureIsAGeneralMessageThatMarksNoField() {
+        val identity = TestIdentity().apply { state.value = AccessState(AccessStage.SIGNED_OUT, error = AccessError.NETWORK) }
+        compose.setContent { AccessScreen(identity, {}) }
+        compose.onNodeWithTag("error").assertIsDisplayed()
+        compose.onNodeWithTag("email").assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Error))
+        compose.onNodeWithTag("password").assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Error))
+    }
+
+    @Test fun theConnectedAccountIsHeadedSectionsWithSignOutLast() {
+        val identity = TestIdentity().apply {
+            state.value = AccessState(AccessStage.CONNECTED, Account("u1", "pro@example.org", professionalProfileId = "p1"))
+        }
+        compose.setContent { AccessScreen(identity, {}, onProfile = {}, onEditProfile = {}) }
+        // The marketing cover is for visitors only.
+        val welcome = InstrumentationRegistry.getInstrumentation().targetContext.getString(R.string.welcome)
+        compose.onNodeWithText(welcome).assertDoesNotExist()
+        compose.onNodeWithTag("account_section").assertExists()
+        compose.onNodeWithTag("professional_section").assertExists()
+        compose.onAllNodes(isHeading()).assertCountEquals(4) // Screen title, account, professional profile, preferences.
+        val preferencesBottom = compose.onNodeWithTag("preferences").fetchSemanticsNode().boundsInRoot.bottom
+        val signOutTop = compose.onNodeWithTag("signOut").fetchSemanticsNode().boundsInRoot.top
+        assert(signOutTop >= preferencesBottom)
     }
 
     @Test fun theAccountTabHasNoBackButtonOfItsOwn() {

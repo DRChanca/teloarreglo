@@ -59,4 +59,19 @@ class AgendaUiTest {
         compose.onAllNodesWithTag("agenda_saved").assertCountEquals(0)
         assertEquals(0, fake.state.blocks.size)
     }
+
+    @Test fun aWrongHourMarksItsFieldAndNamesTheDayWithoutSaving() {
+        val fake = FakeAgenda()
+        compose.setContent { AgendaCard(fake, rememberCoroutineScope()) }
+        compose.waitUntil(5_000) { compose.onNodeWithTag("agenda_save").fetchSemanticsNode().config
+            .getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.Disabled) { null } == null }
+        compose.onNodeWithTag("agenda_day_3").performClick()
+        compose.onNodeWithTag("agenda_to_3").performTextReplacement("08:00")
+        compose.onNodeWithTag("agenda_save").performScrollTo().performClick()
+        compose.onNodeWithTag("agenda_days_error").assertIsDisplayed()
+        compose.onNodeWithTag("agenda_to_3").assert(SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsProperties.Error))
+        compose.onNodeWithTag("agenda_from_3").assert(SemanticsMatcher.keyNotDefined(androidx.compose.ui.semantics.SemanticsProperties.Error))
+        compose.onAllNodesWithTag("agenda_saved").assertCountEquals(0)
+        assertEquals(emptyList<AvailabilityWindow>(), fake.state.windows)
+    }
 }

@@ -50,6 +50,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
@@ -124,6 +126,41 @@ fun AccessScreen(
         scope.launch { action(entered) }
     }
 
+    // Which fields the current form shows decides where an error is explained (#47).
+    val onScreen = when (state.stage) {
+        AccessStage.SIGNED_OUT -> when (form) {
+            Form.SIGN_IN -> listOf(AccessField.EMAIL, AccessField.PASSWORD)
+            Form.SIGN_UP -> listOf(AccessField.NAME, AccessField.EMAIL, AccessField.PASSWORD)
+            Form.RESET -> listOf(AccessField.EMAIL)
+        }
+        AccessStage.RECOVERING_PASSWORD -> listOf(AccessField.PASSWORD)
+        else -> emptyList()
+    }
+    val placement = state.error?.placement(onScreen) ?: ErrorPlacement.GENERAL
+    val connected = state.stage == AccessStage.CONNECTED
+
+    /** The error's text under the field that caused it; brought into view so the person sees what to fix. */
+    @Composable
+    fun ErrorUnder(field: AccessField) {
+        val error = state.error ?: return
+        if (placement.explainedUnder != field) return
+        LaunchedEffect(error) { errorInView.bringIntoView() }
+        Text(
+            stringResource(error.message()),
+            Modifier.padding(start = TeloTheme.spacing.large).testTag("error").bringIntoViewRequester(errorInView)
+                .semantics { liveRegion = LiveRegionMode.Polite },
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+
+    /** Tells assistive technology which message belongs to a marked field. */
+    @Composable
+    fun Modifier.fieldError(field: AccessField): Modifier {
+        val message = state.error?.takeIf { field in placement.marked }?.let { stringResource(it.message()) }
+        return if (message == null) this else semantics { error(message) }
+    }
+
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()
@@ -139,37 +176,108 @@ fun AccessScreen(
                     Text(stringResource(R.string.catalogue_back))
                 }
             }
-            Column(Modifier.widthIn(max = 480.dp).fillMaxWidth()) {
-                Text(stringResource(R.string.welcome), style = MaterialTheme.typography.headlineLarge)
-                Spacer(Modifier.height(16.dp))
-                Text(stringResource(R.string.intro), style = MaterialTheme.typography.bodyLarge)
-                Spacer(Modifier.height(32.dp))
-                Card(
+            Column(
+                Modifier.widthIn(max = 480.dp).fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.large),
+            ) {
+                if (connected) {
+                    // With a session the marketing cover gives way to the account itself (#47).
+                    Text(stringResource(R.string.account_title), style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.semantics { heading() })
+                } else {
+                    Text(stringResource(R.string.welcome), style = MaterialTheme.typography.headlineLarge)
+                    Text(stringResource(R.string.intro), style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = TeloTheme.spacing.large))
+                }
+                // General messages (network, service, sent emails) above the form; field errors go under their field.
+                state.notice?.let { notice ->
+                    Text(
+                        stringResource(notice.message()),
+                        Modifier.testTag("notice").semantics { liveRegion = LiveRegionMode.Polite },
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                state.error?.takeIf { placement == ErrorPlacement.GENERAL }?.let { error ->
+                    LaunchedEffect(error) { errorInView.bringIntoView() }
+                    Text(
+                        stringResource(error.message()),
+                        Modifier.testTag("error").bringIntoViewRequester(errorInView)
+                            .semantics { liveRegion = LiveRegionMode.Polite },
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+                if (connected) {
+                    val profileId = state.account?.professionalProfileId
+                    AccountSection(R.string.account_section_account, "account_section") {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card),
+                            shape = MaterialTheme.shapes.large,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(Modifier.padding(TeloTheme.spacing.large), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
+                                Text(
+                                    stringResource(R.string.connected_as, state.account?.email.orEmpty()),
+                                    Modifier.testTag("account"),
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Text(stringResource(R.string.account_hint), style = MaterialTheme.typography.bodySmall)
+                                Text(stringResource(R.string.catalogue_can_hire), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        nameSlot?.invoke()
+                        homeSlot?.invoke()
+                    }
+                    if (onEditProfile != null || profileId != null) {
+                        AccountSection(R.string.account_section_professional, "professional_section") {
+                            if (onEditProfile != null) {
+                                Button(onClick = onEditProfile, modifier = Modifier.fillMaxWidth().testTag("profile_edit_open")) {
+                                    Text(stringResource(if (profileId == null) R.string.profile_edit_offer else R.string.profile_edit_open))
+                                }
+                            }
+                            if (profileId != null && onProfile != null) {
+                                OutlinedButton(onClick = { onProfile(profileId) }, modifier = Modifier.fillMaxWidth()) {
+                                    Text(stringResource(R.string.catalogue_owned))
+                                }
+                            }
+                            if (profileId != null && profileReviews != null) ProfileReviewCard(profileReviews)
+                        }
+                    }
+                    if (profileId != null && agenda != null) AgendaCard(agenda, scope)
+                    if (profileId != null && subscriptions != null) SubscriptionCard(subscriptions, scope)
+                } else Card(
                     colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card),
                     shape = MaterialTheme.shapes.extraLarge,
                 ) {
                     Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         @Composable
-                        fun EmailField() = OutlinedTextField(
-                            value = email, onValueChange = { email = it },
-                            label = { Text(stringResource(R.string.email)) },
-                            enabled = !state.busy, singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                            modifier = Modifier.fillMaxWidth().testTag("email"),
-                        )
+                        fun EmailField() = Column(verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
+                            OutlinedTextField(
+                                value = email, onValueChange = { email = it },
+                                label = { Text(stringResource(R.string.email)) },
+                                enabled = !state.busy, singleLine = true,
+                                isError = AccessField.EMAIL in placement.marked,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                                modifier = Modifier.fillMaxWidth().testTag("email").fieldError(AccessField.EMAIL),
+                            )
+                            ErrorUnder(AccessField.EMAIL)
+                        }
 
                         @Composable
                         fun PasswordField(label: Int, tag: String) {
-                            OutlinedTextField(
-                                value = password, onValueChange = { password = it },
-                                label = { Text(stringResource(label)) },
-                                enabled = !state.busy, singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                                visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                                modifier = Modifier.fillMaxWidth().testTag(tag),
-                            )
-                            TextButton(onClick = { showPassword = !showPassword }) {
-                                Text(stringResource(if (showPassword) R.string.hide_password else R.string.show_password))
+                            Column(verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
+                                OutlinedTextField(
+                                    value = password, onValueChange = { password = it },
+                                    label = { Text(stringResource(label)) },
+                                    enabled = !state.busy, singleLine = true,
+                                    isError = AccessField.PASSWORD in placement.marked,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                                    modifier = Modifier.fillMaxWidth().testTag(tag).fieldError(AccessField.PASSWORD),
+                                )
+                                ErrorUnder(AccessField.PASSWORD)
+                                TextButton(onClick = { showPassword = !showPassword }) {
+                                    Text(stringResource(if (showPassword) R.string.hide_password else R.string.show_password))
+                                }
                             }
                         }
 
@@ -178,44 +286,7 @@ fun AccessScreen(
                                 CircularProgressIndicator(Modifier.size(28.dp))
                                 Text(stringResource(R.string.checking_session))
                             }
-                            AccessStage.CONNECTED -> {
-                                Text(stringResource(R.string.account_title), style = MaterialTheme.typography.headlineSmall)
-                                Text(
-                                    stringResource(R.string.connected_as, state.account?.email.orEmpty()),
-                                    Modifier.testTag("account"),
-                                )
-                                Text(stringResource(R.string.account_hint))
-                                Text(stringResource(R.string.catalogue_can_hire))
-                                nameSlot?.invoke()
-                                homeSlot?.invoke()
-                                if (onEditProfile != null) {
-                                    Button(onClick = onEditProfile, modifier = Modifier.fillMaxWidth().testTag("profile_edit_open")) {
-                                        Text(stringResource(if (state.account?.professionalProfileId == null) R.string.profile_edit_offer
-                                            else R.string.profile_edit_open))
-                                    }
-                                }
-                                if (state.account?.professionalProfileId != null && profileReviews != null) {
-                                    ProfileReviewCard(profileReviews)
-                                }
-                                if (state.account?.professionalProfileId != null && subscriptions != null) {
-                                    SubscriptionCard(subscriptions, scope)
-                                }
-                                if (state.account?.professionalProfileId != null && agenda != null) {
-                                    AgendaCard(agenda, scope)
-                                }
-                                state.account?.professionalProfileId?.let { id ->
-                                    if (onProfile != null) {
-                                        TextButton(onClick = { onProfile(id) }) {
-                                            Text(stringResource(R.string.catalogue_owned))
-                                        }
-                                    }
-                                }
-                                OutlinedButton(
-                                    enabled = !state.busy,
-                                    onClick = { scope.launch { identity.signOut() } },
-                                    modifier = Modifier.fillMaxWidth().testTag("signOut"),
-                                ) { Text(stringResource(if (state.busy) R.string.working else R.string.sign_out)) }
-                            }
+                            AccessStage.CONNECTED -> Unit // Laid out above as sections.
                             AccessStage.UNAVAILABLE -> {
                                 Button(
                                     onClick = { scope.launch { identity.restore() } },
@@ -288,7 +359,11 @@ fun AccessScreen(
                                 Form.SIGN_UP -> {
                                     Text(stringResource(R.string.sign_up_title), style = MaterialTheme.typography.headlineSmall)
                                     Text(stringResource(R.string.sign_up_hint))
-                                    AccountNameField(name, { name = it }, enabled = !state.busy)
+                                    Column(verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
+                                        AccountNameField(name, { name = it }, enabled = !state.busy,
+                                            modifier = Modifier.fieldError(AccessField.NAME))
+                                        ErrorUnder(AccessField.NAME)
+                                    }
                                     EmailField()
                                     PasswordField(R.string.password, "password")
                                     Text(stringResource(R.string.password_rule), style = MaterialTheme.typography.bodySmall)
@@ -321,35 +396,26 @@ fun AccessScreen(
                                 }
                             }
                         }
-                        state.notice?.let { notice ->
-                            Text(
-                                stringResource(notice.message()),
-                                Modifier.testTag("notice").semantics { liveRegion = LiveRegionMode.Polite },
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                        state.error?.let { error ->
-                            LaunchedEffect(error) { errorInView.bringIntoView() }
-                            Text(
-                                stringResource(error.message()),
-                                Modifier.testTag("error").bringIntoViewRequester(errorInView)
-                                    .semantics { liveRegion = LiveRegionMode.Polite },
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        }
                     }
                 }
-            }
-            // Preferences (#46): also offered to visitors, under the sign-in form.
-            Card(
-                colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card),
-                shape = MaterialTheme.shapes.extraLarge,
-                modifier = Modifier.padding(top = 24.dp).widthIn(max = 480.dp).fillMaxWidth().testTag("preferences"),
-            ) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
-                    Text(stringResource(R.string.preferences_title), style = MaterialTheme.typography.titleMedium)
-                    LanguageMenu(onLanguageChange)
+                // Preferences (#46): also offered to visitors, under the sign-in form.
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card),
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier.padding(top = TeloTheme.spacing.small).fillMaxWidth().testTag("preferences"),
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = TeloTheme.spacing.large, vertical = TeloTheme.spacing.large)) {
+                        Text(stringResource(R.string.preferences_title), style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.semantics { heading() })
+                        LanguageMenu(onLanguageChange)
+                    }
                 }
+                // Signing out closes the account, after everything else it holds (#47).
+                if (connected) OutlinedButton(
+                    enabled = !state.busy,
+                    onClick = { scope.launch { identity.signOut() } },
+                    modifier = Modifier.fillMaxWidth().testTag("signOut"),
+                ) { Text(stringResource(if (state.busy) R.string.working else R.string.sign_out)) }
             }
             Spacer(Modifier.height(24.dp))
             Text(
@@ -357,6 +423,15 @@ fun AccessScreen(
                 style = MaterialTheme.typography.labelMedium,
             )
         }
+    }
+}
+
+/** A titled group of the connected account; the title is announced as a heading. */
+@Composable
+private fun AccountSection(title: Int, tag: String, content: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxWidth().testTag(tag), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
+        Text(stringResource(title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+        content()
     }
 }
 
