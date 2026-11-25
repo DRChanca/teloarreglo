@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -246,7 +247,8 @@ fun CatalogueScreen(
 
 /**
  * One result: «Perfil destacado» (2026-11-24) stands out with the theme's secondary container and primary
- * outline and always says why; only a «Destacado» of the searched concejo's zone is [highlighted] (ADR 0001).
+ * outline, rounded corners, and always says why; other cards are square (#51). Only a «Destacado» of the
+ * searched concejo's zone is [highlighted] (ADR 0001).
  * With a distance order the card shows the rounded band and, out of zone, «No suele trabajar en …».
  */
 @Composable
@@ -257,7 +259,7 @@ private fun ProfileCard(row: SearchRow, highlighted: Boolean, concejo: String?, 
         colors = CardDefaults.cardColors(containerColor =
             if (highlighted) MaterialTheme.colorScheme.secondaryContainer else TeloTheme.extended.card),
         border = if (highlighted) BorderStroke(1.5.dp, TeloTheme.extended.featuredBorder) else null,
-        shape = MaterialTheme.shapes.large,
+        shape = if (highlighted) MaterialTheme.shapes.large else RectangleShape,
     ) {
         Row(Modifier.fillMaxWidth().padding(TeloTheme.spacing.medium), horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.medium)) {
             ProfileCover(profile.trades.firstOrNull().orEmpty(), profile.coverPath, covers,
@@ -284,7 +286,7 @@ private fun ProfileCard(row: SearchRow, highlighted: Boolean, concejo: String?, 
                     Text(stringResource(R.string.catalogue_reference, priceText(price)),
                         color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
                 }
-                Rating(profile)
+                ProfileRating(profile.rating, profile.reviewCount, compact = true, Modifier.testTag("rating_${profile.id}"))
             }
         }
     }
@@ -330,7 +332,7 @@ private fun ProfileDetail(
                             Text(profile.name, style = MaterialTheme.typography.headlineMedium)
                             Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(),
                                 color = MaterialTheme.colorScheme.primary)
-                            Rating(profile)
+                            ProfileRating(profile.rating, profile.reviewCount, compact = false, Modifier.testTag("profile_rating"))
                             outsideZoneOf?.let { concejo ->
                                 Text(stringResource(R.string.profile_out_of_zone, concejo.name),
                                     Modifier.testTag("profile_out_of_zone"), style = MaterialTheme.typography.bodyMedium,
@@ -428,13 +430,6 @@ private fun SelectionContainerCompat(text: String) {
 @Composable
 private fun Section(label: Int, modifier: Modifier = Modifier) {
     Text(stringResource(label), modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
-}
-
-@Composable
-private fun Rating(profile: PublicProfile) {
-    Text(if (profile.rating == null) stringResource(R.string.catalogue_no_reviews)
-        else pluralStringResource(R.plurals.catalogue_rating, profile.reviewCount, profile.rating, profile.reviewCount),
-        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable

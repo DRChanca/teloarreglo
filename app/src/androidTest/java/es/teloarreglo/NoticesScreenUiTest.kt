@@ -11,6 +11,10 @@ import androidx.compose.ui.test.performClick
 import es.teloarreglo.notices.Notice
 import es.teloarreglo.notices.NoticeOpening
 import es.teloarreglo.notices.Notices
+import es.teloarreglo.notices.PushDevices
+import es.teloarreglo.notices.PushPreferences
+import es.teloarreglo.notices.PushRegistration
+import es.teloarreglo.notices.PushTokenSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
@@ -86,5 +90,55 @@ class NoticesScreenUiTest {
         show(FakeNotices(list), opening = NoticeOpening.OPENED, opened = opened)
         compose.onNodeWithTag("notice_review").performClick()
         assertEquals(listOf("account"), opened)
+    }
+
+    private class PushFakes(var failRegister: Boolean = false) : PushDevices, PushTokenSource, PushPreferences {
+        override suspend fun register(installationId: String, token: String, enabled: Boolean) {
+            if (failRegister) error("offline")
+        }
+        override suspend fun unregister(installationId: String) = Unit
+        override val available = true
+        override suspend fun token() = "token"
+        override val installationId = "device"
+        override var enabled = true
+        override var signedInUser: String? = null
+    }
+
+    /** Shows the screen with push in the state the fakes lead to, and waits until that state is reached. */
+    private fun showWithPush(enabled: Boolean, granted: Boolean, failRegister: Boolean = false) {
+        val fakes = PushFakes(failRegister).also { it.enabled = enabled }
+        val push = PushRegistration(fakes, fakes, fakes) { granted }
+        compose.setContent {
+            NoticesScreen(FakeNotices(list), push = push, accountId = "user-a", operationScope = CoroutineScope(Dispatchers.Main),
+                askPermission = {}, onOpenConversation = { NoticeOpening.OPENED }, onOpenAccount = {}, onBack = {})
+        }
+        compose.waitUntil(5_000) { push.status.value != es.teloarreglo.notices.PushStatus.SIGNED_OUT }
+        compose.waitUntil(5_000) { compose.onAllNodes(hasTestTag("notices_list")).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    private fun card() = compose.onAllNodes(hasTestTag("notices_push")).fetchSemanticsNodes()
+    private fun text(id: Int) = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext.getString(id)
+
+    @Test fun withNotificationsActiveThereIsNoCard() {
+        showWithPush(enabled = true, granted = true)
+        assertTrue(card().isEmpty())
+    }
+
+    @Test fun turnedOffShowsTheCardWithItsButton() {
+        showWithPush(enabled = false, granted = true)
+        compose.onNodeWithTag("notices_push").assertIsDisplayed()
+        compose.onNode(androidx.compose.ui.test.hasText(text(R.string.notices_push_enable))).assertIsDisplayed()
+    }
+
+    @Test fun missingPermissionShowsTheCardWithItsButton() {
+        showWithPush(enabled = true, granted = false)
+        compose.onNodeWithTag("notices_push").assertIsDisplayed()
+        compose.onNode(androidx.compose.ui.test.hasText(text(R.string.notices_push_allow))).assertIsDisplayed()
+    }
+
+    @Test fun aFailedRegistrationShowsTheCardWithRetry() {
+        showWithPush(enabled = true, granted = true, failRegister = true)
+        compose.onNodeWithTag("notices_push").assertIsDisplayed()
+        compose.onNode(androidx.compose.ui.test.hasText(text(R.string.retry))).assertIsDisplayed()
     }
 }

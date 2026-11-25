@@ -15,7 +15,6 @@
     <string name="checking_session">Comprobando tu sesión…</string>
     <string name="working">Un momento…</string>
     <string name="account_title">Ya estás dentro</string>
-    <string name="account_hint">Tu cuenta está conectada. Puedes cerrar la app y retomar tu sesión al volver.</string>
     <string name="connected_as">Conectado como %1$s</string>
     <string name="retry">Reintentar</string>
     <string name="error_credentials">El correo o la contraseña no son correctos.</string>
@@ -117,7 +116,6 @@
     <string name="appointment_load_error">No se pudieron cargar las citas.</string>
     <string name="appointment_address_label">Dirección (privada): %1$s</string>
     <string name="photo_attach">Enviar foto</string>
-    <string name="photo_limits">JPEG o PNG, de cualquier tamaño. La app envía una copia comprimida de hasta 1600 px y 2 MB; tu original no cambia.</string>
     <string name="photo_preparing">Comprimiendo la foto…</string>
     <string name="photo_uploading">Enviando foto… %1$d %%</string>
     <string name="photo_discard">Descartar</string>
@@ -316,7 +314,6 @@
     <string name="area_client_notice">Hasta confirmar la cita, el profesional solo ve una zona aproximada de %1$d m.</string>
     <string name="area_loading">Cargando la ubicación…</string>
     <string name="video_attach">Enviar vídeo</string>
-    <string name="video_limits">Vídeo de hasta 40 segundos. La app envía una copia MP4 de hasta 720p y 20 MB; tu original no cambia.</string>
     <string name="video_preparing">Comprimiendo el vídeo…</string>
     <string name="video_preparing_percent">Comprimiendo el vídeo… %1$d %%</string>
     <string name="video_uploading">Enviando vídeo… %1$d %%</string>
@@ -532,7 +529,6 @@
     <string name="notices_push_failed">No se pudo registrar este dispositivo para notificaciones. Los avisos siguen guardados aquí.</string>
     <string name="notices_push_checking">Comprobando las notificaciones…</string>
     <string name="notices_push_enable">Activar notificaciones</string>
-    <string name="notices_push_disable">Desactivar</string>
     <string name="notices_push_allow">Permitir notificaciones</string>
     <string name="notices_push_note">Las notificaciones dependen de la conexión y los ajustes del teléfono: pueden retrasarse o no llegar. Los avisos siempre quedan aquí.</string>
     <plurals name="notices_messages">

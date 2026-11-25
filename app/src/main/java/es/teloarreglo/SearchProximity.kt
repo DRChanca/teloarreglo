@@ -34,6 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -298,7 +299,7 @@ private fun AwayBanner(meters: Double, onSearchHere: () -> Unit, onDismiss: () -
 @Composable
 internal fun SkeletonCard() {
     val block = MaterialTheme.colorScheme.surfaceVariant
-    Card(Modifier.fillMaxWidth().testTag("search_skeleton"), shape = RoundedCornerShape(20.dp),
+    Card(Modifier.fillMaxWidth().testTag("search_skeleton"), shape = RectangleShape,
         colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card)) {
         Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Box(Modifier.width(CoverCrop.LIST_WIDTH).height(CoverCrop.LIST_HEIGHT).background(block, RoundedCornerShape(12.dp)))

@@ -15,7 +15,6 @@
     <string name="checking_session">Vérification de votre session…</string>
     <string name="working">Veuillez patienter…</string>
     <string name="account_title">Vous êtes connecté</string>
-    <string name="account_hint">Votre compte est connecté. Vous pouvez fermer l’application et retrouver votre session à votre retour.</string>
     <string name="connected_as">Connecté en tant que %1$s</string>
     <string name="retry">Réessayer</string>
     <string name="error_credentials">L’adresse e-mail ou le mot de passe est incorrect.</string>
@@ -117,7 +116,6 @@
     <string name="appointment_load_error">Impossible de charger les rendez-vous.</string>
     <string name="appointment_address_label">Adresse (privée) : %1$s</string>
     <string name="photo_attach">Envoyer une photo</string>
-    <string name="photo_limits">JPEG ou PNG, quelle que soit la taille. L’app envoie une copie compressée de 1600 px et 2 Mo maximum ; votre original reste intact.</string>
     <string name="photo_preparing">Compression de la photo…</string>
     <string name="photo_uploading">Envoi de la photo… %1$d %%</string>
     <string name="photo_discard">Abandonner</string>
@@ -316,7 +314,6 @@
     <string name="area_client_notice">Jusqu’à la confirmation du rendez-vous, le professionnel ne voit qu’une zone approximative de %1$d m.</string>
     <string name="area_loading">Chargement de l’emplacement…</string>
     <string name="video_attach">Envoyer une vidéo</string>
-    <string name="video_limits">Vidéo de 40 secondes maximum. L’app envoie une copie MP4 de 720p et 20 Mo maximum ; votre original reste intact.</string>
     <string name="video_preparing">Compression de la vidéo…</string>
     <string name="video_preparing_percent">Compression de la vidéo… %1$d %%</string>
     <string name="video_uploading">Envoi de la vidéo… %1$d %%</string>
@@ -532,7 +529,6 @@
     <string name="notices_push_failed">Impossible d’enregistrer cet appareil pour les notifications. Les avis restent conservés ici.</string>
     <string name="notices_push_checking">Vérification des notifications…</string>
     <string name="notices_push_enable">Activer les notifications</string>
-    <string name="notices_push_disable">Désactiver</string>
     <string name="notices_push_allow">Autoriser les notifications</string>
     <string name="notices_push_note">Les notifications dépendent de la connexion et des réglages du téléphone : elles peuvent être retardées ou ne pas arriver. Les avis restent toujours ici.</string>
     <plurals name="notices_messages">
