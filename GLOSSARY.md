@@ -3,6 +3,30 @@
 Plataforma que conecta a una persona que necesita un arreglo en casa con un
 profesional que trabaja en su zona de Asturias.
 
+## Partes
+
+**Profesional**:
+Quien ofrece sus oficios mediante un perfil aprobado y atiende las citas.
+_Evitar_: trabajador, operario, técnico
+
+**Cliente**:
+La cuenta que contacta con un profesional y le solicita citas.
+_Evitar_: usuario (para esta parte), contratante
+
+**Teléfono de contacto**:
+Número privado y obligatorio del cliente; solo lo ve el profesional de una cita
+confirmada, igual que la dirección exacta, para llamarle.
+_Evitar_: teléfono (a secas), móvil del cliente
+
+## Citas
+
+**Ventana de llegada**:
+La hora previa al inicio de una cita confirmada (media hora si el profesional
+tiene otra cita comenzada) en la que el cliente puede ver dónde está el
+profesional y recibe un aviso cuando está a 100 m de la casa. Termina al
+comenzar el trabajo, al cancelar la cita o una hora después del inicio.
+_Evitar_: seguimiento, tracking, zona de llegada
+
 ## Búsqueda
 
 **Búsqueda**:
@@ -76,3 +100,9 @@ _Evitar_: filtro de reviews
 La única imagen de un perfil, elegida por su propietario; sin ella se muestra
 la ilustración del oficio.
 _Evitar_: foto de perfil, avatar
+
+**Tiempo de respuesta**:
+Mediana de lo que tarda un profesional en contestar por primera vez en sus diez
+conversaciones más recientes, contando 24 h si no contesta en ese plazo; se
+muestra como tramo («Responde al instante», «en menos de 30 min»…), nunca exacto.
+_Evitar_: tiempo medio, velocidad de respuesta
