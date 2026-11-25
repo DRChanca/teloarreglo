@@ -14,6 +14,7 @@
     <string name="filters_reset">Restablecer</string>
     <plurals name="filters_apply">
         <item quantity="one">Ver %d profesional</item>
+        <item quantity="many">Ver %d profesionales</item>
         <item quantity="other">Ver %d profesionales</item>
     </plurals>
     <string name="filters_apply_unknown">Ver profesionales</string>
