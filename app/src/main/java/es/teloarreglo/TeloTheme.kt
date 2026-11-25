@@ -31,6 +31,10 @@ internal data class TeloExtendedColors(
     val onFeaturedBadge: Color,
     val subscriptionContainer: Color,
     val onSubscriptionContainer: Color,
+    /** Gold of the filled part of a Valoración star on a search card (#67); 3:1 against both kinds of card. */
+    val ratingStar: Color,
+    /** Grey of the unfilled part of those stars (#67), at least 2:1 from the gold. */
+    val ratingStarEmpty: Color,
 )
 
 @Immutable
@@ -56,6 +60,8 @@ private val LightColors = TeloColors(
         onFeaturedBadge = Color.White,
         subscriptionContainer = Color(0xFFF4F1E8),
         onSubscriptionContainer = Color(0xFF1C1B1F),
+        ratingStar = Color(0xFFB27B00),
+        ratingStarEmpty = Color(0xFFBEC4C0),
     ),
 )
 
@@ -108,6 +114,8 @@ private val DarkColors = TeloColors(
         onFeaturedBadge = Color(0xFF3F2A00),
         subscriptionContainer = Color(0xFF2B2820),
         onSubscriptionContainer = Color(0xFFE9E2D3),
+        ratingStar = Color(0xFFF2BE5C),
+        ratingStarEmpty = Color(0xFF56605B),
     ),
 )
 

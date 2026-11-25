@@ -58,6 +58,28 @@ class ReviewsUiTest {
         }
     }
 
+    /** #66: on a narrow screen (here, a denser one) the stars to pick keep the same distance between them. */
+    @Test fun theStarsToPickStayEvenlySpacedOnANarrowScreen() {
+        val appointments = completedAppointment()
+        val reviews = FakeReviews { ReviewState.ENABLED }
+        compose.setContent {
+            val base = androidx.compose.ui.platform.LocalDensity.current
+            CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides
+                androidx.compose.ui.unit.Density(base.density * 1.8f, 1f)) {
+                AppointmentsPanel(appointments, "client", conversation, rememberCoroutineScope(), noPin, reviews = reviews)
+            }
+        }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        waitForTag("review_write")
+        compose.onNodeWithTag("review_write").performScrollTo().performClick()
+        waitForTag("review_star_1")
+        val centers = (1..5).map { compose.onNodeWithTag("review_star_$it").fetchSemanticsNode().boundsInRoot.center.x }
+        val steps = centers.zipWithNext { a, b -> b - a }
+        steps.forEach { assertEquals("steps $steps", steps.first(), it, 1f) }
+        assertTrue("stars overlap: $steps", steps.first() > 0f)
+    }
+
     /** #28: only after the public-content notice; a lost answer is retried with the same key and never doubles. */
     @Test fun clientReviewsACompletedAppointmentAndTheProfessionalSeesIt() {
         val appointments = completedAppointment()

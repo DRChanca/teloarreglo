@@ -1,5 +1,6 @@
 package es.teloarreglo
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.*
@@ -64,8 +65,8 @@ private fun reasonText(state: ReviewState): String? = when (state) {
 @Composable
 internal fun ReviewBody(review: Review) {
     val stars = stringResource(R.string.review_stars, review.stars)
-    Text("★".repeat(review.stars) + "☆".repeat(5 - review.stars), color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.semantics { contentDescription = stars })
+    RatingStarRow(RatingStars(full = review.stars.coerceIn(0, 5), half = false), MaterialTheme.colorScheme.primary,
+        Modifier.semantics(mergeDescendants = true) { contentDescription = stars })
     Text(review.comment, style = MaterialTheme.typography.bodyMedium)
     Text(dateTimeFormat().format(review.createdAt), style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -97,12 +98,16 @@ private fun ReviewDialog(appointment: Appointment, reviews: Reviews, scope: Coro
         title = { Text(stringResource(R.string.review_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                // Equal-width slots: the stars keep the same distance however narrow the dialog is (#66).
+                Row(Modifier.fillMaxWidth()) {
+                    val color = MaterialTheme.colorScheme.primary.copy(alpha = if (locked) 0.38f else 1f)
                     for (n in 1..5) {
                         val label = stringResource(R.string.review_stars, n)
-                        TextButton(onClick = { stars = n }, enabled = !locked, contentPadding = PaddingValues(4.dp),
-                            modifier = Modifier.testTag("review_star_$n").semantics { contentDescription = label }) {
-                            Text(if (n <= stars) "★" else "☆", style = MaterialTheme.typography.headlineSmall)
+                        Box(Modifier.weight(1f).heightIn(min = 48.dp)
+                            .clickable(enabled = !locked, role = Role.Button) { stars = n }
+                            .testTag("review_star_$n").semantics { contentDescription = label },
+                            contentAlignment = Alignment.Center) {
+                            Star(if (n <= stars) StarFill.FULL else StarFill.EMPTY, color, 28.dp)
                         }
                     }
                 }
