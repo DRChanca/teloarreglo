@@ -67,7 +67,7 @@ internal fun ArrivalWindowSection(appointment: Appointment, professional: Boolea
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (true) {
                 try { reading = arrivals.read(appointment.id) }
-                catch (e: CancellationException) { throw e } catch (_: Exception) { /* keep the last answer and its age */ }
+                catch (e: CancellationException) { throw e } catch (_: Exception) { /* keep the last answer: arrivalView turns it into «sin compartir» after 2 min */ }
                 now = Instant.now()
                 delay(ARRIVAL_POLL_MS)
             }
@@ -95,7 +95,7 @@ internal fun ArrivalWindowSection(appointment: Appointment, professional: Boolea
     }
 }
 
-/** Same map style as the approximate zone and the search: the home, and the professional as a circle or a point. */
+/** Same map style as the approximate zone and the search: the address of the appointment, and the professional as a circle or a point. */
 @Composable
 private fun ArrivalMap(marker: ArrivalMarker, home: GeoPoint?) {
     var loaded by remember { mutableStateOf(false) }

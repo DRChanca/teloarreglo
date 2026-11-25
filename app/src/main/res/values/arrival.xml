@@ -12,6 +12,6 @@
         <item quantity="many">Actualizado hace %1$d min</item>
         <item quantity="other">Actualizado hace %1$d min</item>
     </plurals>
-    <string name="arrival_map_home">Casa de la cita</string>
+    <string name="arrival_map_home">Dirección de la cita</string>
     <string name="arrival_map_professional">Profesional</string>
 </resources>

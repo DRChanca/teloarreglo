@@ -15,22 +15,25 @@ import java.time.Instant
     @SerialName("open") OPEN, @SerialName("not_yet_open") NOT_YET_OPEN, @SerialName("closed") CLOSED,
 }
 
-/** Answer of «informar posición» and «dejar de compartir» (docs/citas-contrato.md, #82). */
+/**
+ * Answer of «informar posición», «dejar de compartir» and «estado de la ventana» (docs/citas-contrato.md, #82, #85).
+ * «Estado de la ventana» carries only the window and its times, so [accepted] is false there.
+ */
 @Serializable
 data class ArrivalReport(
     val window: ArrivalWindow,
-    val accepted: Boolean,
+    val accepted: Boolean = false,
     @SerialName("opens_at") @Serializable(ServerInstant::class) val opensAt: Instant? = null,
     @SerialName("closes_at") @Serializable(ServerInstant::class) val closesAt: Instant? = null,
     @SerialName("reported_at") @Serializable(ServerInstant::class) val reportedAt: Instant? = null,
 )
 
-/** What came of the last attempt to report the position. */
+/** What came of the last round: the window state, and the report if a position was sent. */
 sealed interface ReportOutcome {
     data class Answered(val report: ArrivalReport) : ReportOutcome
     /** The server refused it for good (not this professional's appointment, or no longer reachable by this account). */
     data object Rejected : ReportOutcome
-    /** No answer (network) or no position fix: nothing is known, so the next round tries again. */
+    /** No answer (network) or no position fix: nothing is known, so the next round asks again. */
     data object Failed : ReportOutcome
 }
 
@@ -69,7 +72,8 @@ const val ARRIVAL_LATEST_CLOSING_MIN = 60L
 
 /**
  * Right after the professional chooses to share (or the phone wakes up with that choice), before asking the server:
- * nothing is sent until the earliest moment the window can be open; then the server's answer decides.
+ * nothing happens until the earliest moment the window can be open. [ArrivalStep.SendAt] here only starts the rounds,
+ * and each round asks «estado de la ventana» (no position) before sending one, so the server's answer decides.
  */
 fun firstArrivalStep(start: Instant, now: Instant): ArrivalStep {
     val earliest = start.minusSeconds(ARRIVAL_EARLIEST_OPENING_MIN * 60)
@@ -80,9 +84,11 @@ fun firstArrivalStep(start: Instant, now: Instant): ArrivalStep {
     }
 }
 
-/** «Informar posición» and «Dejar de compartir» (#82), for the professional of the appointment. */
+/** «Estado de la ventana», «Informar posición» and «Dejar de compartir» (#82, #85), for the professional. */
 interface ArrivalPositions {
-    suspend fun report(appointmentId: String, latitude: Double, longitude: Double, accuracyM: Double?): ArrivalReport
+    /** The window of the appointment without sending any position. */
+    suspend fun window(appointmentId: String): ArrivalReport
+    suspend fun report(appointmentId: String, fix: ArrivalFix): ArrivalReport
     /** Deletes the position at once: the client sees «El profesional no comparte su ubicación». */
     suspend fun stopSharing(appointmentId: String): ArrivalReport
 }
@@ -102,8 +108,9 @@ interface ArrivalChoices {
 data class ArrivalFix(val latitude: Double, val longitude: Double, val accuracyM: Double?)
 
 /**
- * One round for one appointment: take a fix, report it and decide what follows. The choice is forgotten when there
- * is nothing left to share (window closed or rejected), so a later wake-up never sends again.
+ * One round for one appointment: ask the window, and only while it is open take a fix and report it; then decide
+ * what follows. Outside the window no position ever leaves the phone. The choice is forgotten when there is nothing
+ * left to share (window closed or rejected), so a later wake-up never sends again.
  */
 class ArrivalRound(
     private val positions: ArrivalPositions,
@@ -112,16 +119,15 @@ class ArrivalRound(
 ) {
     suspend fun run(appointmentId: String, now: Instant): ArrivalStep {
         val sharing = choices.get(appointmentId) != null
-        val outcome = if (!sharing) ReportOutcome.Failed else {
-            val fix = locate()
-            if (fix == null) ReportOutcome.Failed else try {
-                ReportOutcome.Answered(positions.report(appointmentId, fix.latitude, fix.longitude, fix.accuracyM))
-            } catch (error: Exception) {
-                if (error is CancellationException) throw error
-                // Only a refusal of access is final; an impossible fix or a lost answer waits for the next round.
-                if ((error as? AppointmentException)?.failure == AppointmentFailure.ACCESS) ReportOutcome.Rejected
-                else ReportOutcome.Failed
-            }
+        val outcome = if (!sharing) ReportOutcome.Failed else try {
+            val window = positions.window(appointmentId)
+            if (window.window != ArrivalWindow.OPEN) ReportOutcome.Answered(window)
+            else locate()?.let { ReportOutcome.Answered(positions.report(appointmentId, it)) } ?: ReportOutcome.Failed
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            // Only a refusal of access is final; an impossible fix or a lost answer waits for the next round.
+            if ((error as? AppointmentException)?.failure == AppointmentFailure.ACCESS) ReportOutcome.Rejected
+            else ReportOutcome.Failed
         }
         return nextArrivalStep(sharing, outcome, now).also { if (it == ArrivalStep.Stop) choices.forget(appointmentId) }
     }
@@ -137,12 +143,17 @@ class ArrivalRound(
 }
 
 class SupabaseArrivalPositions(private val client: SupabaseClient) : ArrivalPositions {
-    override suspend fun report(appointmentId: String, latitude: Double, longitude: Double, accuracyM: Double?) = mapped {
+    override suspend fun window(appointmentId: String) = mapped {
+        client.postgrest.rpc("arrival_sharing_window", buildJsonObject { put("p_appointment_id", appointmentId) })
+            .decodeAs<ArrivalReport>()
+    }
+
+    override suspend fun report(appointmentId: String, fix: ArrivalFix) = mapped {
         client.postgrest.rpc("report_arrival_position", buildJsonObject {
             put("p_appointment_id", appointmentId)
-            put("p_latitude", latitude)
-            put("p_longitude", longitude)
-            put("p_accuracy_m", accuracyM)
+            put("p_latitude", fix.latitude)
+            put("p_longitude", fix.longitude)
+            put("p_accuracy_m", fix.accuracyM)
         }).decodeAs<ArrivalReport>()
     }
 

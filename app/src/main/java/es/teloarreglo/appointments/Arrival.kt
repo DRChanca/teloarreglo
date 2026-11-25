@@ -14,13 +14,13 @@ import java.time.Instant
 
 /** Where the professional is, as «leer llegada» lets the client see it (ADR 0002). */
 sealed interface ArrivalMarker {
-    /** More than 2 km from the home: a circle whose centre the server displaced; it contains the real position. */
+    /** More than 2 km from the address of the appointment: a circle whose centre the server displaced; it contains the real position. */
     data class Area(val center: GeoPoint, val radiusMeters: Int) : ArrivalMarker
-    /** 2 km or less from the home: the exact position and its accuracy. */
+    /** 2 km or less from the address of the appointment: the exact position and its accuracy. */
     data class Exact(val point: GeoPoint, val accuracyMeters: Double?) : ArrivalMarker
 }
 
-/** Within this distance of the home the exact point reads «Llegando» (the same 100 m as the proximity notice). */
+/** Within this distance of the address of the appointment the exact point reads «Llegando» (the same 100 m as the proximity notice). */
 const val ARRIVING_M = 100.0
 
 /** The answer of «leer llegada» (`appointment_arrival`, #82), for the client of a confirmed appointment. */
@@ -72,7 +72,7 @@ enum class ArrivalDistance {
     FAR,
     /** «A menos de 2 km»: the exact point. */
     NEAR,
-    /** «Llegando»: the exact point at 100 m or less from the home. */
+    /** «Llegando»: the exact point at 100 m or less from the address of the appointment. */
     ARRIVING,
 }
 
@@ -82,16 +82,27 @@ sealed interface ArrivalView {
     data object Hidden : ArrivalView
     /** «El profesional no comparte su ubicación», never an old position. */
     data object NotSharing : ArrivalView
-    /** The professional's position next to the [home] of the appointment, and how long ago it was updated. */
+    /** The professional's position next to the address of the appointment ([home]), and how long ago it was updated. */
     data class Sharing(val marker: ArrivalMarker, val home: GeoPoint?, val distance: ArrivalDistance,
         val updatedMinutesAgo: Long) : ArrivalView
 }
 
+/** Like the server, a position more than 2 min old no longer counts as shared. */
+val ARRIVAL_STALE_AFTER: Duration = Duration.ofMinutes(2)
+
+/**
+ * [now] is the phone's clock. A reading kept while reads fail turns into «sin compartir» once its position is more
+ * than [ARRIVAL_STALE_AFTER] old, so an old position is never shown as current. A clock behind the server's counts
+ * as «just now».
+ */
 fun arrivalView(reading: ArrivalReading, home: GeoPoint?, now: Instant): ArrivalView = when (reading) {
     ArrivalReading.Closed -> ArrivalView.Hidden
     ArrivalReading.NotSharing -> ArrivalView.NotSharing
-    is ArrivalReading.Sharing -> ArrivalView.Sharing(reading.marker, home, distanceOf(reading.marker, home),
-        Duration.between(reading.updatedAt, now).toMinutes().coerceAtLeast(0))
+    is ArrivalReading.Sharing -> {
+        val age = Duration.between(reading.updatedAt, now).let { if (it.isNegative) Duration.ZERO else it }
+        if (age > ARRIVAL_STALE_AFTER) ArrivalView.NotSharing
+        else ArrivalView.Sharing(reading.marker, home, distanceOf(reading.marker, home), age.toMinutes())
+    }
 }
 
 private fun distanceOf(marker: ArrivalMarker, home: GeoPoint?): ArrivalDistance = when (marker) {

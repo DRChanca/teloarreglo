@@ -37,7 +37,7 @@ class ArrivalPositionsTest {
             body = Json.parseToJsonElement((request.body as TextContent).text).jsonObject
             json("""{"window":"open","accepted":true,"opens_at":"2030-01-15T09:00:00+00:00",
                 "closes_at":"2030-01-15T11:00:00+00:00","reported_at":"2030-01-15T09:30:00+00:00"}""")
-        }) { it.report("appt", 43.36, -5.85, 12.0) }
+        }) { it.report("appt", ArrivalFix(43.36, -5.85, 12.0)) }
         val sent = body!!
         assertEquals("appt", sent["p_appointment_id"]!!.jsonPrimitive.content)
         assertEquals(43.36, sent["p_latitude"]!!.jsonPrimitive.double, 0.0)
@@ -49,9 +49,32 @@ class ArrivalPositionsTest {
 
     @Test fun aClosedWindowComesWithoutTimes() = runTest {
         val report = withClient({ json("""{"window":"closed","accepted":false,"opens_at":null,"closes_at":null,"reported_at":null}""") }) {
-            it.report("appt", 43.36, -5.85, null)
+            it.report("appt", ArrivalFix(43.36, -5.85, null))
         }
         assertEquals(ArrivalReport(ArrivalWindow.CLOSED, accepted = false), report)
+    }
+
+    @Test fun aFixWithoutAccuracySendsANullAccuracy() = runTest {
+        var body: JsonObject? = null
+        withClient({ request ->
+            body = Json.parseToJsonElement((request.body as TextContent).text).jsonObject
+            json("""{"window":"open","accepted":true,"opens_at":null,"closes_at":null,"reported_at":null}""")
+        }) { it.report("appt", ArrivalFix(43.36, -5.85, null)) }
+        assertEquals(JsonNull, body!!["p_accuracy_m"])
+    }
+
+    @Test fun theWindowStateIsAskedWithoutAnyPosition() = runTest {
+        var path: String? = null
+        var body: JsonObject? = null
+        val report = withClient({ request ->
+            path = request.url.encodedPath
+            body = Json.parseToJsonElement((request.body as TextContent).text).jsonObject
+            json("""{"window":"not_yet_open","opens_at":"2030-01-15T09:00:00+00:00","closes_at":"2030-01-15T11:00:00+00:00"}""")
+        }) { it.window("appt") }
+        assertEquals("/rest/v1/rpc/arrival_sharing_window", path)
+        assertEquals(setOf("p_appointment_id"), body!!.keys)
+        assertEquals(ArrivalReport(ArrivalWindow.NOT_YET_OPEN, accepted = false, Instant.parse("2030-01-15T09:00:00Z"),
+            Instant.parse("2030-01-15T11:00:00Z")), report)
     }
 
     @Test fun stopSharingCallsItsOwnFunction() = runTest {
@@ -68,7 +91,7 @@ class ArrivalPositionsTest {
     @Test fun permissionDeniedIsAFinalRejection() = runTest {
         val failure = withClient({ json("""{"code":"42501","message":"permission_denied","details":null,"hint":null}""",
             HttpStatusCode.Forbidden) }) {
-            try { it.report("appt", 43.36, -5.85, 12.0); null } catch (e: AppointmentException) { e.failure }
+            try { it.report("appt", ArrivalFix(43.36, -5.85, 12.0)); null } catch (e: AppointmentException) { e.failure }
         }
         assertEquals(AppointmentFailure.ACCESS, failure)
     }
@@ -76,7 +99,7 @@ class ArrivalPositionsTest {
     @Test fun anImpossiblePositionIsInvalidNotARejection() = runTest {
         val failure = withClient({ json("""{"code":"22023","message":"invalid_position","details":null,"hint":null}""",
             HttpStatusCode.BadRequest) }) {
-            try { it.report("appt", 43.36, -5.85, -1.0); null } catch (e: AppointmentException) { e.failure }
+            try { it.report("appt", ArrivalFix(43.36, -5.85, -1.0)); null } catch (e: AppointmentException) { e.failure }
         }
         assertEquals(AppointmentFailure.INVALID, failure)
     }

@@ -65,8 +65,11 @@ class ArrivalRoundTest {
     private class FakePositions(var answer: () -> ArrivalReport) : ArrivalPositions {
         val reported = mutableListOf<Triple<String, Double, Double>>()
         val stopped = mutableListOf<String>()
-        override suspend fun report(appointmentId: String, latitude: Double, longitude: Double, accuracyM: Double?): ArrivalReport {
-            reported += Triple(appointmentId, latitude, longitude); return answer()
+        /** What «estado de la ventana» answers; by default the same window as the report. */
+        var window: () -> ArrivalReport = { answer().copy(accepted = false, reportedAt = null) }
+        override suspend fun window(appointmentId: String): ArrivalReport = window()
+        override suspend fun report(appointmentId: String, fix: ArrivalFix): ArrivalReport {
+            reported += Triple(appointmentId, fix.latitude, fix.longitude); return answer()
         }
         override suspend fun stopSharing(appointmentId: String): ArrivalReport {
             stopped += appointmentId; return ArrivalReport(ArrivalWindow.OPEN, accepted = false)
@@ -89,6 +92,33 @@ class ArrivalRoundTest {
         assertEquals(ArrivalStep.SendAt(now.plusSeconds(30)), round.run("a1", now))
         assertEquals(listOf(Triple("a1", 43.36, -5.85)), positions.reported)
         assertEquals(choice, choices.get("a1"))
+    }
+
+    @Test fun beforeTheOpeningNoPositionIsSent() = kotlinx.coroutines.test.runTest {
+        val opens = now.plusSeconds(600)
+        positions.window = { ArrivalReport(ArrivalWindow.NOT_YET_OPEN, accepted = false, opensAt = opens) }
+        assertEquals(ArrivalStep.WaitUntil(opens), round.run("a1", now))
+        assertEquals(emptyList<Any>(), positions.reported)
+    }
+
+    @Test fun aClosedWindowIsNeverSentAPosition() = kotlinx.coroutines.test.runTest {
+        positions.window = { ArrivalReport(ArrivalWindow.CLOSED, accepted = false) }
+        assertEquals(ArrivalStep.Stop, round.run("a1", now))
+        assertEquals(emptyList<Any>(), positions.reported)
+        assertEquals(null, choices.get("a1"))
+    }
+
+    @Test fun withoutKnowingTheWindowNoPositionIsSent() = kotlinx.coroutines.test.runTest {
+        positions.window = { throw java.io.IOException("offline") }
+        assertEquals(ArrivalStep.SendAt(now.plusSeconds(30)), round.run("a1", now))
+        assertEquals(emptyList<Any>(), positions.reported)
+        assertEquals(choice, choices.get("a1"))
+    }
+
+    @Test fun aRefusedWindowStateStops() = kotlinx.coroutines.test.runTest {
+        positions.window = { throw AppointmentException(AppointmentFailure.ACCESS, IllegalStateException("permission_denied")) }
+        assertEquals(ArrivalStep.Stop, round.run("a1", now))
+        assertEquals(emptyList<Any>(), positions.reported)
     }
 
     @Test fun aClosedWindowStopsAndForgetsTheChoice() = kotlinx.coroutines.test.runTest {

@@ -58,12 +58,13 @@ class SharedArrivalChoices(context: Context) : ArrivalChoices {
 
 /**
  * Entry points of «compartir mi ubicación» (#85). Nothing is sent outside the ventana de llegada: before it, only an
- * alarm waits for the earliest opening, and from then on each answer of the server decides (see [ArrivalRound]).
+ * alarm waits for the earliest opening; from then on each round asks the server the window state without any
+ * position and sends one only while it is open (see [ArrivalRound]).
  */
 object ArrivalSharing {
     private const val ACTION_START = "es.teloarreglo.arrival.START"
     private const val ACTION_STOP = "es.teloarreglo.arrival.STOP"
-    private const val EXTRA_APPOINTMENT = "appointment_id"
+    internal const val EXTRA_APPOINTMENT = "appointment_id"
 
     internal val running = MutableStateFlow<Set<String>>(emptySet())
     /** Appointments whose position this phone is sending right now (the service is in the foreground). */
@@ -125,7 +126,7 @@ object ArrivalSharing {
 object ArrivalAlarms {
     private fun pending(context: Context, appointmentId: String, flags: Int): PendingIntent? = PendingIntent.getBroadcast(
         context, appointmentId.hashCode(),
-        Intent(context, ArrivalAlarmReceiver::class.java).putExtra("appointment_id", appointmentId),
+        Intent(context, ArrivalAlarmReceiver::class.java).putExtra(ArrivalSharing.EXTRA_APPOINTMENT, appointmentId),
         PendingIntent.FLAG_IMMUTABLE or flags)
 
     fun schedule(context: Context, appointmentId: String, at: Instant) {
@@ -149,7 +150,7 @@ object ArrivalAlarms {
 
 class ArrivalAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        intent.getStringExtra("appointment_id")?.let { ArrivalSharing.resume(context, it) }
+        intent.getStringExtra(ArrivalSharing.EXTRA_APPOINTMENT)?.let { ArrivalSharing.resume(context, it) }
     }
 }
 

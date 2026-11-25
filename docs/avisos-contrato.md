@@ -27,7 +27,7 @@ esta capa. Android traduce los tipos conocidos. Los que empiezan por `incident` 
 incidencia» y los desconocidos como «Novedad en una cita».
 
 Aviso de cercanía (#83, ADR 0002): `report_arrival_position` («informar posición») inserta el evento
-`professional_near` para el cliente de la cita cuando acepta una posición a 100 m o menos de la casa de la cita con
+`professional_near` para el cliente de la cita cuando acepta una posición a 100 m o menos de la dirección de la cita con
 la ventana de llegada abierta. El actor es el profesional. Sale una sola vez por cita (índice único parcial), aunque
 el profesional salga y vuelva a entrar en los 100 m; si ya estaba cerca al abrirse la ventana, sale con la primera
 posición aceptada. Una posición rechazada fuera de la ventana nunca lo genera. Android lo muestra como «Tu

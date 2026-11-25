@@ -13,8 +13,9 @@ No se ha desplegado ni escrito en la base alojada. No se ha cambiado el servidor
 - La elección se guarda solo en el móvil. Hasta una hora antes del inicio no se envía nada: una alarma exacta
   despierta la app en ese momento.
 - Al despertar arranca un servicio en primer plano de tipo ubicación con la notificación fija «Compartiendo tu
-  ubicación con {cliente}» y la acción «Dejar de compartir». Envía la posición a `report_arrival_position` cada
-  ~30 s.
+  ubicación con {cliente}» y la acción «Dejar de compartir». Cada ~30 s pregunta primero el estado de la ventana a
+  `arrival_sharing_window`, que no recibe ninguna posición, y solo con la ventana abierta toma la posición y la
+  envía a `report_arrival_position`. Fuera de la ventana nunca sale del móvil una posición.
 - Cada respuesta del servidor decide (`nextArrivalStep`):
   - `open`: sigue enviando;
   - `not_yet_open`: para y vuelve a intentarlo en `opens_at` (ventana de media hora con otra cita comenzada);
@@ -29,12 +30,14 @@ No se ha desplegado ni escrito en la base alojada. No se ha cambiado el servidor
   - `ArrivalSharingTest` (9): enviar, esperar o detenerse a partir de la respuesta del servidor y de la elección
     del profesional, y el primer paso tras elegir (esperar a −60 min, enviar ya dentro de la hora previa o hasta
     +60 min, nada después).
-  - `ArrivalRoundTest` (9): una vuelta completa con un servidor falso. Comprueba que sin elección o sin posición no
-    se envía nada, que «cerrada» y el rechazo olvidan la elección, que «aún no abierta» y la falta de red la
+  - `ArrivalRoundTest` (13): una vuelta completa con un servidor falso. Comprueba que sin elección o sin posición no
+    se envía nada, que con la ventana «aún no abierta», cerrada o desconocida (sin red) no se envía ninguna
+    posición, que «cerrada» y el rechazo olvidan la elección, que «aún no abierta» y la falta de red la
     conservan, y que «Dejar de compartir» olvida la elección aunque no haya conexión.
-  - `ArrivalPositionsTest` (5): el formato de `report_arrival_position` y `stop_sharing_arrival`, `42501` como
-    rechazo definitivo e `invalid_position` como fallo de esa posición.
-  - Total del módulo, tras unir #83 y #84 de `spec-72`: 367 pruebas en 50 clases, sin fallos.
+  - `ArrivalPositionsTest` (7): el formato de `arrival_sharing_window` (sin posición), `report_arrival_position`
+    (también sin precisión) y `stop_sharing_arrival`, `42501` como rechazo definitivo e `invalid_position` como
+    fallo de esa posición.
+  - Total del módulo, tras unir #83 y #84 de `spec-72` y las correcciones de revisión: 374 pruebas, sin fallos.
 - `:app:compilePresentacionDebugKotlin`, `:app:testPresentacionDebugUnitTest` y `:app:lintPresentacionDebug`:
   superados (lint sin errores).
 
@@ -46,7 +49,8 @@ Para David, con la APK de presentación en emulator-5556 (profesional) y emulato
 emulator-5554, contra la base con la migración de #82 aplicada.
 
 1. Preparación:
-   1. El cliente pide una cita con su casa en un punto conocido, por ejemplo 43.3614, −5.8494 (Oviedo).
+   1. El cliente pide una cita con la dirección de la cita en un punto conocido, por ejemplo 43.3614, −5.8494
+      (Oviedo).
    2. El profesional la propone para dentro de unos 70 min, y el cliente la acepta: queda confirmada.
 2. Elección y permisos, en emulator-5556:
    1. En el detalle de la cita aparece «Compartir mi ubicación». Al pulsarlo sale la explicación; «Ahora no» no
@@ -62,8 +66,8 @@ emulator-5554, contra la base con la migración de #82 aplicada.
       61 min).
    2. Aparece la notificación fija «Compartiendo tu ubicación con {cliente}», que no se puede descartar, con la
       acción «Dejar de compartir».
-4. Ruta GPS que se acerca a la casa, en emulator-5556: en *Extended controls → Location → Routes*, cargar una ruta
-   de unos 5 km que termine en la casa y reproducirla. Otra opción es repetir
+4. Ruta GPS que se acerca a la dirección de la cita, en emulator-5556: en *Extended controls → Location → Routes*,
+   cargar una ruta de unos 5 km que termine en la dirección de la cita y reproducirla. Otra opción es repetir
    `adb -s emulator-5556 emu geo fix <lng> <lat>` con puntos cada vez más cercanos.
    1. En la base, `private.arrival_positions` tiene una sola fila para la cita y `reported_at` avanza cada ~30 s.
    2. En emulator-5558, cuando exista la pantalla del cliente (#84), se ve el círculo a más de 2 km y el punto a
@@ -86,7 +90,7 @@ emulator-5554, contra la base con la migración de #82 aplicada.
   profesional abre la cita.
 - Sin «Permitir todo el tiempo», Android no deja empezar el servicio con la app cerrada. Se reanuda igual, al abrir
   la cita.
-- Al despertar a −60 min se envía una posición para conocer la ventana. Si el servidor responde «aún no abierta»,
-  no la guarda.
+- Al despertar a −60 min la app pregunta el estado de la ventana sin enviar ninguna posición. Si el servidor
+  responde «aún no abierta», el servicio se detiene y la alarma vuelve a despertarla en `opens_at`.
 - `USE_EXACT_ALARM` sirve mientras la app no se publique en Google Play. Si se publica, habrá que declararla en la
   ficha, junto con la ubicación en segundo plano.

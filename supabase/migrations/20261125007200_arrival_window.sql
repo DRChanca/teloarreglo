@@ -9,7 +9,7 @@
 --     server time, accepted only while the window is open.
 --   * «Dejar de compartir» (professional): deletes that position at once.
 --   * «Leer llegada» (client only): closed / open not sharing / open sharing, with a 500 m circle displaced at random
---     beyond 2 km of the home of the appointment and the exact position at 2 km or less.
+--     beyond 2 km of the address of the appointment and the exact position at 2 km or less.
 --   * private.run_arrival_clock(), run by Supabase Cron every minute, deletes the position of every closed window.
 -- The positions table is private: no account (nor the administrator through the app) reads it; only these RPCs.
 
@@ -135,7 +135,7 @@ $$;
 revoke all on function public.stop_sharing_arrival(uuid) from public, anon;
 grant execute on function public.stop_sharing_arrival(uuid) to authenticated;
 
--- «Leer llegada»: only the client of the appointment. The distance is measured to the home of the appointment; beyond
+-- «Leer llegada»: only the client of the appointment. The distance is measured to the address of the appointment; beyond
 -- 2 km only the stored circle leaves the server. A position older than 2 min counts as not sharing.
 create function public.appointment_arrival(p_appointment_id uuid)
 returns jsonb language plpgsql stable security definer set search_path = ''

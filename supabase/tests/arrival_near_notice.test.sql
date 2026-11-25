@@ -1,6 +1,6 @@
 -- Aviso «Tu profesional está cerca» (#83, ADR 0002): once per appointment, when «informar posición» accepts a position
--- at 100 m or less of the home of the appointment while the arrival window is open. Fixtures use the ...8301NN range.
--- The home of every appointment is 'Calle Cerca 1' at 43.05, -5.95: 43.0508 is ~89 m away, 43.0510 ~111 m.
+-- at 100 m or less of the address of the appointment while the arrival window is open. Fixtures use the ...8301NN range.
+-- The address of every appointment is 'Calle Cerca 1' at 43.05, -5.95: 43.0508 is ~89 m away, 43.0510 ~111 m.
 begin;
 create extension if not exists pgtap with schema extensions;
 select plan(16);

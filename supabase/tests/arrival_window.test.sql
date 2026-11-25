@@ -1,10 +1,10 @@
 -- Ventana de llegada (#82, ADR 0002): «informar posición», «dejar de compartir», «leer llegada» and the per-minute
--- arrival clock. Fixtures use the ...8201NN range. The home of every appointment is 'Calle A 1' at 43.05, -5.95.
+-- arrival clock. Fixtures use the ...8201NN range. The address of every appointment is 'Calle A 1' at 43.05, -5.95.
 -- Inside one transaction now() is fixed, so time is simulated by moving the agreed start of the appointment
 -- (its accepted proposal) and the server mark of the last position relative to now().
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(46);
+select plan(61);
 
 insert into public.concejos(ine_code, name, boundary) values
  ('33982', 'Prueba Llegada', 'SRID=4326;MULTIPOLYGON(((-6.0 43.0,-5.9 43.0,-5.9 43.1,-6.0 43.1,-6.0 43.0)))'::extensions.geography);
@@ -148,6 +148,34 @@ reset role;
 select is((select count(*)::integer from private.arrival_positions where appointment_id in
  (select pending from ids union all select second from ids)), 0, 'rejected positions are not stored');
 
+-- «Estado de la ventana» (professional): the window without sending any position, so that the app sends one only
+-- while it is open (#85).
+reset role;
+select pg_temp.starts_in((select second from ids), 31);
+set local role authenticated;
+select pg_temp.as_user('02');
+select is((select r - 'opens_at' - 'closes_at' from public.arrival_sharing_window((select second from ids)) r),
+ '{"window": "not_yet_open"}'::jsonb, 'the window state answers «aún no abierta» with nothing else');
+select is((select (r->>'opens_at')::timestamptz - now() from public.arrival_sharing_window((select second from ids)) r),
+ interval '1 minute', 'and says when it opens (−30 min: main is started)');
+reset role;
+select pg_temp.starts_in((select second from ids), 30);
+set local role authenticated;
+select pg_temp.as_user('02');
+select is((select r->>'window' || '/' || ((r->>'closes_at')::timestamptz - now())
+ from public.arrival_sharing_window((select second from ids)) r), 'open/01:30:00', 'open, with its closing');
+select is(public.arrival_sharing_window((select cancelled from ids)),
+ '{"window": "closed", "opens_at": null, "closes_at": null}'::jsonb, 'a cancelled appointment reads closed');
+select pg_temp.as_user('01');
+select throws_ok(format('select public.arrival_sharing_window(%L)', (select second from ids)), '42501', 'permission_denied',
+ 'the client cannot ask the professional''s window state');
+select pg_temp.as_user('03');
+select throws_ok(format('select public.arrival_sharing_window(%L)', (select second from ids)), '42501', 'permission_denied',
+ 'another account cannot ask it');
+reset role;
+select is((select count(*)::integer from private.arrival_positions where appointment_id = (select second from ids)), 0,
+ 'asking the window state stores no position');
+
 -- «Leer llegada» for the second appointment (main is now started, so its window is the 30 min one).
 create function pg_temp.distance_m(lat1 double precision, lng1 double precision, lat2 double precision,
     lng2 double precision) returns double precision language sql as $$
@@ -181,11 +209,50 @@ select is(public.appointment_arrival((select second from ids)), (select r from f
  'repeating the read does not move the centre');
 select ok((select bool_and(pg_temp.distance_m((a->>'latitude')::float8, (a->>'longitude')::float8, 43.10, -5.95) <= 375.001)
  from (select public.appointment_arrival((select second from ids)) as a) x), 'the centre lies within 375 m of the position');
+-- Reporting again from the same place keeps the centre: many reports never average out to the position (#72).
 select pg_temp.as_user('02');
-select pg_temp.report((select second from ids), 43.10, -5.95);
+select pg_temp.report((select second from ids), 43.10, -5.95) from generate_series(1, 5);
 select pg_temp.as_user('01');
-select isnt((select public.appointment_arrival((select second from ids))->>'latitude'), (select r->>'latitude' from far_read),
- 'a new position draws a new centre');
+select is(public.appointment_arrival((select second from ids)) - 'updated_at', (select r - 'updated_at' from far_read),
+ 'repeated reports from the same position keep the centre');
+-- The centre is kept while the new position stays within 375 m of it, and drawn again only beyond.
+reset role;
+update private.arrival_positions set area_lat = 43.1027, area_lng = -5.95 where appointment_id = (select second from ids);
+set local role authenticated;
+select pg_temp.as_user('02');
+select pg_temp.report((select second from ids), 43.1001, -5.95);
+select pg_temp.as_user('01');
+select is((select (a->>'latitude')::float8 || '/' || (a->>'longitude')::float8
+ from (select public.appointment_arrival((select second from ids)) as a) x), '43.1027/-5.95',
+ 'a nearby position (about 290 m from the centre) keeps the centre');
+select pg_temp.as_user('02');
+select pg_temp.report((select second from ids), 43.0990, -5.95);
+select pg_temp.as_user('01');
+create temp table moved_read on commit drop as select public.appointment_arrival((select second from ids)) as r;
+select isnt((select r->>'latitude' from moved_read), '43.1027', 'beyond 375 m of the centre a new centre is drawn');
+select ok((select pg_temp.distance_m((r->>'latitude')::float8, (r->>'longitude')::float8, 43.0990, -5.95) <= 375.001
+ from moved_read), 'and the circle still contains the real position');
+select pg_temp.as_user('02');
+select pg_temp.report((select second from ids), 43.12, -5.95);
+select pg_temp.as_user('01');
+create temp table far_move on commit drop as select public.appointment_arrival((select second from ids)) as r;
+select ok((select r->>'precision' = 'area' and pg_temp.distance_m((r->>'latitude')::float8, (r->>'longitude')::float8,
+ 43.12, -5.95) <= 375.001 from far_move), 'a far move redraws the centre around the new position');
+
+-- A fix without accuracy is accepted; when present the accuracy is still checked.
+select pg_temp.as_user('02');
+select is((select r->>'window' || '/' || (r->>'accepted')
+ from public.report_arrival_position((select second from ids), 43.0679, -5.95, null) r), 'open/true',
+ 'a position without accuracy is accepted');
+select pg_temp.as_user('01');
+select is(public.appointment_arrival((select second from ids)) - 'closes_at',
+ jsonb_build_object('state', 'sharing', 'precision', 'exact', 'latitude', 43.0679, 'longitude', -5.95, 'accuracy_m', null,
+  'updated_at', now()), 'the exact position without accuracy reads with a null accuracy');
+select pg_temp.as_user('02');
+select throws_ok(format('select public.report_arrival_position(%L, 43.0679, -5.95, -1)', (select second from ids)),
+ '22023', 'invalid_position', 'a negative accuracy is rejected');
+select throws_ok(format('select public.report_arrival_position(%L, 43.0679, -5.95, %L)', (select second from ids), 'NaN'),
+ '22023', 'invalid_position', 'an accuracy that is not a number is rejected');
 
 -- At 2 km or less: the exact position.
 select pg_temp.as_user('02');

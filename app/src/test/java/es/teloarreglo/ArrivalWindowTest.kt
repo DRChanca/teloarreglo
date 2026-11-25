@@ -36,22 +36,30 @@ class ArrivalWindowTest {
         "precision": "exact", "latitude": $lat, "longitude": $lng, "accuracy_m": 15, "updated_at": "2030-01-15T09:59:40+00:00"}"""
 
     @Test fun withinTwoKilometresTheMapShowsTheExactPointAndSaysLessThanTwoKilometres() {
-        // About 1.1 km north of the home.
+        // About 1.1 km north of the address of the appointment.
         assertEquals(ArrivalView.Sharing(ArrivalMarker.Exact(GeoPoint(43.3714, -5.8494), 15.0), home, ArrivalDistance.NEAR,
             updatedMinutesAgo = 0), view(exact(43.3714, -5.8494)))
     }
 
     @Test fun anExactPointAtAHundredMetresOrLessIsArriving() {
-        // About 89 m north of the home.
+        // About 89 m north of the address of the appointment.
         assertEquals(ArrivalDistance.ARRIVING, (view(exact(43.3622, -5.8494)) as ArrivalView.Sharing).distance)
         // About 145 m: still «A menos de 2 km».
         assertEquals(ArrivalDistance.NEAR, (view(exact(43.3627, -5.8494)) as ArrivalView.Sharing).distance)
     }
 
     @Test fun theUpdateTimeFollowsTheClockAndNeverGoesNegative() {
-        assertEquals(5L, (view(exact(43.37, -5.85), at = now.plusSeconds(300)) as ArrivalView.Sharing).updatedMinutesAgo)
+        assertEquals(1L, (view(exact(43.37, -5.85), at = now.plusSeconds(80)) as ArrivalView.Sharing).updatedMinutesAgo)
         // The device clock behind the server's: «just now», not «-2 min».
         assertEquals(0L, (view(exact(43.37, -5.85), at = now.minusSeconds(120)) as ArrivalView.Sharing).updatedMinutesAgo)
+    }
+
+    @Test fun aReadingOlderThanTwoMinutesIsNoLongerShown() {
+        // The last answer is kept while reads fail; once it is more than 2 min old it is never shown as current.
+        // updated_at is 09:59:40, so 10:01:40 is exactly 2 min and 10:01:41 is past them.
+        assertEquals(2L, (view(exact(43.37, -5.85), at = now.plusSeconds(100)) as ArrivalView.Sharing).updatedMinutesAgo)
+        assertEquals(ArrivalView.NotSharing, view(exact(43.37, -5.85), at = now.plusSeconds(101)))
+        assertEquals(ArrivalView.NotSharing, view(exact(43.37, -5.85), at = now.plusSeconds(600)))
     }
 
     @Test fun withoutTheHomeAnExactPointIsOnlyNear() {

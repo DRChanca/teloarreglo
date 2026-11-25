@@ -1,5 +1,5 @@
 -- Aviso «Tu profesional está cerca» (#83, ADR 0002).
--- When «informar posición» accepts a position at 100 m or less of the home of the appointment, with the arrival window
+-- When «informar posición» accepts a position at 100 m or less of the address of the appointment, with the arrival window
 -- open, the server records the appointment event 'professional_near' for the client: once per appointment, never
 -- again even if the professional leaves and comes back. If the professional was already near when the window opened,
 -- the first accepted position triggers it. Positions rejected outside the window never do.
@@ -54,7 +54,7 @@ begin
     on conflict (appointment_id) do update set latitude = excluded.latitude, longitude = excluded.longitude,
         accuracy_m = excluded.accuracy_m, area_lat = excluded.area_lat, area_lng = excluded.area_lng,
         reported_at = excluded.reported_at;
-    -- Proximity notice (#83): at 100 m or less of the home of the appointment, once per appointment.
+    -- Proximity notice (#83): at 100 m or less of the address of the appointment, once per appointment.
     if extensions.st_dwithin(
            extensions.st_setsrid(extensions.st_makepoint(p_longitude, p_latitude), 4326)::extensions.geography,
            extensions.st_setsrid(extensions.st_makepoint(appt.longitude, appt.latitude), 4326)::extensions.geography,
