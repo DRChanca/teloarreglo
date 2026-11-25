@@ -18,7 +18,11 @@
     <string name="catalogue_includes">Inclus : %1$s</string>
     <string name="catalogue_excludes">En supplément : %1$s</string>
     <string name="catalogue_no_reviews">Aucun avis pour le moment</string>
-    <string name="catalogue_rating">%1$.1f sur 5 · %2$d avis</string>
+    <plurals name="catalogue_rating">
+        <item quantity="one">%1$.1f sur 5 · %2$d avis</item>
+        <item quantity="many">%1$.1f sur 5 · %2$d avis</item>
+        <item quantity="other">%1$.1f sur 5 · %2$d avis</item>
+    </plurals>
     <string name="catalogue_illustration">Illustration de %1$s ; ce n’est pas une photo de travaux réalisés</string>
     <string name="catalogue_owned">Votre profil professionnel</string>
     <string name="catalogue_can_hire">Ce compte peut faire appel à des services et avoir son propre profil professionnel.</string>
