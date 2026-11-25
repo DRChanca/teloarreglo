@@ -636,6 +636,8 @@ class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
             "invalid_appointment" in message || "invalid_proposal" in message || "payment_required" in message ||
                 "payment_not_required" in message || "invalid_payment" in message || "invalid_change" in message || "no_change" in message ->
                 AppointmentFailure.INVALID
+            // Any other 400 is still a definitive refusal (nothing was applied), never a lost answer (#63).
+            error.statusCode == 400 -> AppointmentFailure.INVALID
             else -> null
         }
         throw if (failure != null) AppointmentException(failure, error) else error

@@ -16,6 +16,7 @@ import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.test.platform.app.InstrumentationRegistry
 import android.graphics.Bitmap
 import java.io.File
@@ -196,7 +197,8 @@ class CatalogueUiTest {
         override suspend fun list(trade: String?) = listOf(profile)
         override suspend fun profile(id: String) = profile
     }, initialProfileId = profile.id) }
-    private fun stars(kind: String) = compose.onAllNodes(hasTestTag("star_$kind"), useUnmergedTree = true).fetchSemanticsNodes().size
+    private fun starNodes(kind: String) = compose.onAllNodes(hasTestTag("star_$kind"), useUnmergedTree = true)
+    private fun stars(kind: String) = starNodes(kind).fetchSemanticsNodes().size
 
     @Test fun theProfileShowsItsRatingInHalfStarsWithMeanAndCount() {
         showProfile(plumber.copy(rating = 4.3, reviewCount = 12))
@@ -212,15 +214,40 @@ class CatalogueUiTest {
         assertEquals(listOf(2, 1, 2), listOf(stars("full"), stars("half"), stars("empty")))
     }
 
-    @Test fun theCardShowsACompactRating() {
+    private fun showCard(profile: PublicProfile) = compose.setContent { TeloTheme(dark = false) { CatalogueScreen(object : Catalogue {
+        override suspend fun list(trade: String?) = listOf(profile)
+        override suspend fun profile(id: String) = profile
+    }) } }
+
+    /** #67: the card fills gold stars up to the mean, half a star for 4,5, and keeps mean, count and description. */
+    @Test fun theCardFillsGoldStarsUpToTheRating() {
         val profile = plumber.copy(rating = 4.5, reviewCount = 12)
-        compose.setContent { CatalogueScreen(object : Catalogue {
-            override suspend fun list(trade: String?) = listOf(profile)
-            override suspend fun profile(id: String) = profile
-        }) }
-        val rating = compose.onNodeWithTag("rating_${profile.id}", useUnmergedTree = true)
-        rating.assert(hasText("★ ${mean(4.5)} (12)"))
+        showCard(profile)
+        val rating = compose.onNodeWithTag("rating_${profile.id}")
+        rating.assert(hasText("${mean(4.5)} (12)", substring = true))
         rating.assert(androidx.compose.ui.test.hasContentDescription(res.getQuantityString(R.plurals.catalogue_rating, 12, 4.5, 12)))
+        assertEquals(listOf(4, 1, 0), listOf(stars("full"), stars("half"), stars("empty")))
+    }
+
+    @Test fun theCardLeavesTheRestOfTheStarsEmpty() {
+        showCard(plumber.copy(rating = 2.2, reviewCount = 3))
+        assertEquals(listOf(2, 0, 3), listOf(stars("full"), stars("half"), stars("empty")))
+    }
+
+    /** A full star is painted in the theme's gold, an empty one in its grey. */
+    @Test fun theCardStarsArePaintedGoldAndGrey() {
+        showCard(plumber.copy(rating = 1.0, reviewCount = 1))
+        val colors = teloColors(dark = false).extended
+        fun centre(kind: String) = starNodes(kind)[0].captureToImage().toPixelMap().let { it[it.width / 2, it.height / 2] }
+        assertEquals(colors.ratingStar, centre("full"))
+        assertEquals(colors.ratingStarEmpty, centre("empty"))
+    }
+
+    @Test fun aCardWithoutReviewsSaysSoWithoutStars() {
+        val profile = plumber.copy(rating = null, reviewCount = 0)
+        showCard(profile)
+        compose.onNodeWithTag("rating_${profile.id}", useUnmergedTree = true).assert(hasText(res.getString(R.string.catalogue_no_reviews)))
+        assertEquals(0, stars("full") + stars("half") + stars("empty"))
     }
 
     @Test fun aProfileWithoutReviewsSaysSo() {

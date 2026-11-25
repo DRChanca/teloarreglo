@@ -91,8 +91,11 @@ internal class FakeAppointments : Appointments {
     private val changes = mutableMapOf<String, MutableList<AppointmentChange>>()
     private fun change(id: String) = changes.entries.first { (_, list) -> list.any { it.id == id } }
 
+    /** When set, the next change is refused like the server does with a value it does not accept; nothing changes. */
+    var refuseNextChange: AppointmentFailure? = null
     /** Like the server (#23): a change never touches the conditions in force until accepted. */
     override suspend fun proposeChange(appointmentId: String, expectedVersion: Int, requestId: String, draft: ChangeDraft): AppointmentChange {
+        refuseNextChange?.let { refuseNextChange = null; throw AppointmentException(it, Exception()) }
         val index = items.indexOfFirst { it.id == appointmentId }
         if (items[index].version != expectedVersion) throw AppointmentException(AppointmentFailure.STALE, Exception())
         val history = changes.getOrPut(appointmentId) { mutableListOf() }
@@ -429,6 +432,56 @@ class AppointmentsUiTest {
         val appointment = kotlinx.coroutines.runBlocking { fake.list("conversation") }.single()
         assertEquals(8550, appointment.confirmedProposal?.amountCents)
         assertEquals(ChangeStatus.PENDING, appointment.pendingChange?.status)
+    }
+
+    /** #63: a wrong value is named in its own field and, once corrected, the change is sent without any error left. */
+    @Test fun aWrongValueIsNamedInItsFieldAndOnceCorrectedTheChangeIsSent() {
+        val fake = withPaidConfirmation()
+        compose.setContent { AppointmentsPanel(fake, "pro", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("change_propose").performScrollTo().performClick()
+        waitForTag("change_minutes")
+        compose.onNodeWithTag("change_minutes").performTextReplacement("5")
+        compose.onNodeWithTag("change_send").performScrollTo().performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("change_error_DURATION", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        // The start time is picked on wheels (#64), so it cannot be malformed; a corrected field clears at once.
+        compose.onNodeWithTag("change_minutes").performTextReplacement("120")
+        compose.onAllNodesWithTag("change_error_DURATION", useUnmergedTree = true).assertCountEquals(0)
+        compose.onNodeWithTag("change_send").performScrollTo().performClick()
+        waitForTag("change_pending")
+        assertEquals(120, kotlinx.coroutines.runBlocking { fake.list("conversation") }.single().pendingChange?.durationMinutes)
+    }
+
+    /** #63: a server refusal speaks about what was sent; after editing, the form is free and the next send works. */
+    @Test fun aRefusedChangeLeavesTheFormEditableAndTheCorrectedOneIsSent() {
+        val fake = withPaidConfirmation().apply { refuseNextChange = AppointmentFailure.INVALID }
+        compose.setContent { AppointmentsPanel(fake, "pro", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("change_propose").performScrollTo().performClick()
+        waitForTag("change_amount")
+        compose.onNodeWithTag("change_amount").performTextReplacement("95,50")
+        compose.onNodeWithTag("change_send").performScrollTo().performClick()
+        waitForTag("change_form_error")
+        compose.onNodeWithTag("change_amount").assertIsEnabled().performTextReplacement("99")
+        compose.onAllNodesWithTag("change_form_error").assertCountEquals(0)
+        compose.onNodeWithTag("change_send").performScrollTo().performClick()
+        waitForTag("change_pending")
+        assertEquals(9900, kotlinx.coroutines.runBlocking { fake.list("conversation") }.single().pendingChange?.amountCents)
+    }
+
+    /** #63: going back to the conditions in force is said plainly, not as a refusal from the server. */
+    @Test fun theConditionsInForceAreNotSentAsAChange() {
+        val fake = withPaidConfirmation()
+        compose.setContent { AppointmentsPanel(fake, "pro", conversation, rememberCoroutineScope(), noPin) }
+        waitForTag("appointment_card")
+        compose.onNodeWithTag("appointment_card").performClick()
+        compose.onNodeWithTag("change_propose").performScrollTo().performClick()
+        waitForTag("change_send")
+        compose.onNodeWithTag("change_send").performScrollTo().performClick()
+        waitForTag("change_form_unchanged")
+        assertEquals(null, kotlinx.coroutines.runBlocking { fake.list("conversation") }.single().pendingChange)
     }
 
     /** A paid, confirmed appointment (85,50 € integrated, still pending of delivery) (#24). */

@@ -379,6 +379,27 @@ class AppointmentsTest {
         }
     }
 
+    /**
+     * #63: a value the server refuses with an unforeseen message (e.g. a type error) is still a definitive "no",
+     * not a lost answer: otherwise the form keeps the key, stays locked and resends the same data forever.
+     */
+    @Test fun anUnforeseenBadRequestIsARejectionNotUncertainty() = runTest {
+        val failure = withClient({ json(error("22P02", "invalid input syntax for type double precision: \\\"NaN\\\""),
+            HttpStatusCode.BadRequest) }) {
+            try { it.proposeChange("appt", 3, "key", ChangeDraft("Sifón", Instant.parse("2030-01-15T10:30:00Z"), 90,
+                8500, null, true, false)); null } catch (e: AppointmentException) { e.failure }
+        }
+        assertEquals(AppointmentFailure.INVALID, failure)
+    }
+
+    /** #63: a 5xx is still uncertainty (rethrown as is), so the form keeps its key and retries the same data. */
+    @Test fun aServerFailureIsNotTranslatedIntoARejection() = runTest {
+        val thrown = withClient({ json(error("XX000", "internal"), HttpStatusCode.InternalServerError) }) {
+            try { it.acceptChange("c1", null); null } catch (e: Exception) { e }
+        }
+        assertFalse(thrown is AppointmentException)
+    }
+
     private fun marksJson(stage: String, refunded: Int = 0) = """{"id":"appt","stage":"$stage","version":5,
         "started_at":${if (stage == "started") "\"2030-01-15T10:31:00+00:00\"" else "null"},
         "cancelled_at":${if (stage == "cancelled") "\"2030-01-14T09:00:00+00:00\"" else "null"},

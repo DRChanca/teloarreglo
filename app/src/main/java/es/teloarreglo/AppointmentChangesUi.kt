@@ -16,6 +16,7 @@ import es.teloarreglo.appointments.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -38,8 +39,9 @@ internal fun ChangeSection(
     val pending = appointment.pendingChange
     val base = appointment.confirmedProposal ?: return
     var busy by remember { mutableStateOf(false) }
-    var failure by remember { mutableStateOf<AppointmentFailure?>(null) }
-    var failed by remember { mutableStateOf(false) }
+    // A refusal belongs to the change it was about: a newer proposal from the other side starts clean (#63).
+    var failure by remember(pending?.id) { mutableStateOf<AppointmentFailure?>(null) }
+    var failed by remember(pending?.id) { mutableStateOf(false) }
     // The decision being confirmed: "accept", "accept:INTEGRATED", "accept:DIRECT" or "reject".
     var asking by remember { mutableStateOf<String?>(null) }
 
@@ -215,9 +217,12 @@ internal fun ChangeForm(
     var expected by rememberSaveable(appointment.id) { mutableIntStateOf(appointment.version) }
     val latestKnown by rememberUpdatedState(known)
     var busy by remember { mutableStateOf(false) }
-    var invalid by remember { mutableStateOf(false) }
+    // Field errors show from the first send on and follow the input live, so a corrected field clears at once (#63).
+    var sendTried by remember { mutableStateOf(false) }
     var shownError by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<AppointmentFailure?>(null) }
+    // The input the server answered about: its refusal no longer applies once the user edits it.
+    var sentInput by remember { mutableStateOf<ChangeInput?>(null) }
     val date = dateText?.let(LocalDate::parse)
     LaunchedEffect(known, key) {
         if (key != null && !busy && known.any { a -> a.id == appointment.id && a.changes.any { it.requestId == key } }) {
@@ -227,10 +232,20 @@ internal fun ChangeForm(
     val editable = key == null && !busy
     // During the job (2026-11-23) the start and the address stay as they are; only the rest can change.
     val running = !appointment.startAndAddressMayChange
+    // A client adding a cost to a free appointment says now how it will be paid.
+    val asksMode = client && appointment.payment == null
+    val input = ChangeInput(scopeText, date, start, minutes, amount, visitFee, materials, travel,
+        address = if (client && !running && changeAddress) AddressInput(address, lat, lng) else null,
+        note = note, mode = mode?.let(PaymentMode::valueOf))
+    val check = checkChange(input, base, appointment.location, running, asksMode, zone, Instant.now())
+    val problems = if (sendTried) (check as? ChangeCheck.Wrong)?.problems.orEmpty() else emptyMap()
+    fun problemText(field: ChangeField): (@Composable () -> Unit)? =
+        problems[field]?.let { problem -> { Text(changeProblemText(field, problem), Modifier.testTag("change_error_${field.name}")) } }
     Text(appointment.problem, style = MaterialTheme.typography.titleMedium)
     Text(stringResource(if (running) R.string.running_change_intro else R.string.change_form_intro),
         style = MaterialTheme.typography.bodyMedium)
     OutlinedTextField(scopeText, { if (it.length <= 2000) scopeText = it }, enabled = editable, minLines = 2,
+        isError = ChangeField.SCOPE in problems, supportingText = problemText(ChangeField.SCOPE),
         label = { Text(stringResource(R.string.appointment_scope)) }, modifier = Modifier.fillMaxWidth().testTag("change_scope"))
     if (running) Text(stringResource(R.string.running_change_start_fixed, dateTimeFormat().format(base.startAt)),
         style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("change_start_fixed"))
@@ -238,17 +253,23 @@ internal fun ChangeForm(
         Text(stringResource(R.string.appointment_date))
         DateField(date, editable) { dateText = it.toString() }
     }
+    problemText(ChangeField.DATE)?.let { ErrorLine(content = it) }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (!running) OutlinedTextField(start, { start = it.take(5) }, enabled = editable, singleLine = true,
-            label = { Text(stringResource(R.string.appointment_start)) }, modifier = Modifier.weight(1f).testTag("change_start"))
+        if (!running) TimeField(start, stringResource(R.string.appointment_start), editable, "change_start", Modifier.weight(1f),
+            isError = ChangeField.START in problems, supportingText = problemText(ChangeField.START)) {
+            start = it
+        }
         OutlinedTextField(minutes, { minutes = it.filter(Char::isDigit).take(4) }, enabled = editable, singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            isError = ChangeField.DURATION in problems, supportingText = problemText(ChangeField.DURATION),
             label = { Text(stringResource(R.string.appointment_duration)) }, modifier = Modifier.weight(1f).testTag("change_minutes"))
     }
     val decimal = KeyboardOptions(keyboardType = KeyboardType.Decimal)
     OutlinedTextField(amount, { amount = it.take(10) }, enabled = editable, singleLine = true, keyboardOptions = decimal,
+        isError = ChangeField.AMOUNT in problems, supportingText = problemText(ChangeField.AMOUNT),
         label = { Text(stringResource(R.string.appointment_amount_input)) }, modifier = Modifier.fillMaxWidth().testTag("change_amount"))
     OutlinedTextField(visitFee, { visitFee = it.take(10) }, enabled = editable, singleLine = true, keyboardOptions = decimal,
+        isError = ChangeField.VISIT_FEE in problems, supportingText = problemText(ChangeField.VISIT_FEE),
         label = { Text(stringResource(R.string.appointment_visit_fee_input)) }, modifier = Modifier.fillMaxWidth().testTag("change_visit_fee"))
     Row(verticalAlignment = Alignment.CenterVertically) {
         Checkbox(materials, { materials = it }, enabled = editable, modifier = Modifier.testTag("change_materials"))
@@ -266,6 +287,7 @@ internal fun ChangeForm(
         if (changeAddress) {
             Text(stringResource(R.string.change_form_address_hint), style = MaterialTheme.typography.bodySmall)
             OutlinedTextField(address, { if (it.length <= 300) address = it }, enabled = editable,
+                isError = ChangeField.ADDRESS in problems, supportingText = problemText(ChangeField.ADDRESS),
                 label = { Text(stringResource(R.string.appointment_address)) }, modifier = Modifier.fillMaxWidth().testTag("change_address"))
             var picking by remember { mutableStateOf(false) }
             if (mapsReady) OutlinedButton(onClick = { picking = true }, enabled = editable) { Text(stringResource(R.string.map_pick_on_map)) }
@@ -278,6 +300,7 @@ internal fun ChangeForm(
                 pointFrom = PointFrom.PIN
             }
             PointFromLine(pointFrom.takeIf { lat.isNotBlank() && lng.isNotBlank() }, "change_point")
+            problemText(ChangeField.POINT)?.let { ErrorLine(content = it) }
             // Typed coordinates only as the fallback without a map (#41).
             if (!mapsReady) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(lat, { lat = it.take(12); pointFrom = PointFrom.TYPED }, enabled = editable, singleLine = true,
@@ -289,11 +312,7 @@ internal fun ChangeForm(
             }
         }
     }
-    val cents = parseEuroCents(amount)
-    val fee = if (visitFee.isBlank()) null else parseEuroCents(visitFee)
-    // A client adding a cost to a free appointment says now how it will be paid.
-    val needsMode = client && appointment.payment == null && maxOf(cents ?: 0, fee ?: 0) > 0
-    if (needsMode) {
+    if (needsPaymentMode(asksMode, amount, visitFee)) {
         Text(stringResource(R.string.change_form_mode), style = MaterialTheme.typography.bodyMedium)
         PaymentMode.entries.forEach { option ->
             Row(Modifier.selectable(selected = mode == option.name, enabled = editable, onClick = { mode = option.name })
@@ -302,31 +321,27 @@ internal fun ChangeForm(
                 Text(stringResource(if (option == PaymentMode.INTEGRATED) R.string.change_mode_integrated else R.string.change_mode_direct))
             }
         }
+        problemText(ChangeField.MODE)?.let { ErrorLine(content = it) }
     }
     OutlinedTextField(note, { if (it.length <= 500) note = it }, enabled = editable,
         label = { Text(stringResource(R.string.change_form_note)) }, modifier = Modifier.fillMaxWidth().testTag("change_note"))
-    if (invalid) Text(stringResource(R.string.appointment_form_invalid), color = MaterialTheme.colorScheme.error)
+    if (sendTried && check is ChangeCheck.Wrong) ErrorLine { Text(stringResource(R.string.change_form_check_fields)) }
+    if (sendTried && check == ChangeCheck.Unchanged) ErrorLine(tag = "change_form_unchanged") {
+        Text(stringResource(R.string.change_form_unchanged))
+    }
     if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-    if (shownError) Text(if (failure == AppointmentFailure.ALREADY_STARTED) changeFailureText(failure)
+    // A refusal speaks about what was sent; once the user edits the draft it no longer applies (#63). A newer
+    // version stays said: the next send is based on it.
+    if (shownError && (sentInput == input || failure == AppointmentFailure.STALE)) Text(if (failure == AppointmentFailure.ALREADY_STARTED) changeFailureText(failure)
         else sendFailureText(failure, professional = !client), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("change_form_error"))
     Button(onClick = {
-        // Once started, the start in force is sent unchanged: the server refuses any other.
-        val startAt = if (running) base.startAt else localInstant(date, start)
-        val duration = minutes.toIntOrNull()
-        val latitude = lat.replace(',', '.').toDoubleOrNull()
-        val longitude = lng.replace(',', '.').toDoubleOrNull()
-        invalid = scopeText.isBlank() || startAt == null || duration == null || duration !in 15..1440 || cents == null ||
-            (visitFee.isNotBlank() && fee == null) || (needsMode && mode == null) ||
-            (!running && changeAddress && (address.isBlank() || latitude == null || longitude == null))
-        if (invalid) return@Button
+        sendTried = true
+        val draft = (check as? ChangeCheck.Ready)?.draft ?: return@Button
         val requestKey = key ?: UUID.randomUUID().toString().also { key = it }
-        busy = true; shownError = false; failure = null
+        busy = true; shownError = false; failure = null; sentInput = input
         scope.launch {
             try {
-                appointments.proposeChange(appointment.id, expected, requestKey, ChangeDraft(scopeText.trim(), startAt!!, duration!!,
-                    cents!!, fee, materials, travel,
-                    address = if (client && !running && changeAddress) ChangedAddress(address.trim(), latitude!!, longitude!!) else null,
-                    note = note.trim().ifEmpty { null }, mode = if (needsMode) mode?.let(PaymentMode::valueOf) else null))
+                appointments.proposeChange(appointment.id, expected, requestKey, draft)
                 key = null; onDone()
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
@@ -341,6 +356,37 @@ internal fun ChangeForm(
         Text(stringResource(if (key != null) R.string.appointment_retry_send else R.string.change_send))
     }
 }
+
+/** An error said under a field that is not a text field (date, point, payment mode) or under the whole form. */
+@Composable
+private fun ErrorLine(tag: String? = null, content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
+        ProvideTextStyle(MaterialTheme.typography.bodySmall) {
+            Box(if (tag != null) Modifier.testTag(tag) else Modifier) { content() }
+        }
+    }
+}
+
+/** What to fix in a field of the change form (#63), in the words of that field. */
+@Composable
+private fun changeProblemText(field: ChangeField, problem: ChangeProblem): String = stringResource(when (field) {
+    ChangeField.SCOPE -> R.string.change_error_scope
+    ChangeField.DATE -> R.string.change_error_date
+    ChangeField.START -> when (problem) {
+        ChangeProblem.MISSING -> R.string.change_error_start_missing
+        ChangeProblem.PAST -> R.string.change_error_start_past
+        else -> R.string.change_error_start_format
+    }
+    ChangeField.DURATION -> R.string.change_error_duration
+    ChangeField.AMOUNT, ChangeField.VISIT_FEE -> when (problem) {
+        ChangeProblem.MISSING -> R.string.change_error_amount_missing
+        ChangeProblem.RANGE -> R.string.change_error_amount_range
+        else -> R.string.change_error_amount_format
+    }
+    ChangeField.ADDRESS -> R.string.change_error_address
+    ChangeField.POINT -> if (problem == ChangeProblem.MISSING) R.string.change_error_point_missing else R.string.change_error_point_invalid
+    ChangeField.MODE -> R.string.change_error_mode
+})
 
 /** The professional's request to correct the address: a note only, never a new address. */
 @Composable
