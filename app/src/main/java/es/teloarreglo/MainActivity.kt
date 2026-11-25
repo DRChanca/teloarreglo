@@ -115,6 +115,12 @@ class MainActivity : AppCompatActivity() {
             val mustGiveName = nameSession != null && connectedUser != null && nameStatus == AccountNameStatus.Missing &&
                 access.account?.isAdministrator != true && !emailLinkPending
             val home = (homeStatus as? HomeStatus.Present)?.home
+            // Search from home (#59): started as soon as the account and its home are known, during the splash.
+            // Not while checking: every return to the foreground checks the session again.
+            LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser, access.account?.isAdministrator, home) {
+                if (access.stage != AccessStage.CHECKING)
+                    app.searchSession?.onAccount(connectedUser, access.account?.isAdministrator == true, home)
+            }
             val mustGiveHome = homeSession != null && connectedUser != null && homeStatus == HomeStatus.Missing &&
                 access.account?.isAdministrator != true && !emailLinkPending
             val changeLanguage: (String) -> Unit = { tag ->
@@ -200,7 +206,7 @@ class MainActivity : AppCompatActivity() {
                             onContact = { nav = nav.showProfile(it).contact(it) },
                             // Opened from another tab (Cuenta): closing the profile returns there.
                             onCloseProfile = nav.returnTo?.let { { nav = nav.back() ?: Navigation() } },
-                            reviews = app.reviews,
+                            reviews = app.reviews, searchSession = app.searchSession,
                             // Single search (ADR 0001): from the saved home, GPS or a concejo, by distance.
                             proximitySource = app.search?.let { search ->
                                 ProximitySource(search,
