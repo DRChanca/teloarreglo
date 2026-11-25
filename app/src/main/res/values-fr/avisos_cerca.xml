@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nearby_hint_home">Nous cherchons depuis votre domicile. Vous pouvez aussi chercher depuis votre position actuelle, utilisée une seule fois, ou depuis un concejo de votre choix.</string>
+    <string name="nearby_origin_gps">Depuis votre position actuelle</string>
+    <string name="nearby_origin_manual">Depuis le concejo %1$s</string>
+    <string name="nearby_origin_none">Choisissez d’où chercher</string>
+    <string name="nearby_other_ways">Chercher depuis un autre endroit</string>
+    <string name="nearby_other_ways_hide">Masquer les autres façons de chercher</string>
+    <string name="nearby_other_ways_open">Déplié</string>
+    <string name="nearby_other_ways_closed">Replié</string>
+    <string name="notices_open_conversation">Ouvrir la conversation</string>
+    <string name="notices_open_account">Voir le compte</string>
+    <string name="notices_conversation_missing">Nous n’avons pas trouvé cette conversation. Elle n’est peut-être plus disponible.</string>
+</resources>

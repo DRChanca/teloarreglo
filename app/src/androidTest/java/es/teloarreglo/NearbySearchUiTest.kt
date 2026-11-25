@@ -1,6 +1,7 @@
 package es.teloarreglo
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -9,6 +10,8 @@ import androidx.compose.ui.test.performScrollToNode
 import es.teloarreglo.catalogue.Catalogue
 import es.teloarreglo.catalogue.Coverage
 import es.teloarreglo.catalogue.PublicProfile
+import es.teloarreglo.home.HomeAddress
+import es.teloarreglo.home.HomeSource
 import es.teloarreglo.search.Concejo
 import es.teloarreglo.search.ConcejoAnchor
 import es.teloarreglo.search.ConcejoDirectory
@@ -41,8 +44,10 @@ class NearbySearchUiTest {
         private val queue = ArrayDeque(outcomes.toList())
         val sentConcejos = mutableListOf<String?>()
         val sentPoints = mutableListOf<Pair<Double, Double>>()
+        val sentTrades = mutableListOf<String?>()
         override suspend fun search(lat: Double, lng: Double, trade: String?, ineCode: String?, limit: Int): SearchOutcome {
             sentConcejos += ineCode
+            sentTrades += trade
             sentPoints += lat to lng
             return queue.removeFirst()
         }
@@ -55,12 +60,19 @@ class NearbySearchUiTest {
     }
 
     // The map is never composed here (no key in tests): the manual choice must work without it.
-    private fun show(search: ProfessionalSearch, granted: Boolean = true, located: Located = oviedo, opened: MutableList<String> = mutableListOf()) {
+    private var permissionAsks = 0
+
+    private fun show(
+        search: ProfessionalSearch, granted: Boolean = true, located: Located = oviedo,
+        opened: MutableList<String> = mutableListOf(), home: HomeAddress? = null,
+    ) {
         compose.setContent {
-            NearbySearchScreen(search, catalogue, ensurePermission = { granted }, locate = { located },
-                onOpenProfile = { opened += it }, concejos = concejos, map = MapAvailability.NO_KEY)
+            NearbySearchScreen(search, catalogue, ensurePermission = { permissionAsks++; granted }, locate = { located },
+                onOpenProfile = { opened += it }, concejos = concejos, map = MapAvailability.NO_KEY, home = home)
         }
     }
+
+    private val home = HomeAddress("Calle Uría 1, Oviedo", 43.3619, -5.8494, "33044", "Oviedo", HomeSource.GPS)
 
     /** The whole screen is one list: bring a node into view as a user would by scrolling. */
     private fun scrollTo(tag: String) = compose.onNodeWithTag("nearby_screen").performScrollToNode(hasTestTag(tag))
@@ -158,5 +170,62 @@ class NearbySearchUiTest {
         scrollTo("nearby_far")
         compose.onNodeWithTag("nearby_far").assertIsDisplayed().performClick()
         assertEquals(listOf("far"), opened)
+    }
+
+    @Test fun tappingATradeRepeatsTheSearchFromTheSameOrigin() {
+        val oviedo = Concejo("33044", "Oviedo")
+        val search = FakeSearch(SearchOutcome.Found(oviedo, listOf(NearbyResult("near", 500))),
+            SearchOutcome.Found(oviedo, listOf(NearbyResult("far", 12500))))
+        show(search, home = home)
+        waitFor("nearby_concejo")
+        compose.onNodeWithTag("nearby_trade_electrical").performClick()
+        compose.waitUntil(5_000) { search.sentTrades.size == 2 }
+        assertEquals(listOf(null, "electrical"), search.sentTrades)
+        assertEquals(listOf(home.lat to home.lng, home.lat to home.lng), search.sentPoints)
+        assertEquals(listOf<String?>("33044", "33044"), search.sentConcejos)
+        waitFor("nearby_far")
+    }
+
+    @Test fun retryingAFailedSearchFromHomeDoesNotAskForTheLocation() {
+        val search = FakeSearch(SearchOutcome.Failed(SearchError.NETWORK),
+            SearchOutcome.Found(Concejo("33044", "Oviedo"), listOf(NearbyResult("near", 500))))
+        show(search, home = home)
+        waitFor("nearby_retry")
+        scrollTo("nearby_retry")
+        compose.onNodeWithTag("nearby_retry").performClick()
+        waitFor("nearby_concejo")
+        assertEquals(0, permissionAsks)
+        assertEquals(listOf(home.lat to home.lng, home.lat to home.lng), search.sentPoints)
+    }
+
+    @Test fun retryingAManualSearchKeepsTheChosenConcejo() {
+        val search = FakeSearch(SearchOutcome.Failed(SearchError.SERVICE),
+            SearchOutcome.Found(Concejo("33024", "Gijón"), listOf(NearbyResult("near", 1000))))
+        show(search)
+        scrollTo("map_manual")
+        compose.onNodeWithTag("map_manual").performClick()
+        waitFor("map_concejo")
+        scrollTo("map_concejo")
+        compose.onNodeWithTag("map_concejo").performClick()
+        compose.onNodeWithTag("map_concejo_33024").performClick()
+        scrollTo("map_search_here")
+        compose.onNodeWithTag("map_search_here").performClick()
+        waitFor("nearby_retry")
+        scrollTo("nearby_retry")
+        compose.onNodeWithTag("nearby_retry").performClick()
+        waitFor("nearby_concejo")
+        assertEquals(0, permissionAsks)
+        assertEquals(listOf<String?>("33024", "33024"), search.sentConcejos)
+    }
+
+    @Test fun withAHomeResultsComeFirstAndOtherWaysAreFolded() {
+        show(FakeSearch(SearchOutcome.Found(Concejo("33044", "Oviedo"), listOf(NearbyResult("near", 500)))), home = home)
+        waitFor("nearby_concejo")
+        compose.onNodeWithTag("nearby_origin_text").assertTextContains(home.address, substring = true)
+        compose.onNodeWithTag("nearby_near").assertIsDisplayed()
+        assertNull(compose.onAllNodes(hasTestTag("nearby_locate")).fetchSemanticsNodes().firstOrNull())
+        compose.onNodeWithTag("nearby_other_ways").performClick()
+        scrollTo("nearby_locate")
+        compose.onNodeWithTag("nearby_locate").assertIsDisplayed()
     }
 }

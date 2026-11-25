@@ -24,6 +24,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -35,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,12 +47,16 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.teloarreglo.notices.Notice
+import es.teloarreglo.notices.NoticeDestination
+import es.teloarreglo.notices.destination
+import es.teloarreglo.notices.readOnSight
 import es.teloarreglo.notices.NoticeTopic
 import es.teloarreglo.notices.Notices
 import es.teloarreglo.notices.PushRegistration
@@ -72,15 +80,26 @@ import java.time.format.FormatStyle
 fun NoticesScreen(
     notices: Notices, push: PushRegistration?, accountId: String, operationScope: CoroutineScope,
     askPermission: suspend () -> Unit,
-    onOpenConversation: (String) -> Unit, onOpenAccount: () -> Unit, onBack: () -> Unit,
+    onOpenConversation: suspend (String) -> Boolean, onOpenAccount: () -> Unit, onBack: () -> Unit,
 ) {
     BackHandler(onBack = onBack)
     var attempt by remember { mutableIntStateOf(0) }
     var items by remember(accountId) { mutableStateOf<List<Notice>?>(null) }
     var failed by remember { mutableStateOf(false) }
+    // The conversation of a tapped notice was not found: say so instead of doing nothing (#47).
+    var missing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     LaunchedEffect(accountId, attempt) {
         failed = false
-        try { items = notices.list() } catch (e: CancellationException) { throw e } catch (_: Exception) { failed = true }
+        try {
+            val loaded = notices.list()
+            items = loaded
+            // Notices that lead nowhere are read once seen; they keep their «Nuevo» mark until the next load.
+            val seen = loaded.readOnSight()
+            if (seen.isNotEmpty()) operationScope.launch {
+                try { notices.markRead(seen) } catch (e: CancellationException) { throw e } catch (_: Exception) { }
+            }
+        } catch (e: CancellationException) { throw e } catch (_: Exception) { failed = true }
     }
     LaunchedEffect(accountId) { push?.sync(accountId) }
     Surface(Modifier.fillMaxSize()) {
@@ -106,18 +125,25 @@ fun NoticesScreen(
                 current.isEmpty() -> Text(stringResource(R.string.notices_empty), Modifier.padding(vertical = 24.dp))
                 else -> LazyColumn(Modifier.testTag("notices_list")) {
                     if (failed) item { Text(stringResource(R.string.notices_error), color = MaterialTheme.colorScheme.error) }
+                    if (missing) item {
+                        Text(stringResource(R.string.notices_conversation_missing), color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.testTag("notices_conversation_missing").semantics { liveRegion = LiveRegionMode.Polite })
+                    }
                     items(current, key = { it.id }) { notice ->
-                        NoticeRow(notice) {
+                        val destination = notice.destination()
+                        NoticeRow(notice, destination, onClick = destination?.let { target -> {
                             items = current.map { if (it.id == notice.id) it.copy(read = true) else it }
-                            operationScope.launch {
+                            if (!notice.read) operationScope.launch {
                                 try { notices.markRead(listOf(notice.id)) } catch (e: CancellationException) { throw e } catch (_: Exception) { }
                             }
-                            val conversation = notice.conversationId
-                            when {
-                                conversation != null -> onOpenConversation(conversation)
-                                notice.kind == "profile_review" -> onOpenAccount()
+                            when (target) {
+                                is NoticeDestination.Conversation -> scope.launch {
+                                    missing = false
+                                    if (!onOpenConversation(target.id)) missing = true
+                                }
+                                NoticeDestination.Account -> onOpenAccount()
                             }
-                        }
+                        } })
                         HorizontalDivider()
                     }
                 }
@@ -126,15 +152,22 @@ fun NoticesScreen(
     }
 }
 
+/** A notice and, when it leads somewhere, where: only those rows are tappable (#47). */
 @Composable
-private fun NoticeRow(notice: Notice, onClick: () -> Unit) {
+private fun NoticeRow(notice: Notice, destination: NoticeDestination?, onClick: (() -> Unit)?) {
     val time = remember(notice.createdAt) {
         runCatching {
             OffsetDateTime.parse(notice.createdAt).atZoneSameInstant(ZoneId.systemDefault())
                 .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT))
         }.getOrDefault("")
     }
-    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp).testTag("notice_${notice.id}"),
+    val action = when (destination) {
+        is NoticeDestination.Conversation -> stringResource(R.string.notices_open_conversation)
+        NoticeDestination.Account -> stringResource(R.string.notices_open_account)
+        null -> null
+    }
+    val tappable = if (onClick != null) Modifier.clickable(onClickLabel = action, role = Role.Button, onClick = onClick) else Modifier
+    Row(Modifier.fillMaxWidth().then(tappable).padding(vertical = 12.dp).testTag("notice_${notice.id}"),
         verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(10.dp).background(if (notice.read) Color.Transparent else MaterialTheme.colorScheme.primary, CircleShape))
         Spacer(Modifier.width(12.dp))
@@ -147,8 +180,14 @@ private fun NoticeRow(notice: Notice, onClick: () -> Unit) {
             }
             Text(time, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
         }
-        if (!notice.read) Text(stringResource(R.string.notices_unread), style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.primary)
+        Column(horizontalAlignment = Alignment.End) {
+            if (!notice.read) Text(stringResource(R.string.notices_unread), style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary)
+            if (action != null) Row(Modifier.testTag("notice_action_${notice.id}"), verticalAlignment = Alignment.CenterVertically) {
+                Text(action, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            }
+        }
     }
 }
 

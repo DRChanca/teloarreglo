@@ -36,18 +36,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import es.teloarreglo.catalogue.Catalogue
-import es.teloarreglo.catalogue.PublicProfile
 import es.teloarreglo.home.HomeAddress
-import es.teloarreglo.search.Concejo
 import es.teloarreglo.search.ConcejoAnchor
 import es.teloarreglo.search.ConcejoDirectory
 import es.teloarreglo.search.GeoPoint
@@ -57,29 +55,12 @@ import es.teloarreglo.search.searchPoint
 import es.teloarreglo.search.Located
 import es.teloarreglo.search.ProfessionalSearch
 import es.teloarreglo.search.SearchError
-import es.teloarreglo.search.SearchOutcome
 import es.teloarreglo.search.isUncertain
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-/** What the nearby search shows. Positions are kept only for the current search. */
-private sealed interface NearbyState {
-    data object Idle : NearbyState
-    data object Locating : NearbyState
-    data object Searching : NearbyState
-    data object PermissionDenied : NearbyState
-    data object LocationUnavailable : NearbyState
-    data object Uncertain : NearbyState
-    data object OutsideArea : NearbyState
-    data class Confirm(val options: List<Concejo>) : NearbyState
-    /** [featured]: «Destacado» profile ids, already placed first by the server (#33). */
-    data class Results(
-        val concejo: Concejo, val rows: List<Pair<PublicProfile, Int>>, val from: GeoPoint,
-        val featured: Set<String> = emptySet(),
-    ) : NearbyState
-    data class Failed(val reason: SearchError) : NearbyState
-}
 
 /**
  * Search by the job's location: one GPS fix, coverage of that concejo first, then proximity.
@@ -89,6 +70,8 @@ private sealed interface NearbyState {
  * With a [home] (#37) the search starts from it without asking for GPS; if a fix (only taken when
  * permission was already granted, or when the user asks) is more than 5 km away, [askIfAway] decides
  * whether to ask once per session: change the home, search from here, or keep home.
+ * The screen reads «current origin → results»; GPS and the manual choice sit in a foldable section,
+ * folded when a home gives results right away (#47). Retry and trade changes keep the origin.
  */
 @Composable
 fun NearbySearchScreen(
@@ -104,52 +87,55 @@ fun NearbySearchScreen(
     onChangeHome: (() -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
+    val session = remember(search, catalogue) { NearbySearchSession(search, catalogue) }
     var trade by rememberSaveable { mutableStateOf<String?>(null) }
     var state by remember { mutableStateOf<NearbyState>(NearbyState.Idle) }
-    // Last position, only to resend with a confirmed concejo; never shown nor saved.
-    var lastPosition by remember { mutableStateOf<GeoPoint?>(null) }
+    var origin by remember { mutableStateOf<SearchOrigin?>(null) }
     var showMap by rememberSaveable { mutableStateOf(false) }
     var manual by rememberSaveable { mutableStateOf(false) }
+    // GPS and manual choice: open when there is no home to search from.
+    var otherWays by rememberSaveable { mutableStateOf(home == null) }
     // Position more than 5 km from home, waiting for the user's choice; never stored.
     var away by remember { mutableStateOf<GeoPoint?>(null) }
+    // Only the latest search may change the screen: a new one cancels the previous.
+    val running = remember { mutableStateOf<Job?>(null) }
     // Denied permission, no fix or an imprecise one: offer the manual choice right away.
     LaunchedEffect(state) {
         if (state == NearbyState.PermissionDenied || state == NearbyState.LocationUnavailable ||
-            state == NearbyState.Uncertain) manual = true
+            state == NearbyState.Uncertain) { manual = true; otherWays = true }
     }
 
-    suspend fun runSearch(position: GeoPoint, ineCode: String?) {
+    fun launchSearch(block: suspend () -> Unit) {
+        running.value?.cancel()
+        running.value = scope.launch { block() }
+    }
+
+    suspend fun show(next: suspend () -> NearbyState?) {
         state = NearbyState.Searching
-        state = when (val outcome = search.search(position.lat, position.lng, trade, ineCode)) {
-            is SearchOutcome.Found -> try {
-                val byId = catalogue.list(trade).associateBy { it.id }
-                NearbyState.Results(outcome.concejo, outcome.results.mapNotNull { r -> byId[r.profileId]?.let { it to r.distanceBandM } },
-                    position, outcome.results.filter { it.featured }.mapTo(mutableSetOf()) { it.profileId })
-            } catch (error: Exception) {
-                if (error is CancellationException) throw error
-                NearbyState.Failed(SearchError.SERVICE)
-            }
-            is SearchOutcome.ConfirmConcejo -> NearbyState.Confirm(outcome.options)
-            SearchOutcome.OutsideArea -> NearbyState.OutsideArea
-            is SearchOutcome.Failed -> NearbyState.Failed(outcome.reason)
-        }
+        state = next() ?: NearbyState.Idle
+        origin = session.last?.origin
     }
 
-    fun searchFromHome() = scope.launch { home?.let { runSearch(it.point, it.ineCode) } }
+    suspend fun runSearch(query: NearbyQuery) = show { session.search(query, trade) }
+
+    fun searchFromHome() = home?.let { h -> launchSearch { runSearch(NearbyQuery(SearchOrigin.Home, h.point, h.ineCode)) } }
+
+    // The same search again: after an error, or with another trade (#47).
+    fun repeatSearch() { if (session.last != null) launchSearch { show { session.repeat(trade) } } }
 
     // From home by default; a silent fix (no permission prompt) only to notice being far away.
     LaunchedEffect(home) {
         if (home == null) return@LaunchedEffect
-        if (state == NearbyState.Idle) launch { runSearch(home.point, home.ineCode) }
+        if (state == NearbyState.Idle) searchFromHome()
         val here = locate()
         if (here is Located.Position && !here.isUncertain()) {
             val point = GeoPoint(here.lat, here.lng)
-            if (askIfAway(point)) { lastPosition = point; away = point }
+            if (askIfAway(point)) away = point
         }
     }
 
-    fun start() = scope.launch {
-        if (!ensurePermission()) { state = NearbyState.PermissionDenied; return@launch }
+    fun start() = launchSearch {
+        if (!ensurePermission()) { state = NearbyState.PermissionDenied; return@launchSearch }
         state = NearbyState.Locating
         when (val located = locate()) {
             Located.Unavailable -> state = NearbyState.LocationUnavailable
@@ -157,8 +143,7 @@ fun NearbySearchScreen(
                 state = NearbyState.Uncertain
             } else {
                 val point = GeoPoint(located.lat, located.lng)
-                lastPosition = point
-                if (askIfAway(point)) { away = point; state = NearbyState.Idle } else runSearch(point, null)
+                if (askIfAway(point)) { away = point; state = NearbyState.Idle } else runSearch(NearbyQuery(SearchOrigin.Gps, point, null))
             }
         }
     }
@@ -166,8 +151,9 @@ fun NearbySearchScreen(
     val here = away
     if (here != null && home != null) AwayFromHomeDialog(home.point, here,
         onChangeHome = { away = null; onChangeHome?.invoke() ?: searchFromHome() },
-        onSearchHere = { away = null; scope.launch { runSearch(here, null) } },
+        onSearchHere = { away = null; launchSearch { runSearch(NearbyQuery(SearchOrigin.Gps, here, null)) } },
         onKeepHome = { away = null; searchFromHome() })
+    val busy = state == NearbyState.Locating || state == NearbyState.Searching
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         // One scrollable list for header and results: on small screens results stay reachable.
         LazyColumn(
@@ -175,43 +161,39 @@ fun NearbySearchScreen(
             contentPadding = PaddingValues(TeloTheme.spacing.screen),
             verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.medium),
         ) {
-            item { Text(stringResource(R.string.nearby_title), style = MaterialTheme.typography.headlineMedium) }
-            item { Text(stringResource(R.string.nearby_hint)) }
+            item { Text(stringResource(R.string.nearby_title), style = MaterialTheme.typography.headlineSmall) }
+            item { Text(stringResource(if (home != null) R.string.nearby_hint_home else R.string.nearby_hint)) }
             item {
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = trade == null, onClick = { trade = null }, label = { Text(stringResource(R.string.trade_all)) })
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
+                    fun choose(key: String?) {
+                        if (trade == key) return
+                        trade = key
+                        if (state is NearbyState.Results || state is NearbyState.Failed) repeatSearch()
+                    }
+                    FilterChip(selected = trade == null, onClick = { choose(null) }, label = { Text(stringResource(R.string.trade_all)) })
                     catalogueTrades.forEach { key ->
-                        FilterChip(selected = trade == key, onClick = { trade = key },
+                        FilterChip(selected = trade == key, onClick = { choose(key) },
                             modifier = Modifier.testTag("nearby_trade_$key"), label = { Text(stringResource(tradeLabel(key))) })
                     }
                 }
             }
-            if (home != null) item {
-                val busy = state == NearbyState.Locating || state == NearbyState.Searching
-                Card(Modifier.fillMaxWidth().testTag("nearby_home")) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.home_searching_from, home.address), style = MaterialTheme.typography.bodyMedium)
-                        OutlinedButton(onClick = { searchFromHome() }, enabled = !busy,
-                            modifier = Modifier.fillMaxWidth().testTag("nearby_from_home")) {
-                            Text(stringResource(R.string.home_search_from_home))
-                        }
+            item {
+                OriginCard(origin, home, busy, otherWays,
+                    onSearchFromHome = { searchFromHome() }, onToggleOtherWays = { otherWays = !otherWays })
+            }
+            if (otherWays) {
+                item {
+                    Button(onClick = { start() }, enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("nearby_locate")) {
+                        Text(stringResource(R.string.nearby_use_location))
                     }
                 }
-            }
-            item {
-                val busy = state == NearbyState.Locating || state == NearbyState.Searching
-                Button(onClick = { start() }, enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("nearby_locate")) {
-                    Text(stringResource(R.string.nearby_use_location))
-                }
-            }
-            item { Text(stringResource(R.string.nearby_privacy), style = MaterialTheme.typography.bodySmall) }
-            if (concejos != null) item {
-                val busy = state == NearbyState.Locating || state == NearbyState.Searching
-                if (!manual) OutlinedButton(onClick = { manual = true }, enabled = !busy,
-                    modifier = Modifier.fillMaxWidth().testTag("map_manual")) { Text(stringResource(R.string.map_manual)) }
-                else ManualLocation(concejos, map, busy, onCancel = { manual = false }) { anchor, point ->
-                    lastPosition = point
-                    scope.launch { runSearch(point, anchor.ineCode) }
+                item { Text(stringResource(R.string.nearby_privacy), style = MaterialTheme.typography.bodySmall) }
+                if (concejos != null) item {
+                    if (!manual) OutlinedButton(onClick = { manual = true }, enabled = !busy,
+                        modifier = Modifier.fillMaxWidth().testTag("map_manual")) { Text(stringResource(R.string.map_manual)) }
+                    else ManualLocation(concejos, map, busy, onCancel = { manual = false }) { anchor, point ->
+                        launchSearch { runSearch(NearbyQuery(SearchOrigin.Manual(anchor.name), point, anchor.ineCode)) }
+                    }
                 }
             }
 
@@ -232,7 +214,7 @@ fun NearbySearchScreen(
                         Text(stringResource(R.string.nearby_confirm), Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                         s.options.forEach { option ->
                             OutlinedButton(
-                                onClick = { lastPosition?.let { p -> scope.launch { runSearch(p, option.ineCode) } } },
+                                onClick = { launchSearch { show { session.confirm(option.ineCode, trade) } } },
                                 modifier = Modifier.fillMaxWidth().testTag("nearby_confirm_${option.ineCode}"),
                             ) { Text(option.name) }
                         }
@@ -244,7 +226,7 @@ fun NearbySearchScreen(
                             SearchError.NETWORK -> R.string.nearby_error_network
                             else -> R.string.nearby_error_service
                         }), color = MaterialTheme.colorScheme.error, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-                        Button(onClick = { start() }, modifier = Modifier.testTag("nearby_retry")) { Text(stringResource(R.string.retry)) }
+                        Button(onClick = { repeatSearch() }, modifier = Modifier.testTag("nearby_retry")) { Text(stringResource(R.string.retry)) }
                     }
                 }
                 is NearbyState.Results -> if (s.rows.isEmpty()) {
@@ -287,6 +269,39 @@ fun NearbySearchScreen(
         }
     }
 }
+
+/**
+ * Where the current search starts from, and the ways to change it: back to the home when the search left it,
+ * and «Search from somewhere else» to unfold GPS and the manual choice.
+ */
+@Composable
+private fun OriginCard(
+    origin: SearchOrigin?, home: HomeAddress?, busy: Boolean, otherWays: Boolean,
+    onSearchFromHome: () -> Unit, onToggleOtherWays: () -> Unit,
+) {
+    Card(Modifier.fillMaxWidth().testTag(if (home != null) "nearby_home" else "nearby_origin"), shape = MaterialTheme.shapes.large) {
+        Column(Modifier.padding(TeloTheme.spacing.large), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
+            val text = when (origin) {
+                SearchOrigin.Home -> home?.let { stringResource(R.string.home_searching_from, it.address) }
+                SearchOrigin.Gps -> stringResource(R.string.nearby_origin_gps)
+                is SearchOrigin.Manual -> stringResource(R.string.nearby_origin_manual, origin.concejo)
+                null -> home?.let { stringResource(R.string.home_searching_from, it.address) }
+            } ?: stringResource(R.string.nearby_origin_none)
+            Text(text, Modifier.testTag("nearby_origin_text"), style = MaterialTheme.typography.titleMedium)
+            if (home != null && origin != null && origin != SearchOrigin.Home) {
+                OutlinedButton(onClick = onSearchFromHome, enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("nearby_from_home")) {
+                    Text(stringResource(R.string.home_search_from_home))
+                }
+            }
+            val toggleState = stringResource(if (otherWays) R.string.nearby_other_ways_open else R.string.nearby_other_ways_closed)
+            TextButton(onClick = onToggleOtherWays,
+                modifier = Modifier.testTag("nearby_other_ways").semantics { stateDescription = toggleState }) {
+                Text(stringResource(if (otherWays) R.string.nearby_other_ways_hide else R.string.nearby_other_ways))
+            }
+        }
+    }
+}
+
 
 /**
  * Manual job location: a concejo (always) and a pin when the map is available. Without a map the
