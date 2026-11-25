@@ -22,6 +22,8 @@ import es.teloarreglo.search.MapAvailability
 import es.teloarreglo.search.NearbyResult
 import es.teloarreglo.search.ProfessionalSearch
 import es.teloarreglo.search.SearchOutcome
+import androidx.compose.ui.test.assertIsDisplayed
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
@@ -106,5 +108,61 @@ class SearchFiltersUiTest {
         // 4,7 km is shown as the 5 km band and passes; 5,2 km is the 5,5 km band and does not.
         present("near", "edge")
         none("profile_beyond")
+    }
+
+    @Test fun theLimitAlsoAppliesToTheFeaturedOfTheZone() {
+        show()
+        waitFor("nearby_distance_featured")
+        openFilters()
+        distance(2)
+        apply()
+        present("near")
+        none("profile_featured")
+    }
+
+    @Test fun aProfileWithoutLocationLeavesWithALimitAndReturnsOnReset() {
+        show()
+        waitFor("nearby_distance_near")
+        present("nowhere")
+        openFilters()
+        distance(4)
+        apply()
+        present("unrated")
+        none("profile_nowhere")
+        openFilters()
+        compose.onNodeWithTag("filters_reset").performClick()
+        apply()
+        present("nowhere")
+    }
+
+    @Test fun aMinimumRatingLeavesOutProfilesWithoutReviewsAndBelowIt() {
+        show()
+        waitFor("nearby_distance_near")
+        openFilters()
+        compose.onNodeWithTag("filters_rating_4").performClick()
+        apply()
+        present("near")
+        none("profile_beyond")
+        none("profile_unrated")
+        openFilters()
+        compose.onNodeWithTag("filters_rating_3").performClick()
+        apply()
+        present("beyond")
+        none("profile_unrated")
+    }
+
+    @Test fun aVisitorWithoutAPointCannotLimitDistanceButCanFilterByRating() {
+        val search = FakeSearch(ordered)
+        show(search, home = null)
+        waitFor("profile_near")
+        openFilters()
+        compose.onNodeWithTag("filters_distance").assertIsNotEnabled()
+        compose.onNodeWithTag("filters_distance_needs_point").assertIsDisplayed()
+        compose.onNodeWithTag("filters_rating_4").performClick()
+        apply()
+        present("near", "nowhere")
+        none("profile_unrated")
+        none("profile_beyond")
+        assertEquals(0, search.calls)
     }
 }

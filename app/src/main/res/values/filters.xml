@@ -5,5 +5,10 @@
     <string name="filters_distance">Distancia máxima</string>
     <string name="filters_distance_none">Sin límite</string>
     <string name="filters_distance_km">%1$d km</string>
+    <string name="filters_distance_needs_point">Elige un punto para filtrar por distancia</string>
+    <string name="filters_rating">Valoración mínima</string>
+    <string name="filters_rating_any">Cualquiera</string>
+    <string name="filters_rating_min">%1$d★ o más</string>
+    <string name="filters_reset">Restablecer</string>
     <string name="filters_apply_unknown">Ver profesionales</string>
 </resources>
