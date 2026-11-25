@@ -40,8 +40,10 @@ fun dialUri(phone: String): String? {
 }
 
 /** Opens the dialer with [phone] filled in (ACTION_DIAL: never calls, needs no permission). False when it could not. */
-fun openDialer(context: Context, phone: String): Boolean {
-    val uri = dialUri(phone) ?: return false
+fun openDialer(context: Context, phone: String): Boolean = dialUri(phone)?.let { openDialUri(context, it) } ?: false
+
+/** Opens the dialer on a `tel:` [uri] from [dialUri]. False when the device has no dialer. */
+fun openDialUri(context: Context, uri: String): Boolean {
     return try {
         context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse(uri)))
         true

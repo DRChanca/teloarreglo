@@ -1,5 +1,6 @@
 package es.teloarreglo.notices
 
+import es.teloarreglo.dialUri
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
@@ -78,6 +79,36 @@ fun Notice.destination(): NoticeDestination? =
 fun pushDestination(data: Map<String, String>): NoticeDestination.Conversation? =
     data["conversation_id"]?.takeIf { data["kind"] == "call_client" && it.isNotEmpty() }
         ?.let { NoticeDestination.Conversation(it) }
+
+/** Identifiers of the appointment a call push is about; the notification offers «Llamar» for it (#81). */
+data class PushCall(val conversationId: String, val appointmentId: String)
+
+fun pushCall(data: Map<String, String>): PushCall? {
+    if (data["kind"] != "call_client") return null
+    val conversation = data["conversation_id"]?.takeIf { it.isNotEmpty() } ?: return null
+    val appointment = data["appointment_id"]?.takeIf { it.isNotEmpty() } ?: return null
+    return PushCall(conversation, appointment)
+}
+
+/** What «Llamar» in the call notice (#81) does: open the dialer with [uri], or open the appointment's conversation. */
+sealed interface CallNoticeAction {
+    data class Dial(val uri: String) : CallNoticeAction
+    data class OpenAppointment(val conversationId: String) : CallNoticeAction
+}
+
+/**
+ * Decides «Llamar» of the call notice (#81). The client's number is asked to [phone] now (the protected function
+ * of the appointment, #79), never stored in the notice or the intent. A number that cannot be read (no network, no
+ * access) counts as none.
+ */
+suspend fun callNoticeAction(
+    conversationId: String, appointmentId: String, phone: suspend (String, String) -> String?,
+): CallNoticeAction {
+    val number = try { phone(conversationId, appointmentId) }
+        catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { null }
+    val uri = number?.let(::dialUri)
+    return uri?.let { CallNoticeAction.Dial(it) } ?: CallNoticeAction.OpenAppointment(conversationId)
+}
 
 /** What came of opening a notice's conversation (#47): a missing conversation and an unreachable service read differently. */
 enum class NoticeOpening { OPENED, NOT_FOUND, UNREACHABLE }

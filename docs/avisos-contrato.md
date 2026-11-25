@@ -122,6 +122,9 @@ un aviso `call_client` para llamar al cliente. Llega como push aunque la app est
 - Android: tema `CALL_CLIENT` («Tu cita empieza pronto: llama al cliente»). En Avisos lleva a la conversación de la
   cita, donde se muestra. Al tocar la notificación se abre directamente esa conversación (`pushDestination`) y el
   aviso queda leído; el resto de notificaciones siguen abriendo Avisos.
+- «Llamar» (#81): la notificación lleva esa acción (`pushCall`). Al pulsarla, la app abre la cita, pide el número en
+  ese momento a `Appointments.contactPhone` y, si lo hay, abre el marcador con `ACTION_DIAL` (`callNoticeAction`);
+  sin número se queda en la cita. Comprobación: [comprobacion-llamar-aviso.md](comprobacion-llamar-aviso.md).
 
 Programación cada minuto con Supabase Cron, paso manual por proyecto (como el reloj de #27):
 
