@@ -10,7 +10,10 @@
     <string name="woodpecker_head_path" translatable="false">M45,38 A7,7 0 1,0 59,38 A7,7 0 1,0 45,38 Z M53,36.6 A1.2,1.2 0 1,0 55.4,36.6 A1.2,1.2 0 1,0 53,36.6 Z</string>
     <string name="woodpecker_beak_path" translatable="false">M57,35.6 L62.5,38 L57,40.4 Z</string>
     <string name="woodpecker_crest_path" translatable="false">M42.5,32 L46,34 C47,31.4 49.6,30.4 52.4,30.6 C54.4,30.8 55.8,31.6 56.6,32.4 C53,32.4 49.6,34.4 48.2,37.8 C47.2,37.2 46.2,36.2 45.6,35.2 Z</string>
-    <string name="woodpecker_spark_path" translatable="false">M64.5,32.5 L65.6,36.9 L70,38 L65.6,39.1 L64.5,43.5 L63.4,39.1 L59,38 L63.4,36.9 Z</string>
+    <!-- Splash only: the wing, folded inside the body (invisible at rest), raised while flying in. -->
+    <string name="woodpecker_wing_path" translatable="false">M48,46 C45,52 46,60 51,66 C54,62 55,54 52,47 Z</string>
+    <!-- Length of the splash animation, the one source for the theme, the animators and the exit (#57). -->
+    <integer name="splash_animation_millis">1000</integer>
     <!-- Splash colors (light); values-night has the dark ones. -->
     <color name="woodpecker_body">#1C1B1F</color>
     <color name="woodpecker_crest">#C62828</color>
