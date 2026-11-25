@@ -433,7 +433,7 @@
     <string name="start_cancel_cancel">Cancel the appointment</string>
     <string name="start_cancel_cancel_title">Cancel the appointment?</string>
     <string name="start_cancel_effect_refund">The client will get back everything paid in the app: %1$s (simulated). No penalty.</string>
-    <string name="start_cancel_effect_direct">The agreed direct payment (%1$s) does not go through the app, so the app refunds nothing. No penalty.</string>
+    <string name="start_cancel_effect_direct">The agreed direct payment does not go through the app, so the app refunds nothing. No penalty.</string>
     <string name="start_cancel_effect_none">No penalty and no money movements.</string>
     <string name="start_cancel_release">The reserved time will be released and the other party will be notified.</string>
     <string name="start_cancel_keep">Keep the appointment</string>
@@ -461,7 +461,7 @@
     <string name="completion_confirm">Confirm it was done</string>
     <string name="completion_confirm_title">Confirm that the job was done?</string>
     <string name="completion_effect_deliver">The pending amount will be released to the professional: %1$s (simulated).</string>
-    <string name="completion_effect_direct">The agreed direct payment (%1$s) does not go through the app, so the app releases nothing.</string>
+    <string name="completion_effect_direct">The agreed direct payment does not go through the app, so the app releases nothing.</string>
     <string name="completion_effect_none">There is no pending money to release.</string>
     <string name="completion_final">The appointment will be completed. If there is a problem, do not confirm: report it as an incident.</string>
     <string name="completion_not_yet">Not yet</string>
@@ -550,8 +550,8 @@
     </plurals>
     <string name="resolution_notice_completed">Closed by administration after reviewing the incident. The decisions and their reasons are in the incident.</string>
     <string name="resolution_completed_at">Closed by administration on %1$s</string>
-    <string name="resolution_settlement_deliver">Administration: the pending amount (%1$s) was delivered to the professional (simulated).</string>
-    <string name="resolution_settlement_refund">Administration: the pending amount (%1$s) was refunded to the client (simulated).</string>
+    <string name="resolution_settlement_deliver">Administration: the pending amount was delivered to the professional (simulated).</string>
+    <string name="resolution_settlement_refund">Administration: the pending amount was refunded to the client (simulated).</string>
     <string name="resolution_settlement_split">Administration: %1$s was refunded to the client and %2$s delivered to the professional (simulated).</string>
     <string name="resolution_reason">Reason: %1$s</string>
     <string name="resolution_decided_at">Decided on %1$s</string>
@@ -585,4 +585,19 @@
     <string name="chat_search_next">Next match</string>
     <string name="search_settings_title">Search</string>
     <string name="search_show_map">Show the map with the results</string>
+    <!-- Ventana de llegada: el profesional comparte su ubicación (#85). -->
+    <string name="arrival_channel">Arrival location</string>
+    <string name="arrival_sharing_with">Sharing your location with %1$s</string>
+    <string name="arrival_will_share">You will share your location with %1$s during the arrival window</string>
+    <string name="arrival_notification_text">Only during the appointment\'s arrival window</string>
+    <string name="arrival_stop">Stop sharing</string>
+    <string name="arrival_client_fallback">your client</string>
+    <string name="arrival_offer">You can share your location with your client during the hour before the appointment. It is optional.</string>
+    <string name="arrival_share">Share my location</string>
+    <string name="arrival_explain_title">Share your location?</string>
+    <string name="arrival_explain">Your client will see where you are coming from only during the hour before the appointment (half an hour if you have another appointment started). Meanwhile you will see a fixed notification and can stop sharing at any time. For it to start even with the app closed, choose “Allow all the time” for location.</string>
+    <string name="arrival_not_now">Not now</string>
+    <string name="arrival_continue">Continue</string>
+    <string name="arrival_denied">Without location permission nothing is shared. The appointment stays the same.</string>
+    <string name="arrival_no_background">Without “Allow all the time” location, it is only shared if you open this appointment during the arrival window.</string>
 </resources>

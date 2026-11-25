@@ -23,6 +23,7 @@ import es.teloarreglo.appointments.*
 import es.teloarreglo.catalogue.Coverage
 import es.teloarreglo.catalogue.WorkZones
 import es.teloarreglo.chat.Conversation
+import es.teloarreglo.chat.counterpartName
 import es.teloarreglo.search.Located
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -151,7 +152,8 @@ fun AppointmentsPanel(
                                 onChange = { sheet = "change:${appointment.id}" },
                                 onCorrection = { sheet = "correction:${appointment.id}" }, incidentTools = incidentTools,
                                 reviews = reviews, reviewState = reviewStates[appointment.id],
-                                onChooseMessages = chooseMessages, zoneNotice = zoneNotice)
+                                onChooseMessages = chooseMessages, zoneNotice = zoneNotice,
+                                clientName = conversation.counterpartName(accountId))
                         }
                     }
                 }
@@ -269,6 +271,8 @@ private fun AppointmentDetails(
     reviews: Reviews? = null, reviewState: AppointmentReviewState? = null,
     onChooseMessages: ((String) -> Unit)? = null,
     zoneNotice: (@Composable (Appointment) -> Unit)? = null,
+    /** For the professional's «Compartir mi ubicación» (#85). */
+    clientName: String? = null,
 ) {
     val format = dateTimeFormat()
     val professional = appointment.professionalId == accountId
@@ -323,6 +327,7 @@ private fun AppointmentDetails(
             // Changes are open while confirmed and during the job (price, scope, duration only once started).
             if (appointment.canProposeChange(accountId)) ChangeSection(appointment, accountId, appointments, scope, onChange, onCorrection, onChanged)
             StartCancelSection(appointment, accountId, appointments, scope, onChanged)
+            ArrivalSharingSection(appointment, accountId, clientName)
             CompletionSection(appointment, accountId, appointments, scope, onChanged)
             IncidentSection(appointment, accountId, incidentTools, scope, onChanged, onChooseMessages)
             ReviewSection(appointment, accountId, reviewState, reviews, scope, onChanged)

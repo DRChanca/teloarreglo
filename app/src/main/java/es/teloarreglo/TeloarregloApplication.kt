@@ -112,6 +112,16 @@ class TeloarregloApplication : Application() {
     val reviews: es.teloarreglo.appointments.Reviews? by lazy { client?.let { es.teloarreglo.appointments.SupabaseReviews(it) } }
     /** The professional's single agenda (#21); confirmations reserve through it on the server. */
     val agenda: es.teloarreglo.appointments.Agenda? by lazy { client?.let { es.teloarreglo.appointments.SupabaseAgenda(it) } }
+    /** The professional's choice to share their position in the ventana de llegada (#85), kept on this phone. */
+    val arrivalChoices: es.teloarreglo.appointments.ArrivalChoices by lazy { es.teloarreglo.arrival.SharedArrivalChoices(this) }
+    /** One round of «informar posición» (#85); null without configuration. */
+    val arrivalRound: es.teloarreglo.appointments.ArrivalRound? by lazy {
+        client?.let { c ->
+            es.teloarreglo.appointments.ArrivalRound(es.teloarreglo.appointments.SupabaseArrivalPositions(c), arrivalChoices) {
+                es.teloarreglo.arrival.arrivalFix(this)
+            }
+        }
+    }
     val chatAttachments: ChatAttachments? by lazy { client?.let(::SupabaseChatAttachments) }
     /** Owner's profile review result decided in the private panel (#29). */
     val profileReviews: ProfileReviews? by lazy { client?.let(::SupabaseProfileReviews) }

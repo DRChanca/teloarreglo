@@ -433,7 +433,7 @@
     <string name="start_cancel_cancel">Termin stornieren</string>
     <string name="start_cancel_cancel_title">Termin stornieren?</string>
     <string name="start_cancel_effect_refund">Der Kunde erhält alles in der App Bezahlte zurück: %1$s (simuliert). Ohne Strafgebühr.</string>
-    <string name="start_cancel_effect_direct">Die vereinbarte Direktzahlung (%1$s) läuft nicht über die App, daher erstattet die App nichts. Ohne Strafgebühr.</string>
+    <string name="start_cancel_effect_direct">Die vereinbarte Direktzahlung läuft nicht über die App, daher erstattet die App nichts. Ohne Strafgebühr.</string>
     <string name="start_cancel_effect_none">Ohne Strafgebühr und ohne Geldbewegungen.</string>
     <string name="start_cancel_release">Die reservierte Zeit wird freigegeben und die andere Seite benachrichtigt.</string>
     <string name="start_cancel_keep">Termin behalten</string>
@@ -461,7 +461,7 @@
     <string name="completion_confirm">Ausführung bestätigen</string>
     <string name="completion_confirm_title">Bestätigen, dass die Arbeit ausgeführt wurde?</string>
     <string name="completion_effect_deliver">Der ausstehende Betrag wird an den Profi ausgezahlt: %1$s (simuliert).</string>
-    <string name="completion_effect_direct">Die vereinbarte Direktzahlung (%1$s) läuft nicht über die App, daher zahlt die App nichts aus.</string>
+    <string name="completion_effect_direct">Die vereinbarte Direktzahlung läuft nicht über die App, daher zahlt die App nichts aus.</string>
     <string name="completion_effect_none">Es gibt keinen ausstehenden Betrag zum Auszahlen.</string>
     <string name="completion_final">Der Termin wird abgeschlossen. Bei einem Problem nicht bestätigen, sondern einen Vorfall melden.</string>
     <string name="completion_not_yet">Noch nicht</string>
@@ -550,8 +550,8 @@
     </plurals>
     <string name="resolution_notice_completed">Nach Prüfung des Vorfalls von der Administration geschlossen. Die Entscheidungen und Begründungen stehen im Vorfall.</string>
     <string name="resolution_completed_at">Von der Administration geschlossen am %1$s</string>
-    <string name="resolution_settlement_deliver">Administration: Der ausstehende Betrag (%1$s) wurde an die Fachkraft ausgezahlt (simuliert).</string>
-    <string name="resolution_settlement_refund">Administration: Der ausstehende Betrag (%1$s) wurde an die Kundschaft erstattet (simuliert).</string>
+    <string name="resolution_settlement_deliver">Administration: Der ausstehende Betrag wurde an die Fachkraft ausgezahlt (simuliert).</string>
+    <string name="resolution_settlement_refund">Administration: Der ausstehende Betrag wurde an die Kundschaft erstattet (simuliert).</string>
     <string name="resolution_settlement_split">Administration: %1$s wurden an die Kundschaft erstattet und %2$s an die Fachkraft ausgezahlt (simuliert).</string>
     <string name="resolution_reason">Begründung: %1$s</string>
     <string name="resolution_decided_at">Entschieden am %1$s</string>
@@ -585,4 +585,19 @@
     <string name="chat_search_next">Nächster Treffer</string>
     <string name="search_settings_title">Suche</string>
     <string name="search_show_map">Karte bei den Ergebnissen anzeigen</string>
+    <!-- Ventana de llegada: el profesional comparte su ubicación (#85). -->
+    <string name="arrival_channel">Standort bei Anfahrt</string>
+    <string name="arrival_sharing_with">Dein Standort wird mit %1$s geteilt</string>
+    <string name="arrival_will_share">Du teilst deinen Standort während des Ankunftsfensters mit %1$s</string>
+    <string name="arrival_notification_text">Nur während des Ankunftsfensters des Termins</string>
+    <string name="arrival_stop">Teilen beenden</string>
+    <string name="arrival_client_fallback">deinem Kunden</string>
+    <string name="arrival_offer">Du kannst deinen Standort in der Stunde vor dem Termin mit deinem Kunden teilen. Das ist freiwillig.</string>
+    <string name="arrival_share">Meinen Standort teilen</string>
+    <string name="arrival_explain_title">Standort teilen?</string>
+    <string name="arrival_explain">Dein Kunde sieht nur in der Stunde vor dem Termin, wo du herkommst (eine halbe Stunde, wenn du einen anderen Termin begonnen hast). Solange siehst du eine feste Benachrichtigung und kannst das Teilen jederzeit beenden. Damit es auch bei geschlossener App startet, wähle für den Standort „Immer zulassen“.</string>
+    <string name="arrival_not_now">Jetzt nicht</string>
+    <string name="arrival_continue">Weiter</string>
+    <string name="arrival_denied">Ohne Standortberechtigung wird nichts geteilt. Der Termin bleibt unverändert.</string>
+    <string name="arrival_no_background">Ohne Standort „Immer zulassen“ wird nur geteilt, wenn du diesen Termin während des Ankunftsfensters öffnest.</string>
 </resources>

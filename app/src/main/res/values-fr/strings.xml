@@ -433,7 +433,7 @@
     <string name="start_cancel_cancel">Annuler le rendez-vous</string>
     <string name="start_cancel_cancel_title">Annuler le rendez-vous ?</string>
     <string name="start_cancel_effect_refund">Le client sera intégralement remboursé de ce qu’il a payé dans l’app : %1$s (simulé). Sans pénalité.</string>
-    <string name="start_cancel_effect_direct">Le paiement direct convenu (%1$s) ne passe pas par l’app : l’app ne rembourse donc rien. Sans pénalité.</string>
+    <string name="start_cancel_effect_direct">Le paiement direct convenu ne passe pas par l’app : l’app ne rembourse donc rien. Sans pénalité.</string>
     <string name="start_cancel_effect_none">Sans pénalité et sans mouvement d’argent.</string>
     <string name="start_cancel_release">Le créneau réservé sera libéré et l’autre partie sera prévenue.</string>
     <string name="start_cancel_keep">Garder le rendez-vous</string>
@@ -461,7 +461,7 @@
     <string name="completion_confirm">Confirmer la réalisation</string>
     <string name="completion_confirm_title">Confirmer que le travail a été réalisé ?</string>
     <string name="completion_effect_deliver">Le montant en attente sera versé au professionnel : %1$s (simulé).</string>
-    <string name="completion_effect_direct">Le paiement direct convenu (%1$s) ne passe pas par l\'app, donc l\'app ne verse rien.</string>
+    <string name="completion_effect_direct">Le paiement direct convenu ne passe pas par l\'app, donc l\'app ne verse rien.</string>
     <string name="completion_effect_none">Aucun montant en attente à verser.</string>
     <string name="completion_final">Le rendez-vous sera terminé. En cas de problème, ne confirmez pas : signalez un incident.</string>
     <string name="completion_not_yet">Pas encore</string>
@@ -551,8 +551,8 @@
     </plurals>
     <string name="resolution_notice_completed">Clôturé par l’administration après examen de l’incident. Les décisions et leurs motifs figurent dans l’incident.</string>
     <string name="resolution_completed_at">Clôturé par l’administration le %1$s</string>
-    <string name="resolution_settlement_deliver">Administration : le montant en attente (%1$s) a été versé au professionnel (simulé).</string>
-    <string name="resolution_settlement_refund">Administration : le montant en attente (%1$s) a été remboursé au client (simulé).</string>
+    <string name="resolution_settlement_deliver">Administration : le montant en attente a été versé au professionnel (simulé).</string>
+    <string name="resolution_settlement_refund">Administration : le montant en attente a été remboursé au client (simulé).</string>
     <string name="resolution_settlement_split">Administration : %1$s ont été remboursés au client et %2$s versés au professionnel (simulé).</string>
     <string name="resolution_reason">Motif : %1$s</string>
     <string name="resolution_decided_at">Décidé le %1$s</string>
@@ -586,4 +586,19 @@
     <string name="chat_search_next">Résultat suivant</string>
     <string name="search_settings_title">Recherche</string>
     <string name="search_show_map">Afficher la carte avec les résultats</string>
+    <!-- Ventana de llegada: el profesional comparte su ubicación (#85). -->
+    <string name="arrival_channel">Position d\'arrivée</string>
+    <string name="arrival_sharing_with">Partage de votre position avec %1$s</string>
+    <string name="arrival_will_share">Vous partagerez votre position avec %1$s pendant la fenêtre d\'arrivée</string>
+    <string name="arrival_notification_text">Uniquement pendant la fenêtre d\'arrivée du rendez-vous</string>
+    <string name="arrival_stop">Arrêter le partage</string>
+    <string name="arrival_client_fallback">votre client</string>
+    <string name="arrival_offer">Vous pouvez partager votre position avec votre client pendant l\'heure qui précède le rendez-vous. C\'est facultatif.</string>
+    <string name="arrival_share">Partager ma position</string>
+    <string name="arrival_explain_title">Partager votre position ?</string>
+    <string name="arrival_explain">Votre client verra d\'où vous venez uniquement pendant l\'heure qui précède le rendez-vous (une demi-heure si vous avez un autre rendez-vous commencé). Pendant ce temps, une notification fixe s\'affiche et vous pouvez arrêter le partage à tout moment. Pour qu\'il démarre même application fermée, choisissez « Toujours autoriser » pour la position.</string>
+    <string name="arrival_not_now">Pas maintenant</string>
+    <string name="arrival_continue">Continuer</string>
+    <string name="arrival_denied">Sans autorisation de position, rien n\'est partagé. Le rendez-vous reste inchangé.</string>
+    <string name="arrival_no_background">Sans la position « Toujours autoriser », le partage n\'a lieu que si vous ouvrez ce rendez-vous pendant la fenêtre d\'arrivée.</string>
 </resources>

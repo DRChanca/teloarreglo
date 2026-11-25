@@ -433,7 +433,7 @@
     <string name="start_cancel_cancel">Cancelar la cita</string>
     <string name="start_cancel_cancel_title">¿Cancelar la cita?</string>
     <string name="start_cancel_effect_refund">Se devolverá íntegramente al cliente lo pagado en la app: %1$s (simulado). Sin penalización.</string>
-    <string name="start_cancel_effect_direct">El pago directo acordado (%1$s) no pasa por la app, así que la app no devuelve nada. Sin penalización.</string>
+    <string name="start_cancel_effect_direct">El pago directo acordado no pasa por la app, así que la app no devuelve nada. Sin penalización.</string>
     <string name="start_cancel_effect_none">Sin penalización y sin movimientos de dinero.</string>
     <string name="start_cancel_release">Se liberará el horario reservado y se avisará a la otra parte.</string>
     <string name="start_cancel_keep">Mantener la cita</string>
@@ -461,7 +461,7 @@
     <string name="completion_confirm">Confirmar que se ha realizado</string>
     <string name="completion_confirm_title">¿Confirmar que el trabajo se ha realizado?</string>
     <string name="completion_effect_deliver">Se entregará al profesional lo pendiente: %1$s (simulado).</string>
-    <string name="completion_effect_direct">El pago directo acordado (%1$s) no pasa por la app, así que la app no entrega nada.</string>
+    <string name="completion_effect_direct">El pago directo acordado no pasa por la app, así que la app no entrega nada.</string>
     <string name="completion_effect_none">No hay dinero pendiente que entregar.</string>
     <string name="completion_final">La cita quedará finalizada. Si hay un problema, no confirmes y comunícalo como incidencia.</string>
     <string name="completion_not_yet">Todavía no</string>
@@ -551,8 +551,8 @@
     </plurals>
     <string name="resolution_notice_completed">Cerrada por administración tras revisar la incidencia. Las decisiones y sus motivos están en la incidencia.</string>
     <string name="resolution_completed_at">Cerrada por administración el %1$s</string>
-    <string name="resolution_settlement_deliver">Administración: lo pendiente (%1$s) se entregó al profesional (simulado).</string>
-    <string name="resolution_settlement_refund">Administración: lo pendiente (%1$s) se devolvió al cliente (simulado).</string>
+    <string name="resolution_settlement_deliver">Administración: lo pendiente se entregó al profesional (simulado).</string>
+    <string name="resolution_settlement_refund">Administración: lo pendiente se devolvió al cliente (simulado).</string>
     <string name="resolution_settlement_split">Administración: se devolvieron %1$s al cliente y se entregaron %2$s al profesional (simulado).</string>
     <string name="resolution_reason">Motivo: %1$s</string>
     <string name="resolution_decided_at">Decidido el %1$s</string>
@@ -586,4 +586,19 @@
     <string name="chat_search_next">Coincidencia siguiente</string>
     <string name="search_settings_title">Búsqueda</string>
     <string name="search_show_map">Mostrar el mapa con los resultados</string>
+    <!-- Ventana de llegada: el profesional comparte su ubicación (#85). -->
+    <string name="arrival_channel">Ubicación de llegada</string>
+    <string name="arrival_sharing_with">Compartiendo tu ubicación con %1$s</string>
+    <string name="arrival_will_share">Compartirás tu ubicación con %1$s durante la ventana de llegada</string>
+    <string name="arrival_notification_text">Solo durante la ventana de llegada de la cita</string>
+    <string name="arrival_stop">Dejar de compartir</string>
+    <string name="arrival_client_fallback">tu cliente</string>
+    <string name="arrival_offer">Puedes compartir tu ubicación con tu cliente durante la hora previa a la cita. Es voluntario.</string>
+    <string name="arrival_share">Compartir mi ubicación</string>
+    <string name="arrival_explain_title">¿Compartir tu ubicación?</string>
+    <string name="arrival_explain">Tu cliente verá por dónde vienes solo durante la hora previa a la cita (media hora si tienes otra cita comenzada). Mientras, verás una notificación fija y podrás dejar de compartir cuando quieras. Para que empiece aunque la app esté cerrada, elige «Permitir todo el tiempo» en la ubicación.</string>
+    <string name="arrival_not_now">Ahora no</string>
+    <string name="arrival_continue">Continuar</string>
+    <string name="arrival_denied">Sin permiso de ubicación no se comparte nada. La cita sigue igual.</string>
+    <string name="arrival_no_background">Sin la ubicación «Permitir todo el tiempo», solo se comparte si abres esta cita durante la ventana de llegada.</string>
 </resources>
