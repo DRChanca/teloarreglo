@@ -8,8 +8,9 @@ fun splashAnimates(sdkInt: Int, animatorScale: Float, coldStart: Boolean): Boole
     sdkInt >= 31 && animatorScale > 0f && coldStart
 
 /**
- * How long an animated splash still stays once the app is ready ([now]): what is left of the animation of
- * [animationMillis] since it was [shownAt], so it always plays in full. It never depends on data.
+ * How long the woodpecker still waits, once the app is ready ([now]), before flying in (#57): what is left of
+ * [leadInMillis] since the activity was [createdAt], so a very fast start does not play the flight under the
+ * system launch transition. A slow start never waits; it never depends on data.
  */
-fun splashExitDelay(shownAt: Long, now: Long, animationMillis: Long): Long =
-    (shownAt + animationMillis - now).coerceIn(0, animationMillis)
+fun splashFlightDelay(createdAt: Long, now: Long, leadInMillis: Long): Long =
+    (createdAt + leadInMillis - now).coerceIn(0, leadInMillis)

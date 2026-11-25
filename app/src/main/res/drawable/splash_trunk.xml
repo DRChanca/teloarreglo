@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+System splash icon (#57): only the still trunk. The woodpecker is not here: the app flies it in over the
+splash once the splash is on screen (StartSplash.kt, avd_woodpecker), so the launch transition never hides
+the flight. Before Android 12, with reduced motion and on warm starts this trunk is all there is.
+It is an animated vector with an animation that changes nothing on purpose: with a plain static icon,
+Android 12+ hands the splash over to the app one frame late and the app shows through for a moment.
+-->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector android:width="108dp" android:height="108dp"
+            android:viewportWidth="108" android:viewportHeight="108">
+            <path android:name="trunk" android:fillColor="@color/woodpecker_trunk"
+                android:pathData="@string/woodpecker_trunk_path" />
+        </vector>
+    </aapt:attr>
+    <target android:name="trunk">
+        <aapt:attr name="android:animation">
+            <objectAnimator android:propertyName="fillAlpha" android:valueFrom="1" android:valueTo="1"
+                android:duration="@integer/splash_animation_millis" />
+        </aapt:attr>
+    </target>
+</animated-vector>
