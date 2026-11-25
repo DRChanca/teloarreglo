@@ -117,7 +117,6 @@
     <string name="appointment_load_error">Appointments could not be loaded.</string>
     <string name="appointment_address_label">Address (private): %1$s</string>
     <string name="photo_attach">Send photo</string>
-    <string name="photo_limits">JPEG or PNG, any size. The app sends a compressed copy of up to 1600 px and 2 MB; your original is not changed.</string>
     <string name="photo_preparing">Compressing the photo…</string>
     <string name="photo_uploading">Sending photo… %1$d %%</string>
     <string name="photo_discard">Discard</string>
@@ -316,7 +315,6 @@
     <string name="area_client_notice">Until the appointment is confirmed, the professional only sees an approximate %1$d m area.</string>
     <string name="area_loading">Loading the location…</string>
     <string name="video_attach">Send video</string>
-    <string name="video_limits">Video up to 40 seconds. The app sends an MP4 copy of up to 720p and 20 MB; your original is not changed.</string>
     <string name="video_preparing">Compressing the video…</string>
     <string name="video_preparing_percent">Compressing the video… %1$d %%</string>
     <string name="video_uploading">Sending video… %1$d %%</string>

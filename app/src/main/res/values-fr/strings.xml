@@ -117,7 +117,6 @@
     <string name="appointment_load_error">Impossible de charger les rendez-vous.</string>
     <string name="appointment_address_label">Adresse (privée) : %1$s</string>
     <string name="photo_attach">Envoyer une photo</string>
-    <string name="photo_limits">JPEG ou PNG, quelle que soit la taille. L’app envoie une copie compressée de 1600 px et 2 Mo maximum ; votre original reste intact.</string>
     <string name="photo_preparing">Compression de la photo…</string>
     <string name="photo_uploading">Envoi de la photo… %1$d %%</string>
     <string name="photo_discard">Abandonner</string>
@@ -316,7 +315,6 @@
     <string name="area_client_notice">Jusqu’à la confirmation du rendez-vous, le professionnel ne voit qu’une zone approximative de %1$d m.</string>
     <string name="area_loading">Chargement de l’emplacement…</string>
     <string name="video_attach">Envoyer une vidéo</string>
-    <string name="video_limits">Vidéo de 40 secondes maximum. L’app envoie une copie MP4 de 720p et 20 Mo maximum ; votre original reste intact.</string>
     <string name="video_preparing">Compression de la vidéo…</string>
     <string name="video_preparing_percent">Compression de la vidéo… %1$d %%</string>
     <string name="video_uploading">Envoi de la vidéo… %1$d %%</string>

@@ -117,7 +117,6 @@
     <string name="appointment_load_error">Termine konnten nicht geladen werden.</string>
     <string name="appointment_address_label">Adresse (privat): %1$s</string>
     <string name="photo_attach">Foto senden</string>
-    <string name="photo_limits">JPEG oder PNG, beliebig groß. Die App sendet eine komprimierte Kopie mit höchstens 1600 px und 2 MB; dein Original bleibt unverändert.</string>
     <string name="photo_preparing">Foto wird komprimiert…</string>
     <string name="photo_uploading">Foto wird gesendet… %1$d %%</string>
     <string name="photo_discard">Verwerfen</string>
@@ -316,7 +315,6 @@
     <string name="area_client_notice">Bis der Termin bestätigt ist, sieht die Fachkraft nur ein ungefähres Gebiet von %1$d m.</string>
     <string name="area_loading">Standort wird geladen…</string>
     <string name="video_attach">Video senden</string>
-    <string name="video_limits">Video bis 40 Sekunden. Die App sendet eine MP4-Kopie mit höchstens 720p und 20 MB; dein Original bleibt unverändert.</string>
     <string name="video_preparing">Video wird komprimiert…</string>
     <string name="video_preparing_percent">Video wird komprimiert… %1$d %%</string>
     <string name="video_uploading">Video wird gesendet… %1$d %%</string>

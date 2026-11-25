@@ -117,7 +117,6 @@
     <string name="appointment_load_error">No se pudieron cargar las citas.</string>
     <string name="appointment_address_label">Dirección (privada): %1$s</string>
     <string name="photo_attach">Enviar foto</string>
-    <string name="photo_limits">JPEG o PNG, de cualquier tamaño. La app envía una copia comprimida de hasta 1600 px y 2 MB; tu original no cambia.</string>
     <string name="photo_preparing">Comprimiendo la foto…</string>
     <string name="photo_uploading">Enviando foto… %1$d %%</string>
     <string name="photo_discard">Descartar</string>
@@ -316,7 +315,6 @@
     <string name="area_client_notice">Hasta confirmar la cita, el profesional solo ve una zona aproximada de %1$d m.</string>
     <string name="area_loading">Cargando la ubicación…</string>
     <string name="video_attach">Enviar vídeo</string>
-    <string name="video_limits">Vídeo de hasta 40 segundos. La app envía una copia MP4 de hasta 720p y 20 MB; tu original no cambia.</string>
     <string name="video_preparing">Comprimiendo el vídeo…</string>
     <string name="video_preparing_percent">Comprimiendo el vídeo… %1$d %%</string>
     <string name="video_uploading">Enviando vídeo… %1$d %%</string>
