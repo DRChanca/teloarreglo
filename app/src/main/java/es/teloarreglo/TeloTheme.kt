@@ -19,6 +19,8 @@ internal data class TeloExtendedColors(
     val card: Color,
     /** The two ticks of a read message, drawn over the own bubble (primaryContainer). */
     val readTick: Color,
+    /** Border of a «Perfil destacado» card in the catalogue: brand green in light, purple in dark. */
+    val featuredBorder: Color,
     val featuredBadge: Color,
     val onFeaturedBadge: Color,
     val subscriptionContainer: Color,
@@ -43,6 +45,7 @@ private val LightColors = TeloColors(
     extended = TeloExtendedColors(
         card = Color.White,
         readTick = Color(0xFF00629E),
+        featuredBorder = Color(0xFF246451),
         featuredBadge = Color(0xFF8A5A00),
         onFeaturedBadge = Color.White,
         subscriptionContainer = Color(0xFFF4F1E8),
@@ -94,6 +97,7 @@ private val DarkColors = TeloColors(
     extended = TeloExtendedColors(
         card = Color(0xFF1B211E),
         readTick = Color(0xFF8FD0FF),
+        featuredBorder = Color(0xFFCFBCFF),
         featuredBadge = Color(0xFFF2BE5C),
         onFeaturedBadge = Color(0xFF3F2A00),
         subscriptionContainer = Color(0xFF2B2820),

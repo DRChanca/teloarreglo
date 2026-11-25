@@ -197,7 +197,7 @@ fun CatalogueScreen(
                             onClick = { selected = profile.id }, modifier = Modifier.fillMaxWidth().testTag("profile_${profile.id}"),
                             colors = CardDefaults.cardColors(containerColor =
                                 if (profile.featured) MaterialTheme.colorScheme.secondaryContainer else TeloTheme.extended.card),
-                            border = if (profile.featured) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null,
+                            border = if (profile.featured) BorderStroke(1.5.dp, TeloTheme.extended.featuredBorder) else null,
                             shape = RoundedCornerShape(20.dp),
                         ) {
                             Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
