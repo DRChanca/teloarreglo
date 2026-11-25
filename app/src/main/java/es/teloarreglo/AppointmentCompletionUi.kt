@@ -79,7 +79,8 @@ internal fun CompletionSection(
                 modifier = Modifier.testTag("mark_done_confirm")) { Text(stringResource(R.string.completion_mark)) }
         })
     // Irreversible (#47): it finalises the appointment and, if paid in the app, delivers the money.
-    if (askConfirm) DestructiveConfirmDialog(
+    // A positive action, so not in the error colour (#65).
+    if (askConfirm) IrreversibleConfirmDialog(
         title = stringResource(R.string.completion_confirm_title),
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("completion_effect")) {
