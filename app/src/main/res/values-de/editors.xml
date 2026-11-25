@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_block_public">Öffentliches Profil (wird geprüft)</string>
+    <string name="profile_block_offer">Leistungen und Preise (beim Speichern veröffentlicht)</string>
+    <string name="profile_block_address">Private Adresse (wird nie veröffentlicht)</string>
+    <string name="profile_missing_list">Es fehlt noch: %1$s</string>
+    <string name="profile_missing_name">Name</string>
+    <string name="profile_missing_trades">Gewerke</string>
+    <string name="profile_missing_coverage">Concejos</string>
+    <string name="profile_missing_languages">Sprachen</string>
+    <string name="profile_missing_phone">gültige Telefonnummer</string>
+    <string name="profile_missing_agenda">Wochenzeiten</string>
+    <string name="profile_field_name_error">Gib den Namen ein, unter dem man dich sieht.</string>
+    <string name="profile_field_trades_error">Wähle mindestens ein Gewerk.</string>
+    <string name="profile_field_coverage_error">Füge mindestens einen Concejo hinzu.</string>
+    <string name="profile_field_languages_error">Wähle mindestens eine Sprache.</string>
+    <string name="profile_field_phone_error">Gib eine gültige Telefonnummer ein, zum Beispiel +34 600 000 000.</string>
+    <string name="home_save_missing">Zum Speichern fehlt noch: %1$s</string>
+    <string name="home_gap_street">die Straße</string>
+    <string name="home_gap_too_long">ein zu langes Feld kürzen</string>
+    <string name="home_gap_location">der Standort (nutze deinen Standort oder markiere ihn auf der Karte)</string>
+    <string name="cover_preview_detail">So sieht es in deinem Profil aus</string>
+    <string name="cover_preview_list">So sieht es in der Liste aus</string>
+    <string name="cover_generic_confirm_title">Dein Handwerksbild verwenden?</string>
+    <string name="cover_generic_confirm_text">Es wird sofort veröffentlicht und ersetzt das aktuelle Titelbild.</string>
+    <string name="cover_generic_confirm">Bild verwenden</string>
+</resources>

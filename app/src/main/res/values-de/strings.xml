@@ -264,7 +264,6 @@
     <string name="profile_edit_error_conflict">Diese Einreichung wurde bereits mit anderen Daten erfasst. Reiche erneut ein, um eine neue Version zu erstellen.</string>
     <string name="profile_edit_error_access">Deine Sitzung darf dieses Profil nicht ändern. Melde dich erneut an.</string>
     <string name="profile_edit_error_network">Der Server konnte es nicht bestätigen. Es wird nicht als eingereicht angezeigt; versuche es erneut.</string>
-    <string name="profile_edit_private_title">Private Adresse</string>
     <string name="profile_edit_private_address">Deine Adresse</string>
     <string name="profile_edit_private_hint">Wird weder veröffentlicht noch zur Prüfung gesendet. Nur du siehst sie.</string>
     <string name="profile_edit_private_save">Private Adresse speichern</string>
@@ -352,7 +351,6 @@
     <string name="payment_direct_confirm">Vereinbarung bestätigen</string>
     <string name="payment_integrated_summary">Bezahlt: %1$s · Auszahlung ausstehend: %2$s · Erstattet: %3$s · Ausgezahlt: %4$s</string>
     <string name="payment_direct_summary">Direktzahlung vereinbart: %1$s. Wird außerhalb der App an die Fachkraft gezahlt; Teloarreglo zieht sie nicht ein und bestätigt sie nicht.</string>
-    <string name="profile_offer_title">Leistungen und Richtpreise</string>
     <string name="profile_offer_hint">Sie werden veröffentlicht, sobald du sie speicherst, ohne Prüfung. Bestehende Termine, Anfragen und Angebote behalten ihren Preis.</string>
     <string name="profile_offer_unpublished_hint">Sie erscheinen im Katalog, sobald dein Profil freigegeben ist.</string>
     <string name="profile_offer_price">Preis %1$d</string>

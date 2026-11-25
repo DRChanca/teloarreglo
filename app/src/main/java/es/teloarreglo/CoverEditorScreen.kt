@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import es.teloarreglo.catalogue.*
+import androidx.compose.ui.unit.Dp
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -74,6 +75,7 @@ internal fun CoverEditorScreen(
     var failed by remember { mutableStateOf(false) }
     var refresh by remember { mutableIntStateOf(0) }
     var leave by remember { mutableStateOf(false) }
+    var confirmGeneric by remember { mutableStateOf(false) }
     var genericId by rememberSaveable(profile.id) { mutableStateOf<String?>(null) }
     var discardedSelection by rememberSaveable(profile.id) { mutableStateOf<String?>(null) }
     val unsent = selected != null && request?.id != selected.requestId && discardedSelection != selected.requestId
@@ -98,9 +100,16 @@ internal fun CoverEditorScreen(
             }
             Text(stringResource(R.string.cover_edit), style = MaterialTheme.typography.headlineMedium)
             Text(profile.name, style = MaterialTheme.typography.titleLarge)
-            ProfileCover(profile.trades.firstOrNull().orEmpty(),
-                if (unsent) null else if (request != null) request?.objectPath else profile.coverPath, covers,
-                Modifier.fillMaxWidth().height(200.dp), preview = if (unsent) selected?.jpeg else null)
+            // The same crops the catalogue uses, so what is previewed is what visitors will see (#47, historia 16).
+            val trade = profile.trades.firstOrNull().orEmpty()
+            val shownPath = if (unsent) null else if (request != null) request?.objectPath else profile.coverPath
+            val preview = if (unsent) selected?.jpeg else null
+            Text(stringResource(R.string.cover_preview_detail), style = MaterialTheme.typography.titleMedium)
+            ProfileCover(trade, shownPath, covers, Modifier.fillMaxWidth().height(CoverCrop.DETAIL_HEIGHT)
+                .testTag("cover_preview_detail"), preview = preview)
+            Text(stringResource(R.string.cover_preview_list), style = MaterialTheme.typography.titleMedium)
+            ProfileCover(trade, shownPath, covers, Modifier.width(CoverCrop.LIST_WIDTH).height(CoverCrop.LIST_HEIGHT)
+                .testTag("cover_preview_list"), preview = preview)
             Text(stringResource(R.string.cover_review_hint))
             Text(stringResource(R.string.cover_limits), style = MaterialTheme.typography.bodySmall)
             if ((!loaded && !failed) || busy || preparing) {
@@ -156,7 +165,18 @@ internal fun CoverEditorScreen(
                 },
             ) { Text(stringResource(R.string.cover_submit)) }
             TextButton(modifier = Modifier.testTag("cover_generic"), enabled = loaded && !busy && !preparing &&
-                !(request?.status in setOf(CoverStatus.PENDING, CoverStatus.PUBLISHED) && request?.objectPath == null && !unsent), onClick = {
+                !(request?.status in setOf(CoverStatus.PENDING, CoverStatus.PUBLISHED) && request?.objectPath == null && !unsent),
+                onClick = { confirmGeneric = true }) { Text(stringResource(R.string.cover_use_generic)) }
+        }
+        // Publishing the trade image replaces the visible cover at once, so it is confirmed first (#47).
+        if (confirmGeneric) DestructiveConfirmDialog(
+            title = stringResource(R.string.cover_generic_confirm_title),
+            text = { Text(stringResource(R.string.cover_generic_confirm_text)) },
+            confirmLabel = stringResource(R.string.cover_generic_confirm),
+            confirmTag = "cover_generic_confirm", dismissTag = "cover_generic_dismiss",
+            onDismiss = { confirmGeneric = false },
+            onConfirm = {
+                confirmGeneric = false
                 val id = genericId ?: UUID.randomUUID().toString().also { genericId = it }
                 scope.launch {
                     busy = true; failed = false
@@ -170,8 +190,8 @@ internal fun CoverEditorScreen(
                         failed = true
                     } finally { busy = false }
                 }
-            }) { Text(stringResource(R.string.cover_use_generic)) }
-        }
+            },
+        )
         if (leave) AlertDialog(
             onDismissRequest = { leave = false },
             title = { Text(stringResource(R.string.cover_leave_title)) },
@@ -180,4 +200,11 @@ internal fun CoverEditorScreen(
             dismissButton = { TextButton(onClick = { leave = false }) { Text(stringResource(R.string.cover_stay)) } },
         )
     }
+}
+
+/** Sizes at which the catalogue shows a cover: the profile page and the list card (CatalogueScreen). */
+internal object CoverCrop {
+    val DETAIL_HEIGHT: Dp = 180.dp
+    val LIST_WIDTH: Dp = 100.dp
+    val LIST_HEIGHT: Dp = 120.dp
 }

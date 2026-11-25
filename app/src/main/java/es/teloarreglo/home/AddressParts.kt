@@ -59,3 +59,13 @@ data class AddressParts(
         }
     }
 }
+
+/** What still stops the home from being saved (#47), so the disabled button can say why. */
+enum class HomeGap { STREET, TOO_LONG, LOCATION }
+
+/** In the order the form asks for them; empty when the home can be saved. Same rules as [AddressParts.valid]. */
+fun homeSaveGaps(parts: AddressParts, hasPoint: Boolean): List<HomeGap> = buildList {
+    if (parts.street.isBlank()) add(HomeGap.STREET)
+    else if (!parts.valid) add(HomeGap.TOO_LONG)
+    if (!hasPoint) add(HomeGap.LOCATION)
+}

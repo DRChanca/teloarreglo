@@ -26,6 +26,8 @@ import es.teloarreglo.home.HomeAddress
 import es.teloarreglo.home.HomeDraft
 import es.teloarreglo.home.HomeException
 import es.teloarreglo.home.HomeFailure
+import es.teloarreglo.home.HomeGap
+import es.teloarreglo.home.homeSaveGaps
 import es.teloarreglo.home.HomeSession
 import es.teloarreglo.home.HomeSource
 import es.teloarreglo.home.HomeStatus
@@ -48,6 +50,7 @@ import kotlinx.coroutines.launch
  * no network, API not enabled) a pin on the map or one GPS fix, with the address typed by hand.
  * Nothing is shown as saved until the server answers.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun HomeAddressScreen(
     session: HomeSession,
@@ -86,6 +89,7 @@ fun HomeAddressScreen(
     var error by remember { mutableStateOf<Int?>(null) }
     val point = lat?.let { a -> lng?.let { b -> GeoPoint(a, b) } }?.takeIf { it.valid }
     val parts = AddressParts(street, number, block, portal, staircase, floor, door, locality)
+    val gaps = homeSaveGaps(parts, hasPoint = point != null)
 
     // Debounced: Places is billed per session, and every keystroke would be a request.
     LaunchedEffect(street, placesUp) {
@@ -119,7 +123,7 @@ fun HomeAddressScreen(
     @Composable
     fun RowScope.Detail(value: String, onChange: (String) -> Unit, label: Int, tag: String) =
         OutlinedTextField(value, { if (it.length <= AddressParts.MAX_DETAIL) onChange(it) }, enabled = !busy, singleLine = true,
-            label = { Text(stringResource(label), maxLines = 1) }, modifier = Modifier.weight(1f).testTag(tag))
+            label = { Text(stringResource(label)) }, modifier = Modifier.weight(1f).testTag(tag))
 
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
@@ -156,14 +160,16 @@ fun HomeAddressScreen(
             if (!placesUp) Text(stringResource(R.string.home_places_unavailable), Modifier.testTag("home_places_unavailable")
                 .semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyMedium)
 
-            // Usual Spanish fields after the street (#41).
+            // Usual Spanish fields after the street (#41), two per row so labels fit with large text (#47).
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Detail(number, { number = it }, R.string.home_number, "home_number")
                 Detail(block, { block = it }, R.string.home_block, "home_block")
-                Detail(portal, { portal = it }, R.string.home_portal, "home_portal")
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Detail(portal, { portal = it }, R.string.home_portal, "home_portal")
                 Detail(staircase, { staircase = it }, R.string.home_staircase, "home_staircase")
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Detail(floor, { floor = it }, R.string.home_floor, "home_floor")
                 Detail(door, { door = it }, R.string.home_door, "home_door")
             }
@@ -173,8 +179,8 @@ fun HomeAddressScreen(
 
             // Only a missing point is worth a line; its source is not shown (David 2026-11-24).
             if (point == null) Text(stringResource(R.string.home_point_missing),
-                Modifier.testTag("home_point"), style = MaterialTheme.typography.bodySmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Modifier.testTag("home_point"), style = MaterialTheme.typography.bodyMedium)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = {
                     locating = true; noLocation = false
                     scope.launch {
@@ -217,9 +223,20 @@ fun HomeAddressScreen(
                         } finally { busy = false }
                     }
                 },
-                enabled = !busy && parts.valid && point != null,
+                enabled = !busy && gaps.isEmpty(),
                 modifier = Modifier.fillMaxWidth().testTag("home_save"),
             ) { Text(stringResource(if (busy) R.string.home_saving else R.string.home_save)) }
+            // A disabled button says why (#47), so the mandatory step never blocks without explanation.
+            if (!busy && gaps.isNotEmpty()) {
+                val names = gaps.map { stringResource(when (it) {
+                    HomeGap.STREET -> R.string.home_gap_street
+                    HomeGap.TOO_LONG -> R.string.home_gap_too_long
+                    HomeGap.LOCATION -> R.string.home_gap_location
+                }) }
+                Text(stringResource(R.string.home_save_missing, names.joinToString(", ")),
+                    Modifier.testTag("home_save_reason").semantics { liveRegion = LiveRegionMode.Polite },
+                    style = MaterialTheme.typography.bodyMedium)
+            }
             if (required) TextButton(onClick = onSignOut, enabled = !busy, modifier = Modifier.testTag("home_sign_out")) {
                 Text(stringResource(R.string.sign_out))
             }

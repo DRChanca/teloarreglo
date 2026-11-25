@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_block_public">Public profile (reviewed)</string>
+    <string name="profile_block_offer">Services and prices (published when saved)</string>
+    <string name="profile_block_address">Private address (never published)</string>
+    <string name="profile_missing_list">Still missing: %1$s</string>
+    <string name="profile_missing_name">name</string>
+    <string name="profile_missing_trades">trades</string>
+    <string name="profile_missing_coverage">concejos</string>
+    <string name="profile_missing_languages">languages</string>
+    <string name="profile_missing_phone">valid phone</string>
+    <string name="profile_missing_agenda">weekly hours</string>
+    <string name="profile_field_name_error">Enter the name people will see.</string>
+    <string name="profile_field_trades_error">Choose at least one trade.</string>
+    <string name="profile_field_coverage_error">Add at least one concejo.</string>
+    <string name="profile_field_languages_error">Choose at least one language.</string>
+    <string name="profile_field_phone_error">Enter a valid phone, for example +34 600 000 000.</string>
+    <string name="home_save_missing">To save, still missing: %1$s</string>
+    <string name="home_gap_street">the street</string>
+    <string name="home_gap_too_long">shorten a field that is too long</string>
+    <string name="home_gap_location">the location (use your location or mark it on the map)</string>
+    <string name="cover_preview_detail">How it will look on your profile</string>
+    <string name="cover_preview_list">How it will look in the list</string>
+    <string name="cover_generic_confirm_title">Use your trade image?</string>
+    <string name="cover_generic_confirm_text">It is published right away and replaces the cover shown now.</string>
+    <string name="cover_generic_confirm">Use the image</string>
+</resources>
