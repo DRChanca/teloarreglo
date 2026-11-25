@@ -972,3 +972,102 @@ cobertura de #20 y #23: la zona de trabajo informa, no restringe.
   «Añadir {concejo} a mi zona» desde la tarjeta de la solicitud, que llama a `set_my_work_zone`
   ([revisión de perfiles](revision-perfiles-contrato.md#zona-de-trabajo-sin-revisión--25-de-noviembre-de-2026)).
 - `area_ine_code` (#38) no cambia: si el punto no está en la zona del perfil, es el concejo más cercano a ≤ 250 m.
+
+## Ventana de llegada en el servidor — #82
+
+Decisión en [ADR 0002](adr/0002-seguimiento-solo-en-ventana-de-llegada.md) y en `GLOSSARY.md` («Ventana de llegada»).
+Migración `20261125007200_arrival_window.sql`; pgTAP `supabase/tests/arrival_window.test.sql`. No redefine ninguna
+función anterior.
+
+### La ventana
+
+Solo existe para una **cita confirmada** (`stage = 'confirmed'`). El inicio es el `start_at` de la propuesta aceptada
+(las condiciones vigentes; un cambio aceptado lo sustituye). En cada instante:
+
+- Se abre 60 min antes del inicio, o 30 min antes si **en ese momento** el profesional tiene otra cita en estado
+  `started`. Si otra cita empieza con la ventana ya abierta, la ventana pasa a «aún no abierta» hasta los últimos
+  30 min (si esa otra cita deja de estar `started`, vuelve a contar la apertura de 60 min).
+- Se cierra para siempre al pasar la cita a `started` («Comenzar trabajo»), `cancelled` o cualquier otro estado, o
+  60 min después del inicio. Entre el inicio y +60 min sigue abierta mientras la cita siga confirmada.
+- Una cita que no está confirmada (pendiente, comenzada, cancelada, realizada…) tiene la ventana cerrada.
+
+`private.arrival_window(p_appointment_id, p_at default now()) → (state, opens_at, closes_at)` es la única definición
+(`state`: `open`, `not_yet_open`, `closed`). No es accesible desde la app.
+
+### RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo)
+
+**Informar posición** (profesional de la cita):
+`public.report_arrival_position(p_appointment_id uuid, p_latitude double precision, p_longitude double precision,
+p_accuracy_m double precision) → jsonb`.
+
+Solo se guarda con la ventana abierta: una única fila por cita que se sobrescribe, con la hora del servidor (`now()`).
+Fuera de la ventana no se guarda nada y la respuesta lo dice; no es un error. Respuesta:
+
+```json
+{"window": "open", "accepted": true, "opens_at": "…", "closes_at": "…", "reported_at": "…"}
+{"window": "not_yet_open", "accepted": false, "opens_at": "…", "closes_at": "…", "reported_at": null}
+{"window": "closed", "accepted": false, "opens_at": null, "closes_at": null, "reported_at": null}
+```
+
+- `open`: seguir enviando (~30 s) hasta `closes_at`.
+- `not_yet_open`: no enviar; empezar en `opens_at`. `opens_at` puede adelantarse o retrasarse si cambia el estado de
+  otra cita del profesional, así que la app vuelve a preguntar a esa hora.
+- `closed`: cerrada para siempre; detener el servicio.
+- `reported_at` es la hora de la última posición guardada de la cita, si existe.
+
+**Dejar de compartir** (profesional de la cita): `public.stop_sharing_arrival(p_appointment_id uuid) → jsonb`. Borra en
+el momento la posición de la cita, sea cual sea la ventana, y responde igual que «informar posición» con
+`accepted = false` y `reported_at = null`. Volver a compartir es volver a informar posición.
+
+**Leer llegada** (solo el cliente de la cita): `public.appointment_arrival(p_appointment_id uuid) → jsonb`.
+
+```json
+{"state": "closed"}
+{"state": "not_sharing", "closes_at": "…"}
+{"state": "sharing", "closes_at": "…", "precision": "area", "latitude": 43.1, "longitude": -5.9, "radius_m": 500,
+ "updated_at": "…"}
+{"state": "sharing", "closes_at": "…", "precision": "exact", "latitude": 43.06, "longitude": -5.95, "accuracy_m": 15,
+ "updated_at": "…"}
+```
+
+- `closed`: fuera de la ventana (también «aún no abierta»).
+- `not_sharing` («El profesional no comparte su ubicación»): no hay posición, la última tiene más de 2 min o el
+  profesional ha dejado de compartir.
+- `sharing` con `precision = area`: la posición está a más de 2 km de la casa de la cita (`appointments.latitude/
+  longitude`). Se devuelve un círculo de 500 m cuyo centro se sortea en el servidor al guardar cada posición, uniforme
+  en un disco de 375 m (misma construcción que la zona aproximada de #38), así que siempre contiene la posición real y
+  repetir la lectura no lo mueve hasta que llega una posición nueva. La posición exacta y su precisión no salen del
+  servidor.
+- `sharing` con `precision = exact`: a 2 km o menos, la posición exacta y su precisión.
+- `updated_at`: hora del servidor de la última posición.
+
+### Errores estables
+
+- `42501 permission_denied`: cita inexistente o la cuenta no es el profesional (informar, dejar de compartir) o el
+  cliente (leer llegada) de la cita. Un profesional no lee la llegada; un cliente no informa posición.
+- `22023 invalid_position`: latitud, longitud o precisión ausentes o imposibles (precisión negativa).
+
+### Privacidad
+
+`private.arrival_positions(appointment_id pk, latitude, longitude, accuracy_m, area_lat, area_lng, reported_at)` solo
+guarda la última posición de cada cita. Sin historial, sin recorridos y sin acceso de ninguna cuenta ni del panel de
+administración: solo se llega a ella por estas RPC. Se borra al dejar de compartir y, con la ventana cerrada, en la
+siguiente ejecución del reloj.
+
+### Reloj de llegada (paso manual de David, por proyecto)
+
+`private.run_arrival_clock() → jsonb` borra la posición de toda ventana que no esté abierta (cerrada o «aún no
+abierta» por otra cita comenzada) y devuelve `{deleted}`. Va en su propia función para no depender de
+`run_completion_clock`. Se programa igual que el reloj de #27, una vez tras desplegar la migración:
+
+```sql
+select cron.schedule('arrival-clock', '* * * * *', 'select private.run_arrival_clock()');
+-- Comprobación:
+select jobid, schedule, active from cron.job where jobname = 'arrival-clock';
+```
+
+### Para los siguientes tickets
+
+- Aviso de cercanía (#83): se decide en `report_arrival_position`, justo después de guardar la posición (marcado en la
+  función), con la posición aceptada y la casa de la cita. La respuesta es `jsonb` y admite campos nuevos.
+- Mapa del cliente (#84) y servicio del profesional (#85): usan las respuestas de arriba tal cual.
