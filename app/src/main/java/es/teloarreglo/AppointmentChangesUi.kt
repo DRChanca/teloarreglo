@@ -121,21 +121,23 @@ internal fun ChangeSection(
     }
     val change = pending ?: return
     asking?.let { action ->
-        AlertDialog(onDismissRequest = { asking = null },
-            text = { Text(stringResource(if (action == "reject") R.string.change_reject_confirm else R.string.change_accept_confirm,
-                change.version)) },
+        if (action == "reject") DestructiveConfirmDialog(
+            title = stringResource(R.string.change_reject_title),
+            text = { Text(stringResource(R.string.change_reject_confirm, change.version)) },
+            confirmLabel = stringResource(R.string.change_reject),
+            onConfirm = { asking = null; decide { appointments.rejectChange(change.id) } },
+            onDismiss = { asking = null },
+            confirmTag = "change_decision_confirm", dismissTag = "change_decision_dismiss")
+        else AlertDialog(onDismissRequest = { asking = null },
+            title = { Text(stringResource(R.string.change_accept_title)) },
+            text = { Text(stringResource(R.string.change_accept_confirm, change.version)) },
             dismissButton = { TextButton(onClick = { asking = null }) { Text(stringResource(R.string.cancel)) } },
             confirmButton = {
                 TextButton(onClick = {
                     asking = null
-                    when (action) {
-                        "reject" -> decide { appointments.rejectChange(change.id) }
-                        else -> decide { appointments.acceptChange(change.id, action.substringAfter(':', "").takeIf { it.isNotEmpty() }
-                            ?.let(PaymentMode::valueOf)) }
-                    }
-                }, modifier = Modifier.testTag("change_decision_confirm")) {
-                    Text(stringResource(if (action == "reject") R.string.change_reject else R.string.change_accept))
-                }
+                    decide { appointments.acceptChange(change.id, action.substringAfter(':', "").takeIf { it.isNotEmpty() }
+                        ?.let(PaymentMode::valueOf)) }
+                }, modifier = Modifier.testTag("change_decision_confirm")) { Text(stringResource(R.string.change_accept)) }
             })
     }
 }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chat_empty_browse">Find professionals</string>
+    <string name="appointment_turn_yours">Your turn</string>
+    <string name="appointment_turn_waiting">Waiting for the other party</string>
+    <string name="appointment_history_show">View history (%1$d)</string>
+    <string name="appointment_history_hide">Hide history</string>
+    <string name="kept_prices_show">View reference prices</string>
+    <string name="kept_prices_hide">Hide reference prices</string>
+    <string name="appointment_accept_title">Accept the proposal?</string>
+    <string name="appointment_reject_title">Reject the proposal?</string>
+    <string name="change_accept_title">Accept the change?</string>
+    <string name="change_reject_title">Reject the change?</string>
+</resources>

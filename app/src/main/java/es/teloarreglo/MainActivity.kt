@@ -180,7 +180,8 @@ class MainActivity : AppCompatActivity() {
                                         reviews = app.reviews)
                                 } },
                                 attachments = app.chatAttachments,
-                                evidence = app.incidents?.let { remember(it) { ChatEvidenceLink(it, app.applicationScope) } })
+                                evidence = app.incidents?.let { remember(it) { ChatEvidenceLink(it, app.applicationScope) } },
+                                onBrowse = { nav = nav.open(Tab.HOME) })
                         }
                         MainScreen.ACCESS, MainScreen.EMAIL_LINK -> AccessScreen(app.identity, changeLanguage,
                             onLeaveLink = {
