@@ -23,13 +23,13 @@ class CallNoticeTest {
 
     @Test fun withoutANumberTheAppointmentOpensInstead() = runTest {
         // Finished, cancelled or unreadable appointment: the protected function gives nothing.
-        assertEquals(CallNoticeAction.OpenAppointment("c1"), callNoticeAction("c1", "a1") { _, _ -> null })
+        assertEquals(CallNoticeAction.OpenAppointment, callNoticeAction("c1", "a1") { _, _ -> null })
         // Nothing dialable is no number either.
-        assertEquals(CallNoticeAction.OpenAppointment("c1"), callNoticeAction("c1", "a1") { _, _ -> "  " })
+        assertEquals(CallNoticeAction.OpenAppointment, callNoticeAction("c1", "a1") { _, _ -> "  " })
     }
 
     @Test fun whenTheNumberCannotBeReadTheAppointmentOpens() = runTest {
-        assertEquals(CallNoticeAction.OpenAppointment("c1"),
+        assertEquals(CallNoticeAction.OpenAppointment,
             callNoticeAction("c1", "a1") { _, _ -> throw IllegalStateException("no network") })
     }
 

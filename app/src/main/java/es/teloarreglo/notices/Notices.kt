@@ -37,10 +37,12 @@ enum class NoticeTopic {
     COMPLETED, INCIDENT, REVIEW, APPOINTMENT_OTHER, PROFILE_APPROVED, PROFILE_REJECTED, CALL_CLIENT, OTHER,
 }
 
+/** Kind of the «Aviso para llamar» (#77): one hour before a confirmed appointment, to its professional. */
+const val CALL_CLIENT_KIND = "call_client"
+
 fun topicOf(kind: String, event: String?): NoticeTopic = when (kind) {
     "message" -> NoticeTopic.MESSAGE
-    // «Aviso para llamar» (#77): one hour before a confirmed appointment, to its professional.
-    "call_client" -> NoticeTopic.CALL_CLIENT
+    CALL_CLIENT_KIND -> NoticeTopic.CALL_CLIENT
     "profile_review" -> if (event == "approved") NoticeTopic.PROFILE_APPROVED else NoticeTopic.PROFILE_REJECTED
     "appointment" -> when {
         event == "requested" -> NoticeTopic.REQUEST
@@ -77,15 +79,17 @@ fun Notice.destination(): NoticeDestination? =
  * its conversation. The push carries identifiers only.
  */
 fun pushDestination(data: Map<String, String>): NoticeDestination.Conversation? =
-    data["conversation_id"]?.takeIf { data["kind"] == "call_client" && it.isNotEmpty() }
-        ?.let { NoticeDestination.Conversation(it) }
+    callConversation(data)?.let { NoticeDestination.Conversation(it) }
+
+/** The conversation of a call push, or null for any other push. */
+private fun callConversation(data: Map<String, String>): String? =
+    data["conversation_id"]?.takeIf { data["kind"] == CALL_CLIENT_KIND && it.isNotEmpty() }
 
 /** Identifiers of the appointment a call push is about; the notification offers «Llamar» for it (#81). */
 data class PushCall(val conversationId: String, val appointmentId: String)
 
 fun pushCall(data: Map<String, String>): PushCall? {
-    if (data["kind"] != "call_client") return null
-    val conversation = data["conversation_id"]?.takeIf { it.isNotEmpty() } ?: return null
+    val conversation = callConversation(data) ?: return null
     val appointment = data["appointment_id"]?.takeIf { it.isNotEmpty() } ?: return null
     return PushCall(conversation, appointment)
 }
@@ -93,7 +97,7 @@ fun pushCall(data: Map<String, String>): PushCall? {
 /** What «Llamar» in the call notice (#81) does: open the dialer with [uri], or open the appointment's conversation. */
 sealed interface CallNoticeAction {
     data class Dial(val uri: String) : CallNoticeAction
-    data class OpenAppointment(val conversationId: String) : CallNoticeAction
+    data object OpenAppointment : CallNoticeAction
 }
 
 /**
@@ -107,7 +111,7 @@ suspend fun callNoticeAction(
     val number = try { phone(conversationId, appointmentId) }
         catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { null }
     val uri = number?.let(::dialUri)
-    return uri?.let { CallNoticeAction.Dial(it) } ?: CallNoticeAction.OpenAppointment(conversationId)
+    return uri?.let { CallNoticeAction.Dial(it) } ?: CallNoticeAction.OpenAppointment
 }
 
 /** What came of opening a notice's conversation (#47): a missing conversation and an unreachable service read differently. */
