@@ -577,10 +577,8 @@ private fun RequestForm(
         DateField(date, editable) { dateText = it.toString() }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedTextField(from, { from = it.take(5) }, enabled = editable, singleLine = true,
-            label = { Text(stringResource(R.string.appointment_from)) }, modifier = Modifier.weight(1f).testTag("appointment_from"))
-        OutlinedTextField(to, { to = it.take(5) }, enabled = editable, singleLine = true,
-            label = { Text(stringResource(R.string.appointment_to)) }, modifier = Modifier.weight(1f).testTag("appointment_to"))
+        TimeField(from, stringResource(R.string.appointment_from), editable, "appointment_from", Modifier.weight(1f)) { from = it }
+        TimeField(to, stringResource(R.string.appointment_to), editable, "appointment_to", Modifier.weight(1f)) { to = it }
     }
     OutlinedTextField(address, { if (it.length <= 300) address = it }, enabled = editable,
         label = { Text(stringResource(R.string.appointment_address)) }, modifier = scrollSafe.testTag("appointment_address"))
@@ -712,8 +710,7 @@ private fun ProposalForm(
         DateField(date, editable) { dateText = it.toString() }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedTextField(start, { start = it.take(5) }, enabled = editable, singleLine = true,
-            label = { Text(stringResource(R.string.appointment_start)) }, modifier = Modifier.weight(1f).testTag("proposal_start"))
+        TimeField(start, stringResource(R.string.appointment_start), editable, "proposal_start", Modifier.weight(1f)) { start = it }
         OutlinedTextField(minutes, { minutes = it.filter(Char::isDigit).take(4) }, enabled = editable, singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             label = { Text(stringResource(R.string.appointment_duration)) }, modifier = Modifier.weight(1f).testTag("proposal_minutes"))

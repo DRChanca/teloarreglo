@@ -443,15 +443,11 @@ class AppointmentsUiTest {
         compose.onNodeWithTag("change_propose").performScrollTo().performClick()
         waitForTag("change_minutes")
         compose.onNodeWithTag("change_minutes").performTextReplacement("5")
-        compose.onNodeWithTag("change_start").performTextReplacement("9h")
         compose.onNodeWithTag("change_send").performScrollTo().performClick()
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("change_error_DURATION", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithTag("change_error_START", useUnmergedTree = true).assertExists()
-        // Each corrected field clears at once, without sending again.
+        // The start time is picked on wheels (#64), so it cannot be malformed; a corrected field clears at once.
         compose.onNodeWithTag("change_minutes").performTextReplacement("120")
         compose.onAllNodesWithTag("change_error_DURATION", useUnmergedTree = true).assertCountEquals(0)
-        compose.onNodeWithTag("change_start").performTextReplacement("9:30")
-        compose.onAllNodesWithTag("change_error_START", useUnmergedTree = true).assertCountEquals(0)
         compose.onNodeWithTag("change_send").performScrollTo().performClick()
         waitForTag("change_pending")
         assertEquals(120, kotlinx.coroutines.runBlocking { fake.list("conversation") }.single().pendingChange?.durationMinutes)

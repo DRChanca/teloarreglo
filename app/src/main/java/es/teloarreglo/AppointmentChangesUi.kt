@@ -255,9 +255,10 @@ internal fun ChangeForm(
     }
     problemText(ChangeField.DATE)?.let { ErrorLine(content = it) }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (!running) OutlinedTextField(start, { start = it.take(5) }, enabled = editable, singleLine = true,
-            isError = ChangeField.START in problems, supportingText = problemText(ChangeField.START),
-            label = { Text(stringResource(R.string.appointment_start)) }, modifier = Modifier.weight(1f).testTag("change_start"))
+        if (!running) TimeField(start, stringResource(R.string.appointment_start), editable, "change_start", Modifier.weight(1f),
+            isError = ChangeField.START in problems, supportingText = problemText(ChangeField.START)) {
+            start = it
+        }
         OutlinedTextField(minutes, { minutes = it.filter(Char::isDigit).take(4) }, enabled = editable, singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             isError = ChangeField.DURATION in problems, supportingText = problemText(ChangeField.DURATION),
