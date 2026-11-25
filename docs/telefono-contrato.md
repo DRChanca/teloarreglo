@@ -39,8 +39,8 @@ La misma regla está en el servidor (`private.normalize_contact_phone`) y en la 
 
 | Operación | Resultado / errores |
 | --- | --- |
-| `my_contact_phone()` | `text` en E.164, o `null` si la cuenta no tiene teléfono (la app lo pide). `28000 authentication_required` sin sesión |
-| `set_contact_phone(p_phone text)` | Crea o sustituye el teléfono propio y lo devuelve en E.164. `22023 invalid_contact_phone` si el formato no vale. `28000 authentication_required` sin sesión |
+| `my_contact_phone()` | `text` en E.164, o `null` si la cuenta no tiene teléfono de contacto (la app lo pide). `28000 authentication_required` sin sesión |
+| `set_contact_phone(p_phone text)` | Crea o sustituye el teléfono de contacto propio y lo devuelve en E.164. `22023 invalid_contact_phone` si el formato no vale. `28000 authentication_required` sin sesión |
 
 `anon` recibe `42501` en las dos RPC y en la tabla.
 
@@ -62,7 +62,7 @@ La misma regla está en el servidor (`private.normalize_contact_phone`) y en la 
     (`Navigation.screen` → `MainScreen.PHONE_STEP`), con el texto «Los profesionales con los que
     confirmes una cita usarán este número para contactarte». No se puede saltar; se puede cerrar
     sesión. Las cuentas anteriores lo ven al entrar.
-  - `ContactPhoneEditor` / `ContactPhoneCard` (#78): el teléfono en Ajustes › Cuenta, bajo el nombre.
+  - `ContactPhoneEditor` / `ContactPhoneCard` (#78): el teléfono de contacto en Ajustes › Cuenta, bajo el nombre.
     Usa `saveContactPhone`, así que guardar actualiza la `ContactPhoneSession` y el paso obligatorio
     no vuelve a pedirse.
 - Textos: `contact_phone_*` en ES, EN, FR y DE.
