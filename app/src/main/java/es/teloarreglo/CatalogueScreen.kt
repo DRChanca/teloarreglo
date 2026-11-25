@@ -66,6 +66,9 @@ fun CatalogueScreen(
     var loading by remember { mutableStateOf(true) }
     var failed by remember { mutableStateOf(false) }
     var search by rememberSaveable { mutableStateOf("") }
+    // Search filters (#52): kept for the app session, applied on the device over the ordered list.
+    var filters by rememberSaveable(stateSaver = SearchFiltersSaver) { mutableStateOf(SearchFilters()) }
+    var filtersOpen by rememberSaveable { mutableStateOf(false) }
     var editing by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val tradeScroll = rememberScrollState()
@@ -105,7 +108,8 @@ fun CatalogueScreen(
     val ranked = proximity?.results
     // The single search (ADR 0001): the distance order when there is one, the catalogue order otherwise.
     val rows = ranked?.rows ?: profiles.map { SearchRow(it, null, true) }
-    val visible = rows.filter { row ->
+    val hasPoint = ranked != null
+    val visible = rows.filteredBy(filters, hasPoint).filter { row ->
         searchable(row.profile.name + " " + row.profile.services.joinToString(" ")).contains(searchable(search.trim()))
     }
     val catalogueWaiting = loading || completedRequest != request
@@ -152,6 +156,7 @@ fun CatalogueScreen(
                     Modifier.horizontalScroll(tradeScroll).padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    FiltersButton(filters, trade) { filtersOpen = true }
                     FilterChip(selected = trade == null, onClick = { trade = null },
                         label = { Text(stringResource(R.string.trade_all)) })
                     catalogueTrades.forEach { key ->
@@ -159,6 +164,8 @@ fun CatalogueScreen(
                             modifier = Modifier.testTag("trade_$key"), label = { Text(stringResource(tradeLabel(key))) })
                     }
                 }
+                if (filtersOpen) FiltersSheet(filters, hasPoint,
+                    onApply = { filters = it; filtersOpen = false }, onDismiss = { filtersOpen = false })
                 LazyColumn(
                     state = listState, modifier = Modifier.testTag("catalogue_list"),
                     contentPadding = PaddingValues(TeloTheme.spacing.screen),

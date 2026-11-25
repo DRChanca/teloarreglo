@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Filtros de búsqueda (#52). -->
+<resources>
+    <string name="filters_button">Filtros</string>
+    <string name="filters_distance">Distancia máxima</string>
+    <string name="filters_distance_none">Sin límite</string>
+    <string name="filters_distance_km">%1$d km</string>
+    <string name="filters_apply_unknown">Ver profesionales</string>
+</resources>
