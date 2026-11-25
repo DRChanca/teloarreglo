@@ -307,7 +307,9 @@ fun ChatScreen(
                         Text(stringResource(R.string.chat_empty_browse))
                     }
                 }
-                LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Room between the «Conversaciones» title and the first row (#61).
+                LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(top = TeloTheme.spacing.large),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(conversations, key = { it.id }) { item ->
                         ConversationRow(item, accountId) { onSelect(item) }
                     }

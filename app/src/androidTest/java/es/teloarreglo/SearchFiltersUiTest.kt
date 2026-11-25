@@ -74,11 +74,14 @@ class SearchFiltersUiTest {
     private fun top(tag: String) =
         compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot.top
 
-    private fun show(search: ProfessionalSearch = this.search, home: HomeAddress? = this.home) {
+    private fun show(
+        search: ProfessionalSearch = this.search, home: HomeAddress? = this.home,
+        away: Boolean = false, showMap: Boolean = false,
+    ) {
         compose.setContent {
-            CatalogueScreen(catalogue, proximitySource = ProximitySource(search,
+            CatalogueScreen(catalogue, showMap = showMap, proximitySource = ProximitySource(search,
                 ensurePermission = { true }, locate = { Located.Position(43.3625, -5.8434, 20f) },
-                concejos = concejos, map = MapAvailability.NO_KEY, home = home, askIfAway = { false }))
+                concejos = concejos, map = MapAvailability.NO_KEY, home = home, askIfAway = { away }))
         }
     }
 
@@ -245,7 +248,7 @@ class SearchFiltersUiTest {
     }
 
     @Test fun filtersSurviveOpeningAProfileAndChangingThePoint() {
-        show()
+        show(away = true)
         waitFor("nearby_distance_near")
         openFilters()
         compose.onNodeWithTag("filters_rating_4").performClick()
@@ -256,10 +259,9 @@ class SearchFiltersUiTest {
         compose.onNodeWithTag("back_catalogue").performClick()
         waitFor("profile_near")
         none("profile_unrated")
-        // From home to one GPS fix: a new search point, the same filters.
-        compose.onNodeWithTag("nearby_other_ways").performClick()
-        scrollTo("nearby_locate")
-        compose.onNodeWithTag("nearby_locate").performClick()
+        // From home to one GPS fix (the far-from-home banner): a new search point, the same filters.
+        scrollTo("search_away")
+        compose.onNodeWithTag("search_away_here").performClick()
         compose.waitUntil(5_000) { search.calls == 2 }
         waitFor("nearby_distance_near")
         none("profile_unrated")
@@ -270,12 +272,11 @@ class SearchFiltersUiTest {
         profiles = profiles.map {
             if (it.id == "near") it.copy(businessAddress = "Calle Uría 2", businessLat = 43.362, businessLng = -5.849) else it
         }
-        show()
+        show(showMap = true)
         waitFor("nearby_distance_near")
         openFilters()
         distance(1)
         apply()
-        compose.onNodeWithTag("map_toggle_map").performClick()
         scrollTo("map_coverage")
         // Two cards remain (near, edge); only edge lacks a public location.
         compose.onNodeWithTag("map_coverage").assertTextEquals(text(R.string.map_list_only, 1, 2))

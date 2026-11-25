@@ -124,6 +124,16 @@ class MainActivity : AppCompatActivity() {
             val changeLanguage: (String) -> Unit = { tag ->
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
             }
+            val mapAvailability = remember { deviceMapAvailability(this@MainActivity) }
+            // Single search (ADR 0001): from the saved home, GPS or a concejo, by distance; placed from Ajustes (#61).
+            val proximitySource = app.search?.let { search ->
+                ProximitySource(search,
+                    ensurePermission = { ensureLocationPermission() },
+                    locate = { currentLocation(this@MainActivity) },
+                    concejos = app.concejos, map = mapAvailability,
+                    home = home, askIfAway = { homeSession?.askIfAway(it) == true },
+                    onChangeHome = { nav = nav.editHome() })
+            }
             val screen = nav.screen(Session(
                 connected = connectedUser != null && app.chat != null && app.notices != null,
                 mustGiveName = mustGiveName, mustGiveHome = mustGiveHome, emailLinkPending = emailLinkPending,
@@ -198,6 +208,10 @@ class MainActivity : AppCompatActivity() {
                             subscriptions = app.subscriptions, agenda = app.agenda,
                             nameSlot = nameSession?.let { session -> { AccountNameCard(session, app.applicationScope) } },
                             homeSlot = homeSession?.let { session -> { HomeSummaryCard(session, onChange = { nav = nav.editHome() }) } },
+                            searchSlot = proximitySource?.let { source -> {
+                                val proximity = rememberProximity(source, app.catalogue, app.searchSession?.trade?.value, app.searchSession)
+                                if (proximity != null) SearchSettings(proximity, app.searchPreferences.showMap, app.searchPreferences::showMap)
+                            } },
                             onEditProfile = app.professionalProfiles?.let { { nav = nav.editProfile() } })
                         MainScreen.CATALOGUE -> CatalogueScreen(app.catalogue,
                             initialProfileId = nav.profile, covers = app.covers, ownedProfileId = owner,
@@ -205,15 +219,8 @@ class MainActivity : AppCompatActivity() {
                             // Opened from another tab (Cuenta): closing the profile returns there.
                             onCloseProfile = nav.returnTo?.let { { nav = nav.back() ?: Navigation() } },
                             reviews = app.reviews, searchSession = app.searchSession,
-                            // Single search (ADR 0001): from the saved home, GPS or a concejo, by distance.
-                            proximitySource = app.search?.let { search ->
-                                ProximitySource(search,
-                                    ensurePermission = { ensureLocationPermission() },
-                                    locate = { currentLocation(this@MainActivity) },
-                                    concejos = app.concejos, map = remember { deviceMapAvailability(this@MainActivity) },
-                                    home = home, askIfAway = { homeSession?.askIfAway(it) == true },
-                                    onChangeHome = { nav = nav.editHome() })
-                            })
+                            showMap = app.searchPreferences.showMap,
+                            proximitySource = proximitySource)
                     }
                 }
             }

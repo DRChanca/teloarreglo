@@ -1,6 +1,7 @@
 package es.teloarreglo
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,10 +19,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,6 +41,8 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -225,44 +229,72 @@ internal fun rememberProximity(
 }
 
 /**
- * Top of the search list: the far-from-home banner, «Cerca de: … · Cambiar», the other ways to place the
- * search when unfolded, what went wrong, and the list/map switch once there is a distance order.
+ * Top of the search list: the far-from-home banner and what went wrong. Where the search starts and the
+ * list/map view are set in Ajustes (#61, [SearchSettings]); here only «Ordenar por cercanía» while nothing
+ * places the search yet.
  */
 @Composable
-internal fun ProximityHeader(p: Proximity, showMap: Boolean, onShowMap: (Boolean) -> Unit) {
+internal fun ProximityHeader(p: Proximity) {
     val home = p.source.home
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
         val here = p.away
         if (here != null && home != null) AwayBanner(distanceMeters(home.point, here),
             onSearchHere = { p.fromHere(here) }, onDismiss = { p.away = null })
+        if (p.origin == null && home == null) {
+            OriginLine(p)
+            if (p.otherWays) OtherWays(p)
+        }
+        ProximityStatus(p)
+    }
+}
+
+/**
+ * The search part of Ajustes (#61): «Cerca de: tu casa (Oviedo) · Cambiar» with the other ways to place the
+ * search, and whether the results show the map above the list.
+ */
+@Composable
+internal fun SearchSettings(p: Proximity, showMap: Boolean, onShowMap: (Boolean) -> Unit) {
+    Column(Modifier.fillMaxWidth().testTag("search_settings"), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
+        Text(stringResource(R.string.search_settings_title), style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.semantics { heading() })
         OriginLine(p)
         if (p.otherWays) OtherWays(p)
-        when (val s = p.state) {
-            NearbyState.PermissionDenied -> Notice("nearby_denied", R.string.nearby_denied)
-            NearbyState.LocationUnavailable -> Notice("nearby_unavailable", R.string.nearby_unavailable)
-            NearbyState.Uncertain -> Notice("nearby_uncertain", R.string.nearby_uncertain)
-            NearbyState.OutsideArea -> Notice("nearby_outside", R.string.nearby_outside)
-            is NearbyState.Confirm -> Column(Modifier.testTag("nearby_confirm"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.nearby_confirm), Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-                s.options.forEach { option ->
-                    OutlinedButton(onClick = { p.confirm(option.ineCode) },
-                        modifier = Modifier.fillMaxWidth().testTag("nearby_confirm_${option.ineCode}")) { Text(option.name) }
-                }
-            }
-            is NearbyState.Failed -> Row(Modifier.fillMaxWidth().testTag("nearby_error"), verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(if (s.reason == SearchError.NETWORK) R.string.search_order_failed_network else R.string.search_order_failed),
-                    Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
-                    color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
-                TextButton(onClick = { p.repeat() }, modifier = Modifier.testTag("nearby_retry")) { Text(stringResource(R.string.retry)) }
-            }
-            is NearbyState.Results -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = !showMap, onClick = { onShowMap(false) },
-                    modifier = Modifier.testTag("map_toggle_list"), label = { Text(stringResource(R.string.map_toggle_list)) })
-                FilterChip(selected = showMap, onClick = { onShowMap(true) },
-                    modifier = Modifier.testTag("map_toggle_map"), label = { Text(stringResource(R.string.map_toggle_map)) })
-            }
-            NearbyState.Idle, NearbyState.Locating, NearbyState.Searching -> Unit
+        if (p.busy) Text(stringResource(R.string.working), style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        ProximityStatus(p)
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("search_show_map")
+                .toggleable(value = showMap, role = Role.Switch, onValueChange = onShowMap),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(stringResource(R.string.search_show_map), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+            Switch(checked = showMap, onCheckedChange = null)
         }
+    }
+}
+
+/** What the last attempt to place the search left to say or to choose. */
+@Composable
+private fun ProximityStatus(p: Proximity) {
+    when (val s = p.state) {
+        NearbyState.PermissionDenied -> Notice("nearby_denied", R.string.nearby_denied)
+        NearbyState.LocationUnavailable -> Notice("nearby_unavailable", R.string.nearby_unavailable)
+        NearbyState.Uncertain -> Notice("nearby_uncertain", R.string.nearby_uncertain)
+        NearbyState.OutsideArea -> Notice("nearby_outside", R.string.nearby_outside)
+        is NearbyState.Confirm -> Column(Modifier.testTag("nearby_confirm"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.nearby_confirm), Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+            s.options.forEach { option ->
+                OutlinedButton(onClick = { p.confirm(option.ineCode) },
+                    modifier = Modifier.fillMaxWidth().testTag("nearby_confirm_${option.ineCode}")) { Text(option.name) }
+            }
+        }
+        is NearbyState.Failed -> Row(Modifier.fillMaxWidth().testTag("nearby_error"), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(if (s.reason == SearchError.NETWORK) R.string.search_order_failed_network else R.string.search_order_failed),
+                Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
+                color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = { p.repeat() }, modifier = Modifier.testTag("nearby_retry")) { Text(stringResource(R.string.retry)) }
+        }
+        is NearbyState.Results, NearbyState.Idle, NearbyState.Locating, NearbyState.Searching -> Unit
     }
 }
 

@@ -48,7 +48,8 @@ fun Activity.installStartSplash(coldStart: Boolean) {
  */
 private fun Activity.playWoodpeckerAndLeave(provider: SplashScreenViewProvider, createdAt: Long) {
     val splashView = provider.view as? ViewGroup ?: return provider.remove()
-    val icon = provider.iconView
+    // The system may hand over a splash without an icon (some launchers, instrumentation): then it just leaves.
+    val icon = try { provider.iconView } catch (_: NullPointerException) { null } ?: return provider.remove()
     val unit = icon.width / 72f
     val iconAt = IntArray(2).also(icon::getLocationInWindow)
     val splashAt = IntArray(2).also(splashView::getLocationInWindow)

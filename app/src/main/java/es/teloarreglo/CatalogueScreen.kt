@@ -59,6 +59,8 @@ fun CatalogueScreen(
     proximitySource: ProximitySource? = null,
     /** The app's search (#59): when given, the screen shows it instead of starting its own from home. */
     searchSession: AppSearchSession? = null,
+    /** From Ajustes (#61): the results show the map above the list. */
+    showMap: Boolean = false,
     /** Closes [initialProfileId] when it was opened from another tab; null closes it into the list. */
     onCloseProfile: (() -> Unit)? = null,
 ) {
@@ -109,7 +111,6 @@ fun CatalogueScreen(
         return
     }
     val proximity = rememberProximity(proximitySource, catalogue, trade, searchSession)
-    var showMap by rememberSaveable { mutableStateOf(false) }
     val ranked = proximity?.results
     // The single search (ADR 0001): the distance order when there is one, the catalogue order otherwise.
     val rows = ranked?.rows ?: profiles.map { SearchRow(it, null, true) }
@@ -190,7 +191,7 @@ fun CatalogueScreen(
                     contentPadding = PaddingValues(TeloTheme.spacing.screen),
                     verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.medium),
                 ) {
-                    if (proximity != null) item(key = "proximity") { ProximityHeader(proximity, showMap) { showMap = it } }
+                    if (proximity != null) item(key = "proximity") { ProximityHeader(proximity) }
                     when {
                         // Skeleton until the order is known: cards never jump once shown.
                         proximity?.busy == true || (ranked == null && catalogueWaiting) -> items(4) { SkeletonCard() }
