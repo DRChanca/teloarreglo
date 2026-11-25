@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The flash fades out at the end. -->
+<objectAnimator xmlns:android="http://schemas.android.com/apk/res/android" android:duration="1000">
+    <propertyValuesHolder android:propertyName="fillAlpha">
+        <keyframe android:fraction="0" android:value="1" />
+        <keyframe android:fraction="0.82" android:value="1" />
+        <keyframe android:fraction="1" android:value="0" />
+    </propertyValuesHolder>
+</objectAnimator>

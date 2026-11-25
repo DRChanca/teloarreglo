@@ -60,6 +60,8 @@ class MainActivity : AppCompatActivity() {
     private val openNotices = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Start splash with the woodpecker (#58); animated only on a cold start.
+        installStartSplash(coldStart = savedInstanceState == null)
         // Bars drawn by the app: their icons follow the active light/dark theme (#45).
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)

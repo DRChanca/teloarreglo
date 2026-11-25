@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher icon foreground (#58): the woodpecker pecking the trunk, in the light colors. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#8D6E63" android:pathData="@string/woodpecker_trunk_path" />
+    <path android:fillColor="#1C1B1F" android:pathData="@string/woodpecker_body_path" />
+    <path android:fillColor="#1C1B1F" android:fillType="evenOdd" android:pathData="@string/woodpecker_head_path" />
+    <path android:fillColor="#1C1B1F" android:pathData="@string/woodpecker_beak_path" />
+    <path android:fillColor="#C62828" android:pathData="@string/woodpecker_crest_path" />
+</vector>
