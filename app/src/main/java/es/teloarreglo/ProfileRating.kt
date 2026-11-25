@@ -70,26 +70,29 @@ fun ProfileRating(rating: Double?, reviewCount: Int, compact: Boolean, modifier:
         verticalAlignment = Alignment.CenterVertically,
     ) {
         repeat(5) { index ->
-            val kind = when {
-                index < stars.full -> "full"
-                index == stars.full && stars.half -> "half"
-                else -> "empty"
+            val fill = when {
+                index < stars.full -> StarFill.FULL
+                index == stars.full && stars.half -> StarFill.HALF
+                else -> StarFill.EMPTY
             }
-            Star(kind, star)
+            Star(fill, star)
         }
         Spacer(Modifier.width(TeloTheme.spacing.small))
         Text(figures, Modifier.clearAndSetSemantics {}, style = MaterialTheme.typography.bodyMedium, color = muted)
     }
 }
 
-/** One star: filled, empty, or an empty star with its starting half filled. */
+/** How much of one star is filled. */
+private enum class StarFill { FULL, HALF, EMPTY }
+
+/** One star: filled, empty, or an empty star with its starting half filled. Tagged star_full/half/empty. */
 @Composable
-private fun Star(kind: String, color: Color) {
+private fun Star(fill: StarFill, color: Color) {
     val style = MaterialTheme.typography.titleMedium
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    Box(Modifier.testTag("star_$kind").clearAndSetSemantics {}) {
-        Text(if (kind == "full") "★" else "☆", style = style, color = color)
-        if (kind == "half") Text("★", Modifier.drawWithContent {
+    Box(Modifier.testTag("star_${fill.name.lowercase()}").clearAndSetSemantics {}) {
+        Text(if (fill == StarFill.FULL) "★" else "☆", style = style, color = color)
+        if (fill == StarFill.HALF) Text("★", Modifier.drawWithContent {
             val half = size.width / 2
             clipRect(left = if (rtl) half else 0f, right = if (rtl) size.width else half) { this@drawWithContent.drawContent() }
         }, style = style, color = color)

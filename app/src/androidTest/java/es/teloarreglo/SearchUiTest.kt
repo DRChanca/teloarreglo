@@ -8,9 +8,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
-import es.teloarreglo.catalogue.Catalogue
 import es.teloarreglo.catalogue.Coverage
-import es.teloarreglo.catalogue.PublicProfile
 import es.teloarreglo.home.HomeAddress
 import es.teloarreglo.home.HomeSource
 import es.teloarreglo.search.Concejo
@@ -40,31 +38,11 @@ import org.junit.Test
 class SearchUiTest {
     @get:Rule val compose = createComposeRule()
 
-    private fun fake(id: String, name: String, zone: Coverage = Coverage("33044", "Oviedo"), featured: Boolean = false) =
-        PublicProfile(id, name, "d", listOf("plumbing"), listOf("Fugas"), listOf(zone),
-            listOf("es"), "+34 000 000 000", listOf("plumbing"), emptyList(), featured = featured)
-
     private val gijon = Coverage("33024", "Gijón")
-    private val profiles = listOf(fake("near", "Fontanería Nalón"), fake("far", "Agua Lejana"),
-        fake("neighbour", "Grifos del Puerto", gijon, featured = true))
+    private val profiles = listOf(fakeProfile("near", "Fontanería Nalón"), fakeProfile("far", "Agua Lejana"),
+        fakeProfile("neighbour", "Grifos del Puerto", gijon, featured = true))
 
-    private val catalogue = object : Catalogue {
-        override suspend fun list(trade: String?) = profiles
-        override suspend fun profile(id: String) = profiles.firstOrNull { it.id == id }
-    }
-
-    private class FakeSearch(vararg outcomes: SearchOutcome) : ProfessionalSearch {
-        private val queue = ArrayDeque(outcomes.toList())
-        val sentConcejos = mutableListOf<String?>()
-        val sentPoints = mutableListOf<Pair<Double, Double>>()
-        val sentTrades = mutableListOf<String?>()
-        override suspend fun search(lat: Double, lng: Double, trade: String?, ineCode: String?, limit: Int): SearchOutcome {
-            sentConcejos += ineCode
-            sentTrades += trade
-            sentPoints += lat to lng
-            return queue.removeFirst()
-        }
-    }
+    private val catalogue = FakeCatalogue { profiles }
 
     private val oviedo = Located.Position(43.3625, -5.8434, 20f)
     private val oviedoConcejo = Concejo("33044", "Oviedo")
@@ -134,12 +112,9 @@ class SearchUiTest {
     }
 
     @Test fun onlyTheHighlightedCardIsRoundedAndSaysPerfilDestacado() {
-        val featured = profiles + fake("star", "Fontanería Estrella", featured = true)
+        val featured = profiles + fakeProfile("star", "Fontanería Estrella", featured = true)
         compose.setContent {
-            CatalogueScreen(object : Catalogue {
-                override suspend fun list(trade: String?) = featured
-                override suspend fun profile(id: String) = featured.firstOrNull { it.id == id }
-            }, proximitySource = ProximitySource(FakeSearch(SearchOutcome.Found(oviedoConcejo, listOf(
+            CatalogueScreen(FakeCatalogue { featured }, proximitySource = ProximitySource(FakeSearch(SearchOutcome.Found(oviedoConcejo, listOf(
                 NearbyResult("star", 300, featured = true), NearbyResult("near", 500),
                 NearbyResult("neighbour", 1500, featured = false, inZone = false)))),
                 ensurePermission = { true }, locate = { oviedo }, concejos = concejos, map = MapAvailability.NO_KEY, home = home))

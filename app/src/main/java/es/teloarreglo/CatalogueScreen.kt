@@ -111,21 +111,22 @@ fun CatalogueScreen(
     val rows = ranked?.rows ?: profiles.map { SearchRow(it, null, true) }
     val hasPoint = ranked != null
     // Filters first, then the text (#52); both only remove rows from the ordered list.
-    val matching: (List<SearchRow>, SearchFilters) -> List<SearchRow> = { list, f ->
-        list.filteredBy(f, hasPoint).filter { row ->
+    val matching: (List<SearchRow>, SearchFilters) -> List<SearchRow> = { candidates, appliedFilters ->
+        candidates.filteredBy(appliedFilters, hasPoint).filter { row ->
             searchable(row.profile.name + " " + row.profile.services.joinToString(" ")).contains(searchable(search.trim()))
         }
     }
     val visible = matching(rows, filters)
     // «Ver N profesionales»: another trade is only countable here when the list holds every trade.
-    val countFor: (String?, SearchFilters) -> Int? = { t, f ->
+    val countFor: (String?, SearchFilters) -> Int? = { draftTrade, draftFilters ->
         when {
-            t == trade -> matching(rows, f).size
-            trade == null -> matching(rows.filter { t in it.profile.trades }, f).size
+            draftTrade == trade -> matching(rows, draftFilters).size
+            trade == null -> matching(rows.filter { draftTrade in it.profile.trades }, draftFilters).size
             else -> null
         }
     }
-    val resetFilters: () -> Unit = { trade = null; filters = SearchFilters(); search = ""; keyboard?.hide() }
+    // As the sheet's «Restablecer»: trade, distance and rating go back to their defaults; the text stays.
+    val resetFilters: () -> Unit = { trade = null; filters = SearchFilters() }
     val catalogueWaiting = loading || completedRequest != request
     // The concejo the search is about, for «No suele trabajar en …» on the profile.
     val searchConcejo = ranked?.concejo?.let { Coverage(it.ineCode, it.name) }
@@ -179,7 +180,7 @@ fun CatalogueScreen(
                     }
                 }
                 if (filtersOpen) FiltersSheet(trade, filters, hasPoint, countFor,
-                    onApply = { t, f -> trade = t; filters = f; filtersOpen = false }, onDismiss = { filtersOpen = false })
+                    onApply = { newTrade, newFilters -> trade = newTrade; filters = newFilters; filtersOpen = false }, onDismiss = { filtersOpen = false })
                 LazyColumn(
                     state = listState, modifier = Modifier.testTag("catalogue_list"),
                     contentPadding = PaddingValues(TeloTheme.spacing.screen),

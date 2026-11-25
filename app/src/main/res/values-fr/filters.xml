@@ -14,6 +14,7 @@
     <string name="filters_reset">Réinitialiser</string>
     <plurals name="filters_apply">
         <item quantity="one">Voir %d professionnel</item>
+        <item quantity="many">Voir %d professionnels</item>
         <item quantity="other">Voir %d professionnels</item>
     </plurals>
     <string name="filters_apply_unknown">Voir les professionnels</string>
