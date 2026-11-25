@@ -77,6 +77,7 @@ fun topicText(topic: NoticeTopic): Int = when (topic) {
     NoticeTopic.CONFIRMED -> R.string.notices_topic_confirmed
     NoticeTopic.CHANGE -> R.string.notices_topic_change
     NoticeTopic.CHANGE_DECIDED -> R.string.notices_topic_change_decided
+    NoticeTopic.PROFESSIONAL_NEAR -> R.string.notices_topic_professional_near
     NoticeTopic.STARTED -> R.string.notices_topic_started
     NoticeTopic.CANCELLED -> R.string.notices_topic_cancelled
     NoticeTopic.DONE -> R.string.notices_topic_done

@@ -525,6 +525,7 @@
     <string name="notices_topic_confirmed">Cita confirmada</string>
     <string name="notices_topic_change">Cambio de cita pendiente de tu respuesta</string>
     <string name="notices_topic_change_decided">Respuesta a un cambio de cita</string>
+    <string name="notices_topic_professional_near">Tu profesional está cerca</string>
     <string name="notices_topic_started">Trabajo comenzado</string>
     <string name="notices_topic_cancelled">Cita cancelada</string>
     <string name="notices_topic_done">Trabajo marcado como realizado: confirma o comunica una incidencia</string>
