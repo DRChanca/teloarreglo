@@ -208,16 +208,16 @@ internal fun ProximityHeader(p: Proximity, showMap: Boolean, onShowMap: (Boolean
     }
 }
 
-/** Map of the same rows as the list (#17): only profiles with a public location get a marker. */
+/** Map of the same [rows] as the list (#17), filters included (#52): only profiles with a public location get a marker. */
 @Composable
-internal fun ProximityMap(p: Proximity, results: NearbyState.Results, onOpenProfile: (String) -> Unit) {
-    val located = results.rows.mapNotNull { row -> row.bandM?.let { row.profile to it } }
+internal fun ProximityMap(p: Proximity, results: NearbyState.Results, rows: List<SearchRow>, onOpenProfile: (String) -> Unit) {
+    val located = rows.mapNotNull { row -> row.bandM?.let { row.profile to it } }
     val view = mapView(located, results.featured)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (p.source.map == MapAvailability.READY) ResultsMap(view, results.from, onOpenProfile) else MapUnavailableNotice(p.source.map)
         Text(
             if (view.markers.isEmpty()) stringResource(R.string.map_none_public)
-            else stringResource(R.string.map_list_only, view.listOnly, results.rows.size),
+            else stringResource(R.string.map_list_only, view.listOnly, rows.size),
             Modifier.testTag("map_coverage"), style = MaterialTheme.typography.bodySmall,
         )
     }

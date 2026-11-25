@@ -1,5 +1,7 @@
 package es.teloarreglo
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -8,10 +10,19 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
@@ -41,21 +52,40 @@ internal fun List<SearchRow>.filteredBy(filters: SearchFilters, hasPoint: Boolea
         (filters.minRating == null || (rating != null && rating >= filters.minRating))
 }
 
-/** «Filtros» bottom sheet: changes are provisional until «Ver N profesionales». */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Filters away from their default, the trade included; a distance limit counts only with a search point. */
+internal fun SearchFilters.activeCount(trade: String?, hasPoint: Boolean): Int =
+    listOfNotNull(trade, maxKm.takeIf { hasPoint }, minRating).size
+
+/**
+ * «Filtros» bottom sheet: changes are provisional until «Ver N profesionales». [countFor] gives N for a trade
+ * and filters, or null when it cannot be known on the device (another trade than the one the list holds).
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun FiltersSheet(
+    trade: String?,
     filters: SearchFilters,
     hasPoint: Boolean,
-    onApply: (SearchFilters) -> Unit,
+    countFor: (String?, SearchFilters) -> Int?,
+    onApply: (String?, SearchFilters) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    var draftTrade by remember(trade) { mutableStateOf(trade) }
     var draft by remember(filters) { mutableStateOf(filters) }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(
             Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            SheetSection(R.string.filters_trade)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = draftTrade == null, onClick = { draftTrade = null },
+                    modifier = Modifier.testTag("filters_trade_all"), label = { Text(stringResource(R.string.trade_all)) })
+                catalogueTrades.forEach { key ->
+                    FilterChip(selected = draftTrade == key, onClick = { draftTrade = key },
+                        modifier = Modifier.testTag("filters_trade_$key"), label = { Text(stringResource(tradeLabel(key))) })
+                }
+            }
             SheetSection(R.string.filters_distance)
             val km = draft.maxKm.takeIf { hasPoint }
             Text(distanceStepLabel(km), Modifier.testTag("filters_distance_value"))
@@ -78,11 +108,13 @@ internal fun FiltersSheet(
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { draft = SearchFilters() }, Modifier.testTag("filters_reset")) {
+                TextButton(onClick = { draftTrade = null; draft = SearchFilters() }, Modifier.testTag("filters_reset")) {
                     Text(stringResource(R.string.filters_reset))
                 }
-                Button(onClick = { onApply(draft) }, Modifier.weight(1f).testTag("filters_apply")) {
-                    Text(stringResource(R.string.filters_apply_unknown))
+                val count = countFor(draftTrade, draft)
+                Button(onClick = { onApply(draftTrade, draft) }, Modifier.weight(1f).testTag("filters_apply")) {
+                    Text(if (count == null) stringResource(R.string.filters_apply_unknown)
+                        else pluralStringResource(R.plurals.filters_apply, count, count))
                 }
             }
         }
@@ -102,9 +134,46 @@ internal val SearchFiltersSaver = listSaver<SearchFilters, Int>(
 
 /** «Filtros», or «Filtros · N» with the number of filters away from their default (the trade counts). */
 @Composable
-internal fun FiltersButton(filters: SearchFilters, trade: String?, onClick: () -> Unit) {
+internal fun FiltersButton(active: Int, onClick: () -> Unit) {
     OutlinedButton(onClick = onClick, modifier = Modifier.testTag("filters_open")) {
-        Text(stringResource(R.string.filters_button))
+        Text(if (active == 0) stringResource(R.string.filters_button) else stringResource(R.string.filters_button_active, active))
+    }
+}
+
+/** Filters left nobody: say so, with an illustration and «Restablecer filtros», never a bare empty list. */
+@Composable
+internal fun FiltersEmpty(onReset: () -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        NoMatchesArtwork(Modifier.size(160.dp))
+        Text(stringResource(R.string.filters_empty), Modifier.testTag("filters_empty"),
+            style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+        Button(onClick = onReset, Modifier.testTag("filters_empty_reset")) { Text(stringResource(R.string.filters_empty_reset)) }
+    }
+}
+
+/** A magnifier over an empty card, drawn like the trade illustrations (ProfileCover): no photo, no network. */
+@Composable
+private fun NoMatchesArtwork(modifier: Modifier) {
+    val description = stringResource(R.string.filters_empty_artwork)
+    val accent = Color(0xFF428D92)
+    val dark = Color(0xFF214C40)
+    Canvas(modifier.clip(MaterialTheme.shapes.large).background(Color(0xFFEEF2EB))
+        .semantics { contentDescription = description }) {
+        val w = size.width
+        val h = size.height
+        val unit = minOf(w, h)
+        drawCircle(accent.copy(alpha = .12f), unit * .46f, Offset(w * .56f, h * .48f))
+        drawCircle(Color.White.copy(alpha = .65f), unit * .26f, Offset(w * .30f, h * .26f))
+        drawRoundRect(accent.copy(alpha = .16f), Offset(w * .16f, h * .80f), Size(w * .68f, h * .07f), CornerRadius(unit * .04f))
+        // An empty result card behind the lens.
+        drawRoundRect(Color.White, Offset(w * .20f, h * .30f), Size(w * .46f, h * .36f), CornerRadius(unit * .04f))
+        drawLine(accent.copy(alpha = .35f), Offset(w * .27f, h * .42f), Offset(w * .56f, h * .42f), unit * .035f)
+        drawLine(accent.copy(alpha = .25f), Offset(w * .27f, h * .52f), Offset(w * .48f, h * .52f), unit * .035f)
+        // The magnifier.
+        drawLine(dark, Offset(w * .66f, h * .64f), Offset(w * .80f, h * .78f), unit * .07f)
+        drawCircle(Color.White.copy(alpha = .55f), unit * .15f, Offset(w * .58f, h * .54f))
+        drawCircle(dark, unit * .15f, Offset(w * .58f, h * .54f), style = Stroke(unit * .045f))
     }
 }
 
