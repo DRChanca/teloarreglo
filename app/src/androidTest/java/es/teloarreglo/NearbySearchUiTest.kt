@@ -58,7 +58,7 @@ class NearbySearchUiTest {
     private fun show(search: ProfessionalSearch, granted: Boolean = true, located: Located = oviedo, opened: MutableList<String> = mutableListOf()) {
         compose.setContent {
             NearbySearchScreen(search, catalogue, ensurePermission = { granted }, locate = { located },
-                onBack = {}, onOpenProfile = { opened += it }, concejos = concejos, map = MapAvailability.NO_KEY)
+                onOpenProfile = { opened += it }, concejos = concejos, map = MapAvailability.NO_KEY)
         }
     }
 

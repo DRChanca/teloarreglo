@@ -254,7 +254,7 @@ fun ChatScreen(
     }
     CompositionLocalProvider(LocalChatEvidence provides evidence) {
     Surface(Modifier.fillMaxSize()) {
-        Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding().padding(horizontal = 16.dp)) {
+        Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding().padding(horizontal = TeloTheme.spacing.screen)) {
             if (conversation != null && selection.active) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("chat_selection_bar")) {
                     IconButton(onClick = { selection = selection.cancel() }, modifier = Modifier.testTag("chat_selection_cancel")) {
@@ -274,7 +274,8 @@ fun ChatScreen(
                     }
                 }
             } else Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onBack) { Text(stringResource(R.string.catalogue_back)) }
+                // The list is a bottom-bar tab (#47): only an open conversation has its own «Volver».
+                if (conversation != null) TextButton(onClick = onBack) { Text(stringResource(R.string.catalogue_back)) }
                 Text(conversation?.let { conversationTitle(it, accountId) } ?: stringResource(R.string.chat_title),
                     style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f))

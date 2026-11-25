@@ -96,7 +96,6 @@ fun NearbySearchScreen(
     catalogue: Catalogue,
     ensurePermission: suspend () -> Boolean,
     locate: suspend () -> Located,
-    onBack: () -> Unit,
     onOpenProfile: (String) -> Unit,
     concejos: ConcejoDirectory? = null,
     map: MapAvailability = MapAvailability.NO_KEY,
@@ -173,11 +172,10 @@ fun NearbySearchScreen(
         // One scrollable list for header and results: on small screens results stay reachable.
         LazyColumn(
             Modifier.windowInsetsPadding(WindowInsets.safeDrawing).testTag("nearby_screen"),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(TeloTheme.spacing.screen),
+            verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.medium),
         ) {
-            item { TextButton(onClick = onBack, modifier = Modifier.testTag("nearby_back")) { Text(stringResource(R.string.nearby_back)) } }
-            item { Text(stringResource(R.string.nearby_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold) }
+            item { Text(stringResource(R.string.nearby_title), style = MaterialTheme.typography.headlineMedium) }
             item { Text(stringResource(R.string.nearby_hint)) }
             item {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

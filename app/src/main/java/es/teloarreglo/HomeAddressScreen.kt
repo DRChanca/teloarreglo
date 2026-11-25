@@ -130,7 +130,7 @@ fun HomeAddressScreen(
             if (!required) TextButton(onClick = onDone, enabled = !busy, modifier = Modifier.testTag("home_back")) {
                 Text(stringResource(R.string.catalogue_back))
             }
-            Text(stringResource(R.string.home_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.home_title), style = MaterialTheme.typography.headlineMedium)
             Text(stringResource(R.string.home_intro))
             Text(stringResource(R.string.home_privacy), style = MaterialTheme.typography.bodySmall)
 

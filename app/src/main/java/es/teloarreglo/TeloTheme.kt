@@ -1,8 +1,11 @@
 package es.teloarreglo
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -11,6 +14,9 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 /** Colours with no Material 3 role, each with a light and a dark value (#45). */
 @Immutable
@@ -108,18 +114,58 @@ private val DarkColors = TeloColors(
 /** The palette for each system mode: plain data, so its contrast is checked on the JVM. */
 internal fun teloColors(dark: Boolean): TeloColors = if (dark) DarkColors else LightColors
 
+/**
+ * Title roles (#47): headlines and titleLarge are bold here, so screens set only the style.
+ * - Screen title: headlineSmall (headlineMedium for the profile name on its own page).
+ * - Section title (a block or card inside a screen): titleLarge; a smaller card heading: titleMedium.
+ * - Item name in a list: titleMedium. Metadata: bodySmall / labelMedium.
+ * Mark screen and section titles with Modifier.semantics { heading() }.
+ */
+internal val teloTypography: Typography = Typography().run {
+    copy(
+        headlineLarge = headlineLarge.copy(fontWeight = FontWeight.Bold),
+        headlineMedium = headlineMedium.copy(fontWeight = FontWeight.Bold),
+        headlineSmall = headlineSmall.copy(fontWeight = FontWeight.Bold),
+        titleLarge = titleLarge.copy(fontWeight = FontWeight.Bold),
+    )
+}
+
+/**
+ * Card corners (#47): large for section cards inside a screen, extraLarge for the main card of a form.
+ * Other roles keep the Material 3 values (a default Card uses medium, 12 dp).
+ */
+internal val teloShapes = Shapes(
+    large = RoundedCornerShape(16.dp),
+    extraLarge = RoundedCornerShape(24.dp),
+)
+
+/** One spacing scale for paddings and gaps (#47): 4, 8, 12, 16, 24 dp; [screen] is the side gutter. */
+@Immutable
+internal data class TeloSpacing(
+    val extraSmall: Dp = 4.dp,
+    val small: Dp = 8.dp,
+    val medium: Dp = 12.dp,
+    val large: Dp = 16.dp,
+    val extraLarge: Dp = 24.dp,
+    /** Horizontal padding between a screen's content and the window edges. */
+    val screen: Dp = 16.dp,
+)
+
 private val LocalTeloExtendedColors = staticCompositionLocalOf { LightColors.extended }
+private val LocalTeloSpacing = staticCompositionLocalOf { TeloSpacing() }
 
 /** Applied once at the activity root; follows the system light/dark mode (no in-app selector). */
 @Composable
 internal fun TeloTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     val colors = teloColors(dark)
-    CompositionLocalProvider(LocalTeloExtendedColors provides colors.extended) {
-        MaterialTheme(colorScheme = colors.scheme, content = content)
+    CompositionLocalProvider(LocalTeloExtendedColors provides colors.extended, LocalTeloSpacing provides TeloSpacing()) {
+        MaterialTheme(colorScheme = colors.scheme, typography = teloTypography, shapes = teloShapes, content = content)
     }
 }
 
 internal object TeloTheme {
     val extended: TeloExtendedColors
         @Composable @ReadOnlyComposable get() = LocalTeloExtendedColors.current
+    val spacing: TeloSpacing
+        @Composable @ReadOnlyComposable get() = LocalTeloSpacing.current
 }

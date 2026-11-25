@@ -1,6 +1,9 @@
 package es.teloarreglo
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -43,6 +46,28 @@ class TeloThemeTest {
             // WCAG non-text contrast (1.4.11): 3:1 against the adjacent colour.
             assertTrue("featured border vs card ${if (dark) "dark" else "light"}: $ratio", ratio >= 3.0)
         }
+    }
+
+    @Test
+    fun screenAndSectionTitlesAreBoldWithoutEachScreenAskingForIt() {
+        val type = teloTypography
+        for ((role, style) in mapOf(
+            "headlineLarge" to type.headlineLarge, "headlineMedium" to type.headlineMedium,
+            "headlineSmall" to type.headlineSmall, "titleLarge" to type.titleLarge,
+        )) assertEquals(role, FontWeight.Bold, style.fontWeight)
+    }
+
+    @Test
+    fun spacingFollowsOneScaleOf4_8_12_16_24() {
+        val s = TeloSpacing()
+        assertEquals(listOf(4.dp, 8.dp, 12.dp, 16.dp, 24.dp), listOf(s.extraSmall, s.small, s.medium, s.large, s.extraLarge))
+        assertEquals("screen gutter", 16.dp, s.screen)
+    }
+
+    @Test
+    fun sectionCardsAndMainCardsHaveTheirOwnCorners() {
+        assertEquals(RoundedCornerShape(16.dp), teloShapes.large)
+        assertEquals(RoundedCornerShape(24.dp), teloShapes.extraLarge)
     }
 
     private fun assertReadable(colors: TeloColors, theme: String) {

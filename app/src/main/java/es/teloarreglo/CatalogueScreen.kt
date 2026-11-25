@@ -106,13 +106,13 @@ fun CatalogueScreen(
                     }
                 } else {
                     Text("teloarreglo", color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                        style = MaterialTheme.typography.titleLarge)
                 }
             }
             if (selected == null) {
                 Text(
                     stringResource(R.string.catalogue_title), Modifier.padding(20.dp),
-                        style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineMedium,
                 )
                 OutlinedTextField(
                     value = search, onValueChange = { search = it },
@@ -231,7 +231,7 @@ private fun ProfileDetail(
     ) {
         item {
             if (featured) FeaturedBadge(Modifier.testTag("profile_featured"))
-            Text(profile.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(profile.name, style = MaterialTheme.typography.headlineMedium)
             Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(), color = MaterialTheme.colorScheme.primary)
             Rating(profile)
             if (onContact != null) Button(onClick = onContact, modifier = Modifier.fillMaxWidth().testTag("chat_contact")) {
@@ -263,7 +263,7 @@ private fun ProfileDetail(
         if (profile.languages.any { Locale.forLanguageTag(it).language != "es" }) {
             item {
                 Text(stringResource(R.string.catalogue_languages), Modifier.testTag("profile_languages"),
-                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.titleLarge)
                 Text(profile.languages.joinToString { Locale.forLanguageTag(it).getDisplayLanguage(locale) })
             }
         }
@@ -273,7 +273,7 @@ private fun ProfileDetail(
         }
         item {
             Text(stringResource(R.string.catalogue_prices), Modifier.testTag("reference_prices"),
-                style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.titleLarge)
             Text(stringResource(R.string.catalogue_prices_hint))
             if (profile.prices.isEmpty()) Text(stringResource(R.string.catalogue_no_prices))
         }
@@ -301,7 +301,7 @@ private fun SelectionContainerCompat(phone: String) {
 
 @Composable
 private fun Section(label: Int) {
-    Text(stringResource(label), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+    Text(stringResource(label), style = MaterialTheme.typography.titleLarge)
 }
 
 @Composable

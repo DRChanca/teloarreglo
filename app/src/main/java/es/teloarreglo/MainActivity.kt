@@ -183,8 +183,8 @@ class MainActivity : AppCompatActivity() {
                                 evidence = app.incidents?.let { remember(it) { ChatEvidenceLink(it, app.applicationScope) } })
                         }
                         MainScreen.ACCESS, MainScreen.EMAIL_LINK -> AccessScreen(app.identity, changeLanguage,
-                            onCatalogue = {
-                                // Also clears a shown invalid-link error so the catalogue can be reached.
+                            onLeaveLink = {
+                                // Clears the invalid-link error so the catalogue can be reached.
                                 app.identity.dismiss()
                                 nav = Navigation()
                             },
@@ -199,7 +199,6 @@ class MainActivity : AppCompatActivity() {
                             NearbySearchScreen(search, app.catalogue,
                                 ensurePermission = { ensureLocationPermission() },
                                 locate = { currentLocation(this@MainActivity) },
-                                onBack = { nav = Navigation() },
                                 onOpenProfile = { nav = nav.showProfile(it) },
                                 concejos = app.concejos, map = remember { deviceMapAvailability(this@MainActivity) },
                                 home = home, askIfAway = { homeSession?.askIfAway(it) == true },

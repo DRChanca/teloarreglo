@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -85,11 +84,10 @@ fun NoticesScreen(
     }
     LaunchedEffect(accountId) { push?.sync(accountId) }
     Surface(Modifier.fillMaxSize()) {
-        Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 16.dp)) {
+        Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = TeloTheme.spacing.screen)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onBack) { Text(stringResource(R.string.catalogue_back)) }
                 Text(stringResource(R.string.notices_title), Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.titleLarge)
                 TextButton(onClick = { attempt++ }, Modifier.testTag("notices_refresh")) {
                     Text(stringResource(R.string.notices_refresh))
                 }
@@ -162,7 +160,7 @@ private fun PushCard(push: PushRegistration?, operationScope: CoroutineScope, as
         busy = true
         operationScope.launch { try { action() } finally { busy = false } }
     }
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer), shape = RoundedCornerShape(16.dp),
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer), shape = MaterialTheme.shapes.large,
         modifier = Modifier.fillMaxWidth().testTag("notices_push")) {
         Column(Modifier.padding(16.dp).semantics { liveRegion = LiveRegionMode.Polite },
             verticalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -1,5 +1,4 @@
 <resources xmlns:tools="http://schemas.android.com/tools" tools:locale="de">
-    <string name="nearby_back">Zurück zum Katalog</string>
     <string name="nearby_title">Fachleute in der Nähe des Auftrags</string>
     <string name="nearby_hint">Wir nutzen deinen Standort einmalig, um den Concejo zu bestimmen und die dort Tätigen nach Entfernung zu sortieren.</string>
     <string name="nearby_use_location">Meinen Standort verwenden</string>

@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -53,7 +52,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -77,7 +75,8 @@ private enum class Form { SIGN_IN, SIGN_UP, RESET }
 fun AccessScreen(
     identity: Identity,
     onLanguageChange: (String) -> Unit,
-    onCatalogue: (() -> Unit)? = null,
+    /** Leaves an invalid email link, the only state of this tab with its own «Volver» (#47). */
+    onLeaveLink: (() -> Unit)? = null,
     onProfile: ((String) -> Unit)? = null,
     operationScope: CoroutineScope = rememberCoroutineScope(),
     googleAuth: ComposeAuth? = null,
@@ -132,22 +131,22 @@ fun AccessScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(Modifier.fillMaxWidth().widthIn(max = 480.dp)) {
-                Text("teloarreglo", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text("teloarreglo", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
             }
             Spacer(Modifier.height(48.dp))
-            if (onCatalogue != null) {
-                TextButton(onClick = onCatalogue, Modifier.testTag("back_from_account")) {
+            if (onLeaveLink != null && state.error == AccessError.LINK_INVALID) {
+                TextButton(onClick = onLeaveLink, Modifier.testTag("back_from_account")) {
                     Text(stringResource(R.string.catalogue_back))
                 }
             }
             Column(Modifier.widthIn(max = 480.dp).fillMaxWidth()) {
-                Text(stringResource(R.string.welcome), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.welcome), style = MaterialTheme.typography.headlineLarge)
                 Spacer(Modifier.height(16.dp))
                 Text(stringResource(R.string.intro), style = MaterialTheme.typography.bodyLarge)
                 Spacer(Modifier.height(32.dp))
                 Card(
                     colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
                 ) {
                     Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         @Composable
@@ -344,7 +343,7 @@ fun AccessScreen(
             // Preferences (#46): also offered to visitors, under the sign-in form.
             Card(
                 colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card),
-                shape = RoundedCornerShape(24.dp),
+                shape = MaterialTheme.shapes.extraLarge,
                 modifier = Modifier.padding(top = 24.dp).widthIn(max = 480.dp).fillMaxWidth().testTag("preferences"),
             ) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {

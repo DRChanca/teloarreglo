@@ -71,7 +71,7 @@ fun SubscriptionCard(subscriptions: Subscriptions, operationScope: CoroutineScop
     }
     Card(
         colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.subscriptionContainer, contentColor = TeloTheme.extended.onSubscriptionContainer),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         modifier = Modifier.fillMaxWidth().testTag("subscription"),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
