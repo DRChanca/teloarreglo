@@ -62,7 +62,9 @@ fun CatalogueScreen(
     /** Closes [initialProfileId] when it was opened from another tab; null closes it into the list. */
     onCloseProfile: (() -> Unit)? = null,
 ) {
-    var trade by rememberSaveable { mutableStateOf<String?>(null) }
+    // With the app's search (#59) the trade is kept there, so returning to the tab neither loses nor repeats it.
+    val savedTrade = rememberSaveable { mutableStateOf<String?>(null) }
+    var trade by (searchSession?.trade ?: savedTrade)
     var selected by rememberSaveable(initialProfileId) { mutableStateOf(initialProfileId) }
     var retry by remember { mutableIntStateOf(0) }
     var profiles by remember { mutableStateOf<List<PublicProfile>>(emptyList()) }

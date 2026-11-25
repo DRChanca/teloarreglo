@@ -67,6 +67,21 @@ POST /functions/v1/search-professionals
 - El filtro de texto se aplica en el dispositivo sobre la lista ordenada; el mapa opcional muestra la misma lista.
 - Lejos de casa (> 5 km): comprobación en segundo plano y banner no bloqueante una vez por sesión.
 
+### Sesión de búsqueda de la app (25-11-2026, #57)
+
+- El estado de la búsqueda (punto de búsqueda, oficio, resultados o fallo) vive en una sesión con alcance de
+  aplicación (`AppSearchSession`), junto a la sesión de la casa, mientras vive el proceso; la pantalla lo observa
+  en lugar de crear el suyo. Sin reintentos automáticos ni cachés persistentes.
+- **Precarga**: en cuanto la identidad está conectada y la casa está presente, la sesión lanza la búsqueda por
+  defecto (todos los oficios, punto de búsqueda = casa, sin GPS), normalmente durante la animación de inicio.
+  Mientras se comprueba la sesión (cada vuelta del segundo plano) no arranca ni olvida nada. No hay precarga para
+  visitantes, cuentas sin casa ni administradores.
+- **Entre pestañas**: salir de «Buscar» y volver conserva la búsqueda y el oficio elegido; la pantalla no repite
+  la búsqueda ni muestra esqueletos si ya hay resultados, y un fallo sigue con su «Reintentar» sin reintento
+  automático. El GPS y la petición de permiso pertenecen a la pantalla: si se sale durante la localización, se
+  cancela y la búsqueda vuelve al estado que tenía.
+- **Cierre de sesión o cambio de cuenta**: la búsqueda y el oficio se olvidan; la cuenta nueva empieza de cero.
+
 ### Filtros en el dispositivo (25-11-2026, #52)
 
 La Edge Function, el SQL y el límite de resultados no cambian. La app filtra la lista que ya tiene, en el orden

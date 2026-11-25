@@ -59,6 +59,9 @@ import es.teloarreglo.search.searchPoint
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -81,11 +84,15 @@ class ProximitySource(
 
 /**
  * The distance order of the search: one request at a time (a new one cancels the previous), and «Reintentar»
- * or a trade change repeat the last origin (#47) instead of asking for GPS again.
+ * or a trade change repeat the last origin (#47) instead of asking for GPS again. Searches run in [scope];
+ * the GPS and permission prompts of a shown screen ([attach]) run in the screen's scope and end with it.
  */
-internal class Proximity(var source: ProximitySource, catalogue: Catalogue, private val scope: CoroutineScope) {
-    private val catalogue = catalogue
-    private var session = NearbySearchSession(source.search, catalogue)
+internal class Proximity(private val base: ProximitySource, catalogue: Catalogue, private val scope: CoroutineScope) {
+    private val session = NearbySearchSession(base.search, catalogue)
+    /** What places the search: [base], or the shown screen's, with its home, GPS, concejos and map. */
+    var source: ProximitySource = base
+        private set
+    private var screen: CoroutineScope? = null
     var state: NearbyState by mutableStateOf(NearbyState.Idle)
         private set
     var origin: SearchOrigin? by mutableStateOf(null)
@@ -96,18 +103,35 @@ internal class Proximity(var source: ProximitySource, catalogue: Catalogue, priv
     var otherWays by mutableStateOf(false)
     var manual by mutableStateOf(false)
     /** The trade of the searches; null is every trade. */
-    var trade: String? = null
+    var trade: String? by mutableStateOf(null)
         private set
     /** The home the last search from home started from, so the same home is not searched twice. */
     private var homeQueried: HomeAddress? = null
     private var running: Job? = null
+    /** While the screen's GPS work runs: the state to give back if the screen leaves before it ends. */
+    private var restore: NearbyState? = null
 
     val busy get() = state == NearbyState.Locating || state == NearbyState.Searching
     val results get() = state as? NearbyState.Results
 
-    private fun launch(block: suspend () -> Unit) {
+    /** Lends the shown screen's [source] and [scope] for its GPS and permission prompts. */
+    fun attach(source: ProximitySource, scope: CoroutineScope) { this.source = source; screen = scope }
+
+    /** The screen left: its GPS work stops, and nothing of the screen (nor its activity) is kept. */
+    fun detach() {
+        val back = restore
+        if (back != null && running?.isActive == true) { running?.cancel(); state = back }
+        restore = null; source = base; screen = null
+    }
+
+    /** Stops whatever runs, as when the account changes and this search is forgotten. */
+    fun stop() { running?.cancel() }
+
+    private fun launch(on: CoroutineScope = scope, back: NearbyState? = null, block: suspend () -> Unit) {
         running?.cancel()
-        running = scope.launch { block() }
+        restore = back
+        // Started after being stored, so a block that launches the next step replaces it as [running].
+        running = on.launch(start = CoroutineStart.LAZY) { block() }.also { it.start() }
     }
 
     private suspend fun show(next: suspend () -> NearbyState?) {
@@ -131,13 +155,6 @@ internal class Proximity(var source: ProximitySource, catalogue: Catalogue, priv
         if ((origin == null || origin == SearchOrigin.Home) && homeQueried != home) fromHome(home)
     }
 
-    /** Forgets every search and position, as when the account changes. */
-    fun reset() {
-        running?.cancel()
-        session = NearbySearchSession(source.search, catalogue)
-        state = NearbyState.Idle; origin = null; away = null; otherWays = false; manual = false
-        trade = null; homeQueried = null
-    }
     fun fromHere(point: GeoPoint) { away = null; run(NearbyQuery(SearchOrigin.Gps, point, null)) }
     fun fromManual(anchor: ConcejoAnchor, point: GeoPoint) = run(NearbyQuery(SearchOrigin.Manual(anchor.name), point, anchor.ineCode))
     fun repeat() { if (session.last != null) launch { show { session.repeat(trade) } } }
@@ -149,17 +166,23 @@ internal class Proximity(var source: ProximitySource, catalogue: Catalogue, priv
         repeat()
     }
 
-    /** «Usar mi ubicación»: the user asked, so the fix is used even far from home. */
-    fun useLocation() = launch {
-        if (!source.ensurePermission()) { state = NearbyState.PermissionDenied; manual = true; return@launch }
-        state = NearbyState.Locating
-        when (val located = source.locate()) {
-            Located.Unavailable -> { state = NearbyState.LocationUnavailable; manual = true }
-            is Located.Position -> if (located.isUncertain()) {
-                state = NearbyState.Uncertain; manual = true
-            } else {
-                away = null
-                show { session.search(NearbyQuery(SearchOrigin.Gps, GeoPoint(located.lat, located.lng), null), trade) }
+    /**
+     * «Usar mi ubicación»: the user asked, so the fix is used even far from home. The prompt and the fix
+     * belong to the screen; the search from the fix belongs to [scope], like any other.
+     */
+    fun useLocation() {
+        val back = state.takeUnless { busy } ?: NearbyState.Idle
+        val on = screen ?: scope
+        launch(on, back.takeIf { on !== scope }) {
+            if (!source.ensurePermission()) { state = NearbyState.PermissionDenied; manual = true; return@launch }
+            state = NearbyState.Locating
+            val located = source.locate()
+            currentCoroutineContext().ensureActive()
+            when (located) {
+                Located.Unavailable -> { state = NearbyState.LocationUnavailable; manual = true }
+                is Located.Position -> if (located.isUncertain()) {
+                    state = NearbyState.Uncertain; manual = true
+                } else fromHere(GeoPoint(located.lat, located.lng))
             }
         }
     }
@@ -176,24 +199,27 @@ internal class Proximity(var source: ProximitySource, catalogue: Catalogue, priv
 
 /**
  * Null without a search service: the search then keeps the catalogue order. With a [shared] session (#59)
- * the screen shows the app's search instead of starting its own, so it is kept when the screen is left.
+ * the screen shows the app's search instead of starting its own, so it is kept when the screen is left;
+ * its [trade] is then the session's, so returning to the screen repeats nothing.
  */
 @Composable
 internal fun rememberProximity(
     source: ProximitySource?, catalogue: Catalogue, trade: String?, shared: AppSearchSession? = null,
 ): Proximity? {
-    if (source == null) return null
-    val scope = rememberCoroutineScope()
-    val proximity = shared?.proximity ?: remember(source.search, catalogue) { Proximity(source, catalogue, scope) }
-    proximity.source = source
-    // The app's session outlives this screen: it must not keep the screen's GPS and permission prompts.
-    if (shared != null) DisposableEffect(shared) { onDispose { shared.proximity.source = shared.base } }
+    val screen = rememberCoroutineScope()
+    val own = remember(source?.search, catalogue, shared) {
+        if (source == null || shared != null) null else Proximity(source, catalogue, screen)
+    }
+    val proximity = if (source == null) null else shared?.proximity ?: own
+    // The app's search outlives this screen: the screen's GPS and permission prompts are only lent to it.
+    if (source != null) proximity?.attach(source, screen)
+    DisposableEffect(proximity) { onDispose { proximity?.detach() } }
     // Trade first, so that the first search from home already uses a restored trade.
-    LaunchedEffect(proximity, trade) { proximity.changeTrade(trade) }
-    LaunchedEffect(proximity, source.home) {
-        val home = source.home ?: return@LaunchedEffect
-        proximity.ensureFromHome(home)
-        proximity.noticeAway()
+    LaunchedEffect(proximity, trade) { proximity?.changeTrade(trade) }
+    LaunchedEffect(proximity, source?.home) {
+        val home = source?.home ?: return@LaunchedEffect
+        proximity?.ensureFromHome(home)
+        proximity?.noticeAway()
     }
     return proximity
 }

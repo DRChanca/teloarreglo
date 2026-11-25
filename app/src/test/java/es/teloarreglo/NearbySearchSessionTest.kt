@@ -6,7 +6,6 @@ import es.teloarreglo.catalogue.PublicProfile
 import es.teloarreglo.search.Concejo
 import es.teloarreglo.search.GeoPoint
 import es.teloarreglo.search.NearbyResult
-import es.teloarreglo.search.ProfessionalSearch
 import es.teloarreglo.search.SearchError
 import es.teloarreglo.search.SearchOutcome
 import kotlinx.coroutines.test.runTest
@@ -17,27 +16,11 @@ import org.junit.Test
 
 /** The nearby search remembers where it started (#47): retry and a trade change repeat it from there. */
 class NearbySearchSessionTest {
-    private data class Sent(val point: GeoPoint, val trade: String?, val ineCode: String?)
-
-    private class FakeSearch(vararg outcomes: SearchOutcome) : ProfessionalSearch {
-        private val queue = ArrayDeque(outcomes.toList())
-        val sent = mutableListOf<Sent>()
-        override suspend fun search(lat: Double, lng: Double, trade: String?, ineCode: String?, limit: Int): SearchOutcome {
-            sent += Sent(GeoPoint(lat, lng), trade, ineCode)
-            return queue.removeFirst()
-        }
-    }
-
     private fun profile(id: String, zone: String) = PublicProfile(
         id, "Profesional $id", "d", listOf("plumbing"), listOf("Fugas"), listOf(Coverage(zone, zone)),
         listOf("es"), "+34 000 000 000", listOf("plumbing"), emptyList())
 
-    private val catalogue = object : Catalogue {
-        override suspend fun list(trade: String?) = listOf(PublicProfile(
-            "p1", "Fontanería Nalón", "d", listOf("plumbing"), listOf("Fugas"), listOf(Coverage("33044", "Oviedo")),
-            listOf("es"), "+34 000 000 000", listOf("plumbing"), emptyList()))
-        override suspend fun profile(id: String) = null
-    }
+    private val catalogue = onePlumberCatalogue
 
     private val home = GeoPoint(43.36, -5.84)
     private val oviedo = Concejo("33044", "Oviedo")
