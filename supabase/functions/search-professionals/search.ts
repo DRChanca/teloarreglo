@@ -109,8 +109,11 @@ export function featuredFirst(featured: Ranked[], ranked: Ranked[], limit: numbe
   ].slice(0, limit);
 }
 
-export interface ZoneCandidate { profile_id: string; lat: number; lng: number; in_zone: boolean; featured: boolean }
-export interface Listed extends Placed { in_zone: boolean }
+/** `response_band`: «Tiempo de respuesta» (#80), computed by Postgres; passed through, never used to rank. */
+export interface ZoneCandidate {
+  profile_id: string; lat: number; lng: number; in_zone: boolean; featured: boolean; response_band: string | null;
+}
+export interface Listed extends Placed { in_zone: boolean; response_band: string | null }
 
 /**
  * Single search (ADR 0001, 25-11-2026): «Destacado» goes first only when its work zone includes the
@@ -122,6 +125,7 @@ export function rankByDistance(from: { lat: number; lng: number }, candidates: Z
     distance_m: distanceM(from.lat, from.lng, c.lat, c.lng),
     featured: c.featured && c.in_zone,
     in_zone: c.in_zone,
+    response_band: c.response_band ?? null,
   }));
   return [
     ...placed.filter((p) => p.featured).sort(compare),
