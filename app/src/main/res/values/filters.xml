@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Filtros de búsqueda (#52). -->
+<resources>
+    <string name="filters_button">Filtros</string>
+    <string name="filters_button_active">Filtros · %1$d</string>
+    <string name="filters_trade">Oficio</string>
+    <string name="filters_distance">Distancia máxima</string>
+    <string name="filters_distance_none">Sin límite</string>
+    <string name="filters_distance_km">%1$d km</string>
+    <string name="filters_distance_needs_point">Elige un punto para filtrar por distancia</string>
+    <string name="filters_rating">Valoración mínima</string>
+    <string name="filters_rating_any">Cualquiera</string>
+    <string name="filters_rating_min">%1$d★ o más</string>
+    <string name="filters_reset">Restablecer</string>
+    <plurals name="filters_apply">
+        <item quantity="one">Ver %d profesional</item>
+        <item quantity="other">Ver %d profesionales</item>
+    </plurals>
+    <string name="filters_apply_unknown">Ver profesionales</string>
+    <string name="filters_empty">Ningún profesional cumple estos filtros</string>
+    <string name="filters_empty_reset">Restablecer filtros</string>
+    <string name="filters_empty_artwork">Ilustración de una lupa sobre una tarjeta vacía</string>
+</resources>

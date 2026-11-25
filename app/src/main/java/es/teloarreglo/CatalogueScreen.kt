@@ -66,6 +66,9 @@ fun CatalogueScreen(
     var loading by remember { mutableStateOf(true) }
     var failed by remember { mutableStateOf(false) }
     var search by rememberSaveable { mutableStateOf("") }
+    // Search filters (#52): kept for the app session, applied on the device over the ordered list.
+    var filters by rememberSaveable(stateSaver = SearchFiltersSaver) { mutableStateOf(SearchFilters()) }
+    var filtersOpen by rememberSaveable { mutableStateOf(false) }
     var editing by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val tradeScroll = rememberScrollState()
@@ -105,9 +108,23 @@ fun CatalogueScreen(
     val ranked = proximity?.results
     // The single search (ADR 0001): the distance order when there is one, the catalogue order otherwise.
     val rows = ranked?.rows ?: profiles.map { SearchRow(it, null, true) }
-    val visible = rows.filter { row ->
-        searchable(row.profile.name + " " + row.profile.services.joinToString(" ")).contains(searchable(search.trim()))
+    val hasPoint = ranked != null
+    // Filters first, then the text (#52); both only remove rows from the ordered list.
+    val matching: (List<SearchRow>, SearchFilters) -> List<SearchRow> = { list, f ->
+        list.filteredBy(f, hasPoint).filter { row ->
+            searchable(row.profile.name + " " + row.profile.services.joinToString(" ")).contains(searchable(search.trim()))
+        }
     }
+    val visible = matching(rows, filters)
+    // «Ver N profesionales»: another trade is only countable here when the list holds every trade.
+    val countFor: (String?, SearchFilters) -> Int? = { t, f ->
+        when {
+            t == trade -> matching(rows, f).size
+            trade == null -> matching(rows.filter { t in it.profile.trades }, f).size
+            else -> null
+        }
+    }
+    val resetFilters: () -> Unit = { trade = null; filters = SearchFilters(); search = ""; keyboard?.hide() }
     val catalogueWaiting = loading || completedRequest != request
     // The concejo the search is about, for «No suele trabajar en …» on the profile.
     val searchConcejo = ranked?.concejo?.let { Coverage(it.ineCode, it.name) }
@@ -152,6 +169,7 @@ fun CatalogueScreen(
                     Modifier.horizontalScroll(tradeScroll).padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    FiltersButton(filters.activeCount(trade, hasPoint)) { filtersOpen = true }
                     FilterChip(selected = trade == null, onClick = { trade = null },
                         label = { Text(stringResource(R.string.trade_all)) })
                     catalogueTrades.forEach { key ->
@@ -159,6 +177,8 @@ fun CatalogueScreen(
                             modifier = Modifier.testTag("trade_$key"), label = { Text(stringResource(tradeLabel(key))) })
                     }
                 }
+                if (filtersOpen) FiltersSheet(trade, filters, hasPoint, countFor,
+                    onApply = { t, f -> trade = t; filters = f; filtersOpen = false }, onDismiss = { filtersOpen = false })
                 LazyColumn(
                     state = listState, modifier = Modifier.testTag("catalogue_list"),
                     contentPadding = PaddingValues(TeloTheme.spacing.screen),
@@ -173,6 +193,10 @@ fun CatalogueScreen(
                                 Text(stringResource(R.string.catalogue_error), Modifier.testTag("catalogue_error"))
                                 Button(onClick = { retry++ }, Modifier.testTag("catalogue_retry")) { Text(stringResource(R.string.retry)) }
                             }
+                        }
+                        // Never an empty list that looks like there are no professionals (#52).
+                        visible.isEmpty() && filters.activeCount(null, hasPoint) > 0 -> item(key = "filters_empty") {
+                            FiltersEmpty(onReset = resetFilters)
                         }
                         visible.isEmpty() -> item {
                             Column(Modifier.padding(8.dp)) {
@@ -190,7 +214,7 @@ fun CatalogueScreen(
                                 Text(pluralStringResource(R.plurals.catalogue_results, visible.size, visible.size),
                                     style = MaterialTheme.typography.labelLarge)
                             }
-                            if (showMap && ranked != null) item(key = "map") { ProximityMap(proximity, ranked) { selected = it } }
+                            if (showMap && ranked != null) item(key = "map") { ProximityMap(proximity, ranked, visible) { selected = it } }
                             items(visible, key = { it.profile.id }) { row ->
                                 val highlighted = if (ranked != null) row.profile.id in ranked.featured else row.profile.featured
                                 ProfileCard(row, highlighted, ranked?.concejo?.name, covers) { selected = row.profile.id }
