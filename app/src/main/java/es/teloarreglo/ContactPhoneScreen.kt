@@ -165,7 +165,7 @@ fun ContactPhoneCard(session: ContactPhoneSession, scope: CoroutineScope) {
                 }
                 TextButton(onClick = editor::cancel, enabled = !editor.busy) { Text(stringResource(R.string.cancel)) }
             } else {
-                val current = (status as? ContactPhoneStatus.Present)?.phone
+                val current = session.phone
                 Text(
                     current ?: stringResource(
                         if (status == ContactPhoneStatus.Missing) R.string.contact_phone_none else R.string.contact_phone_unknown,

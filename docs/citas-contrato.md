@@ -260,9 +260,9 @@ sí, `anon` y `public` no) y las mismas reglas de la dirección exacta. Añade a
 - El cliente lo recibe siempre en sus citas, en cualquier estado.
 - El profesional solo con la cita `confirmed` o `started`. Con la cita `pending` (con o sin propuesta),
   `done`, `completed` o `cancelled` recibe `null`. La regla va por estado, no por `location_shared_at`:
-  la dirección exacta se sigue viendo tras terminar, el teléfono no.
-- `null` también si el cliente no tiene teléfono. Una tercera cuenta sigue recibiendo 0 filas.
-- El teléfono no aparece en el chat, la solicitud, las propuestas, los avisos ni la bandeja.
+  la dirección exacta se sigue viendo tras terminar, el teléfono de contacto no.
+- `null` también si el cliente no tiene teléfono de contacto. Una tercera cuenta sigue recibiendo 0 filas.
+- El teléfono de contacto no aparece en el chat, la solicitud, las propuestas, los avisos ni la bandeja.
 
 Android:
 
