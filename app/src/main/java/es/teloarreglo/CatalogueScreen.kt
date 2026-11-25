@@ -32,6 +32,8 @@ import es.teloarreglo.catalogue.Catalogue
 import es.teloarreglo.catalogue.PublicProfile
 import es.teloarreglo.catalogue.ProfessionalCovers
 import es.teloarreglo.catalogue.ReferencePrice
+import es.teloarreglo.catalogue.ProfileSection
+import es.teloarreglo.catalogue.profileSections
 import kotlinx.coroutines.CancellationException
 import java.text.NumberFormat
 import java.util.Locale
@@ -225,89 +227,130 @@ private fun ProfileDetail(
             false
         }
     }
-    LazyColumn(
-        modifier = Modifier.testTag("profile_detail"),
-        contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        item {
-            if (featured) FeaturedBadge(Modifier.testTag("profile_featured"))
-            Text(profile.name, style = MaterialTheme.typography.headlineMedium)
-            Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(), color = MaterialTheme.colorScheme.primary)
-            Rating(profile)
-            if (onContact != null) Button(onClick = onContact, modifier = Modifier.fillMaxWidth().testTag("chat_contact")) {
-                Text(stringResource(R.string.chat_contact))
-            }
-        }
-        item {
-            ProfileCover(profile.trades.firstOrNull().orEmpty(), profile.coverPath, covers, Modifier.fillMaxWidth().height(180.dp))
-            if (onEdit != null) OutlinedButton(onClick = onEdit, modifier = Modifier.fillMaxWidth().testTag("edit_cover")) {
-                Text(stringResource(R.string.cover_edit))
-            }
-        }
-        item { Text(profile.description, style = MaterialTheme.typography.bodyLarge) }
-        profile.businessAddress?.takeIf { it.isNotBlank() }?.let { address ->
-            item {
-                Section(R.string.catalogue_address)
-                androidx.compose.foundation.text.selection.SelectionContainer { Text(address) }
-                profile.publicLocation()?.let { point -> MapDirectionsButton(point) }
-            }
-        }
-        item {
-            Section(R.string.catalogue_services)
-            profile.services.forEach { Text("• $it") }
-        }
-        item {
-            Section(R.string.catalogue_coverage)
-            Text(profile.coverage.joinToString { it.name })
-        }
-        if (profile.languages.any { Locale.forLanguageTag(it).language != "es" }) {
-            item {
-                Text(stringResource(R.string.catalogue_languages), Modifier.testTag("profile_languages"),
-                    style = MaterialTheme.typography.titleLarge)
-                Text(profile.languages.joinToString { Locale.forLanguageTag(it).getDisplayLanguage(locale) })
-            }
-        }
-        item {
-            Section(R.string.catalogue_phone)
-            SelectionContainerCompat(profile.phone)
-        }
-        item {
-            Text(stringResource(R.string.catalogue_prices), Modifier.testTag("reference_prices"),
-                style = MaterialTheme.typography.titleLarge)
-            Text(stringResource(R.string.catalogue_prices_hint))
-            if (profile.prices.isEmpty()) Text(stringResource(R.string.catalogue_no_prices))
-        }
-        items(profile.prices) { price ->
-            Card(colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card)) {
-                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(price.service, fontWeight = FontWeight.Bold)
-                    Text(priceText(price),
-                        style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
-                    // Owners publish prices directly (2026-11-23); optional texts may be empty.
-                    if (price.scope.isNotBlank()) Text(price.scope)
-                    if (price.includes.isNotBlank()) Text(stringResource(R.string.catalogue_includes, price.includes))
-                    if (price.excludes.isNotBlank()) Text(stringResource(R.string.catalogue_excludes, price.excludes))
+    val spacing = TeloTheme.spacing
+    Column(Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.weight(1f).testTag("profile_detail"),
+            contentPadding = PaddingValues(horizontal = spacing.screen, vertical = spacing.large),
+            verticalArrangement = Arrangement.spacedBy(spacing.extraLarge),
+        ) {
+            profileSections(profile, showReviews = reviews != null).forEach { section ->
+                when (section) {
+                    ProfileSection.COVER -> item {
+                        SectionBlock {
+                            ProfileCover(profile.trades.firstOrNull().orEmpty(), profile.coverPath, covers,
+                                Modifier.fillMaxWidth().height(180.dp))
+                            if (onEdit != null) OutlinedButton(onClick = onEdit,
+                                modifier = Modifier.fillMaxWidth().testTag("edit_cover")) {
+                                Text(stringResource(R.string.cover_edit))
+                            }
+                        }
+                    }
+                    ProfileSection.IDENTITY -> item {
+                        Column(verticalArrangement = Arrangement.spacedBy(spacing.extraSmall)) {
+                            if (featured) FeaturedBadge(Modifier.testTag("profile_featured"))
+                            Text(profile.name, style = MaterialTheme.typography.headlineMedium)
+                            Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(),
+                                color = MaterialTheme.colorScheme.primary)
+                            Rating(profile)
+                        }
+                    }
+                    ProfileSection.DESCRIPTION -> item {
+                        Text(profile.description, style = MaterialTheme.typography.bodyLarge)
+                    }
+                    ProfileSection.PRICES -> {
+                        item {
+                            SectionBlock {
+                                Section(R.string.catalogue_prices, Modifier.testTag("reference_prices"))
+                                Text(stringResource(R.string.catalogue_prices_hint))
+                                if (profile.prices.isEmpty()) Text(stringResource(R.string.catalogue_no_prices))
+                            }
+                        }
+                        items(profile.prices) { price -> PriceCard(price) }
+                    }
+                    ProfileSection.REVIEWS -> item { reviews?.let { ProfileReviewList(profile.id, it) } }
+                    ProfileSection.SERVICES -> item {
+                        SectionBlock {
+                            Section(R.string.catalogue_services)
+                            profile.services.forEach { Text("• $it") }
+                        }
+                    }
+                    ProfileSection.COVERAGE -> item {
+                        SectionBlock {
+                            Section(R.string.catalogue_coverage)
+                            Text(profile.coverage.joinToString { it.name })
+                        }
+                    }
+                    ProfileSection.ADDRESS -> item {
+                        SectionBlock {
+                            Section(R.string.catalogue_address)
+                            SelectionContainerCompat(profile.businessAddress.orEmpty())
+                            profile.publicLocation()?.let { point -> MapDirectionsButton(point) }
+                        }
+                    }
+                    ProfileSection.LANGUAGES -> item {
+                        SectionBlock {
+                            Section(R.string.catalogue_languages, Modifier.testTag("profile_languages"))
+                            Text(profile.languages.joinToString { Locale.forLanguageTag(it).getDisplayLanguage(locale) })
+                        }
+                    }
+                    ProfileSection.PHONE -> item {
+                        SectionBlock {
+                            Section(R.string.catalogue_phone)
+                            SelectionContainerCompat(profile.phone)
+                        }
+                    }
                 }
             }
         }
-        if (reviews != null) item { ProfileReviewList(profile.id, reviews) }
+        // The main action stays in reach while reading prices and reviews (#47); onContact is null on one's
+        // own profile and without a session, so the bar is absent there.
+        if (onContact != null) Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 3.dp) {
+            Button(onClick = onContact,
+                modifier = Modifier.padding(horizontal = spacing.screen, vertical = spacing.small)
+                    .fillMaxWidth().heightIn(min = 48.dp).testTag("chat_contact")) {
+                Text(stringResource(R.string.chat_contact))
+            }
+        }
+    }
+}
+
+/** One profile section: title and content grouped with a small gap; sections are spaced further apart. */
+@Composable
+private fun SectionBlock(content: @Composable ColumnScope.() -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small), content = content)
+}
+
+@Composable
+private fun PriceCard(price: ReferencePrice) {
+    Card(colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card)) {
+        Column(Modifier.fillMaxWidth().padding(TeloTheme.spacing.large),
+            verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
+            Text(price.service, style = MaterialTheme.typography.titleMedium)
+            Text(priceText(price),
+                style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+            // Owners publish prices directly (2026-11-23); optional texts may be empty.
+            if (price.scope.isNotBlank()) Text(price.scope)
+            if (price.includes.isNotBlank()) Text(stringResource(R.string.catalogue_includes, price.includes))
+            if (price.excludes.isNotBlank()) Text(stringResource(R.string.catalogue_excludes, price.excludes))
+        }
     }
 }
 
 @Composable
-private fun SelectionContainerCompat(phone: String) {
-    androidx.compose.foundation.text.selection.SelectionContainer { Text(phone) }
+private fun SelectionContainerCompat(text: String) {
+    androidx.compose.foundation.text.selection.SelectionContainer { Text(text) }
 }
 
 @Composable
-private fun Section(label: Int) {
-    Text(stringResource(label), style = MaterialTheme.typography.titleLarge)
+private fun Section(label: Int, modifier: Modifier = Modifier) {
+    Text(stringResource(label), modifier, style = MaterialTheme.typography.titleLarge)
 }
 
 @Composable
 private fun Rating(profile: PublicProfile) {
     Text(if (profile.rating == null) stringResource(R.string.catalogue_no_reviews)
-        else stringResource(R.string.catalogue_rating, profile.rating, profile.reviewCount),
+        else pluralStringResource(R.plurals.catalogue_rating, profile.reviewCount, profile.rating, profile.reviewCount),
         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
