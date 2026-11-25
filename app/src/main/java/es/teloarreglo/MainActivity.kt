@@ -60,6 +60,8 @@ class MainActivity : AppCompatActivity() {
     private val openNotices = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Start splash with the woodpecker (#58); animated only on a cold start.
+        installStartSplash(coldStart = savedInstanceState == null)
         // Bars drawn by the app: their icons follow the active light/dark theme (#45).
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -115,6 +117,8 @@ class MainActivity : AppCompatActivity() {
             val mustGiveName = nameSession != null && connectedUser != null && nameStatus == AccountNameStatus.Missing &&
                 access.account?.isAdministrator != true && !emailLinkPending
             val home = (homeStatus as? HomeStatus.Present)?.home
+            // Search from home (#59): started as soon as the account and its home are known, during the splash.
+            LaunchedEffect(access, home) { app.searchSession?.onAccess(access, home) }
             val mustGiveHome = homeSession != null && connectedUser != null && homeStatus == HomeStatus.Missing &&
                 access.account?.isAdministrator != true && !emailLinkPending
             val changeLanguage: (String) -> Unit = { tag ->
@@ -200,7 +204,7 @@ class MainActivity : AppCompatActivity() {
                             onContact = { nav = nav.showProfile(it).contact(it) },
                             // Opened from another tab (Cuenta): closing the profile returns there.
                             onCloseProfile = nav.returnTo?.let { { nav = nav.back() ?: Navigation() } },
-                            reviews = app.reviews,
+                            reviews = app.reviews, searchSession = app.searchSession,
                             // Single search (ADR 0001): from the saved home, GPS or a concejo, by distance.
                             proximitySource = app.search?.let { search ->
                                 ProximitySource(search,

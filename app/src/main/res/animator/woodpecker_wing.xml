@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Wing beats while flying in (up 130°, down 60°), folded into the body on landing at 41 % (0°, hidden). -->
+<objectAnimator xmlns:android="http://schemas.android.com/apk/res/android" android:duration="@integer/splash_animation_millis">
+    <propertyValuesHolder android:propertyName="rotation">
+        <keyframe android:fraction="0" android:value="130" />
+        <keyframe android:fraction="0.07" android:value="60" />
+        <keyframe android:fraction="0.14" android:value="130" />
+        <keyframe android:fraction="0.21" android:value="60" />
+        <keyframe android:fraction="0.28" android:value="130" />
+        <keyframe android:fraction="0.36" android:value="80" />
+        <keyframe android:fraction="0.41" android:value="0" android:interpolator="@android:interpolator/decelerate_quad" />
+        <keyframe android:fraction="1" android:value="0" />
+    </propertyValuesHolder>
+</objectAnimator>

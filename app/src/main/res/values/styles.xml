@@ -5,4 +5,11 @@
     <style name="Theme.Teloarreglo" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/window_background</item>
     </style>
+    <!-- Start splash (#57, #58): the still trunk on the window background; the app flies the woodpecker in over it. -->
+    <style name="Theme.Teloarreglo.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/window_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_trunk</item>
+        <item name="windowSplashScreenAnimationDuration">@integer/splash_animation_millis</item>
+        <item name="postSplashScreenTheme">@style/Theme.Teloarreglo</item>
+    </style>
 </resources>

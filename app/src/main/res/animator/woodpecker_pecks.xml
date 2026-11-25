@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Head back while flying in; after landing, three pecks of 15.5 % each (≈170 ms): a fast hit that drives the
+beak into the trunk and a slower recoil far back; then rest.
+-->
+<objectAnimator xmlns:android="http://schemas.android.com/apk/res/android" android:duration="@integer/splash_animation_millis">
+    <propertyValuesHolder android:propertyName="rotation">
+        <keyframe android:fraction="0" android:value="-25" />
+        <keyframe android:fraction="0.42" android:value="-35" android:interpolator="@android:interpolator/decelerate_quad" />
+        <keyframe android:fraction="0.465" android:value="8" android:interpolator="@android:interpolator/accelerate_quad" />
+        <keyframe android:fraction="0.575" android:value="-35" android:interpolator="@android:interpolator/decelerate_quad" />
+        <keyframe android:fraction="0.62" android:value="8" android:interpolator="@android:interpolator/accelerate_quad" />
+        <keyframe android:fraction="0.73" android:value="-35" android:interpolator="@android:interpolator/decelerate_quad" />
+        <keyframe android:fraction="0.775" android:value="8" android:interpolator="@android:interpolator/accelerate_quad" />
+        <keyframe android:fraction="0.885" android:value="-25" android:interpolator="@android:interpolator/decelerate_quad" />
+        <keyframe android:fraction="1" android:value="-25" />
+    </propertyValuesHolder>
+</objectAnimator>
