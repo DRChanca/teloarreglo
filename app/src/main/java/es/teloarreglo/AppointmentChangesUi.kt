@@ -218,7 +218,7 @@ internal fun ChangeForm(
     val latestKnown by rememberUpdatedState(known)
     var busy by remember { mutableStateOf(false) }
     // Field errors show from the first send on and follow the input live, so a corrected field clears at once (#63).
-    var checked by remember { mutableStateOf(false) }
+    var sendTried by remember { mutableStateOf(false) }
     var shownError by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<AppointmentFailure?>(null) }
     // The input the server answered about: its refusal no longer applies once the user edits it.
@@ -238,7 +238,7 @@ internal fun ChangeForm(
         address = if (client && !running && changeAddress) AddressInput(address, lat, lng) else null,
         note = note, mode = mode?.let(PaymentMode::valueOf))
     val check = checkChange(input, base, appointment.location, running, asksMode, zone, Instant.now())
-    val problems = if (checked) (check as? ChangeCheck.Wrong)?.problems.orEmpty() else emptyMap()
+    val problems = if (sendTried) (check as? ChangeCheck.Wrong)?.problems.orEmpty() else emptyMap()
     fun problemText(field: ChangeField): (@Composable () -> Unit)? =
         problems[field]?.let { problem -> { Text(changeProblemText(field, problem), Modifier.testTag("change_error_${field.name}")) } }
     Text(appointment.problem, style = MaterialTheme.typography.titleMedium)
@@ -324,16 +324,17 @@ internal fun ChangeForm(
     }
     OutlinedTextField(note, { if (it.length <= 500) note = it }, enabled = editable,
         label = { Text(stringResource(R.string.change_form_note)) }, modifier = Modifier.fillMaxWidth().testTag("change_note"))
-    if (checked && check is ChangeCheck.Wrong) ErrorLine { Text(stringResource(R.string.change_form_check_fields)) }
-    if (checked && check == ChangeCheck.Unchanged) ErrorLine(tag = "change_form_unchanged") {
+    if (sendTried && check is ChangeCheck.Wrong) ErrorLine { Text(stringResource(R.string.change_form_check_fields)) }
+    if (sendTried && check == ChangeCheck.Unchanged) ErrorLine(tag = "change_form_unchanged") {
         Text(stringResource(R.string.change_form_unchanged))
     }
     if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-    // A refusal speaks about what was sent; once the user edits the draft it no longer applies (#63).
-    if (shownError && sentInput == input) Text(if (failure == AppointmentFailure.ALREADY_STARTED) changeFailureText(failure)
+    // A refusal speaks about what was sent; once the user edits the draft it no longer applies (#63). A newer
+    // version stays said: the next send is based on it.
+    if (shownError && (sentInput == input || failure == AppointmentFailure.STALE)) Text(if (failure == AppointmentFailure.ALREADY_STARTED) changeFailureText(failure)
         else sendFailureText(failure, professional = !client), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("change_form_error"))
     Button(onClick = {
-        checked = true
+        sendTried = true
         val draft = (check as? ChangeCheck.Ready)?.draft ?: return@Button
         val requestKey = key ?: UUID.randomUUID().toString().also { key = it }
         busy = true; shownError = false; failure = null; sentInput = input

@@ -392,7 +392,8 @@ class AppointmentsTest {
         assertEquals(AppointmentFailure.INVALID, failure)
     }
 
-    @Test fun aServerFailureStaysUncertainAndKeepsTheRetryKey() = runTest {
+    /** #63: a 5xx is still uncertainty (rethrown as is), so the form keeps its key and retries the same data. */
+    @Test fun aServerFailureIsNotTranslatedIntoARejection() = runTest {
         val thrown = withClient({ json(error("XX000", "internal"), HttpStatusCode.InternalServerError) }) {
             try { it.acceptChange("c1", null); null } catch (e: Exception) { e }
         }

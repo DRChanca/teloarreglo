@@ -91,9 +91,9 @@ internal class FakeAppointments : Appointments {
     private val changes = mutableMapOf<String, MutableList<AppointmentChange>>()
     private fun change(id: String) = changes.entries.first { (_, list) -> list.any { it.id == id } }
 
-    /** Like the server (#23): a change never touches the conditions in force until accepted. */
     /** When set, the next change is refused like the server does with a value it does not accept; nothing changes. */
     var refuseNextChange: AppointmentFailure? = null
+    /** Like the server (#23): a change never touches the conditions in force until accepted. */
     override suspend fun proposeChange(appointmentId: String, expectedVersion: Int, requestId: String, draft: ChangeDraft): AppointmentChange {
         refuseNextChange?.let { refuseNextChange = null; throw AppointmentException(it, Exception()) }
         val index = items.indexOfFirst { it.id == appointmentId }

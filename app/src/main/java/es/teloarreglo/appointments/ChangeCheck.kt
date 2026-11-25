@@ -66,7 +66,7 @@ fun checkChange(
         val lng = if (ChangeField.POINT in problems) null else coordinate(typed.lng, 180.0, ::wrong)
         if (lat == null || lng == null || typed.address.isBlank()) null else ChangedAddress(typed.address.trim(), lat, lng)
     }
-    val needsMode = asksMode && maxOf(cents ?: 0, fee ?: 0) > 0
+    val needsMode = needsPaymentMode(asksMode, input.amount, input.visitFee)
     if (needsMode && input.mode == null) wrong(ChangeField.MODE, ChangeProblem.MISSING)
 
     if (problems.isNotEmpty()) return ChangeCheck.Wrong(problems)

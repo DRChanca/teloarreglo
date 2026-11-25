@@ -69,6 +69,7 @@ Cada operación con efecto incrementa `appointments.version` y escribe un evento
 | 400 | 22023 | `out_of_coverage` (`propose_change`/`accept_change`) / `outside_area` (`request_appointment`): fuera de Asturias desde el 25-11-2026 | `OUT_OF_COVERAGE` (a 25-11 solo traduce `out_of_coverage`) |
 | 400 | 22023 | `retry_conflict` | `RETRY_CONFLICT` |
 | 409 | PT409 | `stale_version` / `incompatible_state` | `STALE` |
+| 400 | cualquiera | cualquier otro mensaje (p. ej. un tipo inválido): también es un rechazo definitivo (#63) | `INVALID` |
 
 `PT409` hace que PostgREST responda 409; `40001` produciría un 500.
 Los fallos de red se propagan sin traducir: la app conserva la clave y no
