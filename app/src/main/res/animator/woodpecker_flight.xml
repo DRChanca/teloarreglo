@@ -1,14 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The bird flies in to the trunk, decelerating, and stays there (first 45 %). -->
+<!--
+The bird flies in from off the left of the screen to the trunk, decelerating (first 41 %, ≈450 ms); then its
+whole body jolts against the trunk with each of the three pecks of woodpecker_pecks and settles.
+-->
 <objectAnimator xmlns:android="http://schemas.android.com/apk/res/android" android:duration="@integer/splash_animation_millis">
     <propertyValuesHolder android:propertyName="translateX">
-        <keyframe android:fraction="0" android:value="-50" />
-        <keyframe android:fraction="0.45" android:value="0" android:interpolator="@android:interpolator/decelerate_cubic" />
+        <keyframe android:fraction="0" android:value="-90" />
+        <keyframe android:fraction="0.41" android:value="0" android:interpolator="@android:interpolator/decelerate_cubic" />
+        <keyframe android:fraction="0.42" android:value="-1.5" />
+        <keyframe android:fraction="0.465" android:value="1" android:interpolator="@android:interpolator/accelerate_quad" />
+        <keyframe android:fraction="0.575" android:value="-1.5" android:interpolator="@android:interpolator/decelerate_quad" />
+        <keyframe android:fraction="0.62" android:value="1" android:interpolator="@android:interpolator/accelerate_quad" />
+        <keyframe android:fraction="0.73" android:value="-1.5" android:interpolator="@android:interpolator/decelerate_quad" />
+        <keyframe android:fraction="0.775" android:value="1" android:interpolator="@android:interpolator/accelerate_quad" />
+        <keyframe android:fraction="0.885" android:value="0" android:interpolator="@android:interpolator/decelerate_quad" />
         <keyframe android:fraction="1" android:value="0" />
     </propertyValuesHolder>
     <propertyValuesHolder android:propertyName="translateY">
         <keyframe android:fraction="0" android:value="-10" />
-        <keyframe android:fraction="0.45" android:value="0" android:interpolator="@android:interpolator/decelerate_quad" />
+        <keyframe android:fraction="0.41" android:value="0" android:interpolator="@android:interpolator/decelerate_quad" />
         <keyframe android:fraction="1" android:value="0" />
     </propertyValuesHolder>
 </objectAnimator>

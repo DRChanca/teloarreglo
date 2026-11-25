@@ -1,25 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-Start splash (#57): in @integer/splash_animation_millis the woodpecker flies in from off the left of the
-visible circle flapping its wing (45 %), lands on the still trunk, pecks it twice with recoil (2 × 20 %) and rests.
+Start splash woodpecker (#57), drawn by the app in place of the system splash icon (splash_trunk): the
+same masked trunk plus the bird. The "icon" group holds the 108x108 icon viewport, shifted so this
+drawable covers icon x -56..90 and y 18..90: the visible square of the splash icon (18..90) plus room on
+the left for the flight, which starts past the left edge of the screen.
+In @integer/splash_animation_millis: flies in flapping its wing and decelerating (41 %), pecks the
+trunk three times with recoil (3 × 15.5 %) and rests. It all runs on the render thread, so it stays
+smooth while the app is still starting.
 -->
 <animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt">
     <aapt:attr name="android:drawable">
-        <vector android:width="108dp" android:height="108dp"
-            android:viewportWidth="108" android:viewportHeight="108">
-            <path android:fillColor="@color/woodpecker_trunk" android:pathData="@string/woodpecker_trunk_path" />
-            <!-- Starts 50 to the left and 10 up: the whole bird is outside the visible circle (radius 33). -->
-            <group android:name="bird" android:translateX="-50" android:translateY="-10">
-                <path android:fillColor="@color/woodpecker_body" android:pathData="@string/woodpecker_body_path" />
-                <group android:name="wing" android:pivotX="50" android:pivotY="46.5" android:rotation="130">
-                    <path android:fillColor="@color/woodpecker_body" android:pathData="@string/woodpecker_wing_path" />
-                </group>
-                <group android:name="head" android:pivotX="50" android:pivotY="45" android:rotation="-25">
-                    <path android:fillColor="@color/woodpecker_body" android:fillType="evenOdd"
-                        android:pathData="@string/woodpecker_head_path" />
-                    <path android:fillColor="@color/woodpecker_body" android:pathData="@string/woodpecker_beak_path" />
-                    <path android:fillColor="@color/woodpecker_crest" android:pathData="@string/woodpecker_crest_path" />
+        <vector android:width="146dp" android:height="72dp"
+            android:viewportWidth="146" android:viewportHeight="72">
+            <group android:name="icon" android:translateX="56" android:translateY="-18">
+                <path android:fillColor="@color/woodpecker_trunk" android:pathData="@string/woodpecker_splash_trunk_path" />
+                <!-- Starts 90 to the left (its beak past the left edge of the screen) and 10 up. -->
+                <group android:name="bird" android:translateX="-90" android:translateY="-10">
+                    <path android:fillColor="@color/woodpecker_body" android:pathData="@string/woodpecker_body_path" />
+                    <group android:name="wing" android:pivotX="50" android:pivotY="46.5" android:rotation="130">
+                        <path android:fillColor="@color/woodpecker_body" android:pathData="@string/woodpecker_wing_path" />
+                    </group>
+                    <group android:name="head" android:pivotX="50" android:pivotY="45" android:rotation="-25">
+                        <path android:fillColor="@color/woodpecker_body" android:fillType="evenOdd"
+                            android:pathData="@string/woodpecker_head_path" />
+                        <path android:fillColor="@color/woodpecker_body" android:pathData="@string/woodpecker_beak_path" />
+                        <path android:fillColor="@color/woodpecker_crest" android:pathData="@string/woodpecker_crest_path" />
+                    </group>
                 </group>
             </group>
         </vector>
