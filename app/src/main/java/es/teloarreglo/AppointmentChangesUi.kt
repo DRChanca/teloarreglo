@@ -239,8 +239,9 @@ internal fun ChangeForm(
         DateField(date, editable) { dateText = it.toString() }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (!running) OutlinedTextField(start, { start = it.take(5) }, enabled = editable, singleLine = true,
-            label = { Text(stringResource(R.string.appointment_start)) }, modifier = Modifier.weight(1f).testTag("change_start"))
+        if (!running) TimeField(start, stringResource(R.string.appointment_start), editable, "change_start", Modifier.weight(1f)) {
+            start = it
+        }
         OutlinedTextField(minutes, { minutes = it.filter(Char::isDigit).take(4) }, enabled = editable, singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             label = { Text(stringResource(R.string.appointment_duration)) }, modifier = Modifier.weight(1f).testTag("change_minutes"))
