@@ -339,6 +339,7 @@ private fun ProfileDetail(
                             Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(),
                                 color = MaterialTheme.colorScheme.primary)
                             ProfileRating(profile.rating, profile.reviewCount, compact = false, Modifier.testTag("profile_rating"))
+                            ResponseTime(profile.responseBand, Modifier.testTag("profile_response_time"))
                             outsideZoneOf?.let { concejo ->
                                 Text(stringResource(R.string.profile_out_of_zone, concejo.name),
                                     Modifier.testTag("profile_out_of_zone"), style = MaterialTheme.typography.bodyMedium,
