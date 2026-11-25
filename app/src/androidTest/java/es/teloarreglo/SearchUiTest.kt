@@ -30,6 +30,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
+import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 /**
  * The single search (ADR 0001): the catalogue screen ordered by distance from home, GPS or a concejo.
@@ -289,5 +296,32 @@ class SearchUiTest {
         compose.onNodeWithTag("nearby_other_ways").performClick()
         scrollTo("nearby_locate")
         compose.onNodeWithTag("nearby_locate").assertIsDisplayed()
+    }
+
+    @Test fun aSearchAlreadyPreloadedIsShownWithoutSkeletonsNorAnotherCallAndSurvivesChangingTab() {
+        // #59: the app searched from home during the start animation; the screen only shows it.
+        val search = FakeSearch(SearchOutcome.Found(oviedoConcejo, listOf(NearbyResult("near", 500), NearbyResult("far", 12500))))
+        val session = AppSearchSession(search, catalogue, CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate))
+        compose.runOnUiThread { session.onAccount(userId = "u1", administrator = false, home = home) }
+        compose.waitUntil(5_000) { session.proximity.state is NearbyState.Results }
+        var onSearch by mutableStateOf(true)
+        compose.setContent {
+            if (onSearch) CatalogueScreen(catalogue, searchSession = session, proximitySource = ProximitySource(search,
+                ensurePermission = { permissionAsks++; true }, locate = { oviedo },
+                concejos = concejos, map = MapAvailability.NO_KEY, home = home))
+            else Text("Mensajes")
+        }
+        compose.onNodeWithTag("nearby_distance_near", useUnmergedTree = true).assertIsDisplayed()
+        none("search_skeleton")
+
+        compose.runOnUiThread { onSearch = false }
+        compose.waitForIdle()
+        compose.runOnUiThread { onSearch = true }
+        compose.waitForIdle()
+
+        compose.onNodeWithTag("nearby_distance_near", useUnmergedTree = true).assertIsDisplayed()
+        none("search_skeleton")
+        assertEquals(1, search.calls)
+        assertEquals(0, permissionAsks)
     }
 }
