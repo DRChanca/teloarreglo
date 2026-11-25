@@ -190,7 +190,7 @@ class MainActivity : AppCompatActivity() {
                                             mapsReady = deviceMapAvailability(this@MainActivity) == es.teloarreglo.search.MapAvailability.READY,
                                             home = home),
                                         incidentTools = app.incidents?.let { IncidentTools(it, app.chatAttachments) },
-                                        reviews = app.reviews, zones = app.workZones)
+                                        reviews = app.reviews, zones = app.workZones, arrivals = app.arrivals)
                                 } },
                                 attachments = app.chatAttachments,
                                 evidence = app.incidents?.let { remember(it) { ChatEvidenceLink(it, app.applicationScope) } },

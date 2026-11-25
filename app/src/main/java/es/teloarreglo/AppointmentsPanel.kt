@@ -62,6 +62,8 @@ fun AppointmentsPanel(
     reviews: Reviews? = null,
     /** Work zone notices (ADR 0001): informative only; null hides them. */
     zones: WorkZones? = null,
+    /** Ventana de llegada on the client's confirmed appointment (#84); null hides it. */
+    arrivals: es.teloarreglo.appointments.Arrivals? = null,
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var list by remember(conversation.id) { mutableStateOf<List<Appointment>?>(null) }
@@ -151,7 +153,8 @@ fun AppointmentsPanel(
                                 onChange = { sheet = "change:${appointment.id}" },
                                 onCorrection = { sheet = "correction:${appointment.id}" }, incidentTools = incidentTools,
                                 reviews = reviews, reviewState = reviewStates[appointment.id],
-                                onChooseMessages = chooseMessages, zoneNotice = zoneNotice)
+                                onChooseMessages = chooseMessages, zoneNotice = zoneNotice,
+                                arrivalWindow = arrivals?.let { a -> { ArrivalWindowSection(it, it.professionalId == accountId, a, pins.mapsReady) } })
                         }
                     }
                 }
@@ -269,6 +272,7 @@ private fun AppointmentDetails(
     reviews: Reviews? = null, reviewState: AppointmentReviewState? = null,
     onChooseMessages: ((String) -> Unit)? = null,
     zoneNotice: (@Composable (Appointment) -> Unit)? = null,
+    arrivalWindow: (@Composable (Appointment) -> Unit)? = null,
 ) {
     val format = dateTimeFormat()
     val professional = appointment.professionalId == accountId
@@ -292,6 +296,7 @@ private fun AppointmentDetails(
             NoticeBanner(appointment, accountId)
             zoneNotice?.invoke(appointment)
             ReservationLine(appointment)
+            arrivalWindow?.invoke(appointment)
             val pending = appointment.currentProposal
             if (professional && appointment.stage == AppointmentStage.PENDING) Button(onClick = onPropose, modifier = Modifier.testTag("appointment_propose")) {
                 Text(stringResource(if (appointment.proposals.isEmpty()) R.string.appointment_propose else R.string.appointment_propose_new))
