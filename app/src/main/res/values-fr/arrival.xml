@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fenêtre d'arrivée sur le rendez-vous confirmé du client (#84, ADR 0002). -->
+<resources>
+    <string name="arrival_title">Arrivée du professionnel</string>
+    <string name="arrival_not_sharing">Le professionnel ne partage pas sa position</string>
+    <string name="arrival_far">À plus de 2 km</string>
+    <string name="arrival_near">À moins de 2 km</string>
+    <string name="arrival_arriving">Presque arrivé</string>
+    <string name="arrival_updated_now">Mis à jour à l\'instant</string>
+    <plurals name="arrival_updated">
+        <item quantity="one">Mis à jour il y a %1$d min</item>
+        <item quantity="many">Mis à jour il y a %1$d min</item>
+        <item quantity="other">Mis à jour il y a %1$d min</item>
+    </plurals>
+    <string name="arrival_map_home">Adresse du rendez-vous</string>
+    <string name="arrival_map_professional">Professionnel</string>
+</resources>

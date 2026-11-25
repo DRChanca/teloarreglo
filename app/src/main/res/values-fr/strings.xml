@@ -525,6 +525,7 @@
     <string name="notices_topic_confirmed">Rendez-vous confirmé</string>
     <string name="notices_topic_change">Modification de rendez-vous en attente de votre réponse</string>
     <string name="notices_topic_change_decided">Réponse à une modification de rendez-vous</string>
+    <string name="notices_topic_professional_near">Votre professionnel est tout près</string>
     <string name="notices_topic_started">Travail commencé</string>
     <string name="notices_topic_cancelled">Rendez-vous annulé</string>
     <string name="notices_topic_done">Travail marqué comme réalisé : confirmez-le ou signalez un problème</string>

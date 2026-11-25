@@ -131,6 +131,8 @@ class TeloarregloApplication : Application() {
     }
     /** Work zone notices and changes without review (ADR 0001). */
     val workZones: es.teloarreglo.catalogue.WorkZones? by lazy { client?.let { es.teloarreglo.catalogue.SupabaseWorkZones(it) } }
+    /** «Leer llegada» for the client's confirmed appointment (#84, ADR 0002). */
+    val arrivals: es.teloarreglo.appointments.Arrivals? by lazy { client?.let { es.teloarreglo.appointments.SupabaseArrivals(it) } }
     /** Simulated optional subscription (#33); never charges. */
     val subscriptions: es.teloarreglo.subscription.Subscriptions? by lazy { client?.let { es.teloarreglo.subscription.SupabaseSubscriptions(it) } }
     /** Nearby search through the public Edge Function; null without configuration. */

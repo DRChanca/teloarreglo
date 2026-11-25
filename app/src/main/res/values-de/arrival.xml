@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ankunftsfenster im bestätigten Termin des Kunden (#84, ADR 0002). -->
+<resources>
+    <string name="arrival_title">Ankunft der Fachkraft</string>
+    <string name="arrival_not_sharing">Die Fachkraft teilt ihren Standort nicht</string>
+    <string name="arrival_far">Mehr als 2 km entfernt</string>
+    <string name="arrival_near">Weniger als 2 km entfernt</string>
+    <string name="arrival_arriving">Gleich da</string>
+    <string name="arrival_updated_now">Gerade aktualisiert</string>
+    <plurals name="arrival_updated">
+        <item quantity="one">Vor %1$d Min. aktualisiert</item>
+        <item quantity="other">Vor %1$d Min. aktualisiert</item>
+    </plurals>
+    <string name="arrival_map_home">Adresse des Termins</string>
+    <string name="arrival_map_professional">Fachkraft</string>
+</resources>

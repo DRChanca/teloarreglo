@@ -34,7 +34,7 @@ No se ha desplegado ni escrito en la base alojada. No se ha cambiado el servidor
     conservan, y que «Dejar de compartir» olvida la elección aunque no haya conexión.
   - `ArrivalPositionsTest` (5): el formato de `report_arrival_position` y `stop_sharing_arrival`, `42501` como
     rechazo definitivo e `invalid_position` como fallo de esa posición.
-  - Total del módulo: 358 pruebas en 49 clases, sin fallos.
+  - Total del módulo, tras unir #83 y #84 de `spec-72`: 367 pruebas en 50 clases, sin fallos.
 - `:app:compilePresentacionDebugKotlin`, `:app:testPresentacionDebugUnitTest` y `:app:lintPresentacionDebug`:
   superados (lint sin errores).
 

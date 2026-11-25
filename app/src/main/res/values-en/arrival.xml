@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Arrival window on the client's confirmed appointment (#84, ADR 0002). -->
+<resources>
+    <string name="arrival_title">Professional on the way</string>
+    <string name="arrival_not_sharing">The professional is not sharing their location</string>
+    <string name="arrival_far">More than 2 km away</string>
+    <string name="arrival_near">Less than 2 km away</string>
+    <string name="arrival_arriving">Arriving</string>
+    <string name="arrival_updated_now">Updated just now</string>
+    <plurals name="arrival_updated">
+        <item quantity="one">Updated %1$d min ago</item>
+        <item quantity="other">Updated %1$d min ago</item>
+    </plurals>
+    <string name="arrival_map_home">Appointment address</string>
+    <string name="arrival_map_professional">Professional</string>
+</resources>
