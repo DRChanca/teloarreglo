@@ -24,6 +24,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -83,7 +84,8 @@ class ProximitySource(
  * or a trade change repeat the last origin (#47) instead of asking for GPS again.
  */
 internal class Proximity(var source: ProximitySource, catalogue: Catalogue, private val scope: CoroutineScope) {
-    private val session = NearbySearchSession(source.search, catalogue)
+    private val catalogue = catalogue
+    private var session = NearbySearchSession(source.search, catalogue)
     var state: NearbyState by mutableStateOf(NearbyState.Idle)
         private set
     var origin: SearchOrigin? by mutableStateOf(null)
@@ -93,7 +95,11 @@ internal class Proximity(var source: ProximitySource, catalogue: Catalogue, priv
     /** GPS and the manual choice, folded unless the user asks for them or there is no origin. */
     var otherWays by mutableStateOf(false)
     var manual by mutableStateOf(false)
-    private var trade: String? = null
+    /** The trade of the searches; null is every trade. */
+    var trade: String? = null
+        private set
+    /** The home the last search from home started from, so the same home is not searched twice. */
+    private var homeQueried: HomeAddress? = null
     private var running: Job? = null
 
     val busy get() = state == NearbyState.Locating || state == NearbyState.Searching
@@ -113,7 +119,25 @@ internal class Proximity(var source: ProximitySource, catalogue: Catalogue, priv
 
     private fun run(query: NearbyQuery) = launch { show { session.search(query, trade) } }
 
-    fun fromHome() { source.home?.let { run(NearbyQuery(SearchOrigin.Home, it.point, it.ineCode)) } }
+    fun fromHome(home: HomeAddress? = source.home) {
+        home?.let { homeQueried = it; run(NearbyQuery(SearchOrigin.Home, it.point, it.ineCode)) }
+    }
+
+    /**
+     * Searches from [home] unless the user placed the search elsewhere or this home was already searched
+     * (#59): a preloaded, running or failed search from the same home is kept as it is.
+     */
+    fun ensureFromHome(home: HomeAddress) {
+        if ((origin == null || origin == SearchOrigin.Home) && homeQueried != home) fromHome(home)
+    }
+
+    /** Forgets every search and position, as when the account changes. */
+    fun reset() {
+        running?.cancel()
+        session = NearbySearchSession(source.search, catalogue)
+        state = NearbyState.Idle; origin = null; away = null; otherWays = false; manual = false
+        trade = null; homeQueried = null
+    }
     fun fromHere(point: GeoPoint) { away = null; run(NearbyQuery(SearchOrigin.Gps, point, null)) }
     fun fromManual(anchor: ConcejoAnchor, point: GeoPoint) = run(NearbyQuery(SearchOrigin.Manual(anchor.name), point, anchor.ineCode))
     fun repeat() { if (session.last != null) launch { show { session.repeat(trade) } } }
@@ -150,18 +174,25 @@ internal class Proximity(var source: ProximitySource, catalogue: Catalogue, priv
     }
 }
 
-/** Null without a search service: the search then keeps the catalogue order. */
+/**
+ * Null without a search service: the search then keeps the catalogue order. With a [shared] session (#59)
+ * the screen shows the app's search instead of starting its own, so it is kept when the screen is left.
+ */
 @Composable
-internal fun rememberProximity(source: ProximitySource?, catalogue: Catalogue, trade: String?): Proximity? {
+internal fun rememberProximity(
+    source: ProximitySource?, catalogue: Catalogue, trade: String?, shared: AppSearchSession? = null,
+): Proximity? {
     if (source == null) return null
     val scope = rememberCoroutineScope()
-    val proximity = remember(source.search, catalogue) { Proximity(source, catalogue, scope) }
+    val proximity = shared?.proximity ?: remember(source.search, catalogue) { Proximity(source, catalogue, scope) }
     proximity.source = source
+    // The app's session outlives this screen: it must not keep the screen's GPS and permission prompts.
+    if (shared != null) DisposableEffect(shared) { onDispose { shared.proximity.source = shared.base } }
     // Trade first, so that the first search from home already uses a restored trade.
     LaunchedEffect(proximity, trade) { proximity.changeTrade(trade) }
     LaunchedEffect(proximity, source.home) {
         val home = source.home ?: return@LaunchedEffect
-        if (proximity.origin == null || proximity.origin == SearchOrigin.Home) proximity.fromHome()
+        proximity.ensureFromHome(home)
         proximity.noticeAway()
     }
     return proximity

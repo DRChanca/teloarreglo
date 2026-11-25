@@ -57,6 +57,8 @@ fun CatalogueScreen(
     reviews: es.teloarreglo.appointments.Reviews? = null,
     /** Distance order of the single search (ADR 0001); null keeps the catalogue order. */
     proximitySource: ProximitySource? = null,
+    /** The app's search (#59): when given, the screen shows it instead of starting its own from home. */
+    searchSession: AppSearchSession? = null,
     /** Closes [initialProfileId] when it was opened from another tab; null closes it into the list. */
     onCloseProfile: (() -> Unit)? = null,
 ) {
@@ -104,7 +106,7 @@ fun CatalogueScreen(
         CoverEditorRoute(profile, covers, onBack = { editing = false; retry++ })
         return
     }
-    val proximity = rememberProximity(proximitySource, catalogue, trade)
+    val proximity = rememberProximity(proximitySource, catalogue, trade, searchSession)
     var showMap by rememberSaveable { mutableStateOf(false) }
     val ranked = proximity?.results
     // The single search (ADR 0001): the distance order when there is one, the catalogue order otherwise.
