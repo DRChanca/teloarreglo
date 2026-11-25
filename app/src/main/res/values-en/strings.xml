@@ -111,7 +111,6 @@
     <string name="appointment_form_invalid">Check the details: fields are missing or the time is not valid.</string>
     <string name="appointment_error_access">You don’t have access to this appointment or your session has expired.</string>
     <string name="appointment_error_invalid">Not accepted: check that the time is in the future and the values are in range.</string>
-    <string name="appointment_error_coverage">That location is outside this professional’s service area.</string>
     <string name="appointment_error_stale">The appointment changed in the meantime. Check the current version before sending again.</string>
     <string name="appointment_error_conflict">This operation was already sent with other details. Check the history.</string>
     <string name="appointment_error_network">Not confirmed. Check your connection and retry: it won’t be duplicated.</string>

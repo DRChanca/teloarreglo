@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- La zone de travail informe, elle ne restreint pas (ADR 0001). -->
+<resources>
+    <string name="appointment_error_outside_area">Cette adresse est hors des Asturies. Les rendez-vous ne peuvent avoir lieu que dans un concejo des Asturies.</string>
+    <string name="zone_request_outside">Ce professionnel ne travaille pas habituellement à %1$s. Vous pouvez quand même demander le rendez-vous.</string>
+    <string name="zone_appointment_outside_professional">Cette adresse se trouve à %1$s, hors de votre zone de travail.</string>
+    <string name="zone_appointment_outside_client">%1$s ne travaille pas habituellement à %2$s.</string>
+    <string name="zone_add_concejo">Ajouter %1$s à ma zone</string>
+    <string name="zone_added">%1$s fait désormais partie de votre zone de travail.</string>
+    <string name="zone_add_error">Impossible d’ajouter %1$s à votre zone. Veuillez réessayer.</string>
+    <string name="zone_error_not_published">Votre profil n’est pas encore publié : la zone fait partie de la première version envoyée à l’examen.</string>
+    <string name="profile_block_zone">Zone de travail (appliquée immédiatement)</string>
+    <string name="profile_zone_hint">Les modifications de votre zone sont publiées immédiatement, sans examen. Vous pouvez accepter des rendez-vous en dehors ; la zone informe seulement les clients.</string>
+    <string name="profile_zone_in_own_section">Votre zone de travail se modifie dans sa propre section, sans examen.</string>
+    <string name="profile_zone_saved">Zone de travail mise à jour.</string>
+    <string name="profile_zone_error_empty">Votre zone doit comporter au moins un concejo.</string>
+    <string name="profile_zone_error_unknown">Un concejo n’est pas valide. Rouvrez l’éditeur et réessayez.</string>
+    <string name="profile_zone_error_network">Impossible d’enregistrer la zone. Veuillez réessayer.</string>
+    <string name="profile_zone_error_access">Vous n’êtes pas autorisé à modifier cette zone. Reconnectez-vous.</string>
+</resources>

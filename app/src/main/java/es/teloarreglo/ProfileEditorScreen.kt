@@ -43,6 +43,9 @@ import es.teloarreglo.catalogue.ProfileEditException
 import es.teloarreglo.catalogue.ProfileEditFailure
 import es.teloarreglo.catalogue.ProfileField
 import es.teloarreglo.catalogue.ReviewSummary
+import es.teloarreglo.catalogue.WorkZoneException
+import es.teloarreglo.catalogue.WorkZoneFailure
+import es.teloarreglo.catalogue.WorkZones
 import es.teloarreglo.catalogue.missingFields
 import es.teloarreglo.catalogue.summary
 import es.teloarreglo.search.ConcejoAnchor
@@ -61,7 +64,7 @@ private val LANGUAGES = listOf("es", "en", "fr", "de", "pt", "it")
 @kotlinx.serialization.Serializable
 private data class PendingSubmission(val requestId: String, val content: ProfileContent)
 
-private enum class EditorSection { REVIEW, OFFER, ADDRESS }
+private enum class EditorSection { REVIEW, ZONE, OFFER, ADDRESS }
 
 /**
  * The owner creates, corrects or changes their professional profile (#30). Public data is presented
@@ -70,7 +73,8 @@ private enum class EditorSection { REVIEW, OFFER, ADDRESS }
  * unapproved profile shows them once it is published. The private address is saved apart and is
  * never reviewed or published. The weekly agenda is filled in here and sent with the presentation (#41),
  * so a new professional has hours before approval; it needs no review and can later be changed, with
- * blocks, from the account screen.
+ * blocks, from the account screen. Once the profile is published, its work zone is edited in its own block
+ * and applied at once, without review (ADR 0001); a first version still carries the zone for review.
  */
 @Composable
 fun ProfileEditorScreen(
@@ -81,6 +85,8 @@ fun ProfileEditorScreen(
     onStarted: suspend () -> Unit,
     covers: ProfessionalCovers? = null,
     agenda: Agenda? = null,
+    /** Work zone of a published profile, changed without review (ADR 0001); null keeps it in the reviewed form. */
+    zones: WorkZones? = null,
 ) {
     var attempt by remember { mutableIntStateOf(0) }
     var own by remember { mutableStateOf<OwnProfile?>(null) }
@@ -101,6 +107,7 @@ fun ProfileEditorScreen(
     var agendaFailed by remember { mutableStateOf(false) }
     var agendaAttempt by remember { mutableIntStateOf(0) }
     var showAgendaProblem by remember { mutableStateOf(false) }
+    var zoneEmpty by remember { mutableStateOf(false) }
     val ui = rememberCoroutineScope()
     val fieldInView = remember { ProfileField.entries.associateWith { BringIntoViewRequester() } }
     val agendaInView = remember { BringIntoViewRequester() }
@@ -145,8 +152,9 @@ fun ProfileEditorScreen(
         scope.launch {
             try { outcome = action() }
             catch (e: CancellationException) { throw e }
+            catch (e: WorkZoneException) { failure = zoneFailureText(e.failure) }
             catch (e: Exception) {
-                failure = when ((e as? ProfileEditException)?.failure) {
+                failure = if (at == EditorSection.ZONE) R.string.profile_zone_error_network else when ((e as? ProfileEditException)?.failure) {
                     ProfileEditFailure.INVALID -> R.string.profile_edit_error_invalid
                     ProfileEditFailure.INVALID_AGENDA -> R.string.profile_edit_error_agenda
                     ProfileEditFailure.CONFLICT -> R.string.profile_edit_error_conflict
@@ -176,7 +184,10 @@ fun ProfileEditorScreen(
                     perform(EditorSection.REVIEW) { profiles.start(); onStarted(); attempt++; R.string.profile_edit_started }
                 }
                 draft != null -> {
-                    val missing = draft.missingFields()
+                    // ADR 0001: a published profile's zone lives apart; presentations carry the zone in force.
+                    val liveZone = current.public?.coverage?.takeIf { zones != null && current.review.published }
+                    val submitted = if (liveZone != null) draft.copy(coverage = liveZone) else draft
+                    val missing = submitted.missingFields()
                     val agendaDraft = agendaJson?.let { Json.decodeFromString(AgendaDraft.serializer(), it) }
                     // A first presentation carries the agenda (#41), so an incomplete one is also listed.
                     val agendaMissing = agenda != null && !current.review.published && agendaDraft != null && agendaDraft.toAgenda() == null
@@ -191,7 +202,7 @@ fun ProfileEditorScreen(
                     }
                     // Three blocks, each saved by the button at its end, so publication rules are not confused (#47).
                     EditorBlock(R.string.profile_block_public, "profile_block_public") {
-                        ContentForm(draft, !busy, concejos, ::edit, showMissing, fieldInView)
+                        ContentForm(draft, !busy, concejos, ::edit, showMissing, fieldInView, zoneApart = liveZone != null)
                         if (showMissing && missing.isNotEmpty()) {
                             Text(stringResource(R.string.profile_edit_missing), color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.testTag("profile_edit_missing"))
@@ -213,7 +224,7 @@ fun ProfileEditorScreen(
                                 return@Button
                             }
                             val previous = pendingJson?.let { Json.decodeFromString(PendingSubmission.serializer(), it) }
-                            val pending = previous?.takeIf { it.content == draft } ?: PendingSubmission(UUID.randomUUID().toString(), draft)
+                            val pending = previous?.takeIf { it.content == submitted } ?: PendingSubmission(UUID.randomUUID().toString(), submitted)
                             pendingJson = Json.encodeToString(PendingSubmission.serializer(), pending)
                             perform(EditorSection.REVIEW) {
                                 profiles.submit(pending.requestId, pending.content, weekly)
@@ -223,6 +234,18 @@ fun ProfileEditorScreen(
                         }) { Text(stringResource(if (busy) R.string.working else R.string.profile_edit_submit)) }
                         if (section == EditorSection.REVIEW) Status(busy, outcome, failure)
                         if (agenda != null) Text(stringResource(R.string.profile_edit_agenda_note), style = MaterialTheme.typography.bodySmall)
+                    }
+                    if (liveZone != null && zones != null) EditorBlock(R.string.profile_block_zone, "profile_block_zone") {
+                        WorkZoneSection(liveZone, !busy, concejos, showEmpty = zoneEmpty && section == EditorSection.ZONE) { codes ->
+                            zoneEmpty = codes.isEmpty()
+                            if (codes.isEmpty()) { section = EditorSection.ZONE; outcome = null; failure = null; return@WorkZoneSection }
+                            perform(EditorSection.ZONE) {
+                                val updated = zones.setMine(codes)
+                                own = current.copy(public = current.public?.copy(coverage = updated))
+                                R.string.profile_zone_saved
+                            }
+                        }
+                        if (section == EditorSection.ZONE) Status(busy, outcome, failure)
                     }
                     EditorBlock(R.string.profile_block_offer, "profile_block_offer") {
                         val drafts = pricesJson?.let { Json.decodeFromString(PRICE_DRAFTS, it) } ?: emptyList()
@@ -341,8 +364,10 @@ private fun ContentForm(
     draft: ProfileContent, enabled: Boolean, concejos: ConcejoDirectory?,
     edit: ((ProfileContent) -> ProfileContent) -> Unit, showMissing: Boolean,
     inView: Map<ProfileField, BringIntoViewRequester>,
+    /** The zone of a published profile is edited in its own block, without review (ADR 0001). */
+    zoneApart: Boolean = false,
 ) {
-    val missing = if (showMissing) draft.missingFields() else emptySet()
+    val missing = if (showMissing) draft.missingFields().let { if (zoneApart) it - ProfileField.COVERAGE else it } else emptySet()
     OutlinedTextField(draft.name, { v -> edit { it.copy(name = v.take(120)) } }, enabled = enabled, singleLine = true,
         isError = ProfileField.NAME in missing, label = { Text(stringResource(R.string.profile_edit_name)) },
         modifier = Modifier.fillMaxWidth().bringIntoViewRequester(inView.getValue(ProfileField.NAME)).testTag("profile_edit_name")
@@ -360,8 +385,12 @@ private fun ContentForm(
                 label = { Text(stringResource(tradeLabel(key))) })
         }
     }
-    Label(R.string.profile_edit_coverage, ProfileField.COVERAGE, missing, inView)
-    CoveragePicker(draft.coverage, enabled, concejos) { coverage -> edit { it.copy(coverage = coverage) } }
+    if (zoneApart) Text(stringResource(R.string.profile_zone_in_own_section), style = MaterialTheme.typography.bodySmall,
+        modifier = Modifier.bringIntoViewRequester(inView.getValue(ProfileField.COVERAGE)))
+    else {
+        Label(R.string.profile_edit_coverage, ProfileField.COVERAGE, missing, inView)
+        CoveragePicker(draft.coverage, enabled, concejos) { coverage -> edit { it.copy(coverage = coverage) } }
+    }
 
     Label(R.string.profile_edit_languages, ProfileField.LANGUAGES, missing, inView)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
@@ -438,6 +467,28 @@ private fun missingLabel(field: ProfileField): Int = when (field) {
     ProfileField.COVERAGE -> R.string.profile_missing_coverage
     ProfileField.LANGUAGES -> R.string.profile_missing_languages
     ProfileField.PHONE -> R.string.profile_missing_phone
+}
+
+/**
+ * Work zone of a published profile (ADR 0001): each addition or removal is applied at once, without review.
+ * It keeps at least one concejo; removing the last one is refused here, said next to the field.
+ */
+@Composable
+private fun WorkZoneSection(zone: List<Coverage>, enabled: Boolean, concejos: ConcejoDirectory?, showEmpty: Boolean,
+    onChange: (List<String>) -> Unit) {
+    Text(stringResource(R.string.profile_zone_hint), style = MaterialTheme.typography.bodySmall)
+    Text(stringResource(R.string.profile_edit_coverage), style = MaterialTheme.typography.titleSmall)
+    CoveragePicker(zone, enabled, concejos) { coverage -> onChange(coverage.map { it.code }) }
+    if (showEmpty) Text(stringResource(R.string.profile_zone_error_empty), color = MaterialTheme.colorScheme.error,
+        style = MaterialTheme.typography.bodySmall,
+        modifier = Modifier.testTag("profile_zone_empty").semantics { liveRegion = LiveRegionMode.Polite })
+}
+
+private fun zoneFailureText(failure: WorkZoneFailure): Int = when (failure) {
+    WorkZoneFailure.EMPTY -> R.string.profile_zone_error_empty
+    WorkZoneFailure.UNKNOWN_CONCEJO -> R.string.profile_zone_error_unknown
+    WorkZoneFailure.NOT_PUBLISHED -> R.string.zone_error_not_published
+    WorkZoneFailure.ACCESS -> R.string.profile_zone_error_access
 }
 
 /** One of the editor's three blocks: a titled card whose own button, at its end, saves what it holds (#47). */

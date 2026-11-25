@@ -152,7 +152,8 @@ class MainActivity : AppCompatActivity() {
                         MainScreen.PROFILE_EDITOR -> app.professionalProfiles?.let { profiles ->
                             ProfileEditorScreen(profiles, app.concejos, app.applicationScope,
                                 onBack = { nav = nav.back() ?: Navigation() },
-                                onStarted = { app.identity.restore() }, covers = app.covers, agenda = app.agenda)
+                                onStarted = { app.identity.restore() }, covers = app.covers, agenda = app.agenda,
+                                zones = app.workZones)
                         }
                         MainScreen.NOTICES -> key(connectedUser) {
                             NoticesScreen(app.notices!!, app.push, connectedUser!!, app.applicationScope,
@@ -175,7 +176,7 @@ class MainActivity : AppCompatActivity() {
                                             mapsReady = deviceMapAvailability(this@MainActivity) == es.teloarreglo.search.MapAvailability.READY,
                                             home = home),
                                         incidentTools = app.incidents?.let { IncidentTools(it, app.chatAttachments) },
-                                        reviews = app.reviews)
+                                        reviews = app.reviews, zones = app.workZones)
                                 } },
                                 attachments = app.chatAttachments,
                                 evidence = app.incidents?.let { remember(it) { ChatEvidenceLink(it, app.applicationScope) } },

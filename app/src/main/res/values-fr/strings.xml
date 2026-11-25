@@ -111,7 +111,6 @@
     <string name="appointment_form_invalid">Vérifiez les données : des champs manquent ou l’horaire n’est pas valide.</string>
     <string name="appointment_error_access">Vous n’avez pas accès à ce rendez-vous ou votre session a expiré.</string>
     <string name="appointment_error_invalid">Non accepté : vérifiez que l’heure est future et que les valeurs sont valides.</string>
-    <string name="appointment_error_coverage">Ce lieu est hors de la zone d’intervention de ce professionnel.</string>
     <string name="appointment_error_stale">Le rendez-vous a changé entre-temps. Vérifiez la version en vigueur avant de renvoyer.</string>
     <string name="appointment_error_conflict">Cette opération a déjà été envoyée avec d’autres données. Consultez l’historique.</string>
     <string name="appointment_error_network">Non confirmé. Vérifiez la connexion et réessayez : rien ne sera dupliqué.</string>

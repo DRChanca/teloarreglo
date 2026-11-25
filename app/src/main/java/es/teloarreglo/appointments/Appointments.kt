@@ -441,7 +441,7 @@ data class ProposalDraft(
 /** ALREADY_STARTED: the work started first, so there is no cancellation with a refund (#24). */
 /** INCIDENT_BLOCKING: an incident blocks the delivery; nothing was confirmed or delivered (#25/#26). */
 enum class AppointmentFailure {
-    ACCESS, INVALID, OUT_OF_COVERAGE, STALE, RETRY_CONFLICT, SLOT_UNAVAILABLE, ALREADY_STARTED, INCIDENT_BLOCKING,
+    ACCESS, INVALID, OUTSIDE_AREA, STALE, RETRY_CONFLICT, SLOT_UNAVAILABLE, ALREADY_STARTED, INCIDENT_BLOCKING,
     OUTSIDE_HOURS,
 }
 class AppointmentException(val failure: AppointmentFailure, cause: Exception) : Exception(failure.name, cause)
@@ -630,7 +630,8 @@ class SupabaseAppointments(private val client: SupabaseClient) : Appointments {
             "incident_blocking" in message -> AppointmentFailure.INCIDENT_BLOCKING
             "stale_version" in message || "incompatible_state" in message || "proposal_expired" in message ->
                 AppointmentFailure.STALE
-            "out_of_coverage" in message -> AppointmentFailure.OUT_OF_COVERAGE
+            // ADR 0001: the work zone only informs; both names now mean "outside Asturias".
+            "outside_area" in message || "out_of_coverage" in message -> AppointmentFailure.OUTSIDE_AREA
             "retry_conflict" in message -> AppointmentFailure.RETRY_CONFLICT
             "invalid_appointment" in message || "invalid_proposal" in message || "payment_required" in message ||
                 "payment_not_required" in message || "invalid_payment" in message || "invalid_change" in message || "no_change" in message ->

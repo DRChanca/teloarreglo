@@ -111,7 +111,6 @@
     <string name="appointment_form_invalid">Prüfe die Angaben: Felder fehlen oder die Zeit ist ungültig.</string>
     <string name="appointment_error_access">Kein Zugriff auf diesen Termin oder deine Sitzung ist abgelaufen.</string>
     <string name="appointment_error_invalid">Nicht angenommen: die Zeit muss in der Zukunft liegen und die Werte gültig sein.</string>
-    <string name="appointment_error_coverage">Dieser Ort liegt außerhalb des Einsatzgebiets dieser Fachkraft.</string>
     <string name="appointment_error_stale">Der Termin hat sich inzwischen geändert. Prüfe die aktuelle Version, bevor du erneut sendest.</string>
     <string name="appointment_error_conflict">Dieser Vorgang wurde bereits mit anderen Angaben gesendet. Prüfe den Verlauf.</string>
     <string name="appointment_error_network">Nicht bestätigt. Prüfe die Verbindung und versuche es erneut: nichts wird doppelt gesendet.</string>

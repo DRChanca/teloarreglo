@@ -111,7 +111,6 @@
     <string name="appointment_form_invalid">Revisa los datos: faltan campos o el horario no es válido.</string>
     <string name="appointment_error_access">No tienes permiso para esta cita o tu sesión ha caducado.</string>
     <string name="appointment_error_invalid">No se ha aceptado: revisa que la hora sea futura y los valores estén en rango.</string>
-    <string name="appointment_error_coverage">Ese lugar está fuera de la zona de servicio de este profesional.</string>
     <string name="appointment_error_stale">La cita ha cambiado mientras tanto. Revisa la versión vigente antes de volver a enviar.</string>
     <string name="appointment_error_conflict">Esta operación ya se envió con otros datos. Revisa el historial.</string>
     <string name="appointment_error_network">No se ha confirmado. Comprueba la conexión y reintenta: no se duplicará.</string>

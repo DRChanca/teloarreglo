@@ -20,6 +20,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import es.teloarreglo.appointments.*
+import es.teloarreglo.catalogue.Coverage
+import es.teloarreglo.catalogue.WorkZones
 import es.teloarreglo.chat.Conversation
 import es.teloarreglo.search.Located
 import kotlinx.coroutines.CancellationException
@@ -58,6 +60,8 @@ fun AppointmentsPanel(
     incidentTools: IncidentTools? = null,
     /** Reviews of performed appointments (#28); null hides the section. */
     reviews: Reviews? = null,
+    /** Work zone notices (ADR 0001): informative only; null hides them. */
+    zones: WorkZones? = null,
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var list by remember(conversation.id) { mutableStateOf<List<Appointment>?>(null) }
@@ -78,6 +82,16 @@ fun AppointmentsPanel(
         }
     }
     val isClient = conversation.clientId == accountId
+    // The profile's public zone, for the informative notices; the professional's one-tap addition updates it.
+    var publicZone by remember(conversation.profileId) { mutableStateOf<List<Coverage>?>(null) }
+    LaunchedEffect(zones, conversation.profileId) {
+        if (zones != null) try { publicZone = zones.publicZone(conversation.profileId) }
+        catch (error: Exception) { if (error is CancellationException) throw error }
+    }
+    val zoneNotice: (@Composable (Appointment) -> Unit)? = zones?.let { z -> { appointment ->
+        AppointmentZoneNotice(appointment, appointment.professionalId == accountId, conversation.name, conversation.profileId,
+            z, publicZone, scope, onZoneChanged = { publicZone = it })
+    } }
     val current = list.orEmpty()
     // The chat behind (if any) learns where its messages can be added as incident evidence (#26).
     val evidence = LocalChatEvidence.current?.takeIf { incidentTools != null }
@@ -118,7 +132,8 @@ fun AppointmentsPanel(
                 }
                 when {
                     shown == "request" -> RequestForm(appointments, conversation, scope, pins, current,
-                        onDone = { refresh++; sheet = "list" })
+                        onDone = { refresh++; sheet = "list" },
+                        zoneLine = zones?.let { z -> { lat, lng -> RequestZoneLine(z, publicZone, lat, lng) } })
                     shown.startsWith("propose:") -> current.firstOrNull { it.id == shown.removePrefix("propose:") }
                         ?.let { ProposalForm(appointments, it, scope, current, onDone = { refresh++; sheet = "list" }) }
                     shown.startsWith("change:") -> current.firstOrNull { it.id == shown.removePrefix("change:") }
@@ -136,7 +151,7 @@ fun AppointmentsPanel(
                                 onChange = { sheet = "change:${appointment.id}" },
                                 onCorrection = { sheet = "correction:${appointment.id}" }, incidentTools = incidentTools,
                                 reviews = reviews, reviewState = reviewStates[appointment.id],
-                                onChooseMessages = chooseMessages)
+                                onChooseMessages = chooseMessages, zoneNotice = zoneNotice)
                         }
                     }
                 }
@@ -219,7 +234,7 @@ internal fun euros(cents: Int): String {
 internal fun failureText(failure: AppointmentFailure?): String = stringResource(when (failure) {
     AppointmentFailure.ACCESS -> R.string.appointment_error_access
     AppointmentFailure.INVALID -> R.string.appointment_error_invalid
-    AppointmentFailure.OUT_OF_COVERAGE -> R.string.appointment_error_coverage
+    AppointmentFailure.OUTSIDE_AREA -> R.string.appointment_error_outside_area
     AppointmentFailure.STALE -> R.string.appointment_error_stale
     AppointmentFailure.RETRY_CONFLICT -> R.string.appointment_error_conflict
     AppointmentFailure.SLOT_UNAVAILABLE -> R.string.appointment_error_slot
@@ -253,6 +268,7 @@ private fun AppointmentDetails(
     onChange: () -> Unit = {}, onCorrection: () -> Unit = {}, incidentTools: IncidentTools? = null,
     reviews: Reviews? = null, reviewState: AppointmentReviewState? = null,
     onChooseMessages: ((String) -> Unit)? = null,
+    zoneNotice: (@Composable (Appointment) -> Unit)? = null,
 ) {
     val format = dateTimeFormat()
     val professional = appointment.professionalId == accountId
@@ -274,6 +290,7 @@ private fun AppointmentDetails(
         Column(Modifier.padding(TeloTheme.spacing.medium), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
             Text(appointment.problem, style = MaterialTheme.typography.titleMedium)
             NoticeBanner(appointment, accountId)
+            zoneNotice?.invoke(appointment)
             ReservationLine(appointment)
             val pending = appointment.currentProposal
             if (professional && appointment.stage == AppointmentStage.PENDING) Button(onClick = onPropose, modifier = Modifier.testTag("appointment_propose")) {
@@ -527,6 +544,8 @@ private fun SubmitArea(busy: Boolean, keyPending: Boolean, failure: AppointmentF
 private fun RequestForm(
     appointments: Appointments, conversation: Conversation, scope: CoroutineScope, pins: PinSource,
     known: List<Appointment>, onDone: () -> Unit,
+    /** Informative zone line for the chosen point (ADR 0001); null hides it. */
+    zoneLine: (@Composable (Double?, Double?) -> Unit)? = null,
 ) {
     var problem by rememberSaveable(conversation.id) { mutableStateOf("") }
     var dateText by rememberSaveable(conversation.id) { mutableStateOf<String?>(LocalDate.now().plusDays(1).toString()) }
@@ -596,6 +615,7 @@ private fun RequestForm(
         pointFrom = PointFrom.PIN
     }
     PointFromLine(pointFrom.takeIf { lat.isNotBlank() && lng.isNotBlank() }, "appointment_point")
+    zoneLine?.invoke(lat.replace(',', '.').toDoubleOrNull(), lng.replace(',', '.').toDoubleOrNull())
     // Without a map, typing the point is the only alternative to GPS; with a map people never see coordinates (#41).
     if (!pins.mapsReady) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         val decimal = KeyboardOptions(keyboardType = KeyboardType.Decimal)
