@@ -6,8 +6,18 @@ import kotlinx.coroutines.CancellationException
 /** One autocomplete row as Places shows it: street first, then locality. */
 data class AddressSuggestion(val placeId: String, val primary: String, val secondary: String)
 
-/** A chosen place: full formatted address and its point. */
-data class PlaceDetails(val address: String, val point: GeoPoint, val placeId: String)
+/**
+ * A chosen place: full formatted address and its point. [street], [number] and [locality] come from the
+ * place's address components when it has them, so the form can show the Spanish fields (#41).
+ */
+data class PlaceDetails(
+    val address: String,
+    val point: GeoPoint,
+    val placeId: String,
+    val street: String? = null,
+    val number: String? = null,
+    val locality: String? = null,
+)
 
 /**
  * Address autocomplete boundary (#37). The real one is Google Places (New) for Android; tests use a
@@ -30,8 +40,8 @@ sealed interface ChoiceResult {
     data object Unavailable : ChoiceResult
 }
 
-/** Below this many characters Places is not called: each request has a cost. */
-const val MIN_ADDRESS_QUERY = 3
+/** Below this many characters Places is not called: suggestions start after 7 typed characters (#41), and each request has a cost. */
+const val MIN_ADDRESS_QUERY = 8
 
 /**
  * Places with a fallback that never breaks the screen. [places] is null without a Maps key. After the

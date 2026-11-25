@@ -13,6 +13,8 @@ sealed interface AttachmentSendState {
     data object Idle : AttachmentSendState
     /** Compressing on the device; [fraction] is null when the step cannot report progress. */
     data class Preparing(val kind: AttachmentKind, val fraction: Float? = null) : AttachmentSendState
+    /** Compressed and waiting for the person to confirm or discard it (#41); nothing has been sent. */
+    data class Ready(val prepared: PreparedAttachment) : AttachmentSendState
     data class Uploading(val kind: AttachmentKind, val fraction: Float) : AttachmentSendState
     /** [failure] null means uncertain delivery (network): retrying reuses the same request. */
     data class Failed(val kind: AttachmentKind, val failure: AttachmentFailure?, val canRetry: Boolean) : AttachmentSendState
@@ -23,7 +25,8 @@ sealed interface AttachmentSendState {
  * One photo or video send at a time per conversation (#18/#19). Activity-scoped so
  * rotation or a short trip out of the chat does not lose progress; the compressed
  * copy and its request id are kept until confirmed or cancelled, so a retry never
- * creates a duplicate. A preparation error is never replaced by the original file.
+ * creates a duplicate. A prepared attachment waits for [confirm] before it is
+ * uploaded (#41). A preparation error is never replaced by the original file.
  */
 class ChatAttachmentSender(private val attachments: ChatAttachments, private val conversationId: String) : ViewModel() {
     private val mutableState = MutableStateFlow<AttachmentSendState>(AttachmentSendState.Idle)
@@ -48,8 +51,14 @@ class ChatAttachmentSender(private val attachments: ChatAttachments, private val
                 return@launch
             }
             pending = UUID.randomUUID().toString() to prepared
-            upload()
+            mutableState.value = AttachmentSendState.Ready(prepared)
         }
+    }
+
+    /** Sends the compressed copy shown in [AttachmentSendState.Ready]. */
+    fun confirm() {
+        if (mutableState.value !is AttachmentSendState.Ready) return
+        job = viewModelScope.launch { upload() }
     }
 
     fun retry() {

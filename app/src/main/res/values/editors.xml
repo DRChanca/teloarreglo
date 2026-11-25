@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Editores y pasos obligatorios (#47, grupo 5). -->
+<resources>
+    <string name="profile_block_public">Perfil público (requiere revisión)</string>
+    <string name="profile_block_offer">Servicios y precios (se publican al guardar)</string>
+    <string name="profile_block_address">Dirección privada (no se publica)</string>
+    <string name="profile_missing_list">Te falta: %1$s</string>
+    <string name="profile_missing_name">nombre</string>
+    <string name="profile_missing_trades">oficios</string>
+    <string name="profile_missing_coverage">concejos</string>
+    <string name="profile_missing_languages">idiomas</string>
+    <string name="profile_missing_phone">teléfono válido</string>
+    <string name="profile_missing_agenda">horario semanal</string>
+    <string name="profile_field_name_error">Escribe el nombre con el que te verán.</string>
+    <string name="profile_field_trades_error">Elige al menos un oficio.</string>
+    <string name="profile_field_coverage_error">Añade al menos un concejo.</string>
+    <string name="profile_field_languages_error">Elige al menos un idioma.</string>
+    <string name="profile_field_phone_error">Escribe un teléfono válido, por ejemplo +34 600 000 000.</string>
+    <string name="home_save_missing">Para guardar falta: %1$s</string>
+    <string name="home_gap_street">la calle</string>
+    <string name="home_gap_too_long">acortar un campo demasiado largo</string>
+    <string name="home_gap_location">la ubicación (usa tu ubicación o márcala en el mapa)</string>
+    <string name="cover_preview_detail">Así se verá en tu ficha</string>
+    <string name="cover_preview_list">Así se verá en la lista</string>
+    <string name="cover_generic_confirm_title">¿Usar la imagen de tu oficio?</string>
+    <string name="cover_generic_confirm_text">Se publicará al momento y sustituirá la portada que se ve ahora.</string>
+    <string name="cover_generic_confirm">Usar la imagen</string>
+</resources>

@@ -8,21 +8,25 @@ import es.teloarreglo.search.currentLocation
 import es.teloarreglo.search.hasLocationPermission
 import kotlinx.coroutines.CompletableDeferred
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.teloarreglo.identity.AccessError
 import es.teloarreglo.identity.AccessStage
-import es.teloarreglo.chat.Conversation
 import es.teloarreglo.home.HomeStatus
 import es.teloarreglo.identity.AccountNameStatus
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
 
 class MainActivity : AppCompatActivity() {
     private var permissionAnswer: CompletableDeferred<Boolean>? = null
@@ -56,19 +60,16 @@ class MainActivity : AppCompatActivity() {
     private val openNotices = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Bars drawn by the app: their icons follow the active light/dark theme (#45).
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         // After a configuration change the link was already handled; codes are single use.
         if (savedInstanceState == null) handleAuthLink(intent)
         if (intent?.getBooleanExtra(es.teloarreglo.notices.EXTRA_OPEN_NOTICES, false) == true) openNotices.value = true
-        setContent {
-            var account by rememberSaveable { mutableStateOf(false) }
-            var ownProfile by rememberSaveable { mutableStateOf<String?>(null) }
-            var chatVisible by rememberSaveable { mutableStateOf(false) }
-            var contactProfile by rememberSaveable { mutableStateOf<String?>(null) }
-            var conversationJson by rememberSaveable { mutableStateOf<String?>(null) }
-            var nearby by rememberSaveable { mutableStateOf(false) }
-            var profileEditor by rememberSaveable { mutableStateOf(false) }
-            var noticesVisible by rememberSaveable { mutableStateOf(false) }
+        // One theme for the whole app, following the system light/dark mode (#45).
+        setContent { TeloTheme {
+            // Selected tab and open subscreen (#46), kept across recreation.
+            var nav by rememberSaveable(stateSaver = Navigation.saver) { mutableStateOf(Navigation()) }
             var unreadNotices by remember { mutableIntStateOf(0) }
             val app = application as TeloarregloApplication
             val access by app.identity.state.collectAsStateWithLifecycle()
@@ -81,7 +82,6 @@ class MainActivity : AppCompatActivity() {
             val emailLinkPending = access.stage == AccessStage.RECOVERING_PASSWORD ||
                 access.error == AccessError.LINK_INVALID
             // Home address (#37): mandatory once the server confirms a connected account has none.
-            var editingHome by rememberSaveable { mutableStateOf(false) }
             val homeSession = app.homeSession
             val homeStatus by (homeSession?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(HomeStatus.Unknown) })
                 .collectAsStateWithLifecycle()
@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity() {
             LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
                 if (access.stage != AccessStage.CHECKING) app.push?.sync(connectedUser)
             }
-            LaunchedEffect(connectedUser, noticesVisible, chatVisible, account) {
+            LaunchedEffect(connectedUser, nav.tab, nav.conversation?.id) {
                 // The app is open on this account: its conversations reached this device (senders' second tick).
                 if (connectedUser != null) try { app.chat?.markAllDelivered() }
                     catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
@@ -100,10 +100,7 @@ class MainActivity : AppCompatActivity() {
             }
             val openFromPush by openNotices
             LaunchedEffect(openFromPush) {
-                if (openFromPush) {
-                    noticesVisible = true; account = false; nearby = false; chatVisible = false
-                    contactProfile = null; conversationJson = null; openNotices.value = false
-                }
+                if (openFromPush) { nav = Navigation().open(Tab.NOTICES); openNotices.value = false }
             }
             LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
                 if (access.stage != AccessStage.CHECKING) homeSession?.load(connectedUser)
@@ -115,108 +112,108 @@ class MainActivity : AppCompatActivity() {
             LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
                 if (access.stage != AccessStage.CHECKING) nameSession?.load(connectedUser)
             }
-            val mustGiveName = connectedUser != null && nameStatus == AccountNameStatus.Missing &&
+            val mustGiveName = nameSession != null && connectedUser != null && nameStatus == AccountNameStatus.Missing &&
                 access.account?.isAdministrator != true && !emailLinkPending
             val home = (homeStatus as? HomeStatus.Present)?.home
-            val mustGiveHome = connectedUser != null && homeStatus == HomeStatus.Missing &&
+            val mustGiveHome = homeSession != null && connectedUser != null && homeStatus == HomeStatus.Missing &&
                 access.account?.isAdministrator != true && !emailLinkPending
             val changeLanguage: (String) -> Unit = { tag ->
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
             }
-            BackHandler(enabled = editingHome && !mustGiveHome) { editingHome = false }
-            BackHandler(enabled = profileEditor && !editingHome && !mustGiveHome) { profileEditor = false; account = true }
-            BackHandler(enabled = !editingHome && !profileEditor && (account || nearby || (chatVisible && access.stage != AccessStage.CONNECTED))) {
-                account = false; nearby = false; chatVisible = false; contactProfile = null; conversationJson = null
-            }
-            if (nameSession != null && mustGiveName) {
-                key(connectedUser) {
-                    AccountNameScreen(nameSession, app.applicationScope,
-                        onSignOut = { app.applicationScope.launch { app.identity.signOut() } })
-                }
-            } else if (homeSession != null && (mustGiveHome || (editingHome && connectedUser != null))) {
-                key(connectedUser) {
-                    HomeAddressScreen(homeSession, app.addressAutocomplete,
-                        PinSource({ ensureLocationPermission() }, { currentLocation(this@MainActivity) },
-                            mapsReady = deviceMapAvailability(this@MainActivity) == es.teloarreglo.search.MapAvailability.READY),
-                        app.applicationScope, required = mustGiveHome,
-                        onDone = { editingHome = false },
-                        onSignOut = { editingHome = false; app.applicationScope.launch { app.identity.signOut() } })
-                }
-            } else if (profileEditor && app.professionalProfiles != null) {
-                ProfileEditorScreen(app.professionalProfiles!!, app.concejos, app.applicationScope,
-                    onBack = { profileEditor = false; account = true },
-                    onStarted = { app.identity.restore() }, covers = app.covers)
-            } else if (noticesVisible && connectedUser != null && app.notices != null) {
-                key(connectedUser) {
-                    NoticesScreen(app.notices!!, app.push, connectedUser, app.applicationScope,
-                        askPermission = { ensureNotificationPermission() },
-                        onOpenConversation = { id ->
-                            app.applicationScope.launch {
-                                val conversation = try { app.chat?.conversations()?.find { it.id == id } }
-                                    catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { null }
-                                if (conversation != null) {
-                                    conversationJson = Json.encodeToString(conversation); contactProfile = null
-                                    chatVisible = true; noticesVisible = false
-                                }
-                            }
-                        },
-                        onOpenAccount = { noticesVisible = false; account = true },
-                        onBack = { noticesVisible = false })
-                }
-            } else if (chatVisible && access.stage == AccessStage.CONNECTED && app.chat != null) {
-                key(access.account!!.userId) {
-                    ChatRoute(app.chat!!, access.account!!.userId, contactProfile,
-                        conversationJson?.let { Json.decodeFromString<Conversation>(it) },
-                        onOpened = { contactProfile = null; conversationJson = Json.encodeToString(it) },
-                        onBack = {
-                            if (conversationJson != null && ownProfile == null) conversationJson = null
-                            else { chatVisible = false; contactProfile = null; conversationJson = null }
-                        },
-                        appointmentsSlot = app.appointments?.let { appointments -> { conversation ->
-                            AppointmentsPanel(appointments, access.account!!.userId, conversation, app.applicationScope,
+            val screen = nav.screen(Session(
+                connected = connectedUser != null && app.chat != null && app.notices != null,
+                mustGiveName = mustGiveName, mustGiveHome = mustGiveHome, emailLinkPending = emailLinkPending,
+            ))
+            // Back from a tab goes Home; at Home it leaves the app. Mandatory steps keep the system default.
+            val mandatory = screen == MainScreen.NAME_STEP || screen == MainScreen.HOME_STEP
+            BackHandler(enabled = !mandatory && nav.back() != null) { nav.back()?.let { nav = it } }
+            Scaffold(
+                // Each screen handles the system insets itself; the scaffold only reserves the bar.
+                contentWindowInsets = WindowInsets(0),
+                bottomBar = {
+                    if (screen.showsBar) MainBottomBar(nav.tab,
+                        unreadNotices = unreadNotices, onSelect = { nav = nav.open(it) })
+                },
+            ) { padding ->
+                Box(Modifier.padding(padding).consumeWindowInsets(padding)) {
+                    when (screen) {
+                        MainScreen.NAME_STEP -> key(connectedUser) {
+                            AccountNameScreen(nameSession!!, app.applicationScope,
+                                onSignOut = { app.applicationScope.launch { app.identity.signOut() } })
+                        }
+                        MainScreen.HOME_STEP, MainScreen.HOME_EDITOR -> key(connectedUser) {
+                            HomeAddressScreen(homeSession!!, app.addressAutocomplete,
                                 PinSource({ ensureLocationPermission() }, { currentLocation(this@MainActivity) },
-                                    mapsReady = deviceMapAvailability(this@MainActivity) == es.teloarreglo.search.MapAvailability.READY,
-                                    home = home),
-                                incidentTools = app.incidents?.let { IncidentTools(it, app.chatAttachments) },
-                                reviews = app.reviews)
-                        } },
-                        attachments = app.chatAttachments,
-                        evidence = app.incidents?.let { remember(it) { ChatEvidenceLink(it, app.applicationScope) } })
+                                    mapsReady = deviceMapAvailability(this@MainActivity) == es.teloarreglo.search.MapAvailability.READY),
+                                app.applicationScope, required = mustGiveHome,
+                                onDone = { nav = nav.doneEditingHome() },
+                                onSignOut = { nav = nav.doneEditingHome(); app.applicationScope.launch { app.identity.signOut() } })
+                        }
+                        MainScreen.PROFILE_EDITOR -> app.professionalProfiles?.let { profiles ->
+                            ProfileEditorScreen(profiles, app.concejos, app.applicationScope,
+                                onBack = { nav = nav.back() ?: Navigation() },
+                                onStarted = { app.identity.restore() }, covers = app.covers, agenda = app.agenda,
+                                zones = app.workZones)
+                        }
+                        MainScreen.NOTICES -> key(connectedUser) {
+                            NoticesScreen(app.notices!!, app.push, connectedUser!!, app.applicationScope,
+                                askPermission = { ensureNotificationPermission() },
+                                onOpenConversation = { id ->
+                                    es.teloarreglo.notices.openNoticeConversation(id, { app.chat?.conversations() }, { it.id }) {
+                                        nav = Navigation().openFromNotice(it)
+                                    }
+                                },
+                                onOpenAccount = { nav = nav.open(Tab.ACCOUNT) },
+                                onBack = { nav = Navigation() })
+                        }
+                        MainScreen.CHATS, MainScreen.CONVERSATION -> key(connectedUser) {
+                            ChatRoute(app.chat!!, connectedUser!!, nav.contactProfile, nav.conversation,
+                                onOpened = { nav = nav.openConversation(it) },
+                                onBack = { nav = nav.back() ?: Navigation() },
+                                appointmentsSlot = app.appointments?.let { appointments -> { conversation ->
+                                    AppointmentsPanel(appointments, connectedUser, conversation, app.applicationScope,
+                                        PinSource({ ensureLocationPermission() }, { currentLocation(this@MainActivity) },
+                                            mapsReady = deviceMapAvailability(this@MainActivity) == es.teloarreglo.search.MapAvailability.READY,
+                                            home = home),
+                                        incidentTools = app.incidents?.let { IncidentTools(it, app.chatAttachments) },
+                                        reviews = app.reviews, zones = app.workZones)
+                                } },
+                                attachments = app.chatAttachments,
+                                evidence = app.incidents?.let { remember(it) { ChatEvidenceLink(it, app.applicationScope) } },
+                                onBrowse = { nav = nav.open(Tab.HOME) })
+                        }
+                        MainScreen.ACCESS, MainScreen.EMAIL_LINK -> AccessScreen(app.identity, changeLanguage,
+                            onLeaveLink = {
+                                // Clears the invalid-link error so the catalogue can be reached.
+                                app.identity.dismiss()
+                                nav = Navigation()
+                            },
+                            onProfile = { nav = nav.showProfile(it) },
+                            operationScope = app.applicationScope,
+                            googleAuth = app.googleAuth, profileReviews = app.profileReviews,
+                            subscriptions = app.subscriptions, agenda = app.agenda,
+                            nameSlot = nameSession?.let { session -> { AccountNameCard(session, app.applicationScope) } },
+                            homeSlot = homeSession?.let { session -> { HomeSummaryCard(session, onChange = { nav = nav.editHome() }) } },
+                            onEditProfile = app.professionalProfiles?.let { { nav = nav.editProfile() } })
+                        MainScreen.CATALOGUE -> CatalogueScreen(app.catalogue,
+                            initialProfileId = nav.profile, covers = app.covers, ownedProfileId = owner,
+                            onContact = { nav = nav.showProfile(it).contact(it) },
+                            // Opened from another tab (Cuenta): closing the profile returns there.
+                            onCloseProfile = nav.returnTo?.let { { nav = nav.back() ?: Navigation() } },
+                            reviews = app.reviews,
+                            // Single search (ADR 0001): from the saved home, GPS or a concejo, by distance.
+                            proximitySource = app.search?.let { search ->
+                                ProximitySource(search,
+                                    ensurePermission = { ensureLocationPermission() },
+                                    locate = { currentLocation(this@MainActivity) },
+                                    concejos = app.concejos, map = remember { deviceMapAvailability(this@MainActivity) },
+                                    home = home, askIfAway = { homeSession?.askIfAway(it) == true },
+                                    onChangeHome = { nav = nav.editHome() })
+                            })
+                    }
                 }
-            } else if (account || chatVisible || emailLinkPending) {
-                AccessScreen(app.identity, changeLanguage,
-                    onCatalogue = {
-                        // Also clears a shown invalid-link error so the catalogue can be reached.
-                        app.identity.dismiss()
-                        account = false; chatVisible = false; contactProfile = null; conversationJson = null
-                    },
-                    onProfile = { ownProfile = it; account = false; chatVisible = false; conversationJson = null },
-                    operationScope = app.applicationScope,
-                    googleAuth = app.googleAuth, profileReviews = app.profileReviews,
-                    subscriptions = app.subscriptions, agenda = app.agenda,
-                    nameSlot = nameSession?.let { session -> { AccountNameCard(session, app.applicationScope) } },
-                    homeSlot = homeSession?.let { session -> { HomeSummaryCard(session, onChange = { editingHome = true }) } },
-                    onEditProfile = app.professionalProfiles?.let { { profileEditor = true; account = false } })
-            } else if (nearby && app.search != null) {
-                NearbySearchScreen(app.search!!, app.catalogue,
-                    ensurePermission = { ensureLocationPermission() },
-                    locate = { currentLocation(this@MainActivity) },
-                    onBack = { nearby = false },
-                    onOpenProfile = { ownProfile = it; nearby = false },
-                    concejos = app.concejos, map = remember { deviceMapAvailability(this@MainActivity) },
-                    home = home, askIfAway = { homeSession?.askIfAway(it) == true },
-                    onChangeHome = { editingHome = true })
-            } else {
-                CatalogueScreen(app.catalogue, onAccount = { ownProfile = null; account = true }, onLanguageChange = changeLanguage,
-                    initialProfileId = ownProfile, covers = app.covers, ownedProfileId = owner,
-                    onContact = { ownProfile = it; contactProfile = it; conversationJson = null; chatVisible = true; account = false },
-                    onChats = { ownProfile = null; contactProfile = null; conversationJson = null; chatVisible = true; account = false },
-                    onNearby = if (app.search != null) ({ ownProfile = null; nearby = true }) else null,
-                    onNotices = if (connectedUser != null && app.notices != null) ({ ownProfile = null; noticesVisible = true }) else null,
-                    unreadNotices = unreadNotices,
-                    reviews = app.reviews)
             }
-        }
+        } }
     }
 
     override fun onNewIntent(intent: Intent) {

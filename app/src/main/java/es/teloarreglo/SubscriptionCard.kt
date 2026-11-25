@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -70,13 +69,13 @@ fun SubscriptionCard(subscriptions: Subscriptions, operationScope: CoroutineScop
         loading = false
     }
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F1E8)),
-        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.subscriptionContainer, contentColor = TeloTheme.extended.onSubscriptionContainer),
+        shape = MaterialTheme.shapes.large,
         modifier = Modifier.fillMaxWidth().testTag("subscription"),
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.padding(TeloTheme.spacing.large), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
             Text(stringResource(R.string.subscription_title), style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
+                modifier = Modifier.semantics { heading() })
             Text(stringResource(R.string.subscription_price, formatEuros(current?.priceCents ?: 500)),
                 style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
             Text(stringResource(R.string.subscription_proposal), style = MaterialTheme.typography.bodySmall)
@@ -98,7 +97,7 @@ fun SubscriptionCard(subscriptions: Subscriptions, operationScope: CoroutineScop
             Text(stringResource(R.string.subscription_no_verification), fontWeight = FontWeight.SemiBold)
             HorizontalDivider()
             val value = current
-            Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }, verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
                 when {
                     loading -> CircularProgressIndicator(Modifier.size(24.dp))
                     loadFailed || value == null -> {
@@ -143,7 +142,7 @@ fun SubscriptionCard(subscriptions: Subscriptions, operationScope: CoroutineScop
 
 @Composable
 private fun Section(title: Int, tag: String, items: List<Int>) {
-    Column(Modifier.testTag(tag), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(Modifier.testTag(tag), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
         Text(stringResource(title), fontWeight = FontWeight.SemiBold)
         items.forEach { Text("• " + stringResource(it)) }
     }
@@ -151,17 +150,17 @@ private fun Section(title: Int, tag: String, items: List<Int>) {
 
 /** The visible «Destacado» label: same look in the preview, the search results and the public profile. */
 @Composable
-internal fun FeaturedBadge(modifier: Modifier = Modifier) {
-    Text(stringResource(R.string.subscription_featured_badge),
-        color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
-        modifier = modifier.background(Color(0xFF8A5A00), RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp))
+internal fun FeaturedBadge(modifier: Modifier = Modifier, label: Int = R.string.subscription_featured_badge) {
+    Text(stringResource(label),
+        color = TeloTheme.extended.onFeaturedBadge, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
+        modifier = modifier.background(TeloTheme.extended.featuredBadge, MaterialTheme.shapes.extraSmall).padding(horizontal = TeloTheme.spacing.small, vertical = 2.dp))
 }
 
 /** A labelled sample, never a real ranking: zones come from the approved coverage only. */
 @Composable
 private fun FeaturedPreview(subscription: Subscription?) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
             FeaturedBadge()
             Text(stringResource(R.string.subscription_featured_title), fontWeight = FontWeight.SemiBold)
         }

@@ -73,16 +73,45 @@ Pantallas (`HomeAddressScreen.kt`):
   piso. Sin Places: aviso, «Usar mi ubicación» (un solo punto, se rechaza si es impreciso),
   «Marcar en el mapa» si hay mapa y la dirección escrita a mano.
 - `HomeSummaryCard` en la cuenta (`AccessScreen(homeSlot=…)`).
-- `AwayFromHomeDialog`: «Buscar desde aquí», «Cambiar dirección» o «Seguir con casa».
+- `AwayFromHomeDialog`: «Buscar desde aquí», «Cambiar dirección» o «Seguir con casa». Sustituido el 25-11-2026:
+  banner no bloqueante, una vez por sesión, con la comprobación en segundo plano.
 
 Integración:
 
-- Búsqueda cercana (`NearbySearchScreen(home, askIfAway, onChangeHome)`): busca desde casa al abrir
+- Búsqueda cercana (`NearbySearchScreen(home, askIfAway, onChangeHome)`; desde el 25-11-2026 la pantalla «Cerca de mí»
+  desaparece y esto lo hace la búsqueda única de la pestaña «Buscar», ver [búsqueda](busqueda-contrato.md)): busca desde casa al abrir
   (`{lat, lng, ine_code}` de la casa), sin pedir el GPS. Solo si el permiso ya estaba concedido toma
   un punto en silencio para el aviso de lejanía. «Usar mi ubicación» y la elección manual de #17
   siguen funcionando.
 - Cita (`PinSource.home`): el formulario de solicitud empieza con la dirección y el punto de casa,
   que se pueden editar, y muestra un texto que lo explica.
+
+## Ampliación #41: campos españoles, sugerencias tras 7 caracteres y sin coordenadas
+
+Migración nueva: `20261124000100_home_address_parts.sql` (aditiva; no se ha aplicado en la base alojada).
+
+- `home_addresses.address_parts jsonb` (opcional): `street` (obligatorio, ≤ 160), `number`, `block`, `portal`,
+  `staircase`, `floor`, `door` (≤ 20 cada uno) y `locality` (código postal y localidad, ≤ 100). Se guardan sin
+  espacios a los lados y sin campos vacíos. Otra clave o un valor que no sea texto → `22023 invalid_home_address`.
+- `set_home_address(..., p_parts jsonb default null)`: la llamada antigua de cinco argumentos sigue funcionando y
+  guarda `address_parts = null`. `home_address()` y `set_home_address` devuelven además `address_parts`.
+- `address` sigue siendo la línea legible que usan la búsqueda, la cuenta y la solicitud de cita. Android la
+  compone con `AddressParts.text()`: «Calle Uría 10, bloque 2, portal 3, esc. A, 4º B, 33003 Oviedo, Asturias».
+
+Android (`home/AddressParts.kt`, `HomeAddressScreen`):
+
+- El campo «Calle» es también la búsqueda de Places: las sugerencias empiezan con más de 7 caracteres
+  (`MIN_ADDRESS_QUERY = 8`). Al elegir una, Places (campo `addressComponents`, mismo grupo Essentials que
+  `formattedAddress`) rellena calle, número y localidad sin repetir el número.
+- Debajo: Número, Bloque, Portal, Escalera, Piso y Puerta, y «Código postal y localidad». Solo la calle es obligatoria.
+  Una casa guardada antes abre con toda su dirección en «Calle».
+- La pantalla ya no muestra coordenadas: indica en palabras de dónde sale la ubicación (dirección elegida, mapa o
+  GPS). Lo mismo en la solicitud y el cambio de dirección de una cita (`PointFromLine`); allí los campos de latitud
+  y longitud solo aparecen como alternativa cuando no hay mapa. El detalle de la cita y la búsqueda manual dejan de
+  mostrar coordenadas.
+- 24-11-2026 (David): la pantalla de casa deja de mostrar la línea «Ubicación: …» con el origen del punto; solo avisa
+  cuando falta (`home_point_missing`). Se mantienen «Usar mi ubicación» y «Marcar en el mapa». La solicitud de cita
+  (`PointFromLine`) no cambia.
 
 ## Places en Google Cloud (paso humano)
 

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The work area informs, it does not restrict (ADR 0001). -->
+<resources>
+    <string name="appointment_error_outside_area">That address is outside Asturias. Appointments can only be in a concejo of Asturias.</string>
+    <string name="zone_request_outside">This professional does not usually work in %1$s. You can still request the appointment.</string>
+    <string name="zone_appointment_outside_professional">This address is in %1$s, outside your work area.</string>
+    <string name="zone_appointment_outside_client">%1$s does not usually work in %2$s.</string>
+    <string name="zone_add_concejo">Add %1$s to my area</string>
+    <string name="zone_added">%1$s is now part of your work area.</string>
+    <string name="zone_add_error">%1$s could not be added to your area. Please try again.</string>
+    <string name="zone_error_not_published">Your profile is not published yet: the area goes in the first version you send for review.</string>
+    <string name="profile_block_zone">Work area (applied at once)</string>
+    <string name="profile_zone_hint">Changes to your area are published at once, without review. You can accept appointments outside it; the area only informs clients.</string>
+    <string name="profile_zone_in_own_section">Your work area is changed in its own section, without review.</string>
+    <string name="profile_zone_saved">Work area updated.</string>
+    <string name="profile_zone_error_empty">Your area must have at least one concejo.</string>
+    <string name="profile_zone_error_unknown">A concejo is not valid. Reopen the editor and try again.</string>
+    <string name="profile_zone_error_network">The area could not be saved. Please try again.</string>
+    <string name="profile_zone_error_access">You are not allowed to change this area. Please sign in again.</string>
+</resources>

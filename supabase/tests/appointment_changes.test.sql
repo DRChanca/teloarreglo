@@ -153,7 +153,7 @@ select throws_ok($$select public.accept_change((select id from public.appointmen
 select throws_ok($$select public.propose_change((select repair from ids),
  (select version from public.appointments where id = (select repair from ids)), '60000000-0000-0000-0000-000000230196',
  'Repair smaller', '2030-01-15 08:00Z', 90, 7000, null, true, true, 'Lejos 1', 43.5, -5.5)$$,
- '22023', 'out_of_coverage', 'a new address outside the coverage is refused');
+ '22023', 'out_of_coverage', 'a new address outside Asturias (no concejo nearby) is refused');
 select public.propose_change((select repair from ids), (select version from public.appointments where id = (select repair from ids)),
  '60000000-0000-0000-0000-000000230107', 'Repair smaller', '2030-01-15 08:00Z', 90, 7000, null, true, true,
  'Calle A 1, 3º', 43.06, -5.94, 'Corregido');

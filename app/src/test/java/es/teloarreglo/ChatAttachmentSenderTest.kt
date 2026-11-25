@@ -37,6 +37,29 @@ class ChatAttachmentSenderTest {
         override suspend fun url(path: String) = "https://signed/$path"
     }
 
+    @Test fun aPreparedPhotoWaitsForConfirmationBeforeAnythingIsSent() = runTest {
+        val attachments = FakeAttachments { id -> emit(AttachmentProgress.Sent(message(id))) }
+        val sender = ChatAttachmentSender(attachments, "conversation")
+        sender.pick(PHOTO) { photo }
+        val ready = sender.state.value as AttachmentSendState.Ready
+        assertSame(photo, ready.prepared)
+        assertTrue(attachments.requests.isEmpty())
+        sender.confirm()
+        assertEquals("photo", (sender.state.value as AttachmentSendState.Sent).message.attachmentKind)
+        assertEquals(1, attachments.requests.size)
+    }
+
+    @Test fun discardingAPreparedPhotoSendsNothing() = runTest {
+        val attachments = FakeAttachments { id -> emit(AttachmentProgress.Sent(message(id))) }
+        val sender = ChatAttachmentSender(attachments, "conversation")
+        sender.pick(PHOTO) { photo }
+        sender.cancel()
+        assertEquals(AttachmentSendState.Idle, sender.state.value)
+        sender.confirm()
+        assertEquals(AttachmentSendState.Idle, sender.state.value)
+        assertTrue(attachments.requests.isEmpty())
+    }
+
     @Test fun progressIsShownAndTheConfirmedMessageIsHandedToTheChat() = runTest {
         // StateFlow is conflated, so observe the state at each step of the upload.
         val seen = mutableListOf<AttachmentSendState>()
@@ -48,6 +71,7 @@ class ChatAttachmentSenderTest {
         }
         sender = ChatAttachmentSender(attachments, "conversation")
         sender.pick(PHOTO) { seen.add(sender.state.value); photo }
+        sender.confirm()
         val sent = sender.state.value as AttachmentSendState.Sent
         assertEquals("photo", sent.message.attachmentKind)
         assertEquals(listOf(AttachmentSendState.Preparing(PHOTO), AttachmentSendState.Uploading(PHOTO, 0.25f),
@@ -57,7 +81,7 @@ class ChatAttachmentSenderTest {
         assertEquals(AttachmentSendState.Idle, sender.state.value)
     }
 
-    @Test fun aVideoShowsCompressionProgressThenUploadsTheCompressedMp4AsAVideo() = runTest {
+    @Test fun aVideoShowsCompressionProgressThenUploadsTheCompressedMp4OnceConfirmed() = runTest {
         val seen = mutableListOf<AttachmentSendState>()
         lateinit var sender: ChatAttachmentSender
         val attachments = FakeAttachments { id -> emit(AttachmentProgress.Sent(message(id, "video"))) }
@@ -68,6 +92,8 @@ class ChatAttachmentSenderTest {
             video
         }
         assertEquals(listOf(AttachmentSendState.Preparing(VIDEO), AttachmentSendState.Preparing(VIDEO, 0.5f)), seen)
+        assertTrue(attachments.uploads.isEmpty())
+        sender.confirm()
         val (kind, mime, bytes) = attachments.uploads.single()
         assertEquals(VIDEO, kind)
         assertEquals("video/mp4", mime)
@@ -109,6 +135,7 @@ class ChatAttachmentSenderTest {
         }
         val sender = ChatAttachmentSender(attachments, "conversation")
         sender.pick(VIDEO) { video }
+        sender.confirm()
         val failed = sender.state.value as AttachmentSendState.Failed
         assertNull(failed.failure)
         assertTrue(failed.canRetry)
@@ -122,8 +149,8 @@ class ChatAttachmentSenderTest {
     @Test fun aNewAttachmentGetsANewRequest() = runTest {
         val attachments = FakeAttachments { id -> emit(AttachmentProgress.Sent(message(id))) }
         val sender = ChatAttachmentSender(attachments, "conversation")
-        sender.pick(PHOTO) { photo }; sender.dismiss()
-        sender.pick(PHOTO) { photo }
+        sender.pick(PHOTO) { photo }; sender.confirm(); sender.dismiss()
+        sender.pick(PHOTO) { photo }; sender.confirm()
         assertNotEquals(attachments.requests[0], attachments.requests[1])
     }
 
@@ -132,6 +159,7 @@ class ChatAttachmentSenderTest {
         val attachments = FakeAttachments { emit(AttachmentProgress.Uploading(0, 3)); started.complete(Unit); awaitCancellation() }
         val sender = ChatAttachmentSender(attachments, "conversation")
         sender.pick(VIDEO) { video }
+        sender.confirm()
         started.await()
         assertTrue(sender.state.value is AttachmentSendState.Uploading)
         sender.cancel()
@@ -164,6 +192,7 @@ class ChatAttachmentSenderTest {
         val attachments = FakeAttachments { throw ChatAttachmentException(failure) }
         val sender = ChatAttachmentSender(attachments, "conversation")
         sender.pick(PHOTO) { photo }
+        sender.confirm()
         assertEquals(AttachmentSendState.Failed(PHOTO, AttachmentFailure.QUOTA, canRetry = true), sender.state.value)
         failure = AttachmentFailure.ACCESS
         sender.retry()

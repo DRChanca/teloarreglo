@@ -4,7 +4,7 @@
 // distances: only profile IDs in order, a rounded distance band and whether the
 // result is «Destacado» (active simulated subscription, approved coverage of this concejo).
 import { createClient } from "@supabase/supabase-js";
-import { type Candidate, distanceBand, distanceM, featuredFirst, searchByRings } from "./search.ts";
+import { distanceBand, rankByDistance, type ZoneCandidate } from "./search.ts";
 
 const TRADES = ["plumbing", "electrical", "carpentry", "painting", "masonry", "general", "cleaning"];
 const MAX_LIMIT = 50;
@@ -76,25 +76,16 @@ Deno.serve(async (request) => {
       });
     }
 
-    const count = await db.rpc("count_candidates", { p_ine_code: concejo.ine_code, p_trade: trade });
-    if (count.error) throw count.error;
-    const lookup = async (cells: string[] | null): Promise<Candidate[]> => {
-      const r = await db.rpc("search_candidates", { p_ine_code: concejo.ine_code, p_trade: trade, p_cells: cells });
-      if (r.error) throw r.error;
-      return r.data as Candidate[];
-    };
-    // «Destacado» first: only subscribers whose approved coverage includes this concejo (server rule).
-    const promoted = await db.rpc("featured_candidates", { p_ine_code: concejo.ine_code, p_trade: trade });
-    if (promoted.error) throw promoted.error;
-    const featured = (promoted.data as Candidate[])
-      .map((c) => ({ profile_id: c.profile_id, distance_m: distanceM(lat, lng, c.lat, c.lng) }));
-    const search = await searchByRings({ lat, lng }, Number(count.data), lookup, limit + featured.length);
+    // ADR 0001: every approved profile of the trade, by distance; the work zone only informs (in_zone)
+    // and decides whether a «Destacado» goes first. Few profiles: a full sort is exact and cheap.
+    const all = await db.rpc("search_all_candidates", { p_ine_code: concejo.ine_code, p_trade: trade });
+    if (all.error) throw all.error;
     return reply(200, {
       status: "ok",
       concejo: { ine_code: concejo.ine_code, name: concejo.name },
-      method: search.method,
-      results: featuredFirst(featured, search.results, limit).map((r) => ({
-        profile_id: r.profile_id, distance_band_m: distanceBand(r.distance_m), featured: r.featured,
+      method: "distance",
+      results: rankByDistance({ lat, lng }, all.data as ZoneCandidate[], limit).map((r) => ({
+        profile_id: r.profile_id, distance_band_m: distanceBand(r.distance_m), featured: r.featured, in_zone: r.in_zone,
       })),
     });
   } catch (error) {

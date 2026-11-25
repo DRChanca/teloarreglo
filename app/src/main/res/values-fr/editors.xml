@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_block_public">Profil public (soumis à examen)</string>
+    <string name="profile_block_offer">Services et prix (publiés à l’enregistrement)</string>
+    <string name="profile_block_address">Adresse privée (jamais publiée)</string>
+    <string name="profile_missing_list">Il manque : %1$s</string>
+    <string name="profile_missing_name">nom</string>
+    <string name="profile_missing_trades">métiers</string>
+    <string name="profile_missing_coverage">concejos</string>
+    <string name="profile_missing_languages">langues</string>
+    <string name="profile_missing_phone">téléphone valide</string>
+    <string name="profile_missing_agenda">horaires de la semaine</string>
+    <string name="profile_field_name_error">Saisissez le nom sous lequel on vous verra.</string>
+    <string name="profile_field_trades_error">Choisissez au moins un métier.</string>
+    <string name="profile_field_coverage_error">Ajoutez au moins un concejo.</string>
+    <string name="profile_field_languages_error">Choisissez au moins une langue.</string>
+    <string name="profile_field_phone_error">Saisissez un téléphone valide, par exemple +34 600 000 000.</string>
+    <string name="home_save_missing">Pour enregistrer, il manque : %1$s</string>
+    <string name="home_gap_street">la rue</string>
+    <string name="home_gap_too_long">raccourcir un champ trop long</string>
+    <string name="home_gap_location">l’emplacement (utilisez votre position ou marquez-le sur la carte)</string>
+    <string name="cover_preview_detail">Aperçu sur votre fiche</string>
+    <string name="cover_preview_list">Aperçu dans la liste</string>
+    <string name="cover_generic_confirm_title">Utiliser l’image de votre métier ?</string>
+    <string name="cover_generic_confirm_text">Elle sera publiée tout de suite et remplacera la couverture affichée actuellement.</string>
+    <string name="cover_generic_confirm">Utiliser l’image</string>
+</resources>

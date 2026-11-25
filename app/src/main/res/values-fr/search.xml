@@ -1,21 +1,27 @@
 <resources xmlns:tools="http://schemas.android.com/tools" tools:locale="fr">
-    <string name="catalogue_nearby">Près de moi</string>
-    <string name="nearby_back">Retour au catalogue</string>
-    <string name="nearby_title">Professionnels près du chantier</string>
-    <string name="nearby_hint">Nous utilisons votre position une seule fois pour connaître le concejo et trier par proximité ceux qui y travaillent.</string>
     <string name="nearby_use_location">Utiliser ma position</string>
     <string name="nearby_privacy">Nous ne conservons ni ne suivons votre position. Les distances sont approximatives et à vol d’oiseau.</string>
-    <string name="nearby_locating">Recherche de votre position…</string>
-    <string name="nearby_searching">Recherche de professionnels…</string>
     <string name="nearby_denied">Sans autorisation de localisation, nous ne pouvons pas chercher près de vous. Vous pouvez choisir le concejo et indiquer le lieu sur la carte.</string>
     <string name="nearby_unavailable">Impossible d’obtenir votre position. Activez la localisation et réessayez, ou choisissez le concejo sur la carte.</string>
     <string name="nearby_uncertain">Votre position est trop imprécise pour connaître le concejo. Réessayez en extérieur ou choisissez le concejo sur la carte.</string>
     <string name="nearby_outside">Ce lieu est hors des Asturies. Pour l’instant, il n’y a des professionnels que dans les Asturies.</string>
     <string name="nearby_confirm">Vous êtes près de la limite entre deux concejos. Où se trouve le chantier ?</string>
-    <string name="nearby_results">Travaillent à %1$s</string>
-    <string name="nearby_empty">Aucun professionnel de ce métier ne travaille à %1$s.</string>
     <string name="nearby_distance_under_1km">À moins de 1 km</string>
     <string name="nearby_distance_about">À environ %1$s km</string>
-    <string name="nearby_error_network">Connexion impossible. Vérifiez votre connexion et réessayez.</string>
-    <string name="nearby_error_service">La recherche n’est pas disponible pour le moment. Veuillez réessayer.</string>
+    <!-- Single search ordered by distance (ADR 0001). -->
+    <string name="search_sort_nearby">Trier par proximité</string>
+    <string name="search_near_home">Près de chez vous</string>
+    <string name="search_near_home_in">Près de chez vous · %1$s</string>
+    <string name="search_near_here">Près de votre position</string>
+    <string name="search_near_here_in">Près de votre position · %1$s</string>
+    <string name="search_near_manual">Près de : %1$s</string>
+    <string name="search_change">Modifier</string>
+    <string name="search_change_close">Fermer</string>
+    <string name="search_change_home">Modifier l’adresse du domicile</string>
+    <string name="search_away_km">Vous êtes à environ %1$s km de chez vous.</string>
+    <string name="search_away_dismiss">Continuer depuis chez vous</string>
+    <string name="search_order_failed">Impossible de trier par proximité.</string>
+    <string name="search_order_failed_network">Pas de connexion : impossible de trier par proximité.</string>
+    <string name="search_out_of_zone">N’intervient pas habituellement à %1$s</string>
+    <string name="profile_out_of_zone">N’intervient pas habituellement à %1$s. Vous pouvez quand même lui écrire et convenir du travail.</string>
 </resources>

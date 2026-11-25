@@ -49,6 +49,7 @@ fun ChatRoute(
     appointmentsSlot: (@Composable (Conversation) -> Unit)? = null,
     attachments: ChatAttachments? = null,
     evidence: ChatEvidenceLink? = null,
+    onBrowse: (() -> Unit)? = null,
 ) {
     var failed by remember(profileId) { mutableStateOf(false) }
     var retry by remember { mutableIntStateOf(0) }
@@ -62,18 +63,16 @@ fun ChatRoute(
             }
         }
     }
-    if (profileId == null) ChatScreen(chat, accountId, conversation, onOpened, onBack, appointmentsSlot, attachments, evidence)
+    if (profileId == null) ChatScreen(chat, accountId, conversation, onOpened, onBack, appointmentsSlot, attachments, evidence, onBrowse)
     else {
         BackHandler(onBack = onBack)
-        TeloTheme {
-            Surface(Modifier.fillMaxSize()) {
-                Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(24.dp)) {
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.catalogue_back)) }
-                    if (failed) {
-                        Text(stringResource(R.string.chat_open_error))
-                        Button(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
-                    } else CircularProgressIndicator()
-                }
+        Surface(Modifier.fillMaxSize()) {
+            Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(24.dp)) {
+                TextButton(onClick = onBack) { Text(stringResource(R.string.catalogue_back)) }
+                if (failed) {
+                    Text(stringResource(R.string.chat_open_error))
+                    Button(onClick = { retry++ }) { Text(stringResource(R.string.retry)) }
+                } else CircularProgressIndicator()
             }
         }
     }
@@ -91,6 +90,8 @@ fun ChatScreen(
     appointmentsSlot: (@Composable (Conversation) -> Unit)? = null,
     attachments: ChatAttachments? = null,
     evidence: ChatEvidenceLink? = null,
+    /** Opens the catalogue from an empty inbox (#47); null shows only the sentence. */
+    onBrowse: (() -> Unit)? = null,
 ) {
     BackHandler(onBack = onBack)
     var selection by rememberSaveable(accountId, conversation?.id, stateSaver = MessageSelectionSaver) {
@@ -255,143 +256,148 @@ fun ChatScreen(
         if (index >= 0) list.animateScrollToItem(index)
     }
     CompositionLocalProvider(LocalChatEvidence provides evidence) {
-    TeloTheme {
-        Surface(Modifier.fillMaxSize()) {
-            Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding().padding(horizontal = 16.dp)) {
-                if (conversation != null && selection.active) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("chat_selection_bar")) {
-                        IconButton(onClick = { selection = selection.cancel() }, modifier = Modifier.testTag("chat_selection_cancel")) {
-                            Icon(Icons.Default.Close, stringResource(R.string.chat_select_cancel))
-                        }
-                        Text(stringResource(R.string.chat_select_count, selection.ids.size), style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.weight(1f).testTag("chat_selection_count"))
-                        if (!searching) IconButton(onClick = { searching = true }, modifier = Modifier.testTag("chat_search_open")) {
-                            Icon(Icons.Default.Search, stringResource(R.string.chat_search))
-                        }
+    Surface(Modifier.fillMaxSize()) {
+        Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding().padding(horizontal = TeloTheme.spacing.screen)) {
+            if (conversation != null && selection.active) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("chat_selection_bar")) {
+                    IconButton(onClick = { selection = selection.cancel() }, modifier = Modifier.testTag("chat_selection_cancel")) {
+                        Icon(Icons.Default.Close, stringResource(R.string.chat_select_cancel))
                     }
-                    if (canSelect) {
-                        if (selection.ids.isEmpty()) Text(stringResource(R.string.chat_select_hint), style = MaterialTheme.typography.bodySmall)
-                        Button(onClick = { confirming = true }, enabled = selection.ids.isNotEmpty(),
-                            modifier = Modifier.fillMaxWidth().testTag("chat_selection_add")) {
-                            Text(stringResource(R.string.chat_select_add))
-                        }
-                    }
-                } else Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.catalogue_back)) }
-                    Text(conversation?.let { conversationTitle(it, accountId) } ?: stringResource(R.string.chat_title),
-                        style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f))
-                    if (conversation != null && !searching) IconButton(onClick = { searching = true },
-                        modifier = Modifier.testTag("chat_search_open")) {
+                    Text(stringResource(R.string.chat_select_count, selection.ids.size), style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f).testTag("chat_selection_count"))
+                    if (!searching) IconButton(onClick = { searching = true }, modifier = Modifier.testTag("chat_search_open")) {
                         Icon(Icons.Default.Search, stringResource(R.string.chat_search))
                     }
                 }
-                if (conversation != null && searching) ChatSearchBar(query, { query = it }, matchIndex, search.ids.size,
-                    onPrevious = { matchIndex = search.step(matchIndex, -1) }, onNext = { matchIndex = search.step(matchIndex, +1) },
-                    onClose = { searching = false; query = "" })
-                addedNotice?.let {
-                    Text(stringResource(R.string.chat_select_done, it), color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.testTag("chat_selection_done"))
-                }
-                if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
-                if (failed || outboxFailed) {
-                    Text(stringResource(R.string.chat_error), color = MaterialTheme.colorScheme.error)
-                    TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.retry)) }
-                }
-                if (conversation == null) {
-                    if (!loading && !failed && conversations.isEmpty()) Text(stringResource(R.string.chat_empty))
-                    LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(conversations, key = { it.id }) { item ->
-                            ConversationRow(item, accountId) { onSelect(item) }
-                        }
+                if (canSelect) {
+                    if (selection.ids.isEmpty()) Text(stringResource(R.string.chat_select_hint), style = MaterialTheme.typography.bodySmall)
+                    Button(onClick = { confirming = true }, enabled = selection.ids.isNotEmpty(),
+                        modifier = Modifier.fillMaxWidth().testTag("chat_selection_add")) {
+                        Text(stringResource(R.string.chat_select_add))
                     }
-                } else {
-                    Text(stringResource(R.string.chat_privacy), style = MaterialTheme.typography.bodySmall)
-                    appointmentsSlot?.invoke(conversation)
-                    if (!loading && !failed && messages.isEmpty()) Text(stringResource(R.string.chat_first))
-                    LazyColumn(Modifier.weight(1f).testTag("chat_messages"), state = list,
-                        contentPadding = PaddingValues(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(messages, key = { it.id }) { message ->
-                            val mine = message.authorId == accountId
-                            val selected = message.id in selection.ids
-                            val locked = message.id in unavailable
-                            val toggle = { selection = selection.tap(message.id, unavailable) }
-                            Row(Modifier.fillMaxWidth()
-                                .background(if (selected) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f)
-                                    else Color.Transparent, MaterialTheme.shapes.small)
-                                .then(if (canSelect) Modifier.combinedClickable(
-                                    interactionSource = null, indication = if (selection.active) ripple() else null,
-                                    onLongClickLabel = stringResource(R.string.chat_select_long_press),
-                                    onLongClick = { selection = selection.longPress(message.id, unavailable) },
-                                    onClick = toggle) else Modifier)
-                                .testTag("message_row_${message.id}"),
-                                verticalAlignment = Alignment.CenterVertically) {
-                                if (selection.active) Checkbox(selected || locked, onCheckedChange = null, enabled = !locked,
-                                    modifier = Modifier.testTag("message_select_${message.id}"))
-                                Column(Modifier.weight(1f), horizontalAlignment = if (mine) Alignment.End else Alignment.Start) {
-                                    Box {
-                                        Surface(color = if (mine) MaterialTheme.colorScheme.primaryContainer
-                                            else MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.medium) {
-                                            Column(Modifier.widthIn(max = 300.dp).padding(12.dp).testTag("message_${message.id}")) {
-                                                Text(stringResource(if (mine) R.string.chat_you else R.string.chat_other),
-                                                    style = MaterialTheme.typography.labelSmall)
-                                                if (message.attachmentPath != null) {
-                                                    if (attachments != null) ChatAttachmentBubble(message, attachments)
-                                                    else Text(stringResource(if (message.attachmentKind == "video")
-                                                        R.string.video_message else R.string.photo_message))
-                                                }
-                                                if (message.body.isNotEmpty()) Text(highlighted(message.body,
-                                                    search.ranges(message.body), current = message.id == currentMatch))
-                                                Text(timestampFormat.format(Instant.parse(message.createdAt)),
-                                                    style = MaterialTheme.typography.labelSmall)
-                                                if (mine) MessageTicks(receipts.tickOf(message))
-                                                if (message.id in inIncident) Text(stringResource(R.string.chat_select_contributed),
-                                                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary,
-                                                    modifier = Modifier.testTag("message_in_incident_${message.id}"))
+                }
+            } else Row(verticalAlignment = Alignment.CenterVertically) {
+                // The list is a bottom-bar tab (#47): only an open conversation has its own «Volver».
+                if (conversation != null) TextButton(onClick = onBack) { Text(stringResource(R.string.catalogue_back)) }
+                Text(conversation?.let { conversationTitle(it, accountId) } ?: stringResource(R.string.chat_title),
+                    style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f))
+                if (conversation != null && !searching) IconButton(onClick = { searching = true },
+                    modifier = Modifier.testTag("chat_search_open")) {
+                    Icon(Icons.Default.Search, stringResource(R.string.chat_search))
+                }
+            }
+            if (conversation != null && searching) ChatSearchBar(query, { query = it }, matchIndex, search.ids.size,
+                onPrevious = { matchIndex = search.step(matchIndex, -1) }, onNext = { matchIndex = search.step(matchIndex, +1) },
+                onClose = { searching = false; query = "" })
+            addedNotice?.let {
+                Text(stringResource(R.string.chat_select_done, it), color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.testTag("chat_selection_done"))
+            }
+            if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
+            if (failed || outboxFailed) {
+                Text(stringResource(R.string.chat_error), color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = { refresh++ }) { Text(stringResource(R.string.retry)) }
+            }
+            if (conversation == null) {
+                if (!loading && !failed && conversations.isEmpty()) {
+                    Text(stringResource(R.string.chat_empty))
+                    if (onBrowse != null) Button(onClick = onBrowse,
+                        modifier = Modifier.padding(top = TeloTheme.spacing.small).testTag("chat_empty_browse")) {
+                        Text(stringResource(R.string.chat_empty_browse))
+                    }
+                }
+                LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(conversations, key = { it.id }) { item ->
+                        ConversationRow(item, accountId) { onSelect(item) }
+                    }
+                }
+            } else {
+                Text(stringResource(R.string.chat_privacy), style = MaterialTheme.typography.bodySmall)
+                appointmentsSlot?.invoke(conversation)
+                if (!loading && !failed && messages.isEmpty()) Text(stringResource(R.string.chat_first))
+                LazyColumn(Modifier.weight(1f).testTag("chat_messages"), state = list,
+                    contentPadding = PaddingValues(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(messages, key = { it.id }) { message ->
+                        val mine = message.authorId == accountId
+                        val selected = message.id in selection.ids
+                        val locked = message.id in unavailable
+                        val toggle = { selection = selection.tap(message.id, unavailable) }
+                        Row(Modifier.fillMaxWidth()
+                            .background(if (selected) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f)
+                                else Color.Transparent, MaterialTheme.shapes.small)
+                            .then(if (canSelect) Modifier.combinedClickable(
+                                interactionSource = null, indication = if (selection.active) ripple() else null,
+                                onLongClickLabel = stringResource(R.string.chat_select_long_press),
+                                onLongClick = { selection = selection.longPress(message.id, unavailable) },
+                                onClick = toggle) else Modifier)
+                            .testTag("message_row_${message.id}"),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            if (selection.active) Checkbox(selected || locked, onCheckedChange = null, enabled = !locked,
+                                modifier = Modifier.testTag("message_select_${message.id}"))
+                            Column(Modifier.weight(1f), horizontalAlignment = if (mine) Alignment.End else Alignment.Start) {
+                                Box {
+                                    Surface(color = if (mine) MaterialTheme.colorScheme.primaryContainer
+                                        else MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.medium) {
+                                        Column(Modifier.widthIn(max = 300.dp).padding(12.dp).testTag("message_${message.id}")) {
+                                            Text(stringResource(if (mine) R.string.chat_you else R.string.chat_other),
+                                                style = MaterialTheme.typography.labelSmall)
+                                            if (message.attachmentPath != null) {
+                                                if (attachments != null) ChatAttachmentBubble(message, attachments)
+                                                else Text(stringResource(if (message.attachmentKind == "video")
+                                                    R.string.video_message else R.string.photo_message))
                                             }
+                                            if (message.body.isNotEmpty()) Text(highlighted(message.body,
+                                                search.ranges(message.body), current = message.id == currentMatch))
+                                            Text(timestampFormat.format(Instant.parse(message.createdAt)),
+                                                style = MaterialTheme.typography.labelSmall)
+                                            if (mine) MessageTicks(receipts.tickOf(message))
+                                            if (message.id in inIncident) Text(stringResource(R.string.chat_select_contributed),
+                                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary,
+                                                modifier = Modifier.testTag("message_in_incident_${message.id}"))
                                         }
-                                        // While selecting, a tap on a photo or video selects it instead of opening it.
-                                        if (selection.active) Box(Modifier.matchParentSize().clickable(onClick = toggle))
                                     }
+                                    // While selecting, a tap on a photo or video selects it instead of opening it.
+                                    if (selection.active) Box(Modifier.matchParentSize().clickable(onClick = toggle))
                                 }
                             }
                         }
                     }
-                    if (sending) Text(stringResource(R.string.chat_sending), Modifier.testTag("chat_sending"))
-                    if (sendFailed || rejection != null || (requestId != null && !sending)) {
-                        Text(stringResource(when (rejection) {
-                            SendFailure.ACCESS -> R.string.chat_send_access
-                            SendFailure.INVALID_TEXT -> R.string.chat_send_invalid
-                            SendFailure.CONFLICT -> R.string.chat_send_conflict
-                            null -> R.string.chat_send_error
-                        }), Modifier.testTag("chat_send_error"),
-                            color = MaterialTheme.colorScheme.error)
-                        if (requestId != null) TextButton(onClick = send, enabled = outboxReady && !sending,
-                            modifier = Modifier.testTag("chat_retry_send")) {
-                            Text(stringResource(R.string.chat_retry_send))
-                        }
+                }
+                if (sending) Text(stringResource(R.string.chat_sending), Modifier.testTag("chat_sending"))
+                if (sendFailed || rejection != null || (requestId != null && !sending)) {
+                    Text(stringResource(when (rejection) {
+                        SendFailure.ACCESS -> R.string.chat_send_access
+                        SendFailure.INVALID_TEXT -> R.string.chat_send_invalid
+                        SendFailure.CONFLICT -> R.string.chat_send_conflict
+                        null -> R.string.chat_send_error
+                    }), Modifier.testTag("chat_send_error"),
+                        color = MaterialTheme.colorScheme.error)
+                    if (requestId != null) TextButton(onClick = send, enabled = outboxReady && !sending,
+                        modifier = Modifier.testTag("chat_retry_send")) {
+                        Text(stringResource(R.string.chat_retry_send))
                     }
-                    if (attachments != null) ChatAttachmentControls(attachments, accountId, conversation.id, outboxReady) { sent ->
-                        messages = (messages + sent).distinctBy { it.id }.sortedWith(compareBy({ it.createdAt }, { it.id }))
-                    }
-                    OutlinedTextField(text, { if (it.length <= 4000) text = it },
-                        enabled = outboxReady && requestId == null && !sending,
-                        label = { Text(stringResource(R.string.chat_input)) },
-                        modifier = Modifier.fillMaxWidth().testTag("chat_input"), maxLines = 4)
-                    Button(onClick = send, enabled = outboxReady && !sending && requestId == null && text.isNotBlank(),
-                        modifier = Modifier.align(Alignment.End).testTag("chat_send")) {
-                        Text(stringResource(R.string.chat_send))
-                    }
+                }
+                if (attachments != null) ChatAttachmentControls(attachments, accountId, conversation.id, outboxReady) { sent ->
+                    messages = (messages + sent).distinctBy { it.id }.sortedWith(compareBy({ it.createdAt }, { it.id }))
+                }
+                OutlinedTextField(text, { if (it.length <= 4000) text = it },
+                    enabled = outboxReady && requestId == null && !sending,
+                    label = { Text(stringResource(R.string.chat_input)) },
+                    modifier = Modifier.fillMaxWidth().testTag("chat_input"), maxLines = 4)
+                Button(onClick = send, enabled = outboxReady && !sending && requestId == null && text.isNotBlank(),
+                    modifier = Modifier.align(Alignment.End).testTag("chat_send")) {
+                    Text(stringResource(R.string.chat_send))
                 }
             }
         }
-        if (confirming && evidence != null && canSelect) AddToIncidentDialog(evidence, targets, preferred, selection.ids,
-            onFinished = { added, complete ->
-                justAdded = justAdded + added
-                selection = selection.withoutAdded(added)
-                if (complete) { confirming = false; addedNotice = added.size }
-            }, onDismiss = { confirming = false })
     }
+    if (confirming && evidence != null && canSelect) AddToIncidentDialog(evidence, targets, preferred, selection.ids,
+        onFinished = { added, complete ->
+            justAdded = justAdded + added
+            selection = selection.withoutAdded(added)
+            if (complete) { confirming = false; addedNotice = added.size }
+        }, onDismiss = { confirming = false })
     }
 }
 
@@ -405,6 +411,6 @@ private fun ColumnScope.MessageTicks(tick: Tick) {
     })
     Text(if (tick == Tick.SENT) "\u2713" else "\u2713\u2713",
         Modifier.align(Alignment.End).semantics { contentDescription = description }.testTag("tick_${tick.name.lowercase()}"),
-        color = if (tick == Tick.READ) Color(0xFF34B7F1) else MaterialTheme.colorScheme.onSurfaceVariant,
+        color = if (tick == Tick.READ) TeloTheme.extended.readTick else MaterialTheme.colorScheme.onSurfaceVariant,
         style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
 }

@@ -105,3 +105,9 @@ Resultados y recorrido pendiente: [comprobación](comprobacion-videos.md).
 administración solo cuando un participante lo aporta expresamente a una incidencia; el resto de adjuntos de la conversación
 sigue sin excepción administrativa. No hay bucket nuevo ni escritura nueva. Detalle en
 [citas-contrato.md](citas-contrato.md#incidencias-y-pruebas-privadas--26).
+
+## Confirmación antes de enviar (#41)
+
+Tras elegir y comprimir una foto o un vídeo, `ChatAttachmentSender` queda en `Ready` y no sube nada hasta
+`confirm()` («Enviar»); «Descartar» (`cancel()`) lo abandona sin enviar. La foto se muestra en miniatura y el
+vídeo con su duración. La clave de petición se crea al preparar, así que reintentar tras confirmar no duplica.

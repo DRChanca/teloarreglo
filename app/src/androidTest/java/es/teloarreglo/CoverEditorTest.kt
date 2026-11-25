@@ -3,6 +3,7 @@ package es.teloarreglo
 import android.graphics.Bitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.unit.dp
 import es.teloarreglo.catalogue.*
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -94,9 +95,11 @@ class CoverEditorTest {
         val next = photo()
         compose.setContent { CoverEditorScreen(profile, covers, {}, selected = next, onPickPhoto = {}) }
         compose.onNodeWithTag("cover_generic").performScrollTo().performClick()
+        compose.onNodeWithTag("cover_generic_confirm").performClick()
         compose.onNodeWithTag("cover_error").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("cover_submit").performScrollTo().performClick()
         compose.onNodeWithTag("cover_generic").performScrollTo().performClick()
+        compose.onNodeWithTag("cover_generic_confirm").performClick()
         compose.runOnIdle {
             assertEquals(2, genericKeys.size)
             org.junit.Assert.assertNotEquals(genericKeys[0], genericKeys[1])
@@ -119,6 +122,38 @@ class CoverEditorTest {
         response.complete(CoverRequest("request-1", CoverStatus.PUBLISHED, "private.jpg"))
         compose.onNodeWithTag("cover_state").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("cover_submit").assertIsNotEnabled()
+    }
+
+    @Test fun theTradeImageIsPublishedOnlyAfterConfirmingTheReplacement() {
+        val genericKeys = mutableListOf<String>()
+        val covers = object : ProfessionalCovers {
+            override suspend fun state(profileId: String) = CoverRequest("old", CoverStatus.PUBLISHED, "old.jpg")
+            override suspend fun photo(profileId: String, requestId: String, jpeg: ByteArray) = error("not used")
+            override suspend fun generic(profileId: String, requestId: String) =
+                CoverRequest(requestId, CoverStatus.PUBLISHED).also { genericKeys.add(requestId) }
+            override suspend fun imageUrl(path: String) = error("offline preview")
+        }
+        compose.setContent { CoverEditorScreen(profile, covers, {}, onPickPhoto = {}) }
+        compose.onNodeWithTag("cover_generic").performScrollTo().performClick()
+        compose.onNodeWithTag("cover_generic_dismiss").performClick()
+        compose.runOnIdle { assertEquals(0, genericKeys.size) }
+        compose.onNodeWithTag("cover_generic").performScrollTo().performClick()
+        compose.onNodeWithTag("cover_generic_confirm").performClick()
+        compose.runOnIdle { assertEquals(1, genericKeys.size) }
+    }
+
+    /** 180 dp tall on the profile page and 100×120 dp in the list, as CatalogueScreen draws them. */
+    @Test fun theCoverIsPreviewedWithTheCatalogueCrops() {
+        val covers = object : ProfessionalCovers {
+            override suspend fun state(profileId: String): CoverRequest? = null
+            override suspend fun photo(profileId: String, requestId: String, jpeg: ByteArray) = error("not used")
+            override suspend fun generic(profileId: String, requestId: String) = error("not used")
+            override suspend fun imageUrl(path: String) = error("offline preview")
+        }
+        compose.setContent { CoverEditorScreen(profile, covers, {}, selected = photo(), onPickPhoto = {}) }
+        compose.onNodeWithTag("cover_preview_detail").assertHeightIsEqualTo(180.dp)
+        compose.onNodeWithTag("cover_preview_list").performScrollTo()
+            .assertWidthIsEqualTo(100.dp).assertHeightIsEqualTo(120.dp)
     }
 
     @Test fun retryKeepsTheSameImageAndIdempotencyKey() {

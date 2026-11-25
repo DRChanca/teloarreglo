@@ -45,3 +45,4 @@ label.choice { display: flex; gap: 8px; align-items: center; font-weight: 400; }
 ul.evidence { list-style: none; padding: 0; display: grid; gap: 8px; }
 .media { display: block; max-width: 100%; max-height: 320px; border-radius: 8px; margin-top: 4px; }
 .sections { border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+ul.zone-changes { list-style: none; padding: 0; margin: 4px 0; display: grid; gap: 2px; }

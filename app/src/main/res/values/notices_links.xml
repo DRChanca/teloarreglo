@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Destinos de los avisos (#47). -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="es">
+    <string name="notices_open_conversation">Abrir conversación</string>
+    <string name="notices_open_account">Ver cuenta</string>
+    <string name="notices_conversation_missing">No encontramos esa conversación. Puede que ya no esté disponible.</string>
+</resources>

@@ -20,6 +20,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import es.teloarreglo.appointments.*
+import es.teloarreglo.catalogue.Coverage
+import es.teloarreglo.catalogue.WorkZones
 import es.teloarreglo.chat.Conversation
 import es.teloarreglo.search.Located
 import kotlinx.coroutines.CancellationException
@@ -58,6 +60,8 @@ fun AppointmentsPanel(
     incidentTools: IncidentTools? = null,
     /** Reviews of performed appointments (#28); null hides the section. */
     reviews: Reviews? = null,
+    /** Work zone notices (ADR 0001): informative only; null hides them. */
+    zones: WorkZones? = null,
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var list by remember(conversation.id) { mutableStateOf<List<Appointment>?>(null) }
@@ -78,6 +82,16 @@ fun AppointmentsPanel(
         }
     }
     val isClient = conversation.clientId == accountId
+    // The profile's public zone, for the informative notices; the professional's one-tap addition updates it.
+    var publicZone by remember(conversation.profileId) { mutableStateOf<List<Coverage>?>(null) }
+    LaunchedEffect(zones, conversation.profileId) {
+        if (zones != null) try { publicZone = zones.publicZone(conversation.profileId) }
+        catch (error: Exception) { if (error is CancellationException) throw error }
+    }
+    val zoneNotice: (@Composable (Appointment) -> Unit)? = zones?.let { z -> { appointment ->
+        AppointmentZoneNotice(appointment, appointment.professionalId == accountId, conversation.name, conversation.profileId,
+            z, publicZone, scope, onZoneChanged = { publicZone = it })
+    } }
     val current = list.orEmpty()
     // The chat behind (if any) learns where its messages can be added as incident evidence (#26).
     val evidence = LocalChatEvidence.current?.takeIf { incidentTools != null }
@@ -107,38 +121,37 @@ fun AppointmentsPanel(
     }
     val shown = sheet ?: return
     Dialog(onDismissRequest = { sheet = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        TeloTheme {
-            Surface(Modifier.fillMaxSize()) {
-                Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding().padding(16.dp)
-                    .verticalScroll(rememberScrollState())) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = { sheet = if (shown == "list") null else "list" }) {
-                            Text(stringResource(if (shown == "list") R.string.appointment_close else R.string.catalogue_back))
-                        }
-                        Text(stringResource(R.string.appointment_title), style = MaterialTheme.typography.titleLarge)
+        Surface(Modifier.fillMaxSize()) {
+            Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding().padding(16.dp)
+                .verticalScroll(rememberScrollState())) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { sheet = if (shown == "list") null else "list" }) {
+                        Text(stringResource(if (shown == "list") R.string.appointment_close else R.string.catalogue_back))
                     }
-                    when {
-                        shown == "request" -> RequestForm(appointments, conversation, scope, pins, current,
-                            onDone = { refresh++; sheet = "list" })
-                        shown.startsWith("propose:") -> current.firstOrNull { it.id == shown.removePrefix("propose:") }
-                            ?.let { ProposalForm(appointments, it, scope, current, onDone = { refresh++; sheet = "list" }) }
-                        shown.startsWith("change:") -> current.firstOrNull { it.id == shown.removePrefix("change:") }
-                            ?.let { ChangeForm(appointments, it, accountId, scope, current, pins.mapsReady,
-                                onDone = { refresh++; sheet = "list" }) }
-                        shown.startsWith("correction:") -> current.firstOrNull { it.id == shown.removePrefix("correction:") }
-                            ?.let { CorrectionForm(appointments, it, scope, current, onDone = { refresh++; sheet = "list" }) }
-                        else -> {
-                            if (isClient) Button(onClick = { sheet = "request" }, modifier = Modifier.testTag("appointment_new_request")) {
-                                Text(stringResource(R.string.appointment_new_request))
-                            }
-                            current.forEach { appointment ->
-                                AppointmentDetails(appointment, accountId, appointments, scope, pins.mapsReady,
-                                    onPropose = { sheet = "propose:${appointment.id}" }, onChanged = { refresh++ },
-                                    onChange = { sheet = "change:${appointment.id}" },
-                                    onCorrection = { sheet = "correction:${appointment.id}" }, incidentTools = incidentTools,
-                                    reviews = reviews, reviewState = reviewStates[appointment.id],
-                                    onChooseMessages = chooseMessages)
-                            }
+                    Text(stringResource(R.string.appointment_title), style = MaterialTheme.typography.titleLarge)
+                }
+                when {
+                    shown == "request" -> RequestForm(appointments, conversation, scope, pins, current,
+                        onDone = { refresh++; sheet = "list" },
+                        zoneLine = zones?.let { z -> { lat, lng -> RequestZoneLine(z, publicZone, lat, lng) } })
+                    shown.startsWith("propose:") -> current.firstOrNull { it.id == shown.removePrefix("propose:") }
+                        ?.let { ProposalForm(appointments, it, scope, current, onDone = { refresh++; sheet = "list" }) }
+                    shown.startsWith("change:") -> current.firstOrNull { it.id == shown.removePrefix("change:") }
+                        ?.let { ChangeForm(appointments, it, accountId, scope, current, pins.mapsReady,
+                            onDone = { refresh++; sheet = "list" }) }
+                    shown.startsWith("correction:") -> current.firstOrNull { it.id == shown.removePrefix("correction:") }
+                        ?.let { CorrectionForm(appointments, it, scope, current, onDone = { refresh++; sheet = "list" }) }
+                    else -> {
+                        if (isClient) Button(onClick = { sheet = "request" }, modifier = Modifier.testTag("appointment_new_request")) {
+                            Text(stringResource(R.string.appointment_new_request))
+                        }
+                        current.forEach { appointment ->
+                            AppointmentDetails(appointment, accountId, appointments, scope, pins.mapsReady,
+                                onPropose = { sheet = "propose:${appointment.id}" }, onChanged = { refresh++ },
+                                onChange = { sheet = "change:${appointment.id}" },
+                                onCorrection = { sheet = "correction:${appointment.id}" }, incidentTools = incidentTools,
+                                reviews = reviews, reviewState = reviewStates[appointment.id],
+                                onChooseMessages = chooseMessages, zoneNotice = zoneNotice)
                         }
                     }
                 }
@@ -221,7 +234,7 @@ internal fun euros(cents: Int): String {
 internal fun failureText(failure: AppointmentFailure?): String = stringResource(when (failure) {
     AppointmentFailure.ACCESS -> R.string.appointment_error_access
     AppointmentFailure.INVALID -> R.string.appointment_error_invalid
-    AppointmentFailure.OUT_OF_COVERAGE -> R.string.appointment_error_coverage
+    AppointmentFailure.OUTSIDE_AREA -> R.string.appointment_error_outside_area
     AppointmentFailure.STALE -> R.string.appointment_error_stale
     AppointmentFailure.RETRY_CONFLICT -> R.string.appointment_error_conflict
     AppointmentFailure.SLOT_UNAVAILABLE -> R.string.appointment_error_slot
@@ -255,6 +268,7 @@ private fun AppointmentDetails(
     onChange: () -> Unit = {}, onCorrection: () -> Unit = {}, incidentTools: IncidentTools? = null,
     reviews: Reviews? = null, reviewState: AppointmentReviewState? = null,
     onChooseMessages: ((String) -> Unit)? = null,
+    zoneNotice: (@Composable (Appointment) -> Unit)? = null,
 ) {
     val format = dateTimeFormat()
     val professional = appointment.professionalId == accountId
@@ -271,27 +285,14 @@ private fun AppointmentDetails(
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var failure by remember { mutableStateOf<AppointmentFailure?>(null) }
-    OutlinedCard(Modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("appointment_${appointment.id}")) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    // Order (#47): what it is, whose turn, the next action and its answer; then the details; history folded last.
+    OutlinedCard(Modifier.fillMaxWidth().padding(vertical = TeloTheme.spacing.small).testTag("appointment_${appointment.id}")) {
+        Column(Modifier.padding(TeloTheme.spacing.medium), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
             Text(appointment.problem, style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.appointment_requested_window,
-                format.format(appointment.requestedStart), format.format(appointment.requestedEnd)))
-            AppointmentLocationBlock(appointment, professional, mapsReady)
-            KeptPrices(appointment)
-            Text(noticeText(appointment, accountId), style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.testTag("appointment_notice_${appointment.id}"))
+            NoticeBanner(appointment, accountId)
+            zoneNotice?.invoke(appointment)
             ReservationLine(appointment)
-            if (appointment.proposals.isNotEmpty()) {
-                Text(stringResource(R.string.appointment_history), style = MaterialTheme.typography.titleSmall)
-                appointment.proposals.asReversed().forEach { ProposalCard(it, format) }
-            }
             val pending = appointment.currentProposal
-            // Changes are open while confirmed and during the job (price, scope, duration only once started).
-            if (appointment.canProposeChange(accountId)) ChangeSection(appointment, accountId, appointments, scope, onChange, onCorrection, onChanged)
-            StartCancelSection(appointment, accountId, appointments, scope, onChanged)
-            CompletionSection(appointment, accountId, appointments, scope, onChanged)
-            IncidentSection(appointment, accountId, incidentTools, scope, onChanged, onChooseMessages)
-            ReviewSection(appointment, accountId, reviewState, reviews, scope, onChanged)
             if (professional && appointment.stage == AppointmentStage.PENDING) Button(onClick = onPropose, modifier = Modifier.testTag("appointment_propose")) {
                 Text(stringResource(if (appointment.proposals.isEmpty()) R.string.appointment_propose else R.string.appointment_propose_new))
             }
@@ -319,10 +320,24 @@ private fun AppointmentDetails(
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             if (error != null) Text(failureText(failure), color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.testTag("appointment_decision_error"))
+            // Changes are open while confirmed and during the job (price, scope, duration only once started).
+            if (appointment.canProposeChange(accountId)) ChangeSection(appointment, accountId, appointments, scope, onChange, onCorrection, onChanged)
+            StartCancelSection(appointment, accountId, appointments, scope, onChanged)
+            CompletionSection(appointment, accountId, appointments, scope, onChanged)
+            IncidentSection(appointment, accountId, incidentTools, scope, onChanged, onChooseMessages)
+            ReviewSection(appointment, accountId, reviewState, reviews, scope, onChanged)
+            Text(stringResource(R.string.appointment_requested_window,
+                format.format(appointment.requestedStart), format.format(appointment.requestedEnd)),
+                modifier = Modifier.testTag("appointment_window_${appointment.id}"))
+            AppointmentLocationBlock(appointment, professional, mapsReady)
+            appointment.proposalInForce?.let { ProposalCard(it, format) }
+            ProposalHistory(appointment, format)
+            KeptPrices(appointment)
         }
     }
     confirmAccept?.let { proposal ->
         AlertDialog(onDismissRequest = { confirmAccept = null },
+            title = { Text(stringResource(R.string.appointment_accept_title)) },
             text = { Text(stringResource(R.string.appointment_accept_confirm, proposal.version)) },
             dismissButton = { TextButton(onClick = { confirmAccept = null }) { Text(stringResource(R.string.cancel)) } },
             confirmButton = {
@@ -381,25 +396,63 @@ private fun AppointmentDetails(
             })
     }
     confirmReject?.let { proposal ->
-        AlertDialog(onDismissRequest = { confirmReject = null },
+        DestructiveConfirmDialog(
+            title = stringResource(R.string.appointment_reject_title),
             text = { Text(stringResource(R.string.appointment_reject_confirm, proposal.version)) },
-            dismissButton = { TextButton(onClick = { confirmReject = null }) { Text(stringResource(R.string.cancel)) } },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirmReject = null
-                    busy = true; error = null
-                    // Rejecting a given version is idempotent on the server: retrying is always safe.
-                    scope.launch {
-                        try { appointments.reject(proposal.id); onChanged() }
-                        catch (e: Exception) {
-                            if (e is CancellationException) throw e
-                            failure = (e as? AppointmentException)?.failure; error = e.message.orEmpty()
-                            if (failure == AppointmentFailure.STALE) onChanged()
-                        } finally { busy = false }
-                    }
-                }, modifier = Modifier.testTag("appointment_reject_confirm")) { Text(stringResource(R.string.appointment_reject)) }
-            })
+            confirmLabel = stringResource(R.string.appointment_reject),
+            onConfirm = {
+                confirmReject = null
+                busy = true; error = null
+                // Rejecting a given version is idempotent on the server: retrying is always safe.
+                scope.launch {
+                    try { appointments.reject(proposal.id); onChanged() }
+                    catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                        failure = (e as? AppointmentException)?.failure; error = e.message.orEmpty()
+                        if (failure == AppointmentFailure.STALE) onChanged()
+                    } finally { busy = false }
+                }
+            },
+            onDismiss = { confirmReject = null },
+            confirmTag = "appointment_reject_confirm", dismissTag = "appointment_reject_dismiss")
     }
+}
+
+/**
+ * Whose move the notice announces (#47): this account's turn stands out in the primary container,
+ * a wait in a neutral one; both say it in words so colour is never the only cue.
+ */
+@Composable
+private fun NoticeBanner(appointment: Appointment, accountId: String) {
+    val turn = appointment.notice(accountId).turn
+    val notice = noticeText(appointment, accountId)
+    val noticeTag = Modifier.testTag("appointment_notice_${appointment.id}")
+    if (turn == NoticeTurn.NONE) {
+        Text(notice, style = MaterialTheme.typography.bodyMedium, modifier = noticeTag)
+        return
+    }
+    val yours = turn == NoticeTurn.YOURS
+    Surface(color = if (yours) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(TeloTheme.spacing.medium), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
+            Text(stringResource(if (yours) R.string.appointment_turn_yours else R.string.appointment_turn_waiting),
+                style = MaterialTheme.typography.labelLarge, modifier = Modifier.testTag("appointment_turn_${appointment.id}"))
+            Text(notice, style = MaterialTheme.typography.bodyMedium, modifier = noticeTag)
+        }
+    }
+}
+
+/** Earlier proposals, newest first, behind «Ver historial (n)» (#47): kept, but out of the way of the decision. */
+@Composable
+private fun ProposalHistory(appointment: Appointment, format: DateTimeFormatter) {
+    val earlier = appointment.earlierProposals
+    if (earlier.isEmpty()) return
+    var open by rememberSaveable(appointment.id) { mutableStateOf(false) }
+    TextButton(onClick = { open = !open }, modifier = Modifier.testTag("appointment_history_toggle_${appointment.id}")) {
+        Text(if (open) stringResource(R.string.appointment_history_hide)
+            else stringResource(R.string.appointment_history_show, earlier.size))
+    }
+    if (open) earlier.forEach { ProposalCard(it, format) }
 }
 
 /**
@@ -409,7 +462,12 @@ private fun AppointmentDetails(
 @Composable
 private fun KeptPrices(appointment: Appointment) {
     if (appointment.referencePrices.isEmpty()) return
-    Column(Modifier.fillMaxWidth().testTag("kept_prices_${appointment.id}"), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    // Folded (#47): reference material, not the next step.
+    var open by rememberSaveable(appointment.id) { mutableStateOf(false) }
+    TextButton(onClick = { open = !open }, modifier = Modifier.testTag("kept_prices_toggle_${appointment.id}")) {
+        Text(stringResource(if (open) R.string.kept_prices_hide else R.string.kept_prices_show))
+    }
+    if (open) Column(Modifier.fillMaxWidth().testTag("kept_prices_${appointment.id}"), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(stringResource(R.string.kept_prices_title), style = MaterialTheme.typography.titleSmall)
         appointment.referencePrices.forEach { price ->
             Text(stringResource(R.string.kept_prices_item, price.service, priceText(price)), style = MaterialTheme.typography.bodySmall)
@@ -486,6 +544,8 @@ private fun SubmitArea(busy: Boolean, keyPending: Boolean, failure: AppointmentF
 private fun RequestForm(
     appointments: Appointments, conversation: Conversation, scope: CoroutineScope, pins: PinSource,
     known: List<Appointment>, onDone: () -> Unit,
+    /** Informative zone line for the chosen point (ADR 0001); null hides it. */
+    zoneLine: (@Composable (Double?, Double?) -> Unit)? = null,
 ) {
     var problem by rememberSaveable(conversation.id) { mutableStateOf("") }
     var dateText by rememberSaveable(conversation.id) { mutableStateOf<String?>(LocalDate.now().plusDays(1).toString()) }
@@ -496,6 +556,7 @@ private fun RequestForm(
     var address by rememberSaveable(conversation.id) { mutableStateOf(home?.address.orEmpty()) }
     var lat by rememberSaveable(conversation.id) { mutableStateOf(home?.let { "%.6f".format(Locale.ROOT, it.lat) }.orEmpty()) }
     var lng by rememberSaveable(conversation.id) { mutableStateOf(home?.let { "%.6f".format(Locale.ROOT, it.lng) }.orEmpty()) }
+    var pointFrom by rememberSaveable(conversation.id) { mutableStateOf(if (home != null) PointFrom.HOME else null) }
     var key by rememberSaveable(conversation.id) { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var locating by remember { mutableStateOf(false) }
@@ -533,6 +594,7 @@ private fun RequestForm(
                 val position = if (pins.ensurePermission()) pins.locate() else Located.Unavailable
                 if (position is Located.Position) {
                     lat = "%.6f".format(Locale.ROOT, position.lat); lng = "%.6f".format(Locale.ROOT, position.lng)
+                    pointFrom = PointFrom.GPS
                 } else noLocation = true
             } finally { locating = false }
         }
@@ -550,13 +612,19 @@ private fun RequestForm(
         onDismiss = { picking = false },
     ) { point ->
         lat = "%.6f".format(Locale.ROOT, point.lat); lng = "%.6f".format(Locale.ROOT, point.lng); picking = false
+        pointFrom = PointFrom.PIN
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    PointFromLine(pointFrom.takeIf { lat.isNotBlank() && lng.isNotBlank() }, "appointment_point")
+    zoneLine?.invoke(lat.replace(',', '.').toDoubleOrNull(), lng.replace(',', '.').toDoubleOrNull())
+    // Without a map, typing the point is the only alternative to GPS; with a map people never see coordinates (#41).
+    if (!pins.mapsReady) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         val decimal = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-        OutlinedTextField(lat, { lat = it.take(12) }, enabled = editable, singleLine = true, keyboardOptions = decimal,
-            label = { Text(stringResource(R.string.appointment_latitude)) }, modifier = Modifier.weight(1f).testTag("appointment_lat"))
-        OutlinedTextField(lng, { lng = it.take(12) }, enabled = editable, singleLine = true, keyboardOptions = decimal,
-            label = { Text(stringResource(R.string.appointment_longitude)) }, modifier = Modifier.weight(1f).testTag("appointment_lng"))
+        OutlinedTextField(lat, { lat = it.take(12); pointFrom = PointFrom.TYPED }, enabled = editable, singleLine = true,
+            keyboardOptions = decimal, label = { Text(stringResource(R.string.appointment_latitude)) },
+            modifier = Modifier.weight(1f).testTag("appointment_lat"))
+        OutlinedTextField(lng, { lng = it.take(12); pointFrom = PointFrom.TYPED }, enabled = editable, singleLine = true,
+            keyboardOptions = decimal, label = { Text(stringResource(R.string.appointment_longitude)) },
+            modifier = Modifier.weight(1f).testTag("appointment_lng"))
     }
     if (invalid) Text(stringResource(R.string.appointment_form_invalid), color = MaterialTheme.colorScheme.error)
     SubmitArea(busy, key != null, failure, shownError, R.string.appointment_send_request, "appointment_send_request") {
@@ -583,6 +651,21 @@ private fun RequestForm(
             } finally { busy = false }
         }
     }
+}
+
+/** Where a typed-in job point came from, said in words instead of coordinates (#41). */
+internal enum class PointFrom { HOME, GPS, PIN, TYPED, APPOINTMENT }
+
+@Composable
+internal fun PointFromLine(from: PointFrom?, tag: String) {
+    Text(stringResource(when (from) {
+        null -> R.string.location_point_missing
+        PointFrom.HOME -> R.string.location_point_home
+        PointFrom.GPS -> R.string.location_point_gps
+        PointFrom.PIN -> R.string.location_point_pin
+        PointFrom.TYPED -> R.string.location_point_typed
+        PointFrom.APPOINTMENT -> R.string.location_point_appointment
+    }), Modifier.testTag(tag), style = MaterialTheme.typography.bodySmall)
 }
 
 @Composable
@@ -689,8 +772,6 @@ private fun AppointmentLocationBlock(appointment: Appointment, professional: Boo
         null -> Text(stringResource(R.string.area_loading), style = MaterialTheme.typography.bodySmall)
         is AppointmentLocation.Exact -> {
             Text(stringResource(R.string.appointment_address_label, location.address), style = MaterialTheme.typography.bodySmall)
-            Text(stringResource(R.string.appointment_pin, "%.5f".format(Locale.ROOT, location.point.lat),
-                "%.5f".format(Locale.ROOT, location.point.lng)), style = MaterialTheme.typography.bodySmall)
             if (!professional && appointment.stage == AppointmentStage.PENDING) Text(
                 stringResource(R.string.area_client_notice, appointment.place?.areaRadiusMeters ?: 400),
                 style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("area_client_notice"))

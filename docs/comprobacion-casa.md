@@ -2,6 +2,9 @@
 
 Fecha: 23 de noviembre de 2026. Contrato: [casa-contrato.md](casa-contrato.md).
 
+> Nota del 25-11-2026: registro histórico. La pantalla «Cerca de mí» y el diálogo de lejanía ya no existen:
+> la búsqueda única de «Buscar» parte de casa y avisa con un banner ([ADR 0001](adr/0001-zona-de-trabajo-informa.md), [búsqueda](busqueda-contrato.md)).
+
 No se ha desplegado ni escrito en la base alojada. No se ha cambiado nada en Google Cloud.
 
 ## Ejecutado localmente

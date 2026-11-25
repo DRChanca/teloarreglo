@@ -145,7 +145,8 @@ class AppointmentsTest {
         val cases = listOf(
             Triple(HttpStatusCode.Forbidden, error("42501", "permission_denied"), AppointmentFailure.ACCESS),
             Triple(HttpStatusCode.Conflict, error("PT409", "stale_version"), AppointmentFailure.STALE),
-            Triple(HttpStatusCode.BadRequest, error("22023", "out_of_coverage"), AppointmentFailure.OUT_OF_COVERAGE),
+            Triple(HttpStatusCode.BadRequest, error("22023", "out_of_coverage"), AppointmentFailure.OUTSIDE_AREA),
+            Triple(HttpStatusCode.BadRequest, error("22023", "outside_area"), AppointmentFailure.OUTSIDE_AREA),
             Triple(HttpStatusCode.BadRequest, error("22023", "invalid_appointment"), AppointmentFailure.INVALID),
             Triple(HttpStatusCode.BadRequest, error("22023", "retry_conflict"), AppointmentFailure.RETRY_CONFLICT),
         )
@@ -365,7 +366,7 @@ class AppointmentsTest {
             Triple(HttpStatusCode.Forbidden, error("42501", "address_owner_only"), AppointmentFailure.ACCESS),
             Triple(HttpStatusCode.BadRequest, error("22023", "no_change"), AppointmentFailure.INVALID),
             Triple(HttpStatusCode.BadRequest, error("22023", "invalid_change"), AppointmentFailure.INVALID),
-            Triple(HttpStatusCode.BadRequest, error("22023", "out_of_coverage"), AppointmentFailure.OUT_OF_COVERAGE),
+            Triple(HttpStatusCode.BadRequest, error("22023", "out_of_coverage"), AppointmentFailure.OUTSIDE_AREA),
             Triple(HttpStatusCode.Conflict, error("PT409", "slot_unavailable"), AppointmentFailure.SLOT_UNAVAILABLE),
             Triple(HttpStatusCode.Conflict, error("PT409", "outside_hours"), AppointmentFailure.OUTSIDE_HOURS),
             Triple(HttpStatusCode.Conflict, error("PT409", "stale_version"), AppointmentFailure.STALE),

@@ -6,7 +6,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import es.teloarreglo.appointments.Review
 import es.teloarreglo.appointments.Reviews
@@ -27,7 +26,7 @@ internal fun ProfileReviewList(profileId: String, reviews: Reviews) {
         catch (error: Exception) { if (error is CancellationException) throw error; failed = true }
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("profile_reviews")) {
-        Text(stringResource(R.string.review_section), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.review_section), style = MaterialTheme.typography.titleLarge)
         val shown = list
         when {
             failed -> Row {

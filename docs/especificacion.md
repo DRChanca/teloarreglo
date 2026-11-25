@@ -49,7 +49,7 @@ que se instala, prueba y presenta es **`es.teloarreglo.presentacion`**.
 Estas decisiones sustituyen lo anterior incompatible en este documento, en los contratos y en las issues #19 y #30.
 
 - **Vídeos del chat (#19):** duración máxima de **40 segundos** (antes un minuto). Se mantiene el margen de 499 ms, así que se aceptan hasta 40,499 s. El servidor no puede leer la duración: la comprueba la app antes de comprimir y otra vez sobre la copia comprimida. El resto de límites no cambia (720p, 20 MB, MP4).
-- **Servicios y precios orientativos (#30):** los edita la cuenta propietaria del perfil profesional desde su editor y **se publican directamente, sin revisión** del administrador. Nombre, descripción, oficios, concejos, idiomas, teléfono y dirección comercial siguen el flujo de revisión de #30. Si el perfil aún no está aprobado, se guardan y aparecen cuando se publique. Aprobar después una versión antigua no devuelve precios anteriores.
+- **Servicios y precios orientativos (#30):** los edita la cuenta propietaria del perfil profesional desde su editor y **se publican directamente, sin revisión** del administrador. Nombre, descripción, oficios, concejos, idiomas, teléfono y dirección comercial siguen el flujo de revisión de #30 (desde el 25-11-2026, los concejos de un perfil ya publicado se cambian sin revisión: ver «Búsqueda única y zona de trabajo informativa»). Si el perfil aún no está aprobado, se guardan y aparecen cuando se publique. Aprobar después una versión antigua no devuelve precios anteriores.
 - **Foto de portada:** el propietario la cambia y **se publica directamente, sin revisión**. Se mantienen la compresión (1600 px, JPEG de hasta 2 MB, sin EXIF/GPS), la validación de formato y tamaño en Storage y en el servidor, y los permisos: solo el propietario cambia la portada de su perfil. Si el perfil aún no está aprobado, la foto se guarda y se muestra cuando el perfil se publique. El panel no revisa portadas.
 - **Precio pactado:** un precio pactado con un cliente no cambia para ese cliente. Cuando se genera una cita, la base de datos guarda el importe en el momento en que se fija:
   - si lo pide el cliente, los precios orientativos vigentes cuando hace la solicitud;
@@ -57,6 +57,19 @@ Estas decisiones sustituyen lo anterior incompatible en este documento, en los c
   Ninguna edición posterior del perfil cambia el importe de una cita, solicitud o propuesta que ya exista. El pago simulado (#22) cobra el importe guardado en la propuesta aceptada, nunca el precio del perfil.
   Un cambio de precios del perfil vale para todos los demás: catálogo, chats sin solicitud y solicitudes nuevas. En el chat, cada solicitud ya enviada muestra los precios guardados con ella (no los del perfil) y cada propuesta muestra su propio importe.
 - **Cambios con el trabajo comenzado:** tras «Comenzar trabajo», cualquiera de las partes puede seguir proponiendo y aceptando otro precio, alcance, duración o inclusiones (trabajo extra acordado en el momento). Se aplican las mismas reglas de dinero que antes de comenzar (#23): con pago integrado simulado, al aceptar se cobra la diferencia del aumento o se devuelve la de la reducción; con pago directo solo se registra el acuerdo. Una duración nueva debe seguir cabiendo en la agenda. No se permite cambiar la hora de inicio ni la dirección, ni pedir corrección de dirección. Al comenzar, un cambio pendiente que solo toca precio, alcance, duración o inclusiones sigue pendiente; uno que mueve la hora de inicio o la dirección, y una petición de corrección de dirección, se cierran sin aplicarse. Cancelar (solo antes de comenzar) sigue cerrando cualquier cambio pendiente. Una cita cancelada no admite cambios.
+
+## Actualización: búsqueda única y zona de trabajo informativa (25-11-2026)
+
+Decisiones de David, 25 de noviembre de 2026 ([ADR 0001](adr/0001-zona-de-trabajo-informa.md)). Sustituyen lo anterior incompatible en este documento (§1, §4, §5, §12 y §14), en los contratos y en la decisión de [#9](https://github.com/DRChanca/teloarreglo/issues/9) sobre revisar la zona. Vocabulario en `GLOSSARY.md`: «Búsqueda», «Punto de búsqueda», «Zona de trabajo» (antes «cobertura»), «Fuera de su zona».
+
+- **Una sola búsqueda** (pestaña «Buscar»). Desaparecen la pantalla «Cerca de mí» y la pestaña «Cerca» de #46: la barra tiene cuatro pestañas, Buscar · Conversaciones · Avisos · Cuenta.
+- **Punto de búsqueda**: la casa guardada por defecto, sin pedir el GPS. El GPS (una vez) o un concejo/chincheta solo si la persona lo elige. Un visitante sin sesión ve el orden del catálogo con «Ordenar por cercanía».
+- **Orden**: primero los «Destacado» cuya zona de trabajo incluye el concejo del punto de búsqueda (entre ellos por distancia); después todos los demás perfiles aprobados del oficio, mezclados por distancia, trabajen o no en ese concejo. Las tarjetas de fuera de su zona dicen «No suele trabajar en {concejo}»; un destacado fuera de su zona no lleva resalte. Cada tarjeta muestra el tramo de distancia (redondeado a 500 m). Los perfiles sin ubicación registrada se añaden al final, sin distancia.
+- **Estados**: esqueleto mientras carga. Si falla el orden por distancia, se muestra el orden del catálogo con «No hemos podido ordenar por cercanía · Reintentar», nunca una lista vacía falsa. El filtro de texto se aplica en el dispositivo sobre la lista ordenada. El mapa, opcional, muestra la misma lista.
+- **Lejos de casa**: la comprobación se hace en segundo plano y muestra un banner no bloqueante (no un diálogo), una vez por sesión.
+- **La zona de trabajo informa, no restringe**: se pueden solicitar citas y cambiar su dirección en cualquier concejo de Asturias; fuera de Asturias se rechazan. Ambas partes ven un aviso informativo si la dirección queda fuera de la zona, y el profesional puede pulsar «Añadir {concejo} a mi zona» desde la tarjeta de la solicitud.
+- **Zona sin revisión**: en un perfil publicado, añadir o quitar concejos se aplica al momento, sin revisión del administrador; cada cambio queda en un registro de solo inserción que administración puede consultar. Aprobar después otra versión conserva la zona vigente. La primera versión del perfil, zona incluida, sigue revisándose. La zona tiene siempre al menos un concejo.
+- Contratos: [búsqueda](busqueda-contrato.md), [citas](citas-contrato.md#zona-de-trabajo-informativa--25-de-noviembre-de-2026), [revisión de perfiles](revision-perfiles-contrato.md#zona-de-trabajo-sin-revisión--25-de-noviembre-de-2026).
 
 ## Actualización: objetivo inmediato de demostración universitaria
 
@@ -90,10 +103,10 @@ Las reglas de este apartado sustituyen las propuestas anteriores incompatibles s
 - Demostración con la aplicación Android funcionando en dos emuladores: uno para el cliente y otro para el profesional, con persistencia compartida. No basta una maqueta navegable.
 - Cuatro idiomas en la interfaz entregada; vídeo narrado en castellano y demostración breve del selector.
 - Escena de suscripción de 5 €/mes con sus ventajas; sin cobros reales.
-- Búsqueda por proximidad desde la dirección de casa guardada (o el GPS a petición), con mapa y lista y alternativa de ubicación manual para denegación del permiso o trabajo en otra dirección.
-- Dirección de casa (#37): tras entrar, si la cuenta no la tiene, se pide antes de continuar, con autocompletado de Google Places; sin Places, pin o GPS con la dirección escrita a mano. Es privada (solo su propietario). Si el GPS indica más de 5 km de distancia, se pregunta una vez por sesión si cambiarla o buscar desde donde se está. La solicitud de cita la propone y se puede editar.
-- Primero se filtra por cobertura del lugar del trabajo; después se ordena por distancia a la ubicación profesional registrada, no por seguimiento en directo.
-- Organización espacial H3 en servidor mediante h3-js, ampliando desde la celda de búsqueda a sus vecinas y calculando distancia geográfica entre coordenadas originales para ordenar; no distancia por carretera. Validar la integración en Supabase Edge Functions y los bordes de celda según la arquitectura acordada.
+- Búsqueda única ordenada por cercanía al punto de búsqueda: la dirección de casa guardada por defecto (o el GPS a petición), con lista y mapa opcional y alternativa de concejo o chincheta para denegación del permiso o trabajo en otra dirección (25-11-2026: sin pantalla «Cerca de mí» aparte).
+- Dirección de casa (#37): tras entrar, si la cuenta no la tiene, se pide antes de continuar, con autocompletado de Google Places; sin Places, pin o GPS con la dirección escrita a mano. Es privada (solo su propietario). Si el GPS indica más de 5 km de distancia, se avisa una vez por sesión con un banner no bloqueante (25-11-2026; antes un diálogo) para cambiarla o buscar desde donde se está. La solicitud de cita la propone y se puede editar.
+- Se ordena por distancia a la ubicación profesional registrada, no por seguimiento en directo. Sustituido el 25-11-2026 ([ADR 0001](adr/0001-zona-de-trabajo-informa.md)): la zona de trabajo ya no filtra; solo decide si un destacado va primero y si la tarjeta avisa «No suele trabajar en {concejo}».
+- Distancia geográfica entre coordenadas originales, no por carretera. La organización H3 por anillos se implementó y validó, pero desde el 25-11-2026 la búsqueda ordena la lista completa de perfiles del oficio (pocos perfiles: exacto y barato) y no usa H3 para el orden.
 - La propuesta del profesional especifica alcance, precio y hora. Para pago integrado, el cliente paga el total para confirmar la cita.
 - Se conserva el pago directo: la cita puede confirmarse por acuerdo expreso de ambas partes sin pagar dentro de la aplicación.
 - Una visita puede ser gratuita o tener un coste acordado. Una cita gratuita no requiere pasar por el pago. No se crean tipos rígidos de cita.
@@ -124,7 +137,7 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 - Cambiar precio, fecha, hora, duración, alcance o dirección requiere aceptación expresa de la otra parte. Se muestran condiciones anteriores y nuevas; mientras se decide siguen vigentes las anteriores.
 - Una cita confirmada conserva su reserva mientras un cambio esté pendiente. Al aceptar otro horario se comprueba de nuevo su disponibilidad y solo entonces se sustituye la reserva anterior. Si hay conflicto, se mantiene la cita original sin cobrar diferencias.
 - Rechazar una propuesta conserva chat e historial y permite enviar otra. Rechazar un cambio mantiene la cita original; rechazar la primera propuesta deja la cita sin confirmar ni reservar.
-- El cambio de dirección debe respetar la cobertura profesional. El profesional puede solicitar una corrección, pero no sustituir por su cuenta el domicilio aportado por el cliente.
+- El cambio de dirección debe quedar en Asturias (25-11-2026: antes debía respetar la cobertura profesional; ahora la zona de trabajo solo informa, [ADR 0001](adr/0001-zona-de-trabajo-informa.md)). El profesional puede solicitar una corrección, pero no sustituir por su cuenta el domicilio aportado por el cliente.
 - Los aumentos de precio integrado requieren aceptación y pago simulado de la diferencia antes del trabajo adicional; las reducciones aceptadas producen devolución simulada. En pago directo se registra el acuerdo, sin certificar cobros externos.
 
 **Inicio, finalización e incidencias**
@@ -162,7 +175,7 @@ Estas reglas prevalecen sobre los apartados anteriores incompatibles y sobre las
 #### Criterios observables del recorrido acordado
 
 - El catálogo contiene 21 perfiles ficticios de siete oficios y permite comparar sus servicios.
-- La ubicación se obtiene mediante permiso GPS o entrada manual; los resultados se muestran en lista y mapa y respetan la cobertura de servicio.
+- La ubicación se obtiene mediante permiso GPS o entrada manual; los resultados se muestran en lista y mapa, todos por distancia, con aviso en los que están fuera de su zona de trabajo (25-11-2026; antes respetaban la cobertura).
 - Una acción de una cuenta se refleja en la otra sin editar datos manualmente fuera de la aplicación.
 - Las conversaciones permiten enviar y abrir una foto y un vídeo reales.
 - El profesional propone alcance, fecha y precio; el cliente acepta y confirma mediante pago simulado, cuyo carácter no real se explica por voz.
@@ -237,14 +250,15 @@ Categorías iniciales:
 
 Un profesional puede seleccionar varias categorías y describir los servicios que ofrece.
 
-La búsqueda tiene en cuenta dónde se realizará el trabajo y las zonas que cubre el profesional, no únicamente su domicilio o local.
+La búsqueda ordena por cercanía al punto de búsqueda (casa, GPS, concejo o chincheta) e informa de si el concejo está en la zona de trabajo del profesional; la zona no excluye a nadie (25-11-2026, [ADR 0001](adr/0001-zona-de-trabajo-informa.md)).
 
-- Búsqueda por oficio y zona o concejo.
+- Búsqueda única por oficio y texto, ordenada por distancia al punto de búsqueda.
 - Filtro por idiomas del profesional.
 - Opciones de ordenación por valoración y número de reseñas.
 - Relevancia, disponibilidad y reputación como criterios generales; ponderación pendiente.
 - Espacios de posicionamiento de pago identificados como «Destacado».
-- Un destacado solo aparece en zonas donde el profesional presta servicio.
+- Un destacado solo va primero cuando su zona de trabajo incluye el concejo del punto de búsqueda; fuera de ella aparece por distancia, sin resalte (25-11-2026).
+- Decisión de David (24-11-2026): en el listado principal de profesionales (catálogo por oficio, sin zona) los perfiles destacados van primero, con fondo más marcado y la etiqueta «Perfil destacado»; ahí no se aplica la regla de zona porque no hay concejo. Desde el 25-11-2026 ese orden es el de la búsqueda sin punto (visitantes, o si falla el orden por distancia), no una pantalla aparte.
 - No se garantiza una primera posición permanente ni un número de clientes.
 
 En Asturias se utilizará el término «concejo» para el municipio.
@@ -265,7 +279,7 @@ El perfil incluye:
 
 Se recogerá una dirección para obtener su concejo o municipio. Los profesionales con local pueden mostrar su dirección comercial exacta. Quienes trabajan desde casa pueden mostrar solo el concejo y la zona de servicio, sin obligación de publicar su domicilio; podrán optar por publicarlo.
 
-El profesional seleccionará los municipios o concejos donde presta servicio.
+El profesional seleccionará los municipios o concejos donde presta servicio (zona de trabajo, al menos uno). Desde el 25-11-2026 la zona informa, no restringe, y en un perfil publicado se cambia sin revisión ([ADR 0001](adr/0001-zona-de-trabajo-informa.md)).
 
 La dirección exacta del cliente nunca será pública. Decisión de 2026-11-23 (#38): mientras la cita está solicitada o propuesta, el profesional solo ve un círculo de 400 m y el concejo; la dirección y las coordenadas exactas, con «Cómo llegar», se le muestran cuando la cita se confirma. El centro del círculo lo calcula el servidor una sola vez al crear la solicitud, desplazado al azar hasta 300 m de la casa (distribución uniforme en el disco), de modo que la casa queda siempre dentro del círculo pero no necesariamente en su centro, y repetir la consulta no permite deducirla. La protección está en el servidor: las cuentas de la app no pueden leer las columnas de dirección y coordenadas de la cita, y la única vía es una función que solo las entrega al cliente y, tras la confirmación, al profesional. Sin clave de Google Maps, la app muestra el texto «zona aproximada de 400 m en <concejo>». Para buscar bastará con una zona o localidad. La dirección de casa del cliente (#37) se guarda de forma privada, solo legible por su propietario, y únicamente se comparte si el cliente la deja en una solicitud de cita.
 
@@ -430,7 +444,7 @@ Incluye:
 Reglas:
 
 - Los destacados se identifican claramente.
-- Solo se muestran en zonas donde se presta servicio.
+- Solo van primero en búsquedas cuyo concejo está en su zona de trabajo (25-11-2026: fuera de ella aparecen por distancia, sin resalte).
 - No se garantiza una posición fija, exclusiva o permanente ni un volumen de contactos.
 - El reparto entre suscriptores y el detalle de las ventajas quedan pendientes.
 - La suscripción es la única fuente de ingresos propia acordada inicialmente.
@@ -471,8 +485,8 @@ La aprobación exige funcionamiento real del panel y sus permisos; no significa 
 - El catálogo puede estar precargado y aprobado; se dispone además de un perfil de prueba para comprobar aprobación, rechazo y nueva presentación.
 - Un perfil pendiente o rechazado no aparece en búsquedas. El rechazo muestra un motivo al profesional y permite corregir el perfil y solicitar nueva revisión.
 - El administrador aprueba o rechaza, pero no reescribe los datos del profesional.
-- Los cambios de datos públicos de un perfil aprobado requieren nueva revisión. Hasta aprobarse sigue visible la última versión aprobada; si se rechazan, esa versión permanece. Excepción de 2026-11-23: servicios, precios orientativos y foto de portada los publica el propietario sin revisión (ver «Actualización: decisiones de David del 23 de noviembre de 2026»).
-- Revisar un cambio de perfil no elimina citas ni conversaciones. Los cambios de agenda no necesitan revisión administrativa.
+- Los cambios de datos públicos de un perfil aprobado requieren nueva revisión. Hasta aprobarse sigue visible la última versión aprobada; si se rechazan, esa versión permanece. Excepción de 2026-11-23: servicios, precios orientativos y foto de portada los publica el propietario sin revisión (ver «Actualización: decisiones de David del 23 de noviembre de 2026»). Excepción de 2026-11-25 ([ADR 0001](adr/0001-zona-de-trabajo-informa.md)): en un perfil publicado, añadir o quitar concejos de la zona de trabajo se aplica sin revisión y queda en un registro de solo inserción que el administrador puede consultar; aprobar una versión posterior conserva la zona vigente. La primera versión, zona incluida, sí se revisa.
+- Revisar un cambio de perfil no elimina citas ni conversaciones. Los cambios de agenda no necesitan revisión administrativa. Decisión de David (#41, 24 de noviembre de 2026): el profesional rellena su agenda semanal al presentar el perfil a revisión, no después de la aprobación; se guarda con la presentación y sigue sin necesitar revisión.
 - La comprobación comercial de estos perfiles es simulada y se explica por voz, sin exigir avisos globales de demo en la interfaz para la prueba universitaria. La narración no presenta una insignia como acreditación comercial auténtica. No se solicita documentación personal real.
 
 **Incidencias y privacidad**

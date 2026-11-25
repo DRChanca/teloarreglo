@@ -23,6 +23,10 @@ import es.teloarreglo.catalogue.PublicProfile
 import es.teloarreglo.catalogue.Coverage
 import es.teloarreglo.catalogue.ReferencePrice
 import kotlinx.coroutines.CompletableDeferred
+import android.content.res.Configuration
+import java.util.Locale
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -52,7 +56,7 @@ class CatalogueUiTest {
         compose.setContent { CatalogueScreen(object : Catalogue {
             override suspend fun list(trade: String?) = rows
             override suspend fun profile(id: String) = rows.first { it.id == id }
-        }, onAccount = {}, onLanguageChange = {}) }
+        }) }
         compose.onNodeWithTag("catalogue_list").performScrollToNode(hasTestTag("profile_profile-20"))
         compose.onNodeWithTag("profile_profile-20").performClick()
         compose.onNodeWithText("Negocio 20").assertIsDisplayed()
@@ -65,7 +69,7 @@ class CatalogueUiTest {
         compose.setContent { CatalogueScreen(object : Catalogue {
             override suspend fun list(trade: String?) = listOf(plumber)
             override suspend fun profile(id: String) = plumber
-        }, onAccount = {}, onLanguageChange = {}) }
+        }) }
         compose.onNodeWithTag("catalogue_search").performTextInput("No existe")
         compose.onNodeWithTag("catalogue_search").performImeAction()
         compose.waitUntil(timeoutMillis = 5_000) {
@@ -88,8 +92,9 @@ class CatalogueUiTest {
         compose.setContent { CatalogueScreen(object : Catalogue {
             override suspend fun list(trade: String?) = listOf(profile)
             override suspend fun profile(id: String) = profile
-        }, onAccount = {}, onLanguageChange = {}, initialProfileId = profile.id) }
-        compose.onNodeWithText("Calle Gascona, local ficticio A, Oviedo").performScrollTo().assertIsDisplayed()
+        }, initialProfileId = profile.id) }
+        compose.onNodeWithTag("profile_detail").performScrollToNode(hasText("Calle Gascona, local ficticio A, Oviedo"))
+        compose.onNodeWithText("Calle Gascona, local ficticio A, Oviedo").assertIsDisplayed()
         compose.onNodeWithTag("profile_languages").assertDoesNotExist()
     }
 
@@ -98,7 +103,7 @@ class CatalogueUiTest {
             override suspend fun list(trade: String?) = if (trade == null || trade == "plumbing")
                 listOf(plumber, plumber.copy(id = "profile-15", name = "Agua Clara")) else emptyList()
             override suspend fun profile(id: String) = plumber
-        }, onAccount = {}, onLanguageChange = {}) }
+        }) }
         compose.onNodeWithTag("profile_profile-14").assertIsDisplayed()
         screenshot("catalogue-list")
         compose.onNodeWithTag("trade_plumbing").performClick()
@@ -127,7 +132,7 @@ class CatalogueUiTest {
                 return emptyList()
             }
             override suspend fun profile(id: String): PublicProfile? = null
-        }, onAccount = {}, onLanguageChange = {}) }
+        }) }
         compose.onNodeWithTag("catalogue_error").assertIsDisplayed()
         compose.onNodeWithTag("catalogue_empty").assertDoesNotExist()
         offline = false
@@ -140,10 +145,47 @@ class CatalogueUiTest {
         compose.setContent { CatalogueScreen(object : Catalogue {
             override suspend fun list(trade: String?) = response.await()
             override suspend fun profile(id: String): PublicProfile? = null
-        }, onAccount = {}, onLanguageChange = {}) }
+        }) }
         compose.onNodeWithTag("catalogue_loading").assertIsDisplayed()
         compose.onNodeWithTag("catalogue_empty").assertDoesNotExist()
         response.complete(emptyList())
         compose.onNodeWithTag("catalogue_empty").assertIsDisplayed()
+    }
+
+    @Test fun sendMessageStaysVisibleWhileReadingTheWholeProfile() {
+        var contacted: String? = null
+        compose.setContent { CatalogueScreen(object : Catalogue {
+            override suspend fun list(trade: String?) = listOf(plumber)
+            override suspend fun profile(id: String) = plumber
+        }, initialProfileId = plumber.id, onContact = { contacted = it }) }
+        compose.onNodeWithTag("chat_contact").assertIsDisplayed()
+        compose.onNodeWithTag("profile_detail").performScrollToNode(hasText("Cambio de grifería"))
+        compose.onNodeWithTag("chat_contact").assertIsDisplayed()
+        compose.onNodeWithTag("profile_detail").performScrollToNode(hasText("+34 000 000 014"))
+        compose.onNodeWithTag("chat_contact").assertIsDisplayed().performClick()
+        assertEquals(plumber.id, contacted)
+    }
+
+    @Test fun ownProfileHasNoSendMessageBar() {
+        compose.setContent { CatalogueScreen(object : Catalogue {
+            override suspend fun list(trade: String?) = listOf(plumber)
+            override suspend fun profile(id: String) = plumber
+        }, initialProfileId = plumber.id, ownedProfileId = plumber.id, onContact = {}) }
+        compose.onNodeWithTag("profile_detail").assertIsDisplayed()
+        compose.onNodeWithTag("chat_contact").assertDoesNotExist()
+    }
+
+    @Test fun oneReviewIsSingularInEveryLanguage() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val expected = mapOf(
+            "es" to listOf("1 reseña", "3 reseñas"), "en" to listOf("1 review", "3 reviews"),
+            "fr" to listOf("1 avis", "3 avis"), "de" to listOf("1 Bewertung", "3 Bewertungen"),
+        )
+        expected.forEach { (tag, forms) ->
+            val config = Configuration(context.resources.configuration).apply { setLocale(Locale.forLanguageTag(tag)) }
+            val res = context.createConfigurationContext(config).resources
+            assertTrue(tag, res.getQuantityString(R.plurals.catalogue_rating, 1, 4.8, 1).endsWith(" " + forms[0]))
+            assertTrue(tag, res.getQuantityString(R.plurals.catalogue_rating, 3, 4.8, 3).endsWith(" " + forms[1]))
+        }
     }
 }

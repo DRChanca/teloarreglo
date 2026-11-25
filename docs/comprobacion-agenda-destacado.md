@@ -5,6 +5,9 @@ Contratos: [citas-contrato.md](citas-contrato.md#agenda-sin-horario-y-comprobaci
 [suscripcion-contrato.md](suscripcion-contrato.md#destacado-visible-para-clientes-23-de-noviembre-de-2026),
 [busqueda-contrato.md](busqueda-contrato.md).
 
+> Nota del 25-11-2026: registro histórico. La búsqueda ya no usa `featured_candidates` ni filtra por zona: solo los
+> destacados cuya zona incluye el concejo van primero ([ADR 0001](adr/0001-zona-de-trabajo-informa.md), [búsqueda](busqueda-contrato.md)).
+
 No se ha desplegado ni escrito en la base alojada. Las migraciones `20261123012610_agenda_open_hours.sql` y
 `20261123012620_featured_profiles.sql` y la Edge Function `search-professionals` modificada solo se han probado en la
 pila Supabase local (rama `fix/agenda-destacado` con `spec/11-demo` fusionada, incluidas #26 y #32).

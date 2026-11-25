@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -50,9 +49,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -68,8 +68,6 @@ import io.github.jan.supabase.compose.auth.composable.rememberSignInWithGoogle
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 
-private val Green = Color(0xFF246451)
-private val Canvas = Color(0xFFF7F8F5)
 
 /** What the signed-out card shows. Not identity state: only which form the user chose. */
 private enum class Form { SIGN_IN, SIGN_UP, RESET }
@@ -78,7 +76,8 @@ private enum class Form { SIGN_IN, SIGN_UP, RESET }
 fun AccessScreen(
     identity: Identity,
     onLanguageChange: (String) -> Unit,
-    onCatalogue: (() -> Unit)? = null,
+    /** Leaves an invalid email link, the only state of this tab with its own «Volver» (#47). */
+    onLeaveLink: (() -> Unit)? = null,
     onProfile: ((String) -> Unit)? = null,
     operationScope: CoroutineScope = rememberCoroutineScope(),
     googleAuth: ComposeAuth? = null,
@@ -126,245 +125,315 @@ fun AccessScreen(
         scope.launch { action(entered) }
     }
 
-    TeloTheme {
-        Surface(Modifier.fillMaxSize(), color = Canvas) {
+    // Which fields the current form shows decides where an error is explained (#47).
+    val onScreen = when (state.stage) {
+        AccessStage.SIGNED_OUT -> when (form) {
+            Form.SIGN_IN -> listOf(AccessField.EMAIL, AccessField.PASSWORD)
+            Form.SIGN_UP -> listOf(AccessField.NAME, AccessField.EMAIL, AccessField.PASSWORD)
+            Form.RESET -> listOf(AccessField.EMAIL)
+        }
+        AccessStage.RECOVERING_PASSWORD -> listOf(AccessField.PASSWORD)
+        else -> emptyList()
+    }
+    val placement = state.error?.placement(onScreen) ?: ErrorPlacement.GENERAL
+    val connected = state.stage == AccessStage.CONNECTED
+
+    /** The error's text under the field that caused it; brought into view so the person sees what to fix. */
+    @Composable
+    fun ErrorUnder(field: AccessField) {
+        val error = state.error ?: return
+        if (placement.explainedUnder != field) return
+        LaunchedEffect(error) { errorInView.bringIntoView() }
+        Text(
+            stringResource(error.message()),
+            Modifier.padding(start = TeloTheme.spacing.large).testTag("error").bringIntoViewRequester(errorInView)
+                .semantics { liveRegion = LiveRegionMode.Polite },
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+
+    /** Tells assistive technology which message belongs to a marked field. */
+    @Composable
+    fun Modifier.fieldError(field: AccessField): Modifier {
+        val message = state.error?.takeIf { field in placement.marked }?.let { stringResource(it.message()) }
+        return if (message == null) this else semantics { error(message) }
+    }
+
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Column(
+            Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()
+                .verticalScroll(rememberScrollState()).padding(TeloTheme.spacing.extraLarge),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Row(Modifier.fillMaxWidth().widthIn(max = 480.dp)) {
+                Text("teloarreglo", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+            }
+            Spacer(Modifier.height(48.dp))
+            if (onLeaveLink != null && state.error == AccessError.LINK_INVALID) {
+                TextButton(onClick = onLeaveLink, Modifier.testTag("back_from_account")) {
+                    Text(stringResource(R.string.catalogue_back))
+                }
+            }
             Column(
-                Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()
-                    .verticalScroll(rememberScrollState()).padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                Modifier.widthIn(max = 480.dp).fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.large),
             ) {
-                Row(
-                    Modifier.fillMaxWidth().widthIn(max = 480.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("teloarreglo", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Green)
-                    LanguageMenu(onLanguageChange)
+                if (connected) {
+                    // With a session the marketing cover gives way to the account itself (#47).
+                    Text(stringResource(R.string.account_title), style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.semantics { heading() })
+                } else {
+                    Text(stringResource(R.string.welcome), style = MaterialTheme.typography.headlineLarge)
+                    Text(stringResource(R.string.intro), style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = TeloTheme.spacing.large))
                 }
-                Spacer(Modifier.height(48.dp))
-                if (onCatalogue != null) {
-                    TextButton(onClick = onCatalogue, Modifier.testTag("back_from_account")) {
-                        Text(stringResource(R.string.catalogue_back))
+                // General messages (network, service, sent emails) above the form; field errors go under their field.
+                state.notice?.let { notice ->
+                    Text(
+                        stringResource(notice.message()),
+                        Modifier.testTag("notice").semantics { liveRegion = LiveRegionMode.Polite },
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                state.error?.takeIf { placement == ErrorPlacement.GENERAL }?.let { error ->
+                    LaunchedEffect(error) { errorInView.bringIntoView() }
+                    Text(
+                        stringResource(error.message()),
+                        Modifier.testTag("error").bringIntoViewRequester(errorInView)
+                            .semantics { liveRegion = LiveRegionMode.Polite },
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+                if (connected) {
+                    val profileId = state.account?.professionalProfileId
+                    AccountSection(R.string.account_section_account, "account_section") {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card),
+                            shape = MaterialTheme.shapes.large,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(Modifier.padding(TeloTheme.spacing.large), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
+                                Text(
+                                    stringResource(R.string.connected_as, state.account?.email.orEmpty()),
+                                    Modifier.testTag("account"),
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Text(stringResource(R.string.account_hint), style = MaterialTheme.typography.bodySmall)
+                                Text(stringResource(R.string.catalogue_can_hire), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        nameSlot?.invoke()
+                        homeSlot?.invoke()
                     }
-                }
-                Column(Modifier.widthIn(max = 480.dp).fillMaxWidth()) {
-                    Text(stringResource(R.string.welcome), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(16.dp))
-                    Text(stringResource(R.string.intro), style = MaterialTheme.typography.bodyLarge)
-                    Spacer(Modifier.height(32.dp))
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        shape = RoundedCornerShape(24.dp),
-                    ) {
-                        Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            @Composable
-                            fun EmailField() = OutlinedTextField(
+                    if (onEditProfile != null || profileId != null) {
+                        AccountSection(R.string.account_section_professional, "professional_section") {
+                            if (onEditProfile != null) {
+                                Button(onClick = onEditProfile, modifier = Modifier.fillMaxWidth().testTag("profile_edit_open")) {
+                                    Text(stringResource(if (profileId == null) R.string.profile_edit_offer else R.string.profile_edit_open))
+                                }
+                            }
+                            if (profileId != null && onProfile != null) {
+                                OutlinedButton(onClick = { onProfile(profileId) }, modifier = Modifier.fillMaxWidth()) {
+                                    Text(stringResource(R.string.catalogue_owned))
+                                }
+                            }
+                            if (profileId != null && profileReviews != null) ProfileReviewCard(profileReviews)
+                        }
+                    }
+                    if (profileId != null && agenda != null) AgendaCard(agenda, scope)
+                    if (profileId != null && subscriptions != null) SubscriptionCard(subscriptions, scope)
+                } else Card(
+                    colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card),
+                    shape = MaterialTheme.shapes.extraLarge,
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(TeloTheme.spacing.extraLarge), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.large)) {
+                        @Composable
+                        fun EmailField() = Column(verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
+                            OutlinedTextField(
                                 value = email, onValueChange = { email = it },
                                 label = { Text(stringResource(R.string.email)) },
                                 enabled = !state.busy, singleLine = true,
+                                isError = AccessField.EMAIL in placement.marked,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                                modifier = Modifier.fillMaxWidth().testTag("email"),
+                                modifier = Modifier.fillMaxWidth().testTag("email").fieldError(AccessField.EMAIL),
                             )
+                            ErrorUnder(AccessField.EMAIL)
+                        }
 
-                            @Composable
-                            fun PasswordField(label: Int, tag: String) {
+                        @Composable
+                        fun PasswordField(label: Int, tag: String) {
+                            Column(verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
                                 OutlinedTextField(
                                     value = password, onValueChange = { password = it },
                                     label = { Text(stringResource(label)) },
                                     enabled = !state.busy, singleLine = true,
+                                    isError = AccessField.PASSWORD in placement.marked,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                                     visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                                    modifier = Modifier.fillMaxWidth().testTag(tag),
+                                    modifier = Modifier.fillMaxWidth().testTag(tag).fieldError(AccessField.PASSWORD),
                                 )
+                                ErrorUnder(AccessField.PASSWORD)
                                 TextButton(onClick = { showPassword = !showPassword }) {
                                     Text(stringResource(if (showPassword) R.string.hide_password else R.string.show_password))
                                 }
                             }
+                        }
 
-                            when (state.stage) {
-                                AccessStage.CHECKING -> {
-                                    CircularProgressIndicator(Modifier.size(28.dp))
-                                    Text(stringResource(R.string.checking_session))
+                        when (state.stage) {
+                            AccessStage.CHECKING -> {
+                                CircularProgressIndicator(Modifier.size(28.dp))
+                                Text(stringResource(R.string.checking_session))
+                            }
+                            AccessStage.CONNECTED -> Unit // Laid out above as sections.
+                            AccessStage.UNAVAILABLE -> {
+                                Button(
+                                    onClick = { scope.launch { identity.restore() } },
+                                    modifier = Modifier.fillMaxWidth().testTag("retry"),
+                                ) { Text(stringResource(R.string.retry)) }
+                            }
+                            AccessStage.AWAITING_VERIFICATION -> {
+                                Text(stringResource(R.string.verify_title), style = MaterialTheme.typography.headlineSmall)
+                                Text(
+                                    stringResource(R.string.verify_hint, state.pendingEmail.orEmpty()),
+                                    Modifier.testTag("verifyHint"),
+                                )
+                                OutlinedButton(
+                                    enabled = !state.busy,
+                                    onClick = { scope.launch { identity.resendVerification(state.pendingEmail.orEmpty()) } },
+                                    modifier = Modifier.fillMaxWidth().testTag("resend"),
+                                ) { Text(stringResource(if (state.busy) R.string.working else R.string.resend)) }
+                                Button(
+                                    onClick = { form = Form.SIGN_IN; identity.dismiss() },
+                                    modifier = Modifier.fillMaxWidth().testTag("verifiedSignIn"),
+                                ) { Text(stringResource(R.string.verified_sign_in)) }
+                            }
+                            AccessStage.RECOVERING_PASSWORD -> {
+                                Text(stringResource(R.string.new_password_title), style = MaterialTheme.typography.headlineSmall)
+                                Text(stringResource(R.string.new_password_hint, state.account?.email.orEmpty()))
+                                PasswordField(R.string.new_password, "newPassword")
+                                Text(stringResource(R.string.password_rule), style = MaterialTheme.typography.bodySmall)
+                                BusyButton(state.busy, R.string.save_password, "savePassword") {
+                                    submit(identity::setNewPassword)
                                 }
-                                AccessStage.CONNECTED -> {
-                                    Text(stringResource(R.string.account_title), style = MaterialTheme.typography.headlineSmall)
-                                    Text(
-                                        stringResource(R.string.connected_as, state.account?.email.orEmpty()),
-                                        Modifier.testTag("account"),
-                                    )
-                                    Text(stringResource(R.string.account_hint))
-                                    Text(stringResource(R.string.catalogue_can_hire))
-                                    nameSlot?.invoke()
-                                    homeSlot?.invoke()
-                                    if (onEditProfile != null) {
-                                        Button(onClick = onEditProfile, modifier = Modifier.fillMaxWidth().testTag("profile_edit_open")) {
-                                            Text(stringResource(if (state.account?.professionalProfileId == null) R.string.profile_edit_offer
-                                                else R.string.profile_edit_open))
-                                        }
+                                TextButton(
+                                    enabled = !state.busy,
+                                    onClick = { scope.launch { identity.signOut() } },
+                                    modifier = Modifier.testTag("cancelRecovery"),
+                                ) { Text(stringResource(R.string.cancel)) }
+                            }
+                            AccessStage.SIGNED_OUT -> when (form) {
+                                Form.SIGN_IN -> {
+                                    Text(stringResource(R.string.sign_in_title), style = MaterialTheme.typography.headlineSmall)
+                                    Text(stringResource(R.string.sign_in_hint))
+                                    EmailField()
+                                    PasswordField(R.string.password, "password")
+                                    BusyButton(state.busy, R.string.sign_in, "signIn") {
+                                        submit { identity.signIn(email.trim(), it) }
                                     }
-                                    if (state.account?.professionalProfileId != null && profileReviews != null) {
-                                        ProfileReviewCard(profileReviews)
-                                    }
-                                    if (state.account?.professionalProfileId != null && subscriptions != null) {
-                                        SubscriptionCard(subscriptions, scope)
-                                    }
-                                    if (state.account?.professionalProfileId != null && agenda != null) {
-                                        AgendaCard(agenda, scope)
-                                    }
-                                    state.account?.professionalProfileId?.let { id ->
-                                        if (onProfile != null) {
-                                            TextButton(onClick = { onProfile(id) }) {
-                                                Text(stringResource(R.string.catalogue_owned))
-                                            }
-                                        }
-                                    }
-                                    OutlinedButton(
-                                        enabled = !state.busy,
-                                        onClick = { scope.launch { identity.signOut() } },
-                                        modifier = Modifier.fillMaxWidth().testTag("signOut"),
-                                    ) { Text(stringResource(if (state.busy) R.string.working else R.string.sign_out)) }
-                                }
-                                AccessStage.UNAVAILABLE -> {
-                                    Button(
-                                        onClick = { scope.launch { identity.restore() } },
-                                        modifier = Modifier.fillMaxWidth().testTag("retry"),
-                                    ) { Text(stringResource(R.string.retry)) }
-                                }
-                                AccessStage.AWAITING_VERIFICATION -> {
-                                    Text(stringResource(R.string.verify_title), style = MaterialTheme.typography.headlineSmall)
-                                    Text(
-                                        stringResource(R.string.verify_hint, state.pendingEmail.orEmpty()),
-                                        Modifier.testTag("verifyHint"),
-                                    )
-                                    OutlinedButton(
-                                        enabled = !state.busy,
-                                        onClick = { scope.launch { identity.resendVerification(state.pendingEmail.orEmpty()) } },
-                                        modifier = Modifier.fillMaxWidth().testTag("resend"),
-                                    ) { Text(stringResource(if (state.busy) R.string.working else R.string.resend)) }
-                                    Button(
-                                        onClick = { form = Form.SIGN_IN; identity.dismiss() },
-                                        modifier = Modifier.fillMaxWidth().testTag("verifiedSignIn"),
-                                    ) { Text(stringResource(R.string.verified_sign_in)) }
-                                }
-                                AccessStage.RECOVERING_PASSWORD -> {
-                                    Text(stringResource(R.string.new_password_title), style = MaterialTheme.typography.headlineSmall)
-                                    Text(stringResource(R.string.new_password_hint, state.account?.email.orEmpty()))
-                                    PasswordField(R.string.new_password, "newPassword")
-                                    Text(stringResource(R.string.password_rule), style = MaterialTheme.typography.bodySmall)
-                                    PrimaryButton(state.busy, R.string.save_password, "savePassword") {
-                                        submit(identity::setNewPassword)
-                                    }
-                                    TextButton(
-                                        enabled = !state.busy,
-                                        onClick = { scope.launch { identity.signOut() } },
-                                        modifier = Modifier.testTag("cancelRecovery"),
-                                    ) { Text(stringResource(R.string.cancel)) }
-                                }
-                                AccessStage.SIGNED_OUT -> when (form) {
-                                    Form.SIGN_IN -> {
-                                        Text(stringResource(R.string.sign_in_title), style = MaterialTheme.typography.headlineSmall)
-                                        Text(stringResource(R.string.sign_in_hint))
-                                        EmailField()
-                                        PasswordField(R.string.password, "password")
-                                        PrimaryButton(state.busy, R.string.sign_in, "signIn") {
-                                            submit { identity.signIn(email.trim(), it) }
-                                        }
-                                        if (state.error == AccessError.UNVERIFIED && state.pendingEmail != null) {
-                                            OutlinedButton(
-                                                enabled = !state.busy,
-                                                onClick = { scope.launch { identity.resendVerification(state.pendingEmail.orEmpty()) } },
-                                                modifier = Modifier.fillMaxWidth().testTag("resend"),
-                                            ) { Text(stringResource(R.string.resend)) }
-                                        }
-                                        if (google != null) {
-                                            Text(stringResource(R.string.or), Modifier.align(Alignment.CenterHorizontally))
-                                            OutlinedButton(
-                                                enabled = !state.busy,
-                                                onClick = { google.startFlow() },
-                                                modifier = Modifier.fillMaxWidth().testTag("google"),
-                                            ) { Text(stringResource(R.string.google)) }
-                                        }
-                                        FormLinks(
-                                            R.string.forgot_password to "toReset",
-                                            R.string.no_account to "toSignUp",
+                                    if (state.error == AccessError.UNVERIFIED && state.pendingEmail != null) {
+                                        OutlinedButton(
                                             enabled = !state.busy,
-                                        ) { tag ->
-                                            identity.dismiss()
-                                            form = if (tag == "toReset") Form.RESET else Form.SIGN_UP
-                                        }
+                                            onClick = { scope.launch { identity.resendVerification(state.pendingEmail.orEmpty()) } },
+                                            modifier = Modifier.fillMaxWidth().testTag("resend"),
+                                        ) { Text(stringResource(R.string.resend)) }
                                     }
-                                    Form.SIGN_UP -> {
-                                        Text(stringResource(R.string.sign_up_title), style = MaterialTheme.typography.headlineSmall)
-                                        Text(stringResource(R.string.sign_up_hint))
-                                        AccountNameField(name, { name = it }, enabled = !state.busy)
-                                        EmailField()
-                                        PasswordField(R.string.password, "password")
-                                        Text(stringResource(R.string.password_rule), style = MaterialTheme.typography.bodySmall)
-                                        PrimaryButton(state.busy, R.string.create_account, "signUp") {
-                                            submit { identity.signUp(email.trim(), it, name) }
-                                        }
-                                        if (google != null) {
-                                            Text(stringResource(R.string.or), Modifier.align(Alignment.CenterHorizontally))
-                                            OutlinedButton(
-                                                enabled = !state.busy,
-                                                onClick = { google.startFlow() },
-                                                modifier = Modifier.fillMaxWidth().testTag("google"),
-                                            ) { Text(stringResource(R.string.google)) }
-                                        }
-                                        FormLinks(R.string.have_account to "toSignIn", enabled = !state.busy) {
-                                            identity.dismiss(); form = Form.SIGN_IN
-                                        }
+                                    if (google != null) {
+                                        Text(stringResource(R.string.or), Modifier.align(Alignment.CenterHorizontally))
+                                        OutlinedButton(
+                                            enabled = !state.busy,
+                                            onClick = { google.startFlow() },
+                                            modifier = Modifier.fillMaxWidth().testTag("google"),
+                                        ) { Text(stringResource(R.string.google)) }
                                     }
-                                    Form.RESET -> {
-                                        Text(stringResource(R.string.reset_title), style = MaterialTheme.typography.headlineSmall)
-                                        Text(stringResource(R.string.reset_hint))
-                                        EmailField()
-                                        PrimaryButton(state.busy, R.string.send_link, "sendReset") {
-                                            keyboard?.hide()
-                                            scope.launch { identity.requestPasswordReset(email.trim()) }
-                                        }
-                                        FormLinks(R.string.back_to_sign_in to "toSignIn", enabled = !state.busy) {
-                                            identity.dismiss(); form = Form.SIGN_IN
-                                        }
+                                    FormLinks(
+                                        R.string.forgot_password to "toReset",
+                                        R.string.no_account to "toSignUp",
+                                        enabled = !state.busy,
+                                    ) { tag ->
+                                        identity.dismiss()
+                                        form = if (tag == "toReset") Form.RESET else Form.SIGN_UP
                                     }
                                 }
-                            }
-                            state.notice?.let { notice ->
-                                Text(
-                                    stringResource(notice.message()),
-                                    Modifier.testTag("notice").semantics { liveRegion = LiveRegionMode.Polite },
-                                    color = Green,
-                                )
-                            }
-                            state.error?.let { error ->
-                                LaunchedEffect(error) { errorInView.bringIntoView() }
-                                Text(
-                                    stringResource(error.message()),
-                                    Modifier.testTag("error").bringIntoViewRequester(errorInView)
-                                        .semantics { liveRegion = LiveRegionMode.Polite },
-                                    color = MaterialTheme.colorScheme.error,
-                                )
+                                Form.SIGN_UP -> {
+                                    Text(stringResource(R.string.sign_up_title), style = MaterialTheme.typography.headlineSmall)
+                                    Text(stringResource(R.string.sign_up_hint))
+                                    Column(verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
+                                        AccountNameField(name, { name = it }, enabled = !state.busy,
+                                            modifier = Modifier.fieldError(AccessField.NAME))
+                                        ErrorUnder(AccessField.NAME)
+                                    }
+                                    EmailField()
+                                    PasswordField(R.string.password, "password")
+                                    Text(stringResource(R.string.password_rule), style = MaterialTheme.typography.bodySmall)
+                                    BusyButton(state.busy, R.string.create_account, "signUp") {
+                                        submit { identity.signUp(email.trim(), it, name) }
+                                    }
+                                    if (google != null) {
+                                        Text(stringResource(R.string.or), Modifier.align(Alignment.CenterHorizontally))
+                                        OutlinedButton(
+                                            enabled = !state.busy,
+                                            onClick = { google.startFlow() },
+                                            modifier = Modifier.fillMaxWidth().testTag("google"),
+                                        ) { Text(stringResource(R.string.google)) }
+                                    }
+                                    FormLinks(R.string.have_account to "toSignIn", enabled = !state.busy) {
+                                        identity.dismiss(); form = Form.SIGN_IN
+                                    }
+                                }
+                                Form.RESET -> {
+                                    Text(stringResource(R.string.reset_title), style = MaterialTheme.typography.headlineSmall)
+                                    Text(stringResource(R.string.reset_hint))
+                                    EmailField()
+                                    BusyButton(state.busy, R.string.send_link, "sendReset") {
+                                        keyboard?.hide()
+                                        scope.launch { identity.requestPasswordReset(email.trim()) }
+                                    }
+                                    FormLinks(R.string.back_to_sign_in to "toSignIn", enabled = !state.busy) {
+                                        identity.dismiss(); form = Form.SIGN_IN
+                                    }
+                                }
                             }
                         }
                     }
                 }
-                Spacer(Modifier.height(24.dp))
-                Text(
-                    stringResource(if (BuildConfig.FLAVOR == "pruebas") R.string.environment_test else R.string.environment_presentation),
-                    style = MaterialTheme.typography.labelMedium,
-                )
+                // Preferences (#46): also offered to visitors, under the sign-in form.
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card),
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier.padding(top = TeloTheme.spacing.small).fillMaxWidth().testTag("preferences"),
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = TeloTheme.spacing.large, vertical = TeloTheme.spacing.large)) {
+                        Text(stringResource(R.string.preferences_title), style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.semantics { heading() })
+                        LanguageMenu(onLanguageChange)
+                    }
+                }
+                // Signing out closes the account, after everything else it holds (#47).
+                if (connected) OutlinedButton(
+                    enabled = !state.busy,
+                    onClick = { scope.launch { identity.signOut() } },
+                    modifier = Modifier.fillMaxWidth().testTag("signOut"),
+                ) { Text(stringResource(if (state.busy) R.string.working else R.string.sign_out)) }
             }
+            Spacer(Modifier.height(TeloTheme.spacing.extraLarge))
+            Text(
+                stringResource(if (BuildConfig.FLAVOR == "pruebas") R.string.environment_test else R.string.environment_presentation),
+                style = MaterialTheme.typography.labelMedium,
+            )
         }
     }
 }
 
+/** A titled group of the connected account; the title is announced as a heading. */
 @Composable
-private fun PrimaryButton(busy: Boolean, label: Int, tag: String, onClick: () -> Unit) {
-    Button(enabled = !busy, onClick = onClick, modifier = Modifier.fillMaxWidth().testTag(tag)) {
-        if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White)
-        else Text(stringResource(label))
+private fun AccountSection(title: Int, tag: String, content: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxWidth().testTag(tag), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
+        Text(stringResource(title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+        content()
     }
 }
+
 
 @Composable
 private fun ColumnScope.FormLinks(vararg links: Pair<Int, String>, enabled: Boolean, onClick: (String) -> Unit) {

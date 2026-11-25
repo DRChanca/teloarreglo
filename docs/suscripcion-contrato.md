@@ -54,3 +54,29 @@ ya aparece en resultados reales. Migración `supabase/migrations/20261123012620_
 - Android: insignia «Destacado» (`FeaturedBadge`) en la lista de cercanos, título y color del marcador del
   mapa, y cabecera del perfil público (`Catalogue.featured(id)`; si falla, no se muestra). El catálogo
   general por oficio (sin zona) no muestra insignia, porque no hay concejo con el que aplicar la regla.
+
+## «Perfil destacado» en el listado principal (24 de noviembre de 2026)
+
+Decisión de David. Sustituye la última frase de la sección anterior: el catálogo general por oficio también
+muestra los destacados. Migración `supabase/migrations/20261124010000_catalogue_featured.sql`; pgTAP
+`supabase/tests/catalogue_featured.test.sql`.
+
+- `public.catalogue(p_trade, p_id)` devuelve las mismas columnas públicas más `featured boolean`
+  (misma regla `private.is_featured`) y ordena destacados primero y después por `name, profile_id`, con
+  o sin filtro de oficio. Como el catálogo no tiene concejo, aquí no se aplica la regla de zona.
+- Android: `PublicProfile.featured`; la tarjeta destacada usa `secondaryContainer` con borde `primary` del
+  tema y la etiqueta «Perfil destacado» (`catalogue_featured_profile`, ES/EN/FR/DE). El filtro de texto
+  local conserva el orden del servidor. La lista de cercanos ya ordenaba destacados primero.
+- No se promete posición fija, exclusividad ni clientes.
+
+## Búsqueda única y zona informativa (25 de noviembre de 2026)
+
+Decisión de David ([ADR 0001](adr/0001-zona-de-trabajo-informa.md)). Sustituye la viñeta «Búsqueda cercana» de la sección del 23-11 y el uso de
+`featured_candidates` en la búsqueda:
+
+- La búsqueda devuelve a todos los perfiles del oficio por distancia (`search_all_candidates`, con `in_zone` y
+  `featured`). Solo los destacados cuya zona de trabajo incluye el concejo van primero (entre ellos por
+  distancia); un destacado fuera de su zona va mezclado con el resto y sin resalte (`featured: false`).
+- `featured_zones` sigue siendo la zona de la versión aprobada, que desde esta fecha el propietario cambia sin
+  revisión (`set_my_work_zone`, ver [revisión de perfiles](revision-perfiles-contrato.md#zona-de-trabajo-sin-revisión--25-de-noviembre-de-2026)).
+- Sin sesión, la búsqueda usa el orden del catálogo (destacados primero) hasta que se elige «Ordenar por cercanía».

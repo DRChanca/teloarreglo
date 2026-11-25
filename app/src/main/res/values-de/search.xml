@@ -1,21 +1,27 @@
 <resources xmlns:tools="http://schemas.android.com/tools" tools:locale="de">
-    <string name="catalogue_nearby">In meiner Nähe</string>
-    <string name="nearby_back">Zurück zum Katalog</string>
-    <string name="nearby_title">Fachleute in der Nähe des Auftrags</string>
-    <string name="nearby_hint">Wir nutzen deinen Standort einmalig, um den Concejo zu bestimmen und die dort Tätigen nach Entfernung zu sortieren.</string>
     <string name="nearby_use_location">Meinen Standort verwenden</string>
     <string name="nearby_privacy">Wir speichern oder verfolgen deinen Standort nicht. Entfernungen sind ungefähr und in Luftlinie.</string>
-    <string name="nearby_locating">Standort wird ermittelt…</string>
-    <string name="nearby_searching">Fachleute werden gesucht…</string>
     <string name="nearby_denied">Ohne Standortberechtigung können wir nicht in deiner Nähe suchen. Du kannst den Concejo wählen und den Ort auf der Karte markieren.</string>
     <string name="nearby_unavailable">Dein Standort konnte nicht ermittelt werden. Aktiviere die Standortdienste und versuche es erneut, oder wähle den Concejo auf der Karte.</string>
     <string name="nearby_uncertain">Dein Standort ist zu ungenau, um den Concejo zu bestimmen. Versuche es im Freien oder wähle den Concejo auf der Karte.</string>
     <string name="nearby_outside">Dieser Ort liegt außerhalb Asturiens. Derzeit gibt es nur Fachleute in Asturien.</string>
     <string name="nearby_confirm">Du bist nahe der Grenze zwischen zwei Concejos. Wo ist der Auftrag?</string>
-    <string name="nearby_results">Tätig in %1$s</string>
-    <string name="nearby_empty">In %1$s arbeiten keine Fachleute dieses Gewerks.</string>
     <string name="nearby_distance_under_1km">Weniger als 1 km entfernt</string>
     <string name="nearby_distance_about">Etwa %1$s km entfernt</string>
-    <string name="nearby_error_network">Keine Verbindung möglich. Prüfe deine Verbindung und versuche es erneut.</string>
-    <string name="nearby_error_service">Die Suche ist momentan nicht verfügbar. Bitte versuche es erneut.</string>
+    <!-- Single search ordered by distance (ADR 0001). -->
+    <string name="search_sort_nearby">Nach Entfernung sortieren</string>
+    <string name="search_near_home">In der Nähe deines Zuhauses</string>
+    <string name="search_near_home_in">In der Nähe deines Zuhauses · %1$s</string>
+    <string name="search_near_here">In der Nähe deines Standorts</string>
+    <string name="search_near_here_in">In der Nähe deines Standorts · %1$s</string>
+    <string name="search_near_manual">In der Nähe von: %1$s</string>
+    <string name="search_change">Ändern</string>
+    <string name="search_change_close">Schließen</string>
+    <string name="search_change_home">Wohnadresse ändern</string>
+    <string name="search_away_km">Du bist etwa %1$s km von zu Hause entfernt.</string>
+    <string name="search_away_dismiss">Weiter von zu Hause suchen</string>
+    <string name="search_order_failed">Sortieren nach Entfernung war nicht möglich.</string>
+    <string name="search_order_failed_network">Keine Verbindung: Sortieren nach Entfernung war nicht möglich.</string>
+    <string name="search_out_of_zone">Arbeitet normalerweise nicht in %1$s</string>
+    <string name="profile_out_of_zone">Arbeitet normalerweise nicht in %1$s. Du kannst trotzdem schreiben und den Auftrag vereinbaren.</string>
 </resources>

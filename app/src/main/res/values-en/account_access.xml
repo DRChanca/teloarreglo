@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Account and access (#47, group 2). -->
+<resources>
+    <string name="account_section_account">Your account</string>
+    <string name="account_section_professional">Professional profile</string>
+    <string name="agenda_error_days">Check the hours for: %1$s. Use HH:MM and make the end come after the start.</string>
+    <string name="agenda_error_duration">Enter between 15 and 1440 minutes.</string>
+</resources>

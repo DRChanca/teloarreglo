@@ -1,7 +1,7 @@
-// Ring search over H3 cells, ordered by geographic distance (not road distance).
-// Adapted from the validated spike (spikes/h3-busqueda): coverage is filtered by
-// the caller's lookup first; rings expand from the job cell and stop only when no
-// unexplored cell can hold someone closer than the last result of the page.
+// Ordering by geographic distance (not road distance).
+// Since ADR 0001 (25-11-2026) the Edge Function uses rankByDistance: every approved profile, the
+// «Destacado» of the concejo's work zone first. searchByRings/featuredFirst (H3 rings over the
+// covering profiles, from spikes/h3-busqueda) are kept with their tests for a larger catalogue.
 import { cellToBoundary, cellToLatLng, gridDisk, gridRingUnsafe, latLngToCell } from "h3-js";
 
 export const RESOLUTION = 6;
@@ -106,5 +106,25 @@ export function featuredFirst(featured: Ranked[], ranked: Ranked[], limit: numbe
   return [
     ...[...featured].sort(compare).map((r) => ({ ...r, featured: true })),
     ...ranked.filter((r) => !ids.has(r.profile_id)).map((r) => ({ ...r, featured: false })),
+  ].slice(0, limit);
+}
+
+export interface ZoneCandidate { profile_id: string; lat: number; lng: number; in_zone: boolean; featured: boolean }
+export interface Listed extends Placed { in_zone: boolean }
+
+/**
+ * Single search (ADR 0001, 25-11-2026): «Destacado» goes first only when its work zone includes the
+ * concejo, closest first; then every other approved profile by distance, in zone or not, without highlight.
+ */
+export function rankByDistance(from: { lat: number; lng: number }, candidates: ZoneCandidate[], limit: number): Listed[] {
+  const placed = candidates.map((c) => ({
+    profile_id: c.profile_id,
+    distance_m: distanceM(from.lat, from.lng, c.lat, c.lng),
+    featured: c.featured && c.in_zone,
+    in_zone: c.in_zone,
+  }));
+  return [
+    ...placed.filter((p) => p.featured).sort(compare),
+    ...placed.filter((p) => !p.featured).sort(compare),
   ].slice(0, limit);
 }

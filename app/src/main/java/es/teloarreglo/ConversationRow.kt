@@ -22,7 +22,7 @@ fun conversationTitle(item: Conversation, accountId: String): String =
     item.counterpartName(accountId) ?: stringResource(R.string.chat_client, item.clientId.takeLast(8))
 
 /**
- * Inbox row (#39): the other participant's name large, and on the right the server's
+ * Inbox row (#39): the other participant's name as the item title, and on the right the server's
  * count of their unread messages. The badge is announced as a full sentence.
  */
 @Composable
@@ -30,7 +30,7 @@ fun ConversationRow(item: Conversation, accountId: String, onClick: () -> Unit) 
     OutlinedCard(onClick = onClick, modifier = Modifier.fillMaxWidth().testTag("conversation_${item.id}")) {
         Row(Modifier.padding(16.dp).heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(conversationTitle(item, accountId), Modifier.weight(1f),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = if (item.unreadCount > 0) FontWeight.Bold else FontWeight.Normal,
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (item.unreadCount > 0) {

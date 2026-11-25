@@ -20,13 +20,16 @@ data class Concejo(@SerialName("ine_code") val ineCode: String, val name: String
 
 /**
  * Never a coordinate or exact distance: the server returns a rounded band in metres. [featured] marks a
- * «Destacado» (#33): an approved subscriber covering this concejo, placed first by the server.
+ * «Destacado» (#33) whose work zone includes this concejo, placed first by the server. [inZone] is false
+ * for a professional listed by distance although this concejo is outside their work zone (ADR 0001);
+ * an older server only returns professionals in zone, hence the default.
  */
 @Serializable
 data class NearbyResult(
     @SerialName("profile_id") val profileId: String,
     @SerialName("distance_band_m") val distanceBandM: Int,
     val featured: Boolean = false,
+    @SerialName("in_zone") val inZone: Boolean = true,
 )
 
 sealed interface SearchOutcome {
@@ -39,9 +42,9 @@ sealed interface SearchOutcome {
 
 enum class SearchError { INPUT, UNKNOWN_CONCEJO, NETWORK, SERVICE }
 
-/** Search by job location: coverage first, then geographic proximity (server side). */
+/** Search by job location: «Destacado» of the zone first, then everyone by distance (server side). */
 interface ProfessionalSearch {
-    suspend fun search(lat: Double, lng: Double, trade: String?, ineCode: String? = null, limit: Int = 20): SearchOutcome
+    suspend fun search(lat: Double, lng: Double, trade: String?, ineCode: String? = null, limit: Int = 50): SearchOutcome
 }
 
 @Serializable

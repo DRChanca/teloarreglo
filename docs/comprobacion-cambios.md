@@ -3,6 +3,9 @@
 Fecha: 23 de noviembre de 2026.
 Contrato: [citas-contrato.md](citas-contrato.md#cambios-de-condiciones--23).
 
+> Nota del 25-11-2026: registro histórico. `out_of_coverage` significa ahora «fuera de Asturias», no fuera de la
+> zona de trabajo ([ADR 0001](adr/0001-zona-de-trabajo-informa.md), [citas](citas-contrato.md#zona-de-trabajo-informativa--25-de-noviembre-de-2026)).
+
 No se ha desplegado ni escrito en la base alojada. La migración
 `20261123012300_appointment_changes.sql` solo se ha aplicado a la pila Supabase local
 (rama `ticket/23` sobre `spec/11-demo`). Los pagos y devoluciones son simulados: no hay pasarela ni datos bancarios.

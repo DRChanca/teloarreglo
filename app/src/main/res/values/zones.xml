@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Zona de trabajo que informa, no restringe (ADR 0001). -->
+<resources>
+    <string name="appointment_error_outside_area">Esa dirección está fuera de Asturias. Las citas solo pueden ser en un concejo de Asturias.</string>
+    <string name="zone_request_outside">Este profesional no suele trabajar en %1$s. Puedes pedir la cita igualmente.</string>
+    <string name="zone_appointment_outside_professional">Esta dirección está en %1$s, fuera de tu zona de trabajo.</string>
+    <string name="zone_appointment_outside_client">%1$s no suele trabajar en %2$s.</string>
+    <string name="zone_add_concejo">Añadir %1$s a mi zona</string>
+    <string name="zone_added">%1$s ya forma parte de tu zona de trabajo.</string>
+    <string name="zone_add_error">No se pudo añadir %1$s a tu zona. Inténtalo de nuevo.</string>
+    <string name="zone_error_not_published">Tu perfil aún no está publicado: la zona va en la primera versión que envías a revisión.</string>
+    <string name="profile_block_zone">Zona de trabajo (se aplica al momento)</string>
+    <string name="profile_zone_hint">Los cambios en tu zona se publican al momento, sin revisión. Puedes aceptar citas fuera de ella; la zona solo informa a los clientes.</string>
+    <string name="profile_zone_in_own_section">Tu zona de trabajo se cambia en su propia sección, sin revisión.</string>
+    <string name="profile_zone_saved">Zona de trabajo actualizada.</string>
+    <string name="profile_zone_error_empty">Tu zona debe tener al menos un concejo.</string>
+    <string name="profile_zone_error_unknown">Algún concejo no es válido. Vuelve a abrir el editor e inténtalo de nuevo.</string>
+    <string name="profile_zone_error_network">No se pudo guardar la zona. Inténtalo de nuevo.</string>
+    <string name="profile_zone_error_access">No tienes permiso para cambiar esta zona. Vuelve a iniciar sesión.</string>
+</resources>

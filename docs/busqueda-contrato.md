@@ -1,8 +1,14 @@
-# Búsqueda por GPS, cobertura y proximidad
+# Búsqueda por distancia con zona de trabajo informativa
 
 Ticket: [Encontrar profesionales por GPS, cobertura y proximidad](https://github.com/DRChanca/teloarreglo/issues/16).
 Rama: `feat/16-busqueda-gps` (desde `develop`). Responsable: Marcos.
 Estado (21/11): **servidor desplegado y probado en la base compartida; pantalla Android pendiente.**
+
+**Actualización del 25-11-2026** ([ADR 0001](adr/0001-zona-de-trabajo-informa.md), migración
+`20261125000100_work_zone_informs.sql`): la zona de trabajo (`coverage`) ya no filtra. La búsqueda devuelve a
+todos los perfiles aprobados del oficio por distancia, con `in_zone` en cada resultado y `method: "distance"`.
+Es la única búsqueda de la app (pestaña «Buscar»); la pantalla «Cerca de mí» desaparece. Lo que sigue describe
+el contrato vigente; la versión con cobertura y anillos H3 se conserva en «Historia».
 
 ## Interfaces
 
@@ -10,35 +16,66 @@ Estado (21/11): **servidor desplegado y probado en la base compartida; pantalla 
 | --- | --- | --- |
 | `public.concejos(ine_code, name, boundary)` | visitantes leen `ine_code` y `name` | Límites oficiales del IGN. La geometría no es legible directamente. |
 | `resolve_concejo(p_lat, p_lng, p_tolerance_m = 250)` | visitantes y cuentas | Concejos que contienen o rozan el punto, `distance_m` 0 = dentro. Más de uno = frontera o posición incierta: confirmar. |
-| `private.professional_locations(profile_id, location, h3_cell)` | nadie fuera del servidor | Punto registrado del profesional y su celda H3 (resolución 6). |
-| `search_candidates(p_ine_code, p_trade, p_cells)` / `count_candidates(...)` | solo `service_role` | Perfiles aprobados del oficio que cubren el concejo, con su ubicación exacta. |
+| `private.professional_locations(profile_id, location, h3_cell)` | nadie fuera del servidor | Punto registrado del profesional y su celda H3 (resolución 6; la búsqueda ya no la usa). |
+| `search_all_candidates(p_ine_code, p_trade)` | solo `service_role` | Todos los perfiles aprobados del oficio (`null` = cualquiera) con ubicación registrada: ubicación exacta, `in_zone` (su zona incluye el concejo) y `featured`. |
 | Edge Function `search-professionals` | app (clave publicable) | Búsqueda completa; respuesta sin coordenadas ni distancias exactas. |
+
+`search_candidates` / `count_candidates` / `featured_candidates` (filtradas por cobertura) siguen en la base,
+pero la Edge Function ya no las llama.
 
 ### Petición y respuesta
 
 ```text
 POST /functions/v1/search-professionals
-{ lat, lng, trade?, ine_code?, limit? (1–50, def. 20) }
+{ lat, lng, trade?, ine_code?, limit? (1–50, def. 20; la app pide 50) }
 
-200 { status: "ok", concejo: {ine_code, name}, method: "h3" | "coverage",
-      results: [{ profile_id, distance_band_m, featured }] }
+200 { status: "ok", concejo: {ine_code, name}, method: "distance",
+      results: [{ profile_id, distance_band_m, featured, in_zone }] }
 200 { status: "confirm_concejo", options: [{ine_code, name}], results: [] }
 200 { status: "outside_area", results: [] }
 400 { error: "invalid_input" | "unknown_concejo" }
 503 { error: "service_unavailable" }      # nunca una lista vacía falsa
 ```
 
+- `lat, lng` = punto de búsqueda: la casa por defecto; el GPS (una vez) o un concejo/chincheta solo si la persona lo elige.
 - `ine_code` en la petición = concejo confirmado por el usuario o elegido a mano (pin manual).
+- `featured` solo es `true` si además `in_zone` es `true`.
 - Los perfiles se piden después con `catalogue(null, profile_id)`, que ya existe.
 
 ## Reglas
 
-1. **Cobertura primero**: solo perfiles aprobados del oficio cuyo `coverage` incluye el concejo del trabajo.
-2. **Proximidad después**: distancia geográfica (haversine) a la ubicación registrada, no por carretera ni seguimiento en directo.
-3. **H3 organiza, no decide el orden**: anillos desde la celda del trabajo, por lotes (0, 1, 2–3, 4–7…), parando solo cuando ninguna celda sin explorar puede contener a alguien más cerca que el último de la página. Tope de 1000 celdas; si se agota, se ordena la lista de cobertura completa (`method: "coverage"`), siempre correcta.
+1. **Todos por distancia** (25-11-2026): perfiles aprobados del oficio con ubicación registrada, trabajen o no en
+   el concejo del punto de búsqueda. La zona de trabajo solo informa: `in_zone: false` → la tarjeta dice
+   «No suele trabajar en {concejo}».
+2. **Distancia geográfica** (haversine) a la ubicación registrada, no por carretera ni seguimiento en directo.
+   Empates por `profile_id`.
+3. **Orden completo, sin H3**: con pocos perfiles se ordena la lista entera, exacta y barata. El algoritmo por
+   anillos (`searchByRings`) sigue en `search.ts` y en sus pruebas, sin uso.
 4. **Privacidad**: la distancia mostrada se redondea hacia arriba a tramos de 500 m (`distance_band_m`), para que no se pueda triangular el domicilio buscando desde varios puntos. Nunca se devuelven coordenadas ni celdas.
 5. **Fronteras**: si el punto está a menos de 250 m de otro concejo, la función no adivina: devuelve `confirm_concejo`.
-6. **Destacado** (#33, 23-11-2026): los perfiles con suscripción simulada activa y versión aprobada que cubren el concejo van primero (`featured: true`, entre ellos por distancia) y después el resto por proximidad; ver `suscripcion-contrato.md`.
+6. **Destacado** (#33; 25-11-2026): primero los perfiles con suscripción simulada activa cuya zona incluye el
+   concejo (`featured: true`, entre ellos por distancia); después todos los demás por distancia. Un destacado
+   fuera de su zona va mezclado con el resto y sin resalte (`featured: false`). Ver `suscripcion-contrato.md`.
+   El catálogo general por oficio (`catalogue`) también pone primero a los destacados y devuelve `featured` (24-11-2026, ver `suscripcion-contrato.md`).
+
+### Android (25-11-2026)
+
+- Esqueleto mientras carga. Si la búsqueda falla, la lista queda en el orden del catálogo con «No hemos podido
+  ordenar por cercanía · Reintentar».
+- Visitante sin sesión: orden del catálogo con «Ordenar por cercanía» (GPS o concejo a elección).
+- Los perfiles del catálogo sin ubicación registrada se añaden al final, sin distancia.
+- El filtro de texto se aplica en el dispositivo sobre la lista ordenada; el mapa opcional muestra la misma lista.
+- Lejos de casa (> 5 km): comprobación en segundo plano y banner no bloqueante una vez por sesión.
+
+## Historia
+
+Hasta el 25-11-2026 la regla 1 era «**Cobertura primero**: solo perfiles aprobados del oficio cuyo `coverage`
+incluye el concejo del trabajo» y la regla 3 «**H3 organiza, no decide el orden**: anillos desde la celda del
+trabajo, por lotes (0, 1, 2–3, 4–7…), parando solo cuando ninguna celda sin explorar puede contener a alguien
+más cerca que el último de la página; tope de 1000 celdas y, si se agota, orden de la lista de cobertura completa
+(`method: "coverage"`)». La respuesta era `method: "h3" | "coverage"` y `results: [{ profile_id,
+distance_band_m, featured }]`, con candidatos de `search_candidates(p_ine_code, p_trade, p_cells)`. Las
+comprobaciones del 21/11 de más abajo corresponden a esa versión.
 
 ## Datos de concejos
 

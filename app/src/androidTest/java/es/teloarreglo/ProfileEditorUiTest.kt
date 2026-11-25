@@ -1,7 +1,13 @@
 package es.teloarreglo
 
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -32,7 +38,7 @@ class ProfileEditorUiTest {
         var failNext = false
         override suspend fun mine() = own
         override suspend fun start() = OwnProfile("p", null, null, ProfileContent(), ProfileReview("p")).also { own = it }
-        override suspend fun submit(requestId: String, content: ProfileContent): ProfileReview {
+        override suspend fun submit(requestId: String, content: ProfileContent, agenda: es.teloarreglo.catalogue.ProfileAgenda?): ProfileReview {
             submitted += requestId to content
             if (failNext) { failNext = false; error("offline") }
             return ProfileReview("p", ReviewStatus.PENDING, published = own?.public != null)
@@ -99,4 +105,29 @@ class ProfileEditorUiTest {
         compose.onNodeWithTag("profile_edit_missing").assertExists()
         assertTrue(fake.submitted.isEmpty())
     }
+
+    @Test fun whatIsMissingIsListedAtTheTopAndSaidInWordsAtEachField() {
+        val fake = Fake(OwnProfile("p", null, null, approved.copy(trades = emptyList(), phone = ""), ProfileReview("p")))
+        show(fake)
+        compose.onNodeWithTag("profile_edit_missing_list")
+            .assertTextContains(text(R.string.profile_missing_trades), substring = true)
+            .assertTextContains(text(R.string.profile_missing_phone), substring = true)
+            .assert(hasText(text(R.string.profile_missing_name), substring = true).not())
+        compose.onNodeWithTag("profile_edit_submit").performScrollTo().performClick()
+        compose.onNodeWithTag("profile_edit_trades_error").assertIsDisplayed()
+        compose.onNodeWithTag("profile_edit_phone_error").assertExists()
+        compose.onNodeWithTag("profile_edit_name_error").assertDoesNotExist()
+        assertTrue(fake.submitted.isEmpty())
+    }
+
+    @Test fun eachBlockEndsWithTheButtonThatSavesIt() {
+        val fake = Fake(OwnProfile("p", null, approved, approved, ProfileReview("p", ReviewStatus.APPROVED, published = true)))
+        show(fake)
+        compose.onNode(hasTestTag("profile_edit_submit") and hasAnyAncestor(hasTestTag("profile_block_public"))).assertExists()
+        compose.onNode(hasTestTag("profile_offer_save") and hasAnyAncestor(hasTestTag("profile_block_offer"))).assertExists()
+        compose.onNode(hasTestTag("profile_edit_private_save") and hasAnyAncestor(hasTestTag("profile_block_address"))).assertExists()
+        compose.onNode(hasTestTag("profile_offer_save") and hasAnyAncestor(hasTestTag("profile_block_public"))).assertDoesNotExist()
+    }
+
+    private fun text(id: Int) = InstrumentationRegistry.getInstrumentation().targetContext.getString(id)
 }

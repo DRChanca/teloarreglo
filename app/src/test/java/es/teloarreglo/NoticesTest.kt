@@ -1,6 +1,13 @@
 package es.teloarreglo
 
+import es.teloarreglo.notices.Notice
+import es.teloarreglo.notices.NoticeDestination
+import es.teloarreglo.notices.NoticeOpening
+import es.teloarreglo.notices.openNoticeConversation
 import es.teloarreglo.notices.NoticeTopic
+import es.teloarreglo.notices.destination
+import es.teloarreglo.notices.readOnSight
+import kotlinx.serialization.json.jsonObject
 import es.teloarreglo.notices.PushDevices
 import es.teloarreglo.notices.PushPreferences
 import es.teloarreglo.notices.PushRegistration
@@ -159,5 +166,38 @@ class NoticesTest {
         val push = PushRegistration(devices, FakeTokens(), MemoryPreferences()) { true }
         push.sync("user-a")
         assertEquals(PushStatus.FAILED, push.status.value)
+    }
+
+    private fun notice(id: String, kind: String, payload: String, read: Boolean = false) = Notice(
+        id, kind, kotlinx.serialization.json.Json.parseToJsonElement(payload).jsonObject, "2026-11-23T10:00:00+00:00", read)
+
+    @Test fun eachNoticeSaysWhereItLeads() {
+        assertEquals(NoticeDestination.Conversation("c1"), notice("n1", "message", """{"conversation_id":"c1"}""").destination())
+        assertEquals(NoticeDestination.Conversation("c1"),
+            notice("n2", "appointment", """{"conversation_id":"c1","event":"done"}""").destination())
+        assertEquals(NoticeDestination.Account, notice("n3", "profile_review", """{"status":"approved"}""").destination())
+        assertNull(notice("n4", "appointment", """{"event":"reminder"}""").destination())
+    }
+
+    @Test fun unreadNoticesWithoutDestinationAreReadOnSight() {
+        val list = listOf(
+            notice("n1", "message", """{"conversation_id":"c1"}"""),
+            notice("n2", "appointment", """{"event":"reminder"}"""),
+            notice("n3", "other", """{}""", read = true),
+            notice("n4", "profile_review", """{"status":"rejected"}"""),
+            notice("n5", "other", """{}"""),
+        )
+        assertEquals(listOf("n2", "n5"), list.readOnSight())
+    }
+
+    @Test fun openingANoticesConversationTellsAMissingOneFromAnUnreachableService() = runTest {
+        val opened = mutableListOf<String>()
+        assertEquals(NoticeOpening.OPENED, openNoticeConversation("c1", { listOf("c0", "c1") }, { it }) { opened += it })
+        assertEquals(listOf("c1"), opened)
+        assertEquals(NoticeOpening.NOT_FOUND, openNoticeConversation("c9", { listOf("c0", "c1") }, { it }) { opened += it })
+        assertEquals(NoticeOpening.UNREACHABLE,
+            openNoticeConversation<String>("c1", { throw java.io.IOException("offline") }, { it }) { opened += it })
+        assertEquals(NoticeOpening.UNREACHABLE, openNoticeConversation<String>("c1", { null }, { it }) { opened += it })
+        assertEquals(listOf("c1"), opened)
     }
 }

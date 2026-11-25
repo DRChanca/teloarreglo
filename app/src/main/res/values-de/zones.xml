@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Das Arbeitsgebiet informiert, es schränkt nicht ein (ADR 0001). -->
+<resources>
+    <string name="appointment_error_outside_area">Diese Adresse liegt außerhalb Asturiens. Termine sind nur in einem Concejo Asturiens möglich.</string>
+    <string name="zone_request_outside">Diese Fachkraft arbeitet normalerweise nicht in %1$s. Du kannst den Termin trotzdem anfragen.</string>
+    <string name="zone_appointment_outside_professional">Diese Adresse liegt in %1$s, außerhalb deines Arbeitsgebiets.</string>
+    <string name="zone_appointment_outside_client">%1$s arbeitet normalerweise nicht in %2$s.</string>
+    <string name="zone_add_concejo">%1$s zu meinem Gebiet hinzufügen</string>
+    <string name="zone_added">%1$s gehört jetzt zu deinem Arbeitsgebiet.</string>
+    <string name="zone_add_error">%1$s konnte nicht zu deinem Gebiet hinzugefügt werden. Versuche es erneut.</string>
+    <string name="zone_error_not_published">Dein Profil ist noch nicht veröffentlicht: Das Gebiet gehört zur ersten Version, die du zur Prüfung sendest.</string>
+    <string name="profile_block_zone">Arbeitsgebiet (wird sofort übernommen)</string>
+    <string name="profile_zone_hint">Änderungen an deinem Gebiet werden sofort und ohne Prüfung veröffentlicht. Du kannst auch Termine außerhalb annehmen; das Gebiet informiert nur die Kundschaft.</string>
+    <string name="profile_zone_in_own_section">Dein Arbeitsgebiet änderst du in einem eigenen Abschnitt, ohne Prüfung.</string>
+    <string name="profile_zone_saved">Arbeitsgebiet aktualisiert.</string>
+    <string name="profile_zone_error_empty">Dein Gebiet muss mindestens ein Concejo enthalten.</string>
+    <string name="profile_zone_error_unknown">Ein Concejo ist ungültig. Öffne den Editor erneut und versuche es noch einmal.</string>
+    <string name="profile_zone_error_network">Das Gebiet konnte nicht gespeichert werden. Versuche es erneut.</string>
+    <string name="profile_zone_error_access">Du darfst dieses Gebiet nicht ändern. Melde dich erneut an.</string>
+</resources>

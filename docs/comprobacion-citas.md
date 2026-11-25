@@ -3,6 +3,9 @@
 Fecha: 23 de noviembre de 2026.
 Contrato: [citas-contrato.md](citas-contrato.md).
 
+> Nota del 25-11-2026: registro histórico. Las solicitudes ya no exigen la zona de trabajo (cobertura): fuera
+> de Asturias fallan con `outside_area` ([ADR 0001](adr/0001-zona-de-trabajo-informa.md), [citas](citas-contrato.md#zona-de-trabajo-informativa--25-de-noviembre-de-2026)).
+
 No se ha desplegado ni escrito en la base alojada. La migración
 `20261122002000_appointments.sql` solo se ha aplicado a la pila Supabase local.
 

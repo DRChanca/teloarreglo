@@ -1,11 +1,12 @@
 -- Appointment requests and versioned proposals (#20). Fixtures use the ...2001NN range.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(37);
+select plan(38);
 
 -- Synthetic concejo (not a real code) covered by the professional; a point well outside it.
 insert into public.concejos(ine_code, name, boundary) values
- ('33996', 'Prueba Citas', 'SRID=4326;MULTIPOLYGON(((-6.0 43.0,-5.9 43.0,-5.9 43.1,-6.0 43.1,-6.0 43.0)))'::extensions.geography);
+ ('33996', 'Prueba Citas', 'SRID=4326;MULTIPOLYGON(((-6.0 43.0,-5.9 43.0,-5.9 43.1,-6.0 43.1,-6.0 43.0)))'::extensions.geography),
+ ('33995', 'Prueba Vecino', 'SRID=4326;MULTIPOLYGON(((-5.9 43.0,-5.8 43.0,-5.8 43.1,-5.9 43.1,-5.9 43.0)))'::extensions.geography);
 insert into auth.users(id,email,email_confirmed_at) values
  ('00000000-0000-0000-0000-000000200101','appointment-client@example.org',now()),
  ('00000000-0000-0000-0000-000000200102','appointment-pro@example.org',now()),
@@ -40,7 +41,10 @@ select lives_ok($$select public.request_appointment((select id from public.conve
  'several pending requests may share the same hour');
 select throws_ok($$select public.request_appointment((select id from public.conversations), '30000000-0000-0000-0000-000000200103',
  'Too far', '2030-01-15 10:00Z', '2030-01-15 12:00Z', 'Somewhere else', 40.40, -3.70)$$,
- '22023', 'out_of_coverage', 'the pin must be inside the professional coverage');
+ '22023', 'outside_area', 'the pin must be in Asturias (in or near a concejo)');
+select lives_ok($$select public.request_appointment((select id from public.conversations), '30000000-0000-0000-0000-0000002001f6',
+ 'Neighbour concejo', '2030-01-16 10:00Z', '2030-01-16 12:00Z', 'Calle Vecina 1', 43.05, -5.85)$$,
+ 'ADR 0001: a pin outside the work zone but in Asturias is accepted');
 select throws_ok($$select public.request_appointment((select id from public.conversations), '30000000-0000-0000-0000-000000200104',
  'Past', '2020-01-15 10:00Z', '2020-01-15 12:00Z', 'Calle Uría 1, 3ºB', 43.05, -5.95)$$,
  '22023', 'invalid_appointment', 'a request cannot start in the past by server time');

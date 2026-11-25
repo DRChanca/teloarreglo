@@ -2,6 +2,9 @@
 
 Fecha: 23 de noviembre de 2026. Contrato: [mapa-contrato.md](mapa-contrato.md).
 
+> Nota del 25-11-2026: registro histórico. La pantalla «Cerca de mí» desapareció; el mapa y la elección manual
+> pertenecen ahora a la búsqueda única ([búsqueda](busqueda-contrato.md)).
+
 No se ha desplegado ni escrito en la base alojada. No se ha creado ni modificado ninguna clave de
 Google ni activado facturación.
 
