@@ -89,6 +89,8 @@ fun AccessScreen(
     homeSlot: (@Composable () -> Unit)? = null,
     /** The person's name and its change action (#40), shown to a connected account. */
     nameSlot: (@Composable () -> Unit)? = null,
+    /** The contact phone and its change action (#78), shown to a connected account. */
+    phoneSlot: (@Composable () -> Unit)? = null,
     /** Where the search starts and the list/map view (#61), among the preferences. */
     searchSlot: (@Composable () -> Unit)? = null,
     onEditProfile: (() -> Unit)? = null,
@@ -225,6 +227,7 @@ fun AccessScreen(
                             }
                         }
                         nameSlot?.invoke()
+                        phoneSlot?.invoke()
                         homeSlot?.invoke()
                     }
                     if (onEditProfile != null || profileId != null) {

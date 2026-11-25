@@ -245,6 +245,7 @@ class MainActivity : AppCompatActivity() {
                             googleAuth = app.googleAuth, profileReviews = app.profileReviews,
                             subscriptions = app.subscriptions, agenda = app.agenda,
                             nameSlot = nameSession?.let { session -> { AccountNameCard(session, app.applicationScope) } },
+                            phoneSlot = phoneSession?.let { session -> { ContactPhoneCard(session, app.applicationScope) } },
                             homeSlot = homeSession?.let { session -> { HomeSummaryCard(session, onChange = { nav = nav.editHome() }) } },
                             searchSlot = proximitySource?.let { source -> {
                                 val proximity = rememberProximity(source, app.catalogue, app.searchSession?.trade?.value, app.searchSession)
