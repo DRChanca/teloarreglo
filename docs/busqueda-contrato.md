@@ -67,6 +67,24 @@ POST /functions/v1/search-professionals
 - El filtro de texto se aplica en el dispositivo sobre la lista ordenada; el mapa opcional muestra la misma lista.
 - Lejos de casa (> 5 km): comprobación en segundo plano y banner no bloqueante una vez por sesión.
 
+### Filtros en el dispositivo (25-11-2026, #52)
+
+La Edge Function, el SQL y el límite de resultados no cambian. La app filtra la lista que ya tiene, en el orden
+recibido (destacados de la zona primero, el resto por distancia), con una función pura; filtrar solo quita
+perfiles, así que no hace falta pedir más:
+
+1. **Oficio**: es el `trade` de la petición (chips y hoja comparten el estado).
+2. **Distancia máxima** (2 · 5 · 10 · 25 · 50 km o sin límite): pasa si `distance_band_m ≤ límite × 1000`, es
+   decir, se compara el tramo redondeado que muestra la tarjeta (4,7 km → 5000, pasa 5 km; 5,2 km → 5500, no).
+   Se aplica también a los destacados. Un perfil sin tramo (sin ubicación registrada) no pasa con un límite
+   activo. Sin punto de búsqueda no hay tramos y el límite no se puede elegir.
+3. **Valoración mínima** (3★ o 4★): pasa si `rating ≥ mínima` (del catálogo); sin reseñas no pasa con un mínimo
+   activo. No depende del punto de búsqueda.
+4. **Texto**: el de siempre, después de los anteriores.
+
+La privacidad no cambia: la app solo conoce el tramo, nunca coordenadas ni distancias exactas. La zona de trabajo
+sigue sin excluir (ADR 0001); quien excluye es la persona al elegir un filtro.
+
 ## Historia
 
 Hasta el 25-11-2026 la regla 1 era «**Cobertura primero**: solo perfiles aprobados del oficio cuyo `coverage`
