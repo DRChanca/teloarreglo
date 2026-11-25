@@ -200,6 +200,9 @@
     <string name="map_directions">Itinéraire avec Google Maps</string>
     <string name="map_open_appointment">Itinéraire</string>
     <string name="map_no_app">Aucune application ne peut ouvrir Google Maps. Installez Google Maps ou un navigateur.</string>
+    <string name="call_button">Appeler</string>
+    <string name="call_description">Appeler le %1$s</string>
+    <string name="call_no_app">Aucune application de téléphone n\'est disponible pour appeler.</string>
     <string name="map_pick_on_map">Choisir le point sur la carte</string>
     <string name="map_pick_confirm">Utiliser ce point</string>
     <string name="map_pin_not_address">Le point ne remplace pas l\'adresse : saisissez la rue et le numéro.</string>
@@ -334,6 +337,17 @@
     <string name="account_name_invalid">Saisissez votre nom, de 1 à 80 caractères.</string>
     <string name="account_name_access">Votre session a expiré. Reconnectez-vous.</string>
     <string name="account_name_network">Le nom n\'a pas pu être enregistré. Vérifiez la connexion et réessayez.</string>
+    <string name="contact_phone_label">Téléphone de contact</string>
+    <string name="contact_phone_title">À quel numéro pouvons-nous vous appeler ?</string>
+    <string name="contact_phone_intro">Les professionnels avec qui vous confirmez un rendez-vous utiliseront ce numéro pour vous contacter.</string>
+    <string name="contact_phone_hint">9 chiffres s\'il est espagnol, ou avec + et l\'indicatif de votre pays</string>
+    <string name="contact_phone_save">Enregistrer le téléphone</string>
+    <string name="contact_phone_invalid">Saisissez un numéro espagnol à 9 chiffres ou un numéro avec + et l\'indicatif de son pays.</string>
+    <string name="contact_phone_access">Votre session a expiré. Reconnectez-vous.</string>
+    <string name="contact_phone_network">Le téléphone n\'a pas pu être enregistré. Vérifiez la connexion et réessayez.</string>
+    <string name="contact_phone_change">Modifier le téléphone</string>
+    <string name="contact_phone_none">Vous n\'avez pas encore indiqué votre téléphone de contact.</string>
+    <string name="contact_phone_unknown">Le téléphone n\'a pas pu être chargé. Vous pouvez quand même le modifier.</string>
     <string name="payment_integrated">Payer %1$s et confirmer</string>
     <string name="payment_direct">Je paierai %1$s directement au professionnel</string>
     <string name="payment_retry">Réessayer la confirmation (%1$s)</string>
@@ -530,6 +544,7 @@
     <string name="notices_topic_cancelled">Rendez-vous annulé</string>
     <string name="notices_topic_done">Travail marqué comme réalisé : confirmez-le ou signalez un problème</string>
     <string name="notices_topic_reminder">Rappel : confirmez le travail réalisé ou signalez un problème</string>
+    <string name="notices_topic_call_client">Votre rendez-vous commence bientôt : appelez le client</string>
     <string name="notices_topic_completed">Rendez-vous terminé</string>
     <string name="notices_topic_incident">Nouveauté sur un incident</string>
     <string name="notices_topic_appointment">Nouveauté sur un rendez-vous</string>

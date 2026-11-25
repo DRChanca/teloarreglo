@@ -249,6 +249,34 @@ Android: `Appointments.list` pide las columnas legibles y después `appointment_
   (`ApproximateAreaMap`, sin marcador) cuando hay mapa, y «La dirección exacta se mostrará cuando se
   confirme la cita». No ofrece «Cómo llegar».
 
+### Teléfono de contacto en la cita — #79
+
+Migración `20261126071131_appointment_contact_phone.sql` (no modifica las anteriores): como cambia el
+tipo de retorno, borra y vuelve a crear `appointment_places` con los mismos permisos (`authenticated`
+sí, `anon` y `public` no) y las mismas reglas de la dirección exacta. Añade al final la columna
+`contact_phone text`: el [teléfono de contacto](telefono-contrato.md) vigente del cliente, leído de
+`contact_phones` en cada llamada (nunca una copia; un cambio de número se ve al momento).
+
+- El cliente lo recibe siempre en sus citas, en cualquier estado.
+- El profesional solo con la cita `confirmed` o `started`. Con la cita `pending` (con o sin propuesta),
+  `done`, `completed` o `cancelled` recibe `null`. La regla va por estado, no por `location_shared_at`:
+  la dirección exacta se sigue viendo tras terminar, el teléfono de contacto no.
+- `null` también si el cliente no tiene teléfono de contacto. Una tercera cuenta sigue recibiendo 0 filas.
+- El teléfono de contacto no aparece en el chat, la solicitud, las propuestas, los avisos ni la bandeja.
+
+Android:
+
+- `AppointmentPlace.contactPhone` y `Appointment.callPhone(professional)`: el número para «Llamar», solo
+  para el profesional, con la cita confirmada o comenzada, la dirección exacta y un número no vacío.
+  `AppointmentLocationBlock` muestra `CallButton` (#75, `Dialer.kt`, `ACTION_DIAL`, sin permiso de
+  llamada) debajo de la dirección exacta. Sin número no aparece.
+- `Appointments.contactPhone(conversationId, appointmentId)`: lee en ese momento solo
+  `appointment_places` y devuelve el número de esa cita o `null`. Lo usa la acción «Llamar» del aviso
+  para llamar (#81).
+
+Pruebas: pgTAP `appointment_contact_phone.test.sql`; Kotlin `AppointmentsTest`
+(`callButtonOnly…`, `contactPhoneOfAnAppointment…`).
+
 ```bash
 /Users/david/Desktop/copiaMovil/spec11-notas/db-check.sh <worktree> bash -c 'cd scripts && python3 contract_appointments.py --local && python3 contract_agenda.py --local'
 ./gradlew :app:testPruebasDebugUnitTest --tests 'es.teloarreglo.AppointmentsTest'

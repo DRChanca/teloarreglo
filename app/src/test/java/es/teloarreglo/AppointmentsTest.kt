@@ -119,6 +119,40 @@ class AppointmentsTest {
         assertTrue(incomplete.location is AppointmentLocation.Approximate)
     }
 
+    private fun phonePlace(phone: String?, exact: Boolean = true) = placeJson(exact).dropLast(1) +
+        ",\"contact_phone\":" + (phone?.let { "\"$it\"" } ?: "null") + "}"
+
+    @Test fun callButtonOnlyForTheProfessionalOfAConfirmedOrStartedAppointmentWithANumber() = runTest {
+        suspend fun appointment(stage: String, phone: String? = "+34612345678", exact: Boolean = true) =
+            withClient({ listing(it, "", "[${phonePlace(phone, exact)}]", stage = stage) }) { it.list("conv") }.single()
+        assertEquals("+34612345678", appointment("confirmed").callPhone(professional = true))
+        assertEquals("+34612345678", appointment("started").callPhone(professional = true))
+        for (stage in listOf("pending", "done", "completed", "cancelled"))
+            assertNull(stage, appointment(stage).callPhone(professional = true))
+        assertNull("no number", appointment("confirmed", phone = null).callPhone(professional = true))
+        assertNull("blank number", appointment("confirmed", phone = " ").callPhone(professional = true))
+        assertNull("no exact place", appointment("confirmed", exact = false).callPhone(professional = true))
+        assertNull("the client does not call themselves", appointment("confirmed").callPhone(professional = false))
+        assertNull("place not loaded", withClient({ listing(it, "", stage = "confirmed") }) { it.list("conv") }.single()
+            .callPhone(professional = true))
+    }
+
+    @Test fun contactPhoneOfAnAppointmentIsReadOnlyThroughThePlaceFunction() = runTest {
+        val paths = mutableListOf<String>()
+        var body: JsonObject? = null
+        val other = phonePlace("+34699999999").replace("\"appt\"", "\"other\"")
+        val phone = withClient({ request ->
+            paths += request.url.encodedPath
+            body = Json.parseToJsonElement((request.body as TextContent).text).jsonObject
+            json("[$other,${phonePlace("+34612345678")}]")
+        }) { it.contactPhone("conv", "appt") }
+        assertEquals("+34612345678", phone)
+        assertEquals(listOf("/rest/v1/rpc/appointment_places"), paths)
+        assertEquals("conv", body!!["p_conversation_id"]!!.jsonPrimitive.content)
+        assertNull(withClient({ json("[${phonePlace(null)}]") }) { it.contactPhone("conv", "appt") })
+        assertNull(withClient({ json("[]") }) { it.contactPhone("conv", "appt") })
+    }
+
     @Test fun noCurrentProposalAfterTheOnlyOneIsRejected() = runTest {
         val appointment = withClient({ listing(it, proposalJson(1, "rejected")) }) { it.list("conv") }.single()
         assertNull(appointment.currentProposal)

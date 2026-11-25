@@ -6,6 +6,7 @@ import es.teloarreglo.notices.NoticeOpening
 import es.teloarreglo.notices.openNoticeConversation
 import es.teloarreglo.notices.NoticeTopic
 import es.teloarreglo.notices.destination
+import es.teloarreglo.notices.pushDestination
 import es.teloarreglo.notices.readOnSight
 import kotlinx.serialization.json.jsonObject
 import es.teloarreglo.notices.PushDevices
@@ -191,6 +192,23 @@ class NoticesTest {
             notice("n2", "appointment", """{"conversation_id":"c1","event":"done"}""").destination())
         assertEquals(NoticeDestination.Account, notice("n3", "profile_review", """{"status":"approved"}""").destination())
         assertNull(notice("n4", "appointment", """{"event":"reminder"}""").destination())
+    }
+
+    @Test fun theCallNoticeHasItsOwnTopicAndOpensItsAppointment() {
+        val call = notice("n5", "call_client", """{"appointment_id":"a1","conversation_id":"c1"}""")
+        assertEquals(NoticeTopic.CALL_CLIENT, call.topic())
+        assertEquals(NoticeTopic.CALL_CLIENT, es.teloarreglo.notices.topicOf("call_client", ""))
+        // The appointment is shown in its conversation: that is where tapping the notice leads.
+        assertEquals(NoticeDestination.Conversation("c1"), call.destination())
+    }
+
+    @Test fun tappingACallPushOpensItsAppointmentWhileOtherPushesOpenTheNotices() {
+        val open = ::pushDestination
+        assertEquals(NoticeDestination.Conversation("c1"),
+            open(mapOf("kind" to "call_client", "event" to "", "appointment_id" to "a1", "conversation_id" to "c1")))
+        assertNull(open(mapOf("kind" to "call_client", "event" to "", "appointment_id" to "a1", "conversation_id" to "")))
+        assertNull(open(mapOf("kind" to "appointment", "event" to "done", "conversation_id" to "c1")))
+        assertNull(open(mapOf("kind" to "message", "conversation_id" to "c1")))
     }
 
     @Test fun unreadNoticesWithoutDestinationAreReadOnSight() {

@@ -392,7 +392,7 @@ private fun ProfileDetail(
                     ProfileSection.PHONE -> item {
                         SectionBlock {
                             Section(R.string.catalogue_phone)
-                            SelectionContainerCompat(profile.phone)
+                            CallButton(profile.phone)
                         }
                     }
                 }

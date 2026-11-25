@@ -1,5 +1,6 @@
 package es.teloarreglo.notices
 
+import es.teloarreglo.dialUri
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.SerialName
@@ -33,11 +34,15 @@ data class Notice(
 /** What a notice is about, independent of language. Unknown future events keep a generic topic. */
 enum class NoticeTopic {
     MESSAGE, REQUEST, PROPOSAL, REJECTED, CONFIRMED, CHANGE, CHANGE_DECIDED, PROFESSIONAL_NEAR, STARTED, CANCELLED, DONE,
-    REMINDER, COMPLETED, INCIDENT, REVIEW, APPOINTMENT_OTHER, PROFILE_APPROVED, PROFILE_REJECTED, OTHER,
+    REMINDER, COMPLETED, INCIDENT, REVIEW, APPOINTMENT_OTHER, PROFILE_APPROVED, PROFILE_REJECTED, CALL_CLIENT, OTHER,
 }
+
+/** Kind of the «Aviso para llamar» (#77): one hour before a confirmed appointment, to its professional. */
+const val CALL_CLIENT_KIND = "call_client"
 
 fun topicOf(kind: String, event: String?): NoticeTopic = when (kind) {
     "message" -> NoticeTopic.MESSAGE
+    CALL_CLIENT_KIND -> NoticeTopic.CALL_CLIENT
     "profile_review" -> if (event == "approved") NoticeTopic.PROFILE_APPROVED else NoticeTopic.PROFILE_REJECTED
     "appointment" -> when {
         event == "requested" -> NoticeTopic.REQUEST
@@ -69,6 +74,46 @@ sealed interface NoticeDestination {
 
 fun Notice.destination(): NoticeDestination? =
     conversationId?.let { NoticeDestination.Conversation(it) } ?: if (kind == "profile_review") NoticeDestination.Account else null
+
+/**
+ * Where tapping a push leads, when it is not the notices list: the call notice (#77) opens its appointment, shown in
+ * its conversation. The push carries identifiers only.
+ */
+fun pushDestination(data: Map<String, String>): NoticeDestination.Conversation? =
+    callConversation(data)?.let { NoticeDestination.Conversation(it) }
+
+/** The conversation of a call push, or null for any other push. */
+private fun callConversation(data: Map<String, String>): String? =
+    data["conversation_id"]?.takeIf { data["kind"] == CALL_CLIENT_KIND && it.isNotEmpty() }
+
+/** Identifiers of the appointment a call push is about; the notification offers «Llamar» for it (#81). */
+data class PushCall(val conversationId: String, val appointmentId: String)
+
+fun pushCall(data: Map<String, String>): PushCall? {
+    val conversation = callConversation(data) ?: return null
+    val appointment = data["appointment_id"]?.takeIf { it.isNotEmpty() } ?: return null
+    return PushCall(conversation, appointment)
+}
+
+/** What «Llamar» in the call notice (#81) does: open the dialer with [uri], or open the appointment's conversation. */
+sealed interface CallNoticeAction {
+    data class Dial(val uri: String) : CallNoticeAction
+    data object OpenAppointment : CallNoticeAction
+}
+
+/**
+ * Decides «Llamar» of the call notice (#81). The client's number is asked to [phone] now (the protected function
+ * of the appointment, #79), never stored in the notice or the intent. A number that cannot be read (no network, no
+ * access) counts as none.
+ */
+suspend fun callNoticeAction(
+    conversationId: String, appointmentId: String, phone: suspend (String, String) -> String?,
+): CallNoticeAction {
+    val number = try { phone(conversationId, appointmentId) }
+        catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { null }
+    val uri = number?.let(::dialUri)
+    return uri?.let { CallNoticeAction.Dial(it) } ?: CallNoticeAction.OpenAppointment
+}
 
 /** What came of opening a notice's conversation (#47): a missing conversation and an unreachable service read differently. */
 enum class NoticeOpening { OPENED, NOT_FOUND, UNREACHABLE }

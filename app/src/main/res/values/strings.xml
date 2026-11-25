@@ -200,6 +200,9 @@
     <string name="map_directions">Cómo llegar con Google Maps</string>
     <string name="map_open_appointment">Cómo llegar</string>
     <string name="map_no_app">No hay ninguna aplicación para abrir Google Maps. Instala Google Maps o un navegador.</string>
+    <string name="call_button">Llamar</string>
+    <string name="call_description">Llamar al %1$s</string>
+    <string name="call_no_app">No hay ninguna aplicación de teléfono para llamar.</string>
     <string name="map_pick_on_map">Elegir el punto en el mapa</string>
     <string name="map_pick_confirm">Usar este punto</string>
     <string name="map_pin_not_address">El punto no sustituye la dirección: escribe la calle y el número.</string>
@@ -334,6 +337,17 @@
     <string name="account_name_invalid">Escribe tu nombre, de 1 a 80 caracteres.</string>
     <string name="account_name_access">Tu sesión ha caducado. Vuelve a entrar.</string>
     <string name="account_name_network">No se pudo guardar el nombre. Comprueba la conexión y vuelve a intentarlo.</string>
+    <string name="contact_phone_label">Teléfono de contacto</string>
+    <string name="contact_phone_title">¿En qué número podemos llamarte?</string>
+    <string name="contact_phone_intro">Los profesionales con los que confirmes una cita usarán este número para contactarte.</string>
+    <string name="contact_phone_hint">9 dígitos si es español, o con + y el prefijo de tu país</string>
+    <string name="contact_phone_save">Guardar teléfono</string>
+    <string name="contact_phone_invalid">Escribe un número español de 9 dígitos o un número con + y el prefijo de su país.</string>
+    <string name="contact_phone_access">Tu sesión ha caducado. Vuelve a entrar.</string>
+    <string name="contact_phone_network">No se pudo guardar el teléfono. Comprueba la conexión y vuelve a intentarlo.</string>
+    <string name="contact_phone_change">Cambiar teléfono</string>
+    <string name="contact_phone_none">Aún no has dado tu teléfono de contacto.</string>
+    <string name="contact_phone_unknown">No se pudo cargar el teléfono. Puedes cambiarlo igualmente.</string>
     <string name="payment_integrated">Pagar %1$s y confirmar</string>
     <string name="payment_direct">Pagaré %1$s directamente al profesional</string>
     <string name="payment_retry">Reintentar la confirmación (%1$s)</string>
@@ -530,6 +544,7 @@
     <string name="notices_topic_cancelled">Cita cancelada</string>
     <string name="notices_topic_done">Trabajo marcado como realizado: confirma o comunica una incidencia</string>
     <string name="notices_topic_reminder">Recordatorio: confirma el trabajo realizado o comunica una incidencia</string>
+    <string name="notices_topic_call_client">Tu cita empieza pronto: llama al cliente</string>
     <string name="notices_topic_completed">Cita finalizada</string>
     <string name="notices_topic_incident">Novedad en una incidencia</string>
     <string name="notices_topic_appointment">Novedad en una cita</string>

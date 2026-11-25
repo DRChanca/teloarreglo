@@ -21,7 +21,7 @@ enum class Tab(@DrawableRes val icon: Int, @StringRes val label: Int) {
 /** What the main activity shows; only the main screens keep the bottom bar. */
 enum class MainScreen(val showsBar: Boolean) {
     CATALOGUE(true), CHATS(true), NOTICES(true), ACCESS(true),
-    CONVERSATION(false), NAME_STEP(false), HOME_STEP(false), HOME_EDITOR(false), PROFILE_EDITOR(false),
+    CONVERSATION(false), NAME_STEP(false), HOME_STEP(false), PHONE_STEP(false), HOME_EDITOR(false), PROFILE_EDITOR(false),
     /** An email link (new password or invalid link) that must be answered before navigating. */
     EMAIL_LINK(false),
 }
@@ -31,6 +31,8 @@ data class Session(
     val connected: Boolean,
     val mustGiveName: Boolean = false,
     val mustGiveHome: Boolean = false,
+    /** Contact phone (#74): third mandatory step, after the name and the home. */
+    val mustGivePhone: Boolean = false,
     val emailLinkPending: Boolean = false,
 )
 
@@ -67,6 +69,7 @@ data class Navigation(
     fun screen(session: Session): MainScreen = when {
         session.mustGiveName -> MainScreen.NAME_STEP
         session.mustGiveHome -> MainScreen.HOME_STEP
+        session.mustGivePhone -> MainScreen.PHONE_STEP
         editingHome && session.connected -> MainScreen.HOME_EDITOR
         profileEditor -> MainScreen.PROFILE_EDITOR
         session.emailLinkPending -> MainScreen.EMAIL_LINK
