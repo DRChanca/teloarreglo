@@ -303,7 +303,7 @@
     <string name="home_account_none">Du hast noch keine Wohnadresse angegeben.</string>
     <string name="home_change">Adresse ändern</string>
     <string name="home_concejo">Gemeinde: %1$s</string>
-    <string name="home_outside_area">Außerhalb Asturiens: Die Umkreissuche funktioniert nur dort.</string>
+    <string name="home_outside_area">Außerhalb Asturiens: Die Sortierung nach Entfernung funktioniert nur dort.</string>
     <string name="home_far_title">Du bist weit weg von zu Hause</string>
     <string name="home_far_text">Du bist etwa %1$s km von deiner Wohnadresse entfernt. Möchtest du sie ändern oder von hier aus suchen?</string>
     <string name="home_far_here">Von hier suchen</string>

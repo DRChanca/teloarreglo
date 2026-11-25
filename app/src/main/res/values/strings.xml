@@ -303,7 +303,7 @@
     <string name="home_account_none">Aún no has indicado tu dirección de casa.</string>
     <string name="home_change">Cambiar dirección</string>
     <string name="home_concejo">Concejo: %1$s</string>
-    <string name="home_outside_area">Fuera de Asturias: la búsqueda cercana solo funciona allí.</string>
+    <string name="home_outside_area">Fuera de Asturias: la búsqueda por cercanía solo funciona allí.</string>
     <string name="home_far_title">Estás lejos de casa</string>
     <string name="home_far_text">Estás a unos %1$s km de tu dirección de casa. ¿Quieres cambiarla o buscar desde donde estás?</string>
     <string name="home_far_here">Buscar desde aquí</string>

@@ -33,13 +33,13 @@ Mismos campos públicos que `approved_profiles`: `name`, `description`, `trades[
 | --- | --- | --- |
 | `private.submit_profile_version(p_profile uuid, p_submission uuid, p_content jsonb)` | Solo SQL de confianza (sin `grant`). **#30 la envolverá en una RPC de propietario.** | Fila pendiente; repetir con mismos datos devuelve la misma; otra intención con la misma clave `22023 request_conflict`; perfil inexistente `22023 profile_not_found`. Marca `review_status='pending'`. |
 | `public.admin_profile_submissions(p_status text = 'pending')` | `authenticated` administrador | Array: `submission_id, profile_id, version, status, submitted_at, reason, decided_at, published, latest, content, decision{approved,reason,decided_at,administrator_email}`. `p_status`: `pending/approved/rejected/all`. Nunca propietario ni domicilio. Omite perfiles del propio administrador. No administrador `42501 permission_denied`. |
-| `public.review_professional_profile(p_submission uuid, p_approve boolean, p_reason text)` | `authenticated` administrador, nunca sobre su propio perfil | Motivo obligatorio (1–2000) `22023 reason_required`; inexistente `22023 submission_not_found`; versión desactualizada (hay otra posterior) `40001 profile_changed`; decisión ya registrada distinta `22023 review_already_recorded`; reintento idéntico devuelve el resultado sin duplicar. Aprobar copia **exactamente** el contenido presentado a `approved_profiles` (conserva `rating`, `review_count`, `cover_path`); rechazar no toca el catálogo. Registra decisión y aviso `profile_review` al propietario. |
+| `public.review_professional_profile(p_submission uuid, p_approve boolean, p_reason text)` | `authenticated` administrador, nunca sobre su propio perfil | Motivo obligatorio (1–2000) `22023 reason_required`; inexistente `22023 submission_not_found`; versión desactualizada (hay otra posterior) `40001 profile_changed`; decisión ya registrada distinta `22023 review_already_recorded`; reintento idéntico devuelve el resultado sin duplicar. Aprobar copia **exactamente** el contenido presentado a `approved_profiles` (conserva `rating`, `review_count`, `cover_path`; desde el 25-11-2026 también la zona vigente de un perfil ya publicado); rechazar no toca el catálogo. Registra decisión y aviso `profile_review` al propietario. |
 | `public.my_profile_review()` | `authenticated` propietario | `null` sin perfil; si no hay versiones `{profile_id, status:null, published}`; si no, `submission_id, profile_id, version, status, submitted_at, reason, decided_at, published`. |
 | `public.my_notices()` | `authenticated` | Últimos 100 avisos propios: `id, kind, payload, created_at`. |
 
 `published` indica si hay una versión aprobada visible, independiente de un cambio pendiente o
 rechazado. Pendientes y rechazados nunca llegan a `approved_profiles`, y por tanto tampoco a
-`catalogue()`, `search_candidates()` ni `count_candidates()`.
+`catalogue()`, `search_candidates()` ni `count_candidates()` (ni, desde el 25-11-2026, `search_all_candidates()`).
 
 ### Fronteras de cliente
 
@@ -78,7 +78,8 @@ Variables de compilación (públicas): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLI
    Concede administración por SQL de confianza y crea el perfil de prueba pendiente
    (`c1772900-0000-4000-8000-000000000029`). Repetirlo aborta la transacción.
    El perfil de prueba no tiene ubicación privada: tras aprobarse aparece en el catálogo por oficio,
-   no en la búsqueda cercana hasta que se registre su ubicación con el procedimiento de #16.
+   no en la búsqueda cercana hasta que se registre su ubicación con el procedimiento de #16
+   (desde el 25-11-2026, búsqueda única: aparece al final de la lista, sin distancia).
 4. Cloudflare Pages Free, mismo repositorio: proyecto nuevo con directorio raíz `panel`,
    comando `npm ci && npm run build`, salida `dist`, y las dos variables públicas anteriores.
    No se ha creado ninguna cuenta ni proyecto de Cloudflare desde este ticket.
@@ -156,6 +157,25 @@ Migración nueva: `supabase/migrations/20261124000200_profile_submission_agenda.
   presentación; en un perfil ya publicado se envía si está completa. Bloqueos y cambios posteriores siguen en
   «Cuenta» (`AgendaCard`). Strings `profile_edit_agenda_*`, `profile_edit_error_agenda`.
 - El servidor no exige agenda: la regla «sin franjas no hay límite de horario» (20261123012610) sigue vigente.
+
+## Zona de trabajo sin revisión — 25 de noviembre de 2026
+
+Decisión de David ([ADR 0001](adr/0001-zona-de-trabajo-informa.md)); sustituye en parte #9 y la regla de #30 de
+que todo cambio de concejos de un perfil aprobado se revisa. Migración `20261125000100_work_zone_informs.sql`;
+pgTAP `supabase/tests/work_zone.test.sql`.
+
+| Operación | Quién | Resultado / errores |
+| --- | --- | --- |
+| `public.set_my_work_zone(p_codes text[])` | `authenticated` propietario; el perfil sale de la sesión | Sustituye al momento la zona (`coverage`) del perfil publicado por esos códigos INE, sin versión ni revisión, y devuelve la zona `[{code,name}]`. Cada concejo añadido o quitado queda en `private.work_zone_changes`; el mismo conjunto no registra nada. Errores: `42501 not_published` (sin perfil o sin versión aprobada), `22023 zone_empty` (ningún código), `22023 unknown_concejo` (código desconocido o más de 78). |
+| `public.admin_work_zone_changes(p_profile uuid)` | `authenticated` administrador | Historial del perfil, más reciente primero: `[{ine_code, name, added, changed_at}]`; nunca la identidad del propietario. No administrador `42501`. |
+
+- `private.work_zone_changes(profile_id, actor_id, ine_code, added, changed_at)`: solo inserción, sin permisos
+  para clientes; disparadores rechazan `update`, `delete` y `truncate` (como `profile_decisions`).
+- `review_professional_profile`: aprobar una versión de un perfil **ya publicado** conserva la zona vigente
+  (no la de la versión), así que no deshace cambios hechos mientras esperaba. La **primera** aprobación sigue
+  publicando la zona presentada: la primera versión, zona incluida, se revisa.
+- La zona tiene siempre al menos un concejo. Desde la tarjeta de una solicitud de cita fuera de la zona, el
+  profesional puede «Añadir {concejo} a mi zona» (ver [citas](citas-contrato.md#zona-de-trabajo-informativa--25-de-noviembre-de-2026)).
 
 ## Fuera de alcance
 

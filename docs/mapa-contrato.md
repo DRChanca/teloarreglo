@@ -18,7 +18,8 @@ No se ha desplegado ni escrito en la base alojada.
   El límite (`boundary`) sigue sin ser legible.
 - Sin cambios en la Edge Function `search-professionals`: la elección manual envía
   `{lat, lng, ine_code}` (pin del mapa o, sin mapa, el punto interior del concejo). El servidor sigue
-  aplicando cobertura y orden.
+  aplicando cobertura y orden (desde el 25-11-2026 solo orden por distancia: la zona de trabajo informa,
+  [ADR 0001](adr/0001-zona-de-trabajo-informa.md)).
 
 Kotlin (`es.teloarreglo.search.MapLocation.kt`): `GeoPoint`, `ConcejoAnchor`, `ConcejoDirectory`
 (`SupabaseConcejoDirectory`), `PublicProfile.publicLocation()`, `mapView(rows)` (marcadores con el

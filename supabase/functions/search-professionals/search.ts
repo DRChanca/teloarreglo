@@ -1,7 +1,7 @@
-// Ring search over H3 cells, ordered by geographic distance (not road distance).
-// Adapted from the validated spike (spikes/h3-busqueda): coverage is filtered by
-// the caller's lookup first; rings expand from the job cell and stop only when no
-// unexplored cell can hold someone closer than the last result of the page.
+// Ordering by geographic distance (not road distance).
+// Since ADR 0001 (25-11-2026) the Edge Function uses rankByDistance: every approved profile, the
+// «Destacado» of the concejo's work zone first. searchByRings/featuredFirst (H3 rings over the
+// covering profiles, from spikes/h3-busqueda) are kept with their tests for a larger catalogue.
 import { cellToBoundary, cellToLatLng, gridDisk, gridRingUnsafe, latLngToCell } from "h3-js";
 
 export const RESOLUTION = 6;

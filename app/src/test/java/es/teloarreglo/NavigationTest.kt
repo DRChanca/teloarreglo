@@ -52,8 +52,15 @@ class NavigationTest {
         for (screen in listOf(MainScreen.NAME_STEP, MainScreen.HOME_STEP)) assertFalse(screen.showsBar)
     }
 
+    @Test fun theBarHasTheSingleSearchFirstAndNoSeparateNearbyTab() {
+        // ADR 0001: «Buscar» replaces Inicio and Cerca.
+        assertEquals(listOf(Tab.HOME, Tab.CHATS, Tab.NOTICES, Tab.ACCOUNT), Tab.entries)
+        assertEquals(R.string.tab_search, Tab.HOME.label)
+        assertEquals(MainScreen.CATALOGUE, Navigation().screen(client))
+    }
+
     @Test fun backFromAnyTabGoesHomeAndBackAtHomeLeaves() {
-        for (tab in listOf(Tab.NEARBY, Tab.CHATS, Tab.NOTICES, Tab.ACCOUNT)) {
+        for (tab in listOf(Tab.CHATS, Tab.NOTICES, Tab.ACCOUNT)) {
             assertEquals(Navigation(), Navigation().open(tab).back())
         }
         assertNull(Navigation().back())

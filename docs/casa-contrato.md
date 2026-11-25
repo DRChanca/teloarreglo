@@ -73,11 +73,13 @@ Pantallas (`HomeAddressScreen.kt`):
   piso. Sin Places: aviso, «Usar mi ubicación» (un solo punto, se rechaza si es impreciso),
   «Marcar en el mapa» si hay mapa y la dirección escrita a mano.
 - `HomeSummaryCard` en la cuenta (`AccessScreen(homeSlot=…)`).
-- `AwayFromHomeDialog`: «Buscar desde aquí», «Cambiar dirección» o «Seguir con casa».
+- `AwayFromHomeDialog`: «Buscar desde aquí», «Cambiar dirección» o «Seguir con casa». Sustituido el 25-11-2026:
+  banner no bloqueante, una vez por sesión, con la comprobación en segundo plano.
 
 Integración:
 
-- Búsqueda cercana (`NearbySearchScreen(home, askIfAway, onChangeHome)`): busca desde casa al abrir
+- Búsqueda cercana (`NearbySearchScreen(home, askIfAway, onChangeHome)`; desde el 25-11-2026 la pantalla «Cerca de mí»
+  desaparece y esto lo hace la búsqueda única de la pestaña «Buscar», ver [búsqueda](busqueda-contrato.md)): busca desde casa al abrir
   (`{lat, lng, ine_code}` de la casa), sin pedir el GPS. Solo si el permiso ya estaba concedido toma
   un punto en silencio para el aviso de lejanía. «Usar mi ubicación» y la elección manual de #17
   siguen funcionando.

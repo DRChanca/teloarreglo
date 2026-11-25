@@ -39,7 +39,9 @@ sobre solicitudes ni propuestas; la reserva y su exclusión pertenecen a #21.
   p_lng double precision)` → fila de `appointments`.
   Solo el cliente de la conversación. Sin precio. Inicio futuro según la hora del
   servidor, fin posterior y como mucho 24 h. El punto debe estar en un concejo
-  (o a ≤ 250 m) cubierto por la versión publicada del perfil. Mismo
+  de Asturias (o a ≤ 250 m); si no, `22023 outside_area`. Hasta el 25-11-2026 debía estar en la zona de trabajo
+  (cobertura) de la versión publicada del perfil y fallaba con `out_of_coverage`
+  (ver [Zona de trabajo informativa](#zona-de-trabajo-informativa--25-de-noviembre-de-2026)). Mismo
   `p_request_id` y datos → misma cita; datos distintos → `retry_conflict`.
 - `propose_appointment(p_appointment_id uuid, p_expected_version integer,
   p_request_id uuid, p_scope text, p_start timestamptz, p_duration_minutes integer,
@@ -64,7 +66,7 @@ Cada operación con efecto incrementa `appointments.version` y escribe un evento
 | 401 | 28000 | `authentication_required` | `ACCESS` |
 | 403 | 42501 | `permission_denied` (cita o conversación ajena, rol equivocado) | `ACCESS` |
 | 400 | 22023 | `invalid_appointment` / `invalid_proposal` | `INVALID` |
-| 400 | 22023 | `out_of_coverage` | `OUT_OF_COVERAGE` |
+| 400 | 22023 | `out_of_coverage` (`propose_change`/`accept_change`) / `outside_area` (`request_appointment`): fuera de Asturias desde el 25-11-2026 | `OUT_OF_COVERAGE` (a 25-11 solo traduce `out_of_coverage`) |
 | 400 | 22023 | `retry_conflict` | `RETRY_CONFLICT` |
 | 409 | PT409 | `stale_version` / `incompatible_state` | `STALE` |
 
@@ -381,8 +383,8 @@ RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo):
   p_amount_cents, p_visit_fee_cents, p_materials_included, p_travel_included, p_address = null, p_lat = null,
   p_lng = null, p_note = null, p_mode = null)` → fila de `appointment_changes`. Cualquiera de los dos
   participantes, solo con la cita `confirmed` (`PT409 incompatible_state`) y `p_expected_version` vigente
-  (`PT409 stale_version`). Dirección solo del cliente (`42501 address_owner_only`) y dentro de la cobertura
-  (`22023 out_of_coverage`). Condiciones idénticas → `22023 no_change`; datos no válidos o nueva hora pasada →
+  (`PT409 stale_version`). Dirección solo del cliente (`42501 address_owner_only`) y en Asturias
+  (`22023 out_of_coverage`; antes, dentro de la cobertura: ver 25-11-2026). Condiciones idénticas → `22023 no_change`; datos no válidos o nueva hora pasada →
   `22023 invalid_change`. Si la cita no tenía pago y el cliente añade coste, `p_mode` es obligatorio
   (`22023 invalid_payment`). Misma clave y contenido → mismo cambio; otro contenido → `retry_conflict`.
   Sustituye (`superseded`) el cambio pendiente; no toca nada vigente.
@@ -393,7 +395,7 @@ RPC (`security definer`, actor de `auth.uid()`, sin acceso anónimo):
   `42501`). Toma el bloqueo de la cita y después `private.lock_agenda`, como `accept_proposal`. Versión no
   vigente → `PT409 stale_version`; petición de corrección → `22023 invalid_change`. Si cambia el intervalo:
   nueva hora futura (`PT409 proposal_expired`), dentro de una franja y sin solapes (`PT409 slot_unavailable`).
-  Si cambia la dirección: cobertura (`22023 out_of_coverage`). Después, en la misma transacción: propuesta
+  Si cambia la dirección: en Asturias (`22023 out_of_coverage`; antes, cobertura). Después, en la misma transacción: propuesta
   nueva `accepted` con las condiciones del cambio (la anterior pasa a `replaced`), reserva movida, dirección
   actualizada (el disparador de #38 recalcula la zona aproximada), pago y aviso `change_accepted`. Cualquier
   fallo deja la cita anterior íntegra y el cambio `pending`. Aceptar otra vez devuelve el mismo resultado.
@@ -950,3 +952,22 @@ cd panel && npm run check
 ```
 
 Resultados: [comprobación de la resolución de incidencias](comprobacion-resolucion-incidencias.md).
+
+## Zona de trabajo informativa — 25 de noviembre de 2026
+
+Decisión de David ([ADR 0001](adr/0001-zona-de-trabajo-informa.md)). Migración
+`20261125000100_work_zone_informs.sql`; pgTAP `supabase/tests/work_zone.test.sql`. Sustituye la exigencia de
+cobertura de #20 y #23: la zona de trabajo informa, no restringe.
+
+- `request_appointment`: el punto debe estar en un concejo de Asturias o a ≤ 250 m (`private.point_in_area`,
+  misma tolerancia que antes); si no, `22023 outside_area`. Ya no se mira la zona del perfil.
+- `propose_change` y `accept_change` con dirección: misma comprobación (`private.point_covered` ahora solo llama
+  a `point_in_area`). Conservan el nombre de error `22023 out_of_coverage`, que ahora significa «fuera de
+  Asturias». Los clientes deben traducir los dos nombres igual.
+- `public.appointment_zone(p_appointment_id uuid) → jsonb | null` (`authenticated`, solo los dos participantes;
+  `null` para cualquier otra cuenta): `{in_zone, concejo: {ine_code, name}}`. `concejo` es el más cercano al
+  punto de la cita; `in_zone` indica si está en la zona de la versión publicada del perfil. No revela nada más
+  que la zona pública. Sirve para el aviso informativo de ambas partes y para que el profesional pulse
+  «Añadir {concejo} a mi zona» desde la tarjeta de la solicitud, que llama a `set_my_work_zone`
+  ([revisión de perfiles](revision-perfiles-contrato.md#zona-de-trabajo-sin-revisión--25-de-noviembre-de-2026)).
+- `area_ine_code` (#38) no cambia: si el punto no está en la zona del perfil, es el concejo más cercano a ≤ 250 m.

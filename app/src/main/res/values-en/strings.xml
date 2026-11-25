@@ -303,7 +303,7 @@
     <string name="home_account_none">You have not set your home address yet.</string>
     <string name="home_change">Change address</string>
     <string name="home_concejo">Municipality: %1$s</string>
-    <string name="home_outside_area">Outside Asturias: nearby search only works there.</string>
+    <string name="home_outside_area">Outside Asturias: sorting by distance only works there.</string>
     <string name="home_far_title">You are far from home</string>
     <string name="home_far_text">You are about %1$s km from your home address. Do you want to change it or search from where you are?</string>
     <string name="home_far_here">Search from here</string>

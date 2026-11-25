@@ -28,6 +28,10 @@ class NearbySearchSessionTest {
         }
     }
 
+    private fun profile(id: String, zone: String) = PublicProfile(
+        id, "Profesional $id", "d", listOf("plumbing"), listOf("Fugas"), listOf(Coverage(zone, zone)),
+        listOf("es"), "+34 000 000 000", listOf("plumbing"), emptyList())
+
     private val catalogue = object : Catalogue {
         override suspend fun list(trade: String?) = listOf(PublicProfile(
             "p1", "Fontanería Nalón", "d", listOf("plumbing"), listOf("Fugas"), listOf(Coverage("33044", "Oviedo")),
@@ -91,5 +95,28 @@ class NearbySearchSessionTest {
         val search = FakeSearch()
         assertNull(NearbySearchSession(search, catalogue).repeat(trade = "plumbing"))
         assertEquals(emptyList<Sent>(), search.sent)
+    }
+
+    @Test fun everyoneIsListedByDistanceAndOutOfZoneIsMarked() = runTest {
+        // ADR 0001: a neighbour outside the zone keeps its place by distance; a profile the server could not
+        // place (no registered location) is appended without distance, its zone read from the public profile.
+        val three = object : Catalogue {
+            override suspend fun list(trade: String?) = listOf(profile("near", "33024"), profile("zone", "33044"),
+                profile("unlocated", "33044"))
+            override suspend fun profile(id: String) = null
+        }
+        val search = FakeSearch(SearchOutcome.Found(oviedo, listOf(
+            NearbyResult("near", 1000, inZone = false), NearbyResult("zone", 3000))))
+        val results = NearbySearchSession(search, three).search(NearbyQuery(SearchOrigin.Home, home, "33044"), null)
+
+        results as NearbyState.Results
+        assertEquals(listOf(SearchRow(three.list(null)[0], 1000, false), SearchRow(three.list(null)[1], 3000, true),
+            SearchRow(three.list(null)[2], null, true)), results.rows)
+    }
+
+    @Test fun anOlderServerWithoutInZoneMeansEveryResultIsInZone() {
+        val decoded = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+            .decodeFromString(NearbyResult.serializer(), """{"profile_id":"p1","distance_band_m":500}""")
+        assertTrue(decoded.inZone)
     }
 }

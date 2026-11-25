@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -27,8 +28,8 @@ class MainNavigationTest {
         compose.onNodeWithTag("tab_account").performClick()
         await("email")
         compose.onNodeWithTag("tab_account").assertIsSelected()
-        compose.onNodeWithTag("tab_nearby").performClick()
-        await("nearby_screen")
+        // ADR 0001: no separate «Cerca» tab; «Buscar» is the single search.
+        assertTrue(compose.onAllNodesWithTag("tab_nearby").fetchSemanticsNodes().isEmpty())
         compose.onNodeWithTag("tab_home").performClick()
         await("catalogue_search")
         compose.onNodeWithTag("catalogue_search").assertIsDisplayed()
@@ -36,8 +37,8 @@ class MainNavigationTest {
 
     @Test fun backFromATabReturnsHomeAndBackAtHomeLeaves() {
         await("catalogue_search")
-        compose.onNodeWithTag("tab_nearby").performClick()
-        await("nearby_screen")
+        compose.onNodeWithTag("tab_account").performClick()
+        await("email")
         pressBack()
         await("catalogue_search")
         compose.onNodeWithTag("tab_home").assertIsSelected()

@@ -44,7 +44,7 @@ Organización por recorridos completos, no una persona solo con pantallas y otra
 | Módulo | Interfaz que ofrece a sus consumidores | Reglas que concentra |
 | --- | --- | --- |
 | Identidad | Acceder, restaurar sesión y consultar capacidades de la cuenta | Identidad Supabase; perfil profesional opcional; rol administrativo restringido |
-| Catálogo | Buscar por ubicación/cobertura y consultar versión pública de perfil | Concejos, proximidad, perfiles aprobados y revisión de cambios públicos |
+| Catálogo | Buscar por ubicación (25-11-2026: la zona de trabajo informa, no filtra) y consultar versión pública de perfil | Concejos, proximidad, perfiles aprobados y revisión de cambios públicos |
 | Conversación | Abrir conversación, enviar/leer mensajes y adjuntos | Participantes, compresión, subida privada, persistencia y sincronización |
 | Citas | Solicitar, proponer, aceptar/rechazar, comenzar, marcar realizado y confirmar | Reservas, versiones, importes simulados, incidencias, cierre y habilitación de reseña |
 | Administración | Revisar perfiles e incidencias con motivo y resultado | Acceso limitado, pruebas aportadas, decisiones y auditoría |
@@ -61,7 +61,7 @@ Son contratos lógicos compartidos. Los nombres de tablas, RPC y DTO definitivos
 | Dato | Contenido mínimo e invariantes |
 | --- | --- |
 | Cuenta | Identificador estable de Auth; capacidades verificadas en servidor. No aceptar un rol enviado por el cliente como prueba de autorización |
-| Perfil profesional | Propietario, servicios, cobertura por códigos de concejo, ubicación registrada con privacidad y versión pública aprobada; cambios en revisión separados de la versión visible |
+| Perfil profesional | Propietario, servicios, zona de trabajo (antes «cobertura») por códigos de concejo, editable sin revisión en un perfil publicado desde el 25-11-2026, ubicación registrada con privacidad y versión pública aprobada; cambios en revisión separados de la versión visible |
 | Conversación | Identificador y participantes; cada mensaje tiene autor, fecha de servidor y texto o referencia a adjunto privado |
 | Adjunto | Propietario, conversación/incidencia asociada, referencia de Storage, formato, bytes y dimensiones/duración aplicables. No exponer URL pública permanente de contenido privado |
 | Cita | Participantes, dirección privada y coordenadas, intervalo, propuesta aceptada, versión y marcas de inicio/realizado/finalización/cancelación |
@@ -85,7 +85,7 @@ Las operaciones sensibles reciben identificador del recurso, versión esperada c
 | --- | --- |
 | Solicitar cita | Cliente; crea solicitud sin reserva definitiva y comparte dirección únicamente con el profesional implicado |
 | Proponer/revisar condiciones | Profesional, o parte autorizada para proponer cambios; conserva condiciones y reserva aceptadas mientras no se acepte el cambio |
-| Aceptar/rechazar propuesta | Otra parte correspondiente; verifica versión, cobertura e intervalo. Confirmación de pago integrado simula total o diferencia dentro de la misma operación coherente |
+| Aceptar/rechazar propuesta | Otra parte correspondiente; verifica versión, dirección en Asturias (antes, cobertura; 25-11-2026) e intervalo. Confirmación de pago integrado simula total o diferencia dentro de la misma operación coherente |
 | Comenzar / marcar realizado | Profesional de la cita; valida etapa y cambios pendientes. Realizado fija origen del plazo de 48 horas |
 | Cancelar antes de comenzar | Cualquiera de las partes; devolución total simulada, liberación de reserva y registro sin duplicar movimientos |
 | Confirmar realización | Cliente; no libera si hay incidencia bloqueante o importe ya entregado |
@@ -95,7 +95,7 @@ Las operaciones sensibles reciben identificador del recurso, versión esperada c
 | Publicar reseña | Cliente de una cita habilitada; una por cita y sin generación automática |
 | Procesar vencimientos | Ejecutor de servidor; mismos controles de saldo, incidencias e idempotencia que las operaciones manuales |
 
-El resultado incluye recurso/versión resultante o un error estable que Android y panel pueden traducir. Distinguir al menos: no autenticado, sin permiso, versión desactualizada, horario ocupado, fuera de cobertura, estado incompatible, incidencia bloqueante, archivo no admitido o demasiado grande, cuota/servicio no disponible y fallo de conexión.
+El resultado incluye recurso/versión resultante o un error estable que Android y panel pueden traducir. Distinguir al menos: no autenticado, sin permiso, versión desactualizada, horario ocupado, fuera de Asturias (antes «fuera de cobertura»), estado incompatible, incidencia bloqueante, archivo no admitido o demasiado grande, cuota/servicio no disponible y fallo de conexión.
 
 Repetir una operación con la misma clave y datos devuelve su resultado sin repetir efectos. No reutilizar la misma clave para otra intención o contenido. Si la respuesta se pierde, recuperar el resultado antes de mostrar una confirmación o intentar un nuevo movimiento.
 
@@ -126,7 +126,7 @@ Repetir una operación con la misma clave y datos devuelve su resultado sin repe
 - Dirección exacta de cita como texto privado más coordenadas; no hay autocompletado ni conversión automática de dirección escrita a coordenadas.
 - Concejos con polígonos oficiales IGN/CNIG y PostGIS. Conservar códigos INE como texto, atribución y edición; transformar correctamente el sistema de referencia.
 - Cerca de una frontera o con GPS incierto, pedir confirmación de concejo. Ni el mapa ni H3 resuelven por sí solos la división administrativa.
-- Primero filtrar cobertura de servicio; organizar candidatos mediante H3 y celdas vecinas y ordenar por distancia geográfica entre coordenadas originales. Comprobar bordes y expansión para no perder candidatos ni presentar un orden incorrecto.
+- Primero filtrar cobertura de servicio; organizar candidatos mediante H3 y celdas vecinas y ordenar por distancia geográfica entre coordenadas originales. Comprobar bordes y expansión para no perder candidatos ni presentar un orden incorrecto. Sustituido el 25-11-2026 ([ADR 0001](adr/0001-zona-de-trabajo-informa.md)): no se filtra por zona y se ordena la lista completa por distancia, sin H3 (ver [búsqueda](busqueda-contrato.md)).
 - H3 en servidor mediante h3-js, sujeto a prueba de importación y ejecución en Supabase Edge Functions. No asumir una extensión H3 nativa disponible en Postgres.
 - Google Maps representa resultados; un enlace de navegación abre Google Maps fuera de Teloarreglo. La aplicación no calcula rutas ni tiempos por carretera. Respetar privacidad de domicilio profesional y cliente.
 - Fotos JPEG/PNG, hasta 1600 píxeles en el lado mayor y 2 MB tras compresión; vídeo MP4 compatible, hasta 40 segundos (decisión de 2026-11-23, con 499 ms de margen), 720p y 20 MB. No ampliar archivos de menor resolución.

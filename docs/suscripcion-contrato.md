@@ -68,3 +68,15 @@ muestra los destacados. Migración `supabase/migrations/20261124010000_catalogue
   tema y la etiqueta «Perfil destacado» (`catalogue_featured_profile`, ES/EN/FR/DE). El filtro de texto
   local conserva el orden del servidor. La lista de cercanos ya ordenaba destacados primero.
 - No se promete posición fija, exclusividad ni clientes.
+
+## Búsqueda única y zona informativa (25 de noviembre de 2026)
+
+Decisión de David ([ADR 0001](adr/0001-zona-de-trabajo-informa.md)). Sustituye la viñeta «Búsqueda cercana» de la sección del 23-11 y el uso de
+`featured_candidates` en la búsqueda:
+
+- La búsqueda devuelve a todos los perfiles del oficio por distancia (`search_all_candidates`, con `in_zone` y
+  `featured`). Solo los destacados cuya zona de trabajo incluye el concejo van primero (entre ellos por
+  distancia); un destacado fuera de su zona va mezclado con el resto y sin resalte (`featured: false`).
+- `featured_zones` sigue siendo la zona de la versión aprobada, que desde esta fecha el propietario cambia sin
+  revisión (`set_my_work_zone`, ver [revisión de perfiles](revision-perfiles-contrato.md#zona-de-trabajo-sin-revisión--25-de-noviembre-de-2026)).
+- Sin sesión, la búsqueda usa el orden del catálogo (destacados primero) hasta que se elige «Ordenar por cercanía».
