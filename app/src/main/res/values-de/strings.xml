@@ -334,6 +334,14 @@
     <string name="account_name_invalid">Gib deinen Namen ein, 1 bis 80 Zeichen.</string>
     <string name="account_name_access">Deine Sitzung ist abgelaufen. Melde dich erneut an.</string>
     <string name="account_name_network">Der Name konnte nicht gespeichert werden. Prüfe die Verbindung und versuche es erneut.</string>
+    <string name="contact_phone_label">Kontakttelefon</string>
+    <string name="contact_phone_title">Unter welcher Nummer können wir dich anrufen?</string>
+    <string name="contact_phone_intro">Die Fachleute, mit denen du einen Termin bestätigst, nutzen diese Nummer, um dich zu kontaktieren.</string>
+    <string name="contact_phone_hint">9 Ziffern bei spanischen Nummern, sonst mit + und Landesvorwahl</string>
+    <string name="contact_phone_save">Telefon speichern</string>
+    <string name="contact_phone_invalid">Gib eine 9-stellige spanische Nummer oder eine Nummer mit + und Landesvorwahl ein.</string>
+    <string name="contact_phone_access">Deine Sitzung ist abgelaufen. Melde dich erneut an.</string>
+    <string name="contact_phone_network">Das Telefon konnte nicht gespeichert werden. Prüfe die Verbindung und versuche es erneut.</string>
     <string name="payment_integrated">%1$s zahlen und bestätigen</string>
     <string name="payment_direct">Ich zahle %1$s direkt an die Fachkraft</string>
     <string name="payment_retry">Bestätigung erneut senden (%1$s)</string>
