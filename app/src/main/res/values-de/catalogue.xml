@@ -18,7 +18,10 @@
     <string name="catalogue_includes">Enthalten: %1$s</string>
     <string name="catalogue_excludes">Zusätzlich: %1$s</string>
     <string name="catalogue_no_reviews">Noch keine Bewertungen</string>
-    <string name="catalogue_rating">%1$.1f von 5 · %2$d Bewertungen</string>
+    <plurals name="catalogue_rating">
+        <item quantity="one">%1$.1f von 5 · %2$d Bewertung</item>
+        <item quantity="other">%1$.1f von 5 · %2$d Bewertungen</item>
+    </plurals>
     <string name="catalogue_illustration">Illustration für %1$s; kein Foto einer ausgeführten Arbeit</string>
     <string name="catalogue_owned">Dein berufliches Profil</string>
     <string name="catalogue_can_hire">Dieses Konto kann Leistungen beauftragen und ein eigenes berufliches Profil haben.</string>
