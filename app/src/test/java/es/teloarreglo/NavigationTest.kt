@@ -59,6 +59,18 @@ class NavigationTest {
         assertEquals(MainScreen.CATALOGUE, Navigation().screen(client))
     }
 
+    @Test fun backReturnsToTheTabAProfileOrConversationWasOpenedFrom() {
+        // #46 story 21: a profile opened from Cuenta closes back into Cuenta, also after its conversation.
+        val fromAccount = Navigation().open(Tab.ACCOUNT).showProfile("profile-7")
+        assertEquals(Tab.HOME, fromAccount.tab)
+        assertEquals(Navigation(Tab.ACCOUNT), fromAccount.back())
+        assertEquals(fromAccount, fromAccount.contact("profile-7").openConversation(conversation).back())
+        // A conversation opened from a notice goes back to the notices, not to the inbox.
+        assertEquals(Navigation(Tab.NOTICES), Navigation().openFromNotice(conversation).back())
+        // From the search itself nothing changes: the profile closes into the list.
+        assertNull(Navigation().showProfile("profile-7").returnTo)
+    }
+
     @Test fun backFromAnyTabGoesHomeAndBackAtHomeLeaves() {
         for (tab in listOf(Tab.CHATS, Tab.NOTICES, Tab.ACCOUNT)) {
             assertEquals(Navigation(), Navigation().open(tab).back())

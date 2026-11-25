@@ -48,10 +48,16 @@ data class Navigation(
     val conversation: Conversation? = null,
     val profileEditor: Boolean = false,
     val editingHome: Boolean = false,
+    /** Tab a profile or conversation was opened from, so that Back returns there (#46, story 21). */
+    val returnTo: Tab? = null,
 ) {
     fun open(tab: Tab) = Navigation(tab)
-    fun showProfile(id: String) = Navigation(Tab.HOME, profile = id)
-    fun contact(profileId: String) = Navigation(Tab.CHATS, profile = profile, contactProfile = profileId)
+    /** A profile shown in the search; opened from another tab, Back goes back to that tab. */
+    fun showProfile(id: String) = Navigation(Tab.HOME, profile = id,
+        returnTo = if (tab != Tab.HOME && profile == null) tab else returnTo)
+    fun contact(profileId: String) = Navigation(Tab.CHATS, profile = profile, contactProfile = profileId, returnTo = returnTo)
+    /** A conversation opened from a notice: Back returns to the notices, not to the inbox. */
+    fun openFromNotice(conversation: Conversation) = Navigation(Tab.CHATS, conversation = conversation, returnTo = Tab.NOTICES)
     fun openConversation(conversation: Conversation) =
         copy(tab = Tab.CHATS, contactProfile = null, conversation = conversation)
     fun editProfile() = copy(profileEditor = true)
@@ -75,8 +81,10 @@ data class Navigation(
     fun back(): Navigation? = when {
         editingHome -> doneEditingHome()
         profileEditor -> copy(profileEditor = false)
-        tab == Tab.CHATS && conversation != null && profile == null -> copy(conversation = null)
-        tab == Tab.CHATS && profile != null -> showProfile(profile)
+        tab == Tab.CHATS && conversation != null && profile == null ->
+            returnTo?.let { Navigation(it) } ?: copy(conversation = null)
+        tab == Tab.CHATS && profile != null -> Navigation(Tab.HOME, profile = profile, returnTo = returnTo)
+        tab == Tab.HOME && profile != null && returnTo != null -> Navigation(returnTo)
         tab != Tab.HOME -> Navigation()
         else -> null
     }

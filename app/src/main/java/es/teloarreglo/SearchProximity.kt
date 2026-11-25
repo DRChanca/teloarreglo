@@ -301,7 +301,7 @@ internal fun SkeletonCard() {
     Card(Modifier.fillMaxWidth().testTag("search_skeleton"), shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card)) {
         Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Box(Modifier.width(100.dp).height(120.dp).background(block, RoundedCornerShape(12.dp)))
+            Box(Modifier.width(CoverCrop.LIST_WIDTH).height(CoverCrop.LIST_HEIGHT).background(block, RoundedCornerShape(12.dp)))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Spacer(Modifier.height(4.dp))
                 Box(Modifier.fillMaxWidth(0.7f).height(18.dp).background(block, RoundedCornerShape(6.dp)))

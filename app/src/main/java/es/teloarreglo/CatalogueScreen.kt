@@ -56,6 +56,8 @@ fun CatalogueScreen(
     reviews: es.teloarreglo.appointments.Reviews? = null,
     /** Distance order of the single search (ADR 0001); null keeps the catalogue order. */
     proximitySource: ProximitySource? = null,
+    /** Closes [initialProfileId] when it was opened from another tab; null closes it into the list. */
+    onCloseProfile: (() -> Unit)? = null,
 ) {
     var trade by rememberSaveable { mutableStateOf<String?>(null) }
     var selected by rememberSaveable(initialProfileId) { mutableStateOf(initialProfileId) }
@@ -91,7 +93,8 @@ fun CatalogueScreen(
         } finally { loading = false }
         completedRequest = request
     }
-    BackHandler(enabled = selected != null) { selected = null }
+    val closeProfile: () -> Unit = { if (onCloseProfile != null && selected == initialProfileId) { onCloseProfile() } else { selected = null } }
+    BackHandler(enabled = selected != null) { closeProfile() }
     val profile = profiles.singleOrNull()?.takeIf { selected == it.id && completedRequest == request }
     if (editing && profile != null && profile.id == ownedProfileId && covers != null) {
         CoverEditorRoute(profile, covers, onBack = { editing = false; retry++ })
@@ -117,7 +120,7 @@ fun CatalogueScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (selected != null) {
-                    TextButton(onClick = { selected = null }, Modifier.testTag("back_catalogue")) {
+                    TextButton(onClick = closeProfile, Modifier.testTag("back_catalogue")) {
                         Text(stringResource(R.string.catalogue_back))
                     }
                 } else {
@@ -234,7 +237,7 @@ private fun ProfileCard(row: SearchRow, highlighted: Boolean, concejo: String?, 
     ) {
         Row(Modifier.fillMaxWidth().padding(TeloTheme.spacing.medium), horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.medium)) {
             ProfileCover(profile.trades.firstOrNull().orEmpty(), profile.coverPath, covers,
-                Modifier.width(100.dp).height(120.dp))
+                Modifier.width(CoverCrop.LIST_WIDTH).height(CoverCrop.LIST_HEIGHT))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 if (highlighted) FeaturedBadge(Modifier.testTag("catalogue_featured_${profile.id}"),
                     R.string.catalogue_featured_profile)

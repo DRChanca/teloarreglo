@@ -160,7 +160,7 @@ class MainActivity : AppCompatActivity() {
                                 askPermission = { ensureNotificationPermission() },
                                 onOpenConversation = { id ->
                                     es.teloarreglo.notices.openNoticeConversation(id, { app.chat?.conversations() }, { it.id }) {
-                                        nav = Navigation().open(Tab.CHATS).openConversation(it)
+                                        nav = Navigation().openFromNotice(it)
                                     }
                                 },
                                 onOpenAccount = { nav = nav.open(Tab.ACCOUNT) },
@@ -198,6 +198,8 @@ class MainActivity : AppCompatActivity() {
                         MainScreen.CATALOGUE -> CatalogueScreen(app.catalogue,
                             initialProfileId = nav.profile, covers = app.covers, ownedProfileId = owner,
                             onContact = { nav = nav.showProfile(it).contact(it) },
+                            // Opened from another tab (Cuenta): closing the profile returns there.
+                            onCloseProfile = nav.returnTo?.let { { nav = nav.back() ?: Navigation() } },
                             reviews = app.reviews,
                             // Single search (ADR 0001): from the saved home, GPS or a concejo, by distance.
                             proximitySource = app.search?.let { search ->
