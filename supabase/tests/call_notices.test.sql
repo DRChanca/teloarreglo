@@ -5,7 +5,7 @@
 -- start) relative to now(); one-minute ranges keep them from overlapping in the single agenda.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(24);
 
 insert into public.concejos(ine_code, name, boundary) values
  ('33928', 'Prueba Llamada', 'SRID=4326;MULTIPOLYGON(((-6.0 43.0,-5.9 43.0,-5.9 43.1,-6.0 43.1,-6.0 43.0)))'::extensions.geography);
@@ -49,6 +49,11 @@ create function pg_temp.id(p int) returns uuid language sql as $$ select id from
 create function pg_temp.starts_in(p int, p_minutes int) returns void language sql as $$
  update public.agenda_reservations set during = tstzrange(now() + make_interval(mins => p_minutes),
    now() + make_interval(mins => p_minutes + 1), '[)') where appointment_id = pg_temp.id(p) $$;
+create function pg_temp.notified_start(p int) returns timestamptz language sql as $$
+ select (payload->>'starts_at')::timestamptz from private.notices where kind = 'call_client' and source_id = pg_temp.id(p) $$;
+create function pg_temp.pending_pushes(p int) returns integer language sql as $$
+ select count(*)::integer from private.push_deliveries d join private.notices n on n.id = d.notice_id
+  where n.kind = 'call_client' and n.source_id = pg_temp.id(p) and d.status = 'pending' $$;
 create function pg_temp.calls(p int) returns integer language sql as $$
  select count(*)::integer from private.notices where kind = 'call_client' and source_id = pg_temp.id(p) $$;
 
@@ -67,11 +72,12 @@ select is(pg_temp.calls(4) + pg_temp.calls(6), 0, 'no notice for started or done
 select is(pg_temp.calls(5), 0, 'no notice for a cancelled appointment');
 select is(pg_temp.calls(3), 0, 'no notice for a pending appointment');
 
--- The payload carries identifiers only, never the phone.
-select is((select payload from private.notices where kind = 'call_client' and source_id = pg_temp.id(1)),
+-- The payload carries identifiers and the start it was sent for only, never the phone.
+select is((select payload - 'starts_at' from private.notices where kind = 'call_client' and source_id = pg_temp.id(1)),
  jsonb_build_object('appointment_id', pg_temp.id(1),
    'conversation_id', (select conversation_id from public.appointments where id = pg_temp.id(1))),
  'the payload holds the appointment and its conversation');
+select is(pg_temp.notified_start(1), now() + interval '60 minutes', 'the payload holds the start it was sent for');
 select ok((select payload::text from private.notices where kind = 'call_client' and source_id = pg_temp.id(1))
  not like '%600000000%', 'the payload has no phone number');
 
@@ -120,6 +126,17 @@ select ok(not has_function_privilege('authenticated', 'private.run_call_notices(
  and not has_function_privilege('anon', 'private.run_call_notices(integer)', 'execute')
  and has_function_privilege('service_role', 'private.run_call_notices(integer)', 'execute'),
  'only service_role (and cron) can run it');
+
+-- A change of time after the notice reschedules it: one new notice and push for the new start, once.
+select pg_temp.starts_in(1, 25);
+select is(private.run_call_notices(), '{"created": 1}'::jsonb, 'a new start within the hour gets a new notice');
+select is(pg_temp.calls(1), 1, 'the new notice replaces the previous one');
+select is(pg_temp.notified_start(1), now() + interval '25 minutes', 'the new notice is for the new start');
+select is(pg_temp.pending_pushes(1), 1, 'the new notice is pushed to the professional''s devices');
+select is(private.run_call_notices(), '{"created": 0}'::jsonb, 'a repeated run without a new start does not repeat it');
+select pg_temp.starts_in(1, 90);
+select private.run_call_notices();
+select is(pg_temp.notified_start(1), now() + interval '25 minutes', 'a new start beyond the hour does not notify yet');
 
 select * from finish();
 rollback;
