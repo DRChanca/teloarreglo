@@ -769,6 +769,7 @@ private fun AppointmentLocationBlock(appointment: Appointment, professional: Boo
         null -> Text(stringResource(R.string.area_loading), style = MaterialTheme.typography.bodySmall)
         is AppointmentLocation.Exact -> {
             Text(stringResource(R.string.appointment_address_label, location.address), style = MaterialTheme.typography.bodySmall)
+            appointment.callPhone(professional)?.let { CallButton(it) }
             if (!professional && appointment.stage == AppointmentStage.PENDING) Text(
                 stringResource(R.string.area_client_notice, appointment.place?.areaRadiusMeters ?: 400),
                 style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("area_client_notice"))

@@ -22,6 +22,8 @@ internal class FakeAppointments : Appointments {
     private fun withHistory(a: Appointment) = a.copy(rawProposals = proposals[a.id].orEmpty().toList(),
         rawChanges = changes[a.id].orEmpty().toList())
     override suspend fun list(conversationId: String) = items.map(::withHistory)
+    override suspend fun contactPhone(conversationId: String, appointmentId: String) =
+        items.firstOrNull { it.id == appointmentId }?.place?.contactPhone
 
     override suspend fun request(conversationId: String, requestId: String, request: AppointmentRequest): Appointment {
         requestKeys += requestId

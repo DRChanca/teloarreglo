@@ -147,6 +147,11 @@ class TeloarregloApplication : Application() {
         client?.let { es.teloarreglo.identity.AccountNameSession(es.teloarreglo.identity.SupabaseAccountNames(it)) }
     }
 
+    /** Private contact phone (#74), asked after the name and the home if missing; null without configuration. */
+    val contactPhoneSession: es.teloarreglo.identity.ContactPhoneSession? by lazy {
+        client?.let { es.teloarreglo.identity.ContactPhoneSession(es.teloarreglo.identity.SupabaseContactPhones(it)) }
+    }
+
     /** Google Places (New) autocomplete with the Maps key; null without key (pin/GPS fallback). */
     val addressAutocomplete: es.teloarreglo.home.AddressAutocomplete? by lazy {
         es.teloarreglo.home.GooglePlacesAutocomplete.create(this, BuildConfig.MAPS_API_KEY)

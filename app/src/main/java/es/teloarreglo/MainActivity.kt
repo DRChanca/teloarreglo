@@ -27,6 +27,7 @@ import es.teloarreglo.identity.AccessError
 import es.teloarreglo.identity.AccessStage
 import es.teloarreglo.home.HomeStatus
 import es.teloarreglo.identity.AccountNameStatus
+import es.teloarreglo.identity.ContactPhoneStatus
 
 class MainActivity : AppCompatActivity() {
     private var permissionAnswer: CompletableDeferred<Boolean>? = null
@@ -58,6 +59,20 @@ class MainActivity : AppCompatActivity() {
 
     /** Set when the activity is opened from a push notification. */
     private val openNotices = mutableStateOf(false)
+    /** Conversation and notice of a push that leads straight to an appointment (#77), until it is opened. */
+    private val openFromPushConversation = mutableStateOf<Pair<String, String?>?>(null)
+    /** Appointment whose client «Llamar» of the call notice (#81) calls, handled with [openFromPushConversation]. */
+    private val callFromPush = mutableStateOf<String?>(null)
+
+    private fun readPushTarget(intent: Intent?) {
+        if (intent?.getBooleanExtra(es.teloarreglo.notices.EXTRA_OPEN_NOTICES, false) != true) return
+        openNotices.value = true
+        openFromPushConversation.value = intent.getStringExtra(es.teloarreglo.notices.EXTRA_OPEN_CONVERSATION)
+            ?.let { it to intent.getStringExtra(es.teloarreglo.notices.EXTRA_NOTICE_ID) }
+        callFromPush.value = intent.getStringExtra(es.teloarreglo.notices.EXTRA_CALL_APPOINTMENT)
+        // Handled once: recreating the activity must not open the dialer again.
+        intent.removeExtra(es.teloarreglo.notices.EXTRA_CALL_APPOINTMENT)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Start splash with the woodpecker (#58); animated only on a cold start.
@@ -67,7 +82,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         // After a configuration change the link was already handled; codes are single use.
         if (savedInstanceState == null) handleAuthLink(intent)
-        if (intent?.getBooleanExtra(es.teloarreglo.notices.EXTRA_OPEN_NOTICES, false) == true) openNotices.value = true
+        readPushTarget(intent)
         // One theme for the whole app, following the system light/dark mode (#45).
         setContent { TeloTheme {
             // Selected tab and open subscreen (#46), kept across recreation.
@@ -104,6 +119,30 @@ class MainActivity : AppCompatActivity() {
             LaunchedEffect(openFromPush) {
                 if (openFromPush) { nav = Navigation().open(Tab.NOTICES); openNotices.value = false }
             }
+            // A push that leads to an appointment (#77) opens its conversation once the account is connected; if it
+            // cannot be found the notices list stays open, where the same notice leads there too.
+            val pushConversation by openFromPushConversation
+            LaunchedEffect(pushConversation, connectedUser) {
+                val (id, notice) = pushConversation ?: return@LaunchedEffect
+                if (connectedUser == null) return@LaunchedEffect
+                openFromPushConversation.value = null
+                val call = callFromPush.value
+                callFromPush.value = null
+                notice?.let { app.applicationScope.launch {
+                    try { app.notices?.markRead(listOf(it)) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
+                } }
+                // «Llamar» does not cancel the notification by itself (only tapping its body does).
+                if (call != null) getSystemService(android.app.NotificationManager::class.java).cancel(notice, 0)
+                es.teloarreglo.notices.openNoticeConversation(id, { app.chat?.conversations() }, { it.id }) {
+                    nav = Navigation().openFromNotice(it)
+                }
+                // «Llamar» (#81): the number is read now; with it the dialer opens over the appointment, without it
+                // the appointment stays open.
+                if (call != null) {
+                    val action = es.teloarreglo.notices.callNoticeAction(id, call) { c, a -> app.appointments?.contactPhone(c, a) }
+                    if (action is es.teloarreglo.notices.CallNoticeAction.Dial) openDialUri(this@MainActivity, action.uri)
+                }
+            }
             LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
                 if (access.stage != AccessStage.CHECKING) homeSession?.load(connectedUser)
             }
@@ -121,6 +160,15 @@ class MainActivity : AppCompatActivity() {
             LaunchedEffect(access, home) { app.searchSession?.onAccess(access, home) }
             val mustGiveHome = homeSession != null && connectedUser != null && homeStatus == HomeStatus.Missing &&
                 access.account?.isAdministrator != true && !emailLinkPending
+            // Contact phone (#74): third mandatory step, after the name and the home, when the server confirms it is missing.
+            val phoneSession = app.contactPhoneSession
+            val phoneStatus by (phoneSession?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(ContactPhoneStatus.Unknown) })
+                .collectAsStateWithLifecycle()
+            LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
+                if (access.stage != AccessStage.CHECKING) phoneSession?.load(connectedUser)
+            }
+            val mustGivePhone = phoneSession != null && connectedUser != null && phoneStatus == ContactPhoneStatus.Missing &&
+                access.account?.isAdministrator != true && !emailLinkPending
             val changeLanguage: (String) -> Unit = { tag ->
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
             }
@@ -136,10 +184,11 @@ class MainActivity : AppCompatActivity() {
             }
             val screen = nav.screen(Session(
                 connected = connectedUser != null && app.chat != null && app.notices != null,
-                mustGiveName = mustGiveName, mustGiveHome = mustGiveHome, emailLinkPending = emailLinkPending,
+                mustGiveName = mustGiveName, mustGiveHome = mustGiveHome, mustGivePhone = mustGivePhone,
+                emailLinkPending = emailLinkPending,
             ))
             // Back from a tab goes Home; at Home it leaves the app. Mandatory steps keep the system default.
-            val mandatory = screen == MainScreen.NAME_STEP || screen == MainScreen.HOME_STEP
+            val mandatory = screen == MainScreen.NAME_STEP || screen == MainScreen.HOME_STEP || screen == MainScreen.PHONE_STEP
             BackHandler(enabled = !mandatory && nav.back() != null) { nav.back()?.let { nav = it } }
             Scaffold(
                 // Each screen handles the system insets itself; the scaffold only reserves the bar.
@@ -153,6 +202,10 @@ class MainActivity : AppCompatActivity() {
                     when (screen) {
                         MainScreen.NAME_STEP -> key(connectedUser) {
                             AccountNameScreen(nameSession!!, app.applicationScope,
+                                onSignOut = { app.applicationScope.launch { app.identity.signOut() } })
+                        }
+                        MainScreen.PHONE_STEP -> key(connectedUser) {
+                            ContactPhoneScreen(phoneSession!!, app.applicationScope,
                                 onSignOut = { app.applicationScope.launch { app.identity.signOut() } })
                         }
                         MainScreen.HOME_STEP, MainScreen.HOME_EDITOR -> key(connectedUser) {
@@ -207,6 +260,7 @@ class MainActivity : AppCompatActivity() {
                             googleAuth = app.googleAuth, profileReviews = app.profileReviews,
                             subscriptions = app.subscriptions, agenda = app.agenda,
                             nameSlot = nameSession?.let { session -> { AccountNameCard(session, app.applicationScope) } },
+                            phoneSlot = phoneSession?.let { session -> { ContactPhoneCard(session, app.applicationScope) } },
                             homeSlot = homeSession?.let { session -> { HomeSummaryCard(session, onChange = { nav = nav.editHome() }) } },
                             searchSlot = proximitySource?.let { source -> {
                                 val proximity = rememberProximity(source, app.catalogue, app.searchSession?.trade?.value, app.searchSession)
@@ -231,7 +285,7 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleAuthLink(intent)
-        if (intent.getBooleanExtra(es.teloarreglo.notices.EXTRA_OPEN_NOTICES, false)) openNotices.value = true
+        readPushTarget(intent)
     }
 
     override fun onStart() {
@@ -242,6 +296,8 @@ class MainActivity : AppCompatActivity() {
             app.homeSession?.takeIf { it.status.value == HomeStatus.Failed }
                 ?.load(app.identity.state.value.account?.userId)
             app.accountNameSession?.takeIf { it.status.value == AccountNameStatus.Failed }
+                ?.load(app.identity.state.value.account?.userId)
+            app.contactPhoneSession?.takeIf { it.status.value == ContactPhoneStatus.Failed }
                 ?.load(app.identity.state.value.account?.userId)
         }
     }
