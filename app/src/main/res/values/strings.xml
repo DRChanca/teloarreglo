@@ -532,7 +532,6 @@
     <string name="notices_push_failed">No se pudo registrar este dispositivo para notificaciones. Los avisos siguen guardados aquí.</string>
     <string name="notices_push_checking">Comprobando las notificaciones…</string>
     <string name="notices_push_enable">Activar notificaciones</string>
-    <string name="notices_push_disable">Desactivar</string>
     <string name="notices_push_allow">Permitir notificaciones</string>
     <string name="notices_push_note">Las notificaciones dependen de la conexión y los ajustes del teléfono: pueden retrasarse o no llegar. Los avisos siempre quedan aquí.</string>
     <plurals name="notices_messages">

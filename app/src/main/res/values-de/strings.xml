@@ -532,7 +532,6 @@
     <string name="notices_push_failed">Dieses Gerät konnte nicht für Benachrichtigungen registriert werden. Die Hinweise bleiben hier gespeichert.</string>
     <string name="notices_push_checking">Benachrichtigungen werden geprüft …</string>
     <string name="notices_push_enable">Benachrichtigungen aktivieren</string>
-    <string name="notices_push_disable">Deaktivieren</string>
     <string name="notices_push_allow">Benachrichtigungen erlauben</string>
     <string name="notices_push_note">Benachrichtigungen hängen von der Verbindung und den Telefoneinstellungen ab: Sie können sich verzögern oder ausbleiben. Die Hinweise bleiben immer hier.</string>
     <plurals name="notices_messages">

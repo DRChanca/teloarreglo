@@ -532,7 +532,6 @@
     <string name="notices_push_failed">This device could not be registered for notifications. Notices are still kept here.</string>
     <string name="notices_push_checking">Checking notifications…</string>
     <string name="notices_push_enable">Turn on notifications</string>
-    <string name="notices_push_disable">Turn off</string>
     <string name="notices_push_allow">Allow notifications</string>
     <string name="notices_push_note">Notifications depend on the connection and phone settings: they may be delayed or not arrive. Notices always stay here.</string>
     <plurals name="notices_messages">

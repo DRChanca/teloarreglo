@@ -532,7 +532,6 @@
     <string name="notices_push_failed">Impossible d’enregistrer cet appareil pour les notifications. Les avis restent conservés ici.</string>
     <string name="notices_push_checking">Vérification des notifications…</string>
     <string name="notices_push_enable">Activer les notifications</string>
-    <string name="notices_push_disable">Désactiver</string>
     <string name="notices_push_allow">Autoriser les notifications</string>
     <string name="notices_push_note">Les notifications dépendent de la connexion et des réglages du téléphone : elles peuvent être retardées ou ne pas arriver. Les avis restent toujours ici.</string>
     <plurals name="notices_messages">
