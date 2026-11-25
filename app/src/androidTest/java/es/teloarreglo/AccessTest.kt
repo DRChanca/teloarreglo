@@ -123,6 +123,19 @@ class AccessTest {
         assert(signOutTop >= preferencesBottom)
     }
 
+    @Test fun theAccountCardSaysOnlyWhoIsConnected() {
+        val identity = TestIdentity().apply {
+            state.value = AccessState(AccessStage.CONNECTED, Account("u1", "pro@example.org"))
+        }
+        compose.setContent { AccessScreen(identity, {}) }
+        val connectedAs = InstrumentationRegistry.getInstrumentation().targetContext
+            .getString(R.string.connected_as, "pro@example.org")
+        val inCard = androidx.compose.ui.test.hasAnyAncestor(androidx.compose.ui.test.hasTestTag("account_card"))
+        val texts = compose.onAllNodes(inCard and androidx.compose.ui.test.hasText("", substring = true))
+            .fetchSemanticsNodes().flatMap { it.config.getOrElse(SemanticsProperties.Text) { emptyList() } }.map { it.text }
+        assert(texts == listOf(connectedAs)) { "account card shows $texts" }
+    }
+
     @Test fun theAccountTabHasNoBackButtonOfItsOwn() {
         compose.setContent { AccessScreen(TestIdentity(), {}, onLeaveLink = {}) }
         compose.onNodeWithTag("email").assertIsDisplayed()

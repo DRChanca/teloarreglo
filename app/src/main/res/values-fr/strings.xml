@@ -15,7 +15,6 @@
     <string name="checking_session">Vérification de votre session…</string>
     <string name="working">Veuillez patienter…</string>
     <string name="account_title">Vous êtes connecté</string>
-    <string name="account_hint">Votre compte est connecté. Vous pouvez fermer l’application et retrouver votre session à votre retour.</string>
     <string name="connected_as">Connecté en tant que %1$s</string>
     <string name="retry">Réessayer</string>
     <string name="error_credentials">L’adresse e-mail ou le mot de passe est incorrect.</string>

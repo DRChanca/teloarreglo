@@ -15,7 +15,6 @@
     <string name="checking_session">Comprobando tu sesión…</string>
     <string name="working">Un momento…</string>
     <string name="account_title">Ya estás dentro</string>
-    <string name="account_hint">Tu cuenta está conectada. Puedes cerrar la app y retomar tu sesión al volver.</string>
     <string name="connected_as">Conectado como %1$s</string>
     <string name="retry">Reintentar</string>
     <string name="error_credentials">El correo o la contraseña no son correctos.</string>

@@ -15,7 +15,6 @@
     <string name="checking_session">Deine Sitzung wird überprüft…</string>
     <string name="working">Bitte warten…</string>
     <string name="account_title">Du bist angemeldet</string>
-    <string name="account_hint">Dein Konto ist verbunden. Du kannst die App schließen und deine Sitzung später fortsetzen.</string>
     <string name="connected_as">Angemeldet als %1$s</string>
     <string name="retry">Erneut versuchen</string>
     <string name="error_credentials">Die E-Mail-Adresse oder das Passwort ist falsch.</string>

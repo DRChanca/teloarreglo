@@ -211,7 +211,7 @@ fun AccessScreen(
                         Card(
                             colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card),
                             shape = MaterialTheme.shapes.large,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().testTag("account_card"),
                         ) {
                             Column(Modifier.padding(TeloTheme.spacing.large), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
                                 Text(
@@ -219,8 +219,6 @@ fun AccessScreen(
                                     Modifier.testTag("account"),
                                     style = MaterialTheme.typography.titleMedium,
                                 )
-                                Text(stringResource(R.string.account_hint), style = MaterialTheme.typography.bodySmall)
-                                Text(stringResource(R.string.catalogue_can_hire), style = MaterialTheme.typography.bodySmall)
                             }
                         }
                         nameSlot?.invoke()

@@ -24,7 +24,6 @@
     </plurals>
     <string name="catalogue_illustration">%1$s illustration; not a photo of completed work</string>
     <string name="catalogue_owned">Your professional profile</string>
-    <string name="catalogue_can_hire">This account can hire services and have its own professional profile.</string>
     <string name="trade_all">All</string>
     <string name="trade_plumbing">Plumbing</string>
     <string name="trade_electrical">Electrical</string>
