@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Search filters (#52). -->
+<resources>
+    <string name="filters_button">Filters</string>
+    <string name="filters_button_active">Filters · %1$d</string>
+    <string name="filters_trade">Trade</string>
+    <string name="filters_distance">Maximum distance</string>
+    <string name="filters_distance_none">No limit</string>
+    <string name="filters_distance_km">%1$d km</string>
+    <string name="filters_distance_needs_point">Choose a point to filter by distance</string>
+    <string name="filters_rating">Minimum rating</string>
+    <string name="filters_rating_any">Any</string>
+    <string name="filters_rating_min">%1$d★ or more</string>
+    <string name="filters_reset">Reset</string>
+    <plurals name="filters_apply">
+        <item quantity="one">Show %d professional</item>
+        <item quantity="other">Show %d professionals</item>
+    </plurals>
+    <string name="filters_apply_unknown">Show professionals</string>
+    <string name="filters_empty">No professional matches these filters</string>
+    <string name="filters_empty_reset">Reset filters</string>
+    <string name="filters_empty_artwork">Illustration of a magnifying glass over an empty card</string>
+</resources>

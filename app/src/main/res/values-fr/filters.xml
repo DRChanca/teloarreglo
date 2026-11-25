@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Filtres de recherche (#52). -->
+<resources>
+    <string name="filters_button">Filtres</string>
+    <string name="filters_button_active">Filtres · %1$d</string>
+    <string name="filters_trade">Métier</string>
+    <string name="filters_distance">Distance maximale</string>
+    <string name="filters_distance_none">Sans limite</string>
+    <string name="filters_distance_km">%1$d km</string>
+    <string name="filters_distance_needs_point">Choisissez un point pour filtrer par distance</string>
+    <string name="filters_rating">Note minimale</string>
+    <string name="filters_rating_any">Toutes</string>
+    <string name="filters_rating_min">%1$d★ ou plus</string>
+    <string name="filters_reset">Réinitialiser</string>
+    <plurals name="filters_apply">
+        <item quantity="one">Voir %d professionnel</item>
+        <item quantity="other">Voir %d professionnels</item>
+    </plurals>
+    <string name="filters_apply_unknown">Voir les professionnels</string>
+    <string name="filters_empty">Aucun professionnel ne correspond à ces filtres</string>
+    <string name="filters_empty_reset">Réinitialiser les filtres</string>
+    <string name="filters_empty_artwork">Illustration d’une loupe sur une fiche vide</string>
+</resources>
