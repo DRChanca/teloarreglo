@@ -5,22 +5,22 @@
 -- writing the messages in the past. Fixtures use the ...7600NN (professionals) and ...7601NN (clients) ranges.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(24);
 
 insert into auth.users(id,email,email_confirmed_at)
  select ('00000000-0000-0000-0000-0000007600' || lpad(n::text, 2, '0'))::uuid, 'rt-pro-' || n || '@example.org', now()
- from generate_series(1, 16) n;
+ from generate_series(1, 19) n;
 insert into auth.users(id,email,email_confirmed_at)
  select ('00000000-0000-0000-0000-0000007601' || lpad(n::text, 2, '0'))::uuid, 'rt-client-' || n || '@example.org', now()
  from generate_series(1, 25) n;
 insert into private.professional_profiles(id,owner_id,review_status)
  select ('10000000-0000-0000-0000-0000007600' || lpad(n::text, 2, '0'))::uuid,
   ('00000000-0000-0000-0000-0000007600' || lpad(n::text, 2, '0'))::uuid, 'approved'
- from generate_series(1, 16) n;
+ from generate_series(1, 19) n;
 insert into public.approved_profiles(profile_id,name,description,trades,services,coverage,languages,phone)
  select ('10000000-0000-0000-0000-0000007600' || lpad(n::text, 2, '0'))::uuid, 'Respuesta ' || n, 'Ficticio',
   array['plumbing'], array['Fugas'], '[{"code":"33044","name":"Oviedo"}]', array['es'], '+34 000 000 760'
- from generate_series(1, 16) n;
+ from generate_series(1, 19) n;
 
 -- One conversation of profile p with client c whose first message was written `ago` before now.
 -- `reply`: delay of the professional's first message (null: no reply). `pro_first`: the professional
@@ -91,6 +91,16 @@ select pg_temp.conv(15, 1, interval '2 days', interval '3 hours 1 second');
 select pg_temp.conv(16, 1, interval '5 days', interval '10 minutes');
 select pg_temp.conv(16, 2, interval '4 days', null);
 select pg_temp.conv(16, 3, interval '3 days', null);
+-- 17–19: an even number of conversations, so the median averages the two middle ones.
+-- 17: 1 h and an unanswered one (just above 24 h) average to about 12.5 h.
+select pg_temp.conv(17, 1, interval '3 days', interval '1 hour');
+select pg_temp.conv(17, 2, interval '2 days', null);
+-- 18: a reply after 30 h (capped to 24 h) and an unanswered one average just above the cap.
+select pg_temp.conv(18, 1, interval '3 days', interval '30 hours');
+select pg_temp.conv(18, 2, interval '2 days', null);
+-- 19: two unanswered ones.
+select pg_temp.conv(19, 1, interval '3 days', null);
+select pg_temp.conv(19, 2, interval '2 days', null);
 
 set local role anon;
 select is(pg_temp.band(1), null, 'a profile without conversations has no band');
@@ -109,13 +119,16 @@ select is(pg_temp.band(13), 'under_3h', 'exactly 3 h is under_3h');
 select is(pg_temp.band(14), 'same_day', 'exactly 24 h is same_day');
 select is(pg_temp.band(15), 'same_day', 'just over 3 h is same_day');
 select is(pg_temp.band(16), 'over_day', 'a median on unanswered conversations is over_day');
+select is(pg_temp.band(17), 'same_day', 'an even median of 1 h and an unanswered one is same_day');
+select is(pg_temp.band(18), 'over_day', 'an even median of a capped reply and an unanswered one is over_day');
+select is(pg_temp.band(19), 'over_day', 'an even median of two unanswered ones is over_day');
 select ok((select (to_jsonb(c) - array['profile_id','name','description','trades','services','coverage','languages',
   'phone','images','prices','rating','review_count','approved_at','business_address','cover_path','business_lat',
   'business_lng','featured','response_band']) = '{}'::jsonb
  from public.catalogue(null, '10000000-0000-0000-0000-000000760002') c),
  'the catalogue adds only the band: no message times or client identities');
 select is((select count(*)::integer from public.catalogue() c where c.name like 'Respuesta %' and c.response_band is not null),
- 14, 'the full list carries the band too');
+ 17, 'the full list carries the band too');
 select throws_ok($$ select private.response_band('10000000-0000-0000-0000-000000760002') $$, '42501', null,
  'visitors cannot call the private computation');
 
