@@ -525,6 +525,7 @@
     <string name="notices_topic_confirmed">Termin bestätigt</string>
     <string name="notices_topic_change">Terminänderung wartet auf deine Antwort</string>
     <string name="notices_topic_change_decided">Antwort auf eine Terminänderung</string>
+    <string name="notices_topic_professional_near">Deine Fachkraft ist in der Nähe</string>
     <string name="notices_topic_started">Arbeit begonnen</string>
     <string name="notices_topic_cancelled">Termin storniert</string>
     <string name="notices_topic_done">Arbeit als erledigt markiert: bestätige sie oder melde ein Problem</string>

@@ -525,6 +525,7 @@
     <string name="notices_topic_confirmed">Appointment confirmed</string>
     <string name="notices_topic_change">Appointment change awaiting your answer</string>
     <string name="notices_topic_change_decided">Answer to an appointment change</string>
+    <string name="notices_topic_professional_near">Your professional is nearby</string>
     <string name="notices_topic_started">Work started</string>
     <string name="notices_topic_cancelled">Appointment cancelled</string>
     <string name="notices_topic_done">Work marked as done: confirm it or report a problem</string>

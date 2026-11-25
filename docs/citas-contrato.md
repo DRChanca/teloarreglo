@@ -1068,6 +1068,8 @@ select jobid, schedule, active from cron.job where jobname = 'arrival-clock';
 
 ### Para los siguientes tickets
 
-- Aviso de cercanía (#83): se decide en `report_arrival_position`, justo después de guardar la posición (marcado en la
-  función), con la posición aceptada y la casa de la cita. La respuesta es `jsonb` y admite campos nuevos.
+- Aviso de cercanía (#83, hecho en `20261125007300_arrival_near_notice.sql`): `report_arrival_position`, justo
+  después de guardar la posición, inserta el evento de cita `professional_near` para el cliente si la posición
+  aceptada está a 100 m o menos de la casa de la cita; una vez por cita. La respuesta no cambia. Detalle en
+  `docs/avisos-contrato.md`.
 - Mapa del cliente (#84) y servicio del profesional (#85): usan las respuestas de arriba tal cual.

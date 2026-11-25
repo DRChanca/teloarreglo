@@ -86,9 +86,23 @@ class NoticesTest {
         assertEquals(NoticeTopic.COMPLETED, t("appointment", "completed"))
         assertEquals(NoticeTopic.INCIDENT, t("appointment", "incident_reported"))
         assertEquals(NoticeTopic.REVIEW, t("appointment", "review_published"))
+        assertEquals(NoticeTopic.PROFESSIONAL_NEAR, t("appointment", "professional_near"))
         assertEquals(NoticeTopic.APPOINTMENT_OTHER, t("appointment", "something_new"))
         assertEquals(NoticeTopic.PROFILE_APPROVED, t("profile_review", "approved"))
         assertEquals(NoticeTopic.OTHER, t("future_kind", null))
+    }
+
+    @Test fun theProximityNoticeSaysTheProfessionalIsNearInEveryLanguageAndOpensTheConversation() {
+        val notice = Notice("n", "appointment", kotlinx.serialization.json.Json.parseToJsonElement(
+            """{"appointment_id":"a1","conversation_id":"c1","event":"professional_near"}""").jsonObject, "2026-11-25T10:00:00Z")
+        assertEquals(NoticeTopic.PROFESSIONAL_NEAR, notice.topic())
+        assertEquals(NoticeDestination.Conversation("c1"), notice.destination())
+        val texts = mapOf("values" to "Tu profesional está cerca", "values-en" to "Your professional is nearby",
+            "values-fr" to "Votre professionnel est tout près", "values-de" to "Deine Fachkraft ist in der Nähe")
+        texts.forEach { (folder, text) ->
+            val xml = java.io.File("src/main/res/$folder/strings.xml").readText()
+            assertTrue("$folder: $text", xml.contains("""<string name="notices_topic_professional_near">$text</string>"""))
+        }
     }
 
     private class FakeDevices : PushDevices {

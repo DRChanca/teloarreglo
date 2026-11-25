@@ -26,6 +26,13 @@ o `incident_evidence` de #26, o `reminder` del reloj de #27. Ese evento aparece 
 esta capa. Android traduce los tipos conocidos. Los que empiezan por `incident` se muestran como «Novedad en una
 incidencia» y los desconocidos como «Novedad en una cita».
 
+Aviso de cercanía (#83, ADR 0002): `report_arrival_position` («informar posición») inserta el evento
+`professional_near` para el cliente de la cita cuando acepta una posición a 100 m o menos de la casa de la cita con
+la ventana de llegada abierta. El actor es el profesional. Sale una sola vez por cita (índice único parcial), aunque
+el profesional salga y vuelva a entrar en los 100 m; si ya estaba cerca al abrirse la ventana, sale con la primera
+posición aceptada. Una posición rechazada fuera de la ventana nunca lo genera. Android lo muestra como «Tu
+profesional está cerca» (`NoticeTopic.PROFESSIONAL_NEAR`) y al tocarlo abre la conversación de la cita.
+
 Los avisos no llevan cuerpos de mensaje, direcciones, coordenadas ni nombres. Los eventos de cita anteriores a la
 migración se copian como historial ya leído y no generan push.
 
