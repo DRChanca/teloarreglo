@@ -21,6 +21,7 @@ function fakeApi(account: Account | null, overrides: Partial<AdminApi> = {}): Ad
     signOut: vi.fn(async () => {}),
     submissions: vi.fn(async () => [pending]),
     review: vi.fn(async () => ({ status: "rejected" as const })),
+    workZoneChanges: vi.fn(async () => []),
     incidents: vi.fn(async () => []),
     settleIncident: vi.fn(async () => ({ status: "open" as const })),
     decidePerformance: vi.fn(async () => ({ status: "resolved" as const })),
@@ -121,6 +122,36 @@ describe("profile review panel", () => {
     expect(await screen.findByText(/Falta la cobertura/)).toBeTruthy();
     expect(screen.getAllByText(/admin@example.org/).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: messages.es.approve })).toBeNull();
+  });
+});
+
+describe("work zone changes without review", () => {
+  it("lists each added or removed concejo of the profile, latest first, as plain text", async () => {
+    const api = fakeApi({ email: "admin@example.org", is_administrator: true }, {
+      workZoneChanges: vi.fn(async () => [
+        { ine_code: "33044", name: "Oviedo", added: true, changed_at: "2026-11-25T10:32:00Z" },
+        { ine_code: "33024", name: "<b>Gijón</b>", added: false, changed_at: "2026-11-24T09:00:00Z" },
+      ]),
+    });
+    render(<App api={api} language="es" />);
+    expect(await screen.findByText(/^\+ Oviedo · /)).toBeTruthy();
+    expect(screen.getByText(/^− <b>Gijón<\/b> · /)).toBeTruthy();
+    expect(document.querySelector("b")).toBeNull();
+    expect(api.workZoneChanges).toHaveBeenCalledWith("p1");
+  });
+
+  it("says there are no changes, and a failure does not hide the profile", async () => {
+    const api = fakeApi({ email: "admin@example.org", is_administrator: true });
+    render(<App api={api} language="es" />);
+    expect(await screen.findByText(messages.es.zoneChangesNone)).toBeTruthy();
+    cleanup();
+    const failing = fakeApi({ email: "admin@example.org", is_administrator: true }, {
+      workZoneChanges: vi.fn(async () => { throw new AdminError("permission_denied"); }),
+    });
+    render(<App api={failing} language="es" />);
+    expect(await screen.findByText(messages.es.zoneChangesError)).toBeTruthy();
+    expect(screen.getByText("Perfil de prueba")).toBeTruthy();
+    expect(screen.getByRole("button", { name: messages.es.approve })).toBeTruthy();
   });
 });
 

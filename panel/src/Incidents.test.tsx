@@ -37,6 +37,7 @@ function fakeApi(items: IncidentReview[], overrides: Partial<AdminApi> = {}): Ad
   return {
     account: vi.fn(async () => admin), signIn: vi.fn(async () => admin), signOut: vi.fn(async () => {}),
     submissions: vi.fn(async () => []), review: vi.fn(async () => ({ status: "approved" as const })),
+    workZoneChanges: vi.fn(async () => []),
     incidents: vi.fn(async () => items),
     settleIncident: vi.fn(async () => ({ status: "open" as const })),
     decidePerformance: vi.fn(async () => ({ status: "resolved" as const })),

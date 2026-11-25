@@ -31,6 +31,14 @@ export interface Submission {
   decision: { approved: boolean; reason: string; decided_at: string; administrator_email: string } | null;
 }
 
+/** One concejo added to or removed from a work zone without review (ADR 0001). */
+export interface WorkZoneChange {
+  ine_code: string;
+  name: string | null;
+  added: boolean;
+  changed_at: string;
+}
+
 export interface Account {
   email: string;
   is_administrator: boolean;
@@ -102,6 +110,8 @@ export interface AdminApi {
   signOut(): Promise<void>;
   submissions(status: SubmissionStatus | "all"): Promise<Submission[]>;
   review(submissionId: string, approve: boolean, reason: string): Promise<Submission | { status: SubmissionStatus }>;
+  /** Append-only history of the profile's work zone, latest first. */
+  workZoneChanges(profileId: string): Promise<WorkZoneChange[]>;
   incidents(status: IncidentStatus | "all"): Promise<IncidentReview[]>;
   /** refundCents only for "split"; expectedPendingCents is the balance shown, so a changed balance is not settled. */
   settleIncident(incidentId: string, outcome: Settlement, refundCents: number | null, expectedPendingCents: number,
@@ -152,6 +162,7 @@ export function createSupabaseAdminApi(url: string, publishableKey: string, clie
     submissions: (status) => rpc<Submission[]>("admin_profile_submissions", { p_status: status }),
     review: (id, approve, reason) =>
       rpc("review_professional_profile", { p_submission: id, p_approve: approve, p_reason: reason }),
+    workZoneChanges: (profileId) => rpc<WorkZoneChange[]>("admin_work_zone_changes", { p_profile: profileId }),
     incidents: (status) => rpc<IncidentReview[]>("admin_incidents", { p_status: status }),
     settleIncident: (id, outcome, refund, expected, reason) => rpc("admin_settle_incident", {
       p_incident_id: id, p_outcome: outcome, p_refund_cents: outcome === "split" ? refund : null,

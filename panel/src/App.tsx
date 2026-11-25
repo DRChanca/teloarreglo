@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { AdminError, type Account, type AdminApi, type Failure, type Submission } from "./api";
+import { AdminError, type Account, type AdminApi, type Failure, type Submission, type WorkZoneChange } from "./api";
 import { IncidentReviews } from "./Incidents";
 import { initialLanguage, languageNames, languages, translate, type Language, type MessageKey } from "./i18n";
 
@@ -165,6 +165,7 @@ function SubmissionCard({ submission: s, t, date, api, onDecided }: {
         {field("phone", c.phone, p?.phone)}
         {field("businessAddress", c.business_address, p?.business_address)}
       </dl>
+      <ZoneChanges api={api} profileId={s.profile_id} t={t} date={date} />
       {s.decision ? (
         <p className={s.decision.approved ? "ok" : "error"}>{t("decision", {
           result: t(s.decision.approved ? "resultApproved" : "resultRejected"),
@@ -182,5 +183,27 @@ function SubmissionCard({ submission: s, t, date, api, onDecided }: {
         </div>
       )}
     </article>
+  );
+}
+
+// The owner edits the work zone without review (ADR 0001); the administrator only reads its history.
+function ZoneChanges({ api, profileId, t, date }: { api: AdminApi; profileId: string; t: T; date: (iso: string) => string }) {
+  const [changes, setChanges] = useState<WorkZoneChange[] | "error" | null>(null);
+  useEffect(() => {
+    let live = true;
+    setChanges(null);
+    api.workZoneChanges(profileId).then((c) => { if (live) setChanges(c); }, () => { if (live) setChanges("error"); });
+    return () => { live = false; };
+  }, [api, profileId]);
+  return (
+    <>
+      <h3>{t("zoneChanges")}</h3>
+      {changes === null ? <p role="status" className="muted small">{t("zoneChangesLoading")}</p>
+        : changes === "error" ? <p className="error small">{t("zoneChangesError")}</p>
+        : changes.length === 0 ? <p className="muted small">{t("zoneChangesNone")}</p>
+        : <ul className="zone-changes small">{changes.map((z, i) => (
+          <li key={i}>{z.added ? "+" : "−"} {z.name ?? z.ine_code} · {date(z.changed_at)}</li>
+        ))}</ul>}
+    </>
   );
 }

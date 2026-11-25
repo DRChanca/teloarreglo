@@ -20,6 +20,16 @@ describe("Supabase adapter", () => {
     expect(JSON.parse(init.body as string)).toEqual({ p_submission: "s1", p_approve: false, p_reason: "Falta la cobertura" });
   });
 
+  it("reads the work zone changes of a profile through its protected RPC", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify([]),
+      { status: 200, headers: { "Content-Type": "application/json" } }));
+    const api = createSupabaseAdminApi("", "", clientWith(fetchMock as unknown as typeof fetch));
+    expect(await api.workZoneChanges("p1")).toEqual([]);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(new URL(url).pathname).toBe("/rest/v1/rpc/admin_work_zone_changes");
+    expect(JSON.parse(init.body as string)).toEqual({ p_profile: "p1" });
+  });
+
   it("reports a server refusal as permission denied", async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ code: "42501", message: "permission_denied" }),
       { status: 403, headers: { "Content-Type": "application/json" } }));
