@@ -17,11 +17,11 @@
     <string name="catalogue_no_prices">Solicita una propuesta para tu trabajo.</string>
     <string name="catalogue_includes">Incluye: %1$s</string>
     <string name="catalogue_excludes">Aparte: %1$s</string>
-    <string name="catalogue_no_reviews">Sin reseñas todavía</string>
+    <string name="catalogue_no_reviews">Sin reseñas</string>
     <plurals name="catalogue_rating">
-        <item quantity="one">%1$.1f de 5 · %2$d reseña</item>
-        <item quantity="many">%1$.1f de 5 · %2$d reseñas</item>
-        <item quantity="other">%1$.1f de 5 · %2$d reseñas</item>
+        <item quantity="one">%1$.1f de 5, %2$d reseña</item>
+        <item quantity="many">%1$.1f de 5, %2$d reseñas</item>
+        <item quantity="other">%1$.1f de 5, %2$d reseñas</item>
     </plurals>
     <string name="catalogue_illustration">Ilustración de %1$s; no es una fotografía de un trabajo realizado</string>
     <string name="catalogue_owned">Tu perfil profesional</string>

@@ -1,5 +1,6 @@
 package es.teloarreglo
 
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -187,5 +188,50 @@ class CatalogueUiTest {
             assertTrue(tag, res.getQuantityString(R.plurals.catalogue_rating, 1, 4.8, 1).endsWith(" " + forms[0]))
             assertTrue(tag, res.getQuantityString(R.plurals.catalogue_rating, 3, 4.8, 3).endsWith(" " + forms[1]))
         }
+    }
+
+    private val res get() = InstrumentationRegistry.getInstrumentation().targetContext.resources
+    private fun mean(value: Double) = String.format(res.configuration.locales[0], "%.1f", value)
+    private fun showProfile(profile: PublicProfile) = compose.setContent { CatalogueScreen(object : Catalogue {
+        override suspend fun list(trade: String?) = listOf(profile)
+        override suspend fun profile(id: String) = profile
+    }, initialProfileId = profile.id) }
+    private fun stars(kind: String) = compose.onAllNodes(hasTestTag("star_$kind"), useUnmergedTree = true).fetchSemanticsNodes().size
+
+    @Test fun theProfileShowsItsRatingInHalfStarsWithMeanAndCount() {
+        showProfile(plumber.copy(rating = 4.3, reviewCount = 12))
+        val rating = compose.onNodeWithTag("profile_rating")
+        rating.assert(hasText("${mean(4.3)} (12)", substring = true))
+        rating.assert(androidx.compose.ui.test.hasContentDescription(res.getQuantityString(R.plurals.catalogue_rating, 12, 4.3, 12)))
+        assertEquals(listOf(4, 1, 0), listOf(stars("full"), stars("half"), stars("empty")))
+    }
+
+    @Test fun aLowerRatingLeavesEmptyStars() {
+        showProfile(plumber.copy(rating = 2.6, reviewCount = 3))
+        compose.onNodeWithTag("profile_rating").assert(hasText("${mean(2.6)} (3)", substring = true))
+        assertEquals(listOf(2, 1, 2), listOf(stars("full"), stars("half"), stars("empty")))
+    }
+
+    @Test fun theCardShowsACompactRating() {
+        val profile = plumber.copy(rating = 4.5, reviewCount = 12)
+        compose.setContent { CatalogueScreen(object : Catalogue {
+            override suspend fun list(trade: String?) = listOf(profile)
+            override suspend fun profile(id: String) = profile
+        }) }
+        val rating = compose.onNodeWithTag("rating_${profile.id}", useUnmergedTree = true)
+        rating.assert(hasText("★ ${mean(4.5)} (12)"))
+        rating.assert(androidx.compose.ui.test.hasContentDescription(res.getQuantityString(R.plurals.catalogue_rating, 12, 4.5, 12)))
+    }
+
+    @Test fun aProfileWithoutReviewsSaysSo() {
+        showProfile(plumber.copy(rating = null, reviewCount = 0))
+        compose.onNodeWithTag("profile_rating").assert(hasText(res.getString(R.string.catalogue_no_reviews)))
+        assertEquals(0, stars("full") + stars("half") + stars("empty"))
+    }
+
+    @Test fun noReviewsReadsSinResenas() {
+        val config = Configuration(res.configuration).apply { setLocale(Locale.forLanguageTag("es")) }
+        val spanish = InstrumentationRegistry.getInstrumentation().targetContext.createConfigurationContext(config).resources
+        assertEquals("Sin reseñas", spanish.getString(R.string.catalogue_no_reviews))
     }
 }

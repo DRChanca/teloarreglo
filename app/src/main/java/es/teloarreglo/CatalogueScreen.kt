@@ -260,7 +260,7 @@ private fun ProfileCard(row: SearchRow, highlighted: Boolean, concejo: String?, 
                     Text(stringResource(R.string.catalogue_reference, priceText(price)),
                         color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
                 }
-                Rating(profile)
+                ProfileRating(profile.rating, profile.reviewCount, compact = true, Modifier.testTag("rating_${profile.id}"))
             }
         }
     }
@@ -306,7 +306,7 @@ private fun ProfileDetail(
                             Text(profile.name, style = MaterialTheme.typography.headlineMedium)
                             Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(),
                                 color = MaterialTheme.colorScheme.primary)
-                            Rating(profile)
+                            ProfileRating(profile.rating, profile.reviewCount, compact = false, Modifier.testTag("profile_rating"))
                             outsideZoneOf?.let { concejo ->
                                 Text(stringResource(R.string.profile_out_of_zone, concejo.name),
                                     Modifier.testTag("profile_out_of_zone"), style = MaterialTheme.typography.bodyMedium,
@@ -404,13 +404,6 @@ private fun SelectionContainerCompat(text: String) {
 @Composable
 private fun Section(label: Int, modifier: Modifier = Modifier) {
     Text(stringResource(label), modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
-}
-
-@Composable
-private fun Rating(profile: PublicProfile) {
-    Text(if (profile.rating == null) stringResource(R.string.catalogue_no_reviews)
-        else pluralStringResource(R.plurals.catalogue_rating, profile.reviewCount, profile.rating, profile.reviewCount),
-        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable
