@@ -97,6 +97,32 @@ class NearbySearchSessionTest {
             SearchRow(three.list(null)[2], null, true)), results.rows)
     }
 
+    @Test fun eachRowShowsTheSearchResponseTimeElseThePublicProfileOneWithoutChangingTheOrder() = runTest {
+        // #80: the card prefers the band of the search result; a row the server did not place (or an older
+        // server without the field) falls back to the public profile's band. The order stays the server's.
+        val withBands = object : Catalogue {
+            override suspend fun list(trade: String?) = listOf(
+                profile("slow", "33044").copy(responseBand = "under_1h"),
+                profile("old", "33044").copy(responseBand = "same_day"),
+                profile("unlocated", "33044").copy(responseBand = "under_30m"),
+                profile("none", "33044"))
+            override suspend fun profile(id: String) = null
+        }
+        val search = FakeSearch(SearchOutcome.Found(oviedo, listOf(
+            NearbyResult("slow", 500, responseBand = "over_day"), NearbyResult("old", 1000),
+            NearbyResult("none", 1500, responseBand = null))))
+        val results = NearbySearchSession(search, withBands).search(NearbyQuery(SearchOrigin.Home, home, "33044"), null)
+
+        results as NearbyState.Results
+        assertEquals(listOf("slow" to "over_day", "old" to "same_day", "none" to null, "unlocated" to "under_30m"),
+            results.rows.map { it.profile.id to it.responseBand })
+    }
+
+    @Test fun aListWithoutASearchPointShowsThePublicProfileResponseTime() {
+        val row = SearchRow(profile("p", "33044").copy(responseBand = "instant"), null, true)
+        assertEquals("instant", row.responseBand)
+    }
+
     @Test fun anOlderServerWithoutInZoneMeansEveryResultIsInZone() {
         val decoded = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
             .decodeFromString(NearbyResult.serializer(), """{"profile_id":"p1","distance_band_m":500}""")

@@ -12,8 +12,12 @@ import kotlinx.coroutines.CancellationException
 /**
  * One profile in the search order. [bandM]: rounded distance from the server, null when the profile has no
  * registered location. [inZone]: false when the concejo of the search is outside its work zone (ADR 0001).
+ * [responseBand]: «Tiempo de respuesta» (#80), from the search result when it has one, else the public profile's.
  */
-internal data class SearchRow(val profile: PublicProfile, val bandM: Int?, val inZone: Boolean)
+internal data class SearchRow(
+    val profile: PublicProfile, val bandM: Int?, val inZone: Boolean,
+    val responseBand: String? = profile.responseBand,
+)
 
 /** What the proximity order shows. Positions are kept only for the current search. */
 internal sealed interface NearbyState {
@@ -80,7 +84,7 @@ internal class NearbySearchSession(private val search: ProfessionalSearch, priva
      */
     private fun rows(found: SearchOutcome.Found, profiles: List<PublicProfile>): List<SearchRow> {
         val byId = profiles.associateBy { it.id }
-        val ranked = found.results.mapNotNull { r -> byId[r.profileId]?.let { SearchRow(it, r.distanceBandM, r.inZone) } }
+        val ranked = found.results.mapNotNull { r -> byId[r.profileId]?.let { SearchRow(it, r.distanceBandM, r.inZone, r.responseBand ?: it.responseBand) } }
         val placed = ranked.mapTo(mutableSetOf()) { it.profile.id }
         return ranked + profiles.filter { it.id !in placed }
             .map { p -> SearchRow(p, null, p.coverage.any { it.code == found.concejo.ineCode }) }
