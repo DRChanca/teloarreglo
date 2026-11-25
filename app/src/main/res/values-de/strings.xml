@@ -200,6 +200,9 @@
     <string name="map_directions">Route mit Google Maps</string>
     <string name="map_open_appointment">Route planen</string>
     <string name="map_no_app">Keine App kann Google Maps öffnen. Installiere Google Maps oder einen Browser.</string>
+    <string name="call_button">Anrufen</string>
+    <string name="call_description">%1$s anrufen</string>
+    <string name="call_no_app">Keine Telefon-App zum Anrufen verfügbar.</string>
     <string name="map_pick_on_map">Punkt auf der Karte wählen</string>
     <string name="map_pick_confirm">Diesen Punkt verwenden</string>
     <string name="map_pin_not_address">Der Punkt ersetzt nicht die Adresse: Gib Straße und Hausnummer ein.</string>
@@ -537,6 +540,7 @@
     <string name="notices_topic_cancelled">Termin storniert</string>
     <string name="notices_topic_done">Arbeit als erledigt markiert: bestätige sie oder melde ein Problem</string>
     <string name="notices_topic_reminder">Erinnerung: Bestätige die erledigte Arbeit oder melde ein Problem</string>
+    <string name="notices_topic_call_client">Dein Termin beginnt bald: Ruf den Kunden an</string>
     <string name="notices_topic_completed">Termin abgeschlossen</string>
     <string name="notices_topic_incident">Neuigkeit zu einer Problemmeldung</string>
     <string name="notices_topic_appointment">Neuigkeit zu einem Termin</string>

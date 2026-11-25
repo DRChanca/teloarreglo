@@ -33,11 +33,13 @@ data class Notice(
 /** What a notice is about, independent of language. Unknown future events keep a generic topic. */
 enum class NoticeTopic {
     MESSAGE, REQUEST, PROPOSAL, REJECTED, CONFIRMED, CHANGE, CHANGE_DECIDED, STARTED, CANCELLED, DONE, REMINDER,
-    COMPLETED, INCIDENT, REVIEW, APPOINTMENT_OTHER, PROFILE_APPROVED, PROFILE_REJECTED, OTHER,
+    COMPLETED, INCIDENT, REVIEW, APPOINTMENT_OTHER, PROFILE_APPROVED, PROFILE_REJECTED, CALL_CLIENT, OTHER,
 }
 
 fun topicOf(kind: String, event: String?): NoticeTopic = when (kind) {
     "message" -> NoticeTopic.MESSAGE
+    // «Aviso para llamar» (#77): one hour before a confirmed appointment, to its professional.
+    "call_client" -> NoticeTopic.CALL_CLIENT
     "profile_review" -> if (event == "approved") NoticeTopic.PROFILE_APPROVED else NoticeTopic.PROFILE_REJECTED
     "appointment" -> when {
         event == "requested" -> NoticeTopic.REQUEST
@@ -68,6 +70,14 @@ sealed interface NoticeDestination {
 
 fun Notice.destination(): NoticeDestination? =
     conversationId?.let { NoticeDestination.Conversation(it) } ?: if (kind == "profile_review") NoticeDestination.Account else null
+
+/**
+ * Where tapping a push leads, when it is not the notices list: the call notice (#77) opens its appointment, shown in
+ * its conversation. The push carries identifiers only.
+ */
+fun pushDestination(data: Map<String, String>): NoticeDestination.Conversation? =
+    data["conversation_id"]?.takeIf { data["kind"] == "call_client" && it.isNotEmpty() }
+        ?.let { NoticeDestination.Conversation(it) }
 
 /** What came of opening a notice's conversation (#47): a missing conversation and an unreachable service read differently. */
 enum class NoticeOpening { OPENED, NOT_FOUND, UNREACHABLE }

@@ -200,6 +200,9 @@
     <string name="map_directions">Directions with Google Maps</string>
     <string name="map_open_appointment">Get directions</string>
     <string name="map_no_app">No app can open Google Maps. Install Google Maps or a browser.</string>
+    <string name="call_button">Call</string>
+    <string name="call_description">Call %1$s</string>
+    <string name="call_no_app">No phone app is available to make the call.</string>
     <string name="map_pick_on_map">Choose the point on the map</string>
     <string name="map_pick_confirm">Use this point</string>
     <string name="map_pin_not_address">The point does not replace the address: type the street and number.</string>
@@ -537,6 +540,7 @@
     <string name="notices_topic_cancelled">Appointment cancelled</string>
     <string name="notices_topic_done">Work marked as done: confirm it or report a problem</string>
     <string name="notices_topic_reminder">Reminder: confirm the work was done or report a problem</string>
+    <string name="notices_topic_call_client">Your appointment starts soon: call the client</string>
     <string name="notices_topic_completed">Appointment completed</string>
     <string name="notices_topic_incident">Update on a problem report</string>
     <string name="notices_topic_appointment">Appointment update</string>

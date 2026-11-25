@@ -32,6 +32,10 @@ import java.util.UUID
 
 /** Intent extra set when the person opens the app from a notice. */
 const val EXTRA_OPEN_NOTICES = "es.teloarreglo.OPEN_NOTICES"
+/** Intent extra with the conversation to open directly, for pushes that lead to an appointment ([pushDestination]). */
+const val EXTRA_OPEN_CONVERSATION = "es.teloarreglo.OPEN_CONVERSATION"
+/** Intent extra with the notice of that push, marked read when it is opened. */
+const val EXTRA_NOTICE_ID = "es.teloarreglo.NOTICE_ID"
 private const val CHANNEL = "notices"
 
 /**
@@ -87,6 +91,7 @@ fun topicText(topic: NoticeTopic): Int = when (topic) {
     NoticeTopic.APPOINTMENT_OTHER -> R.string.notices_topic_appointment
     NoticeTopic.PROFILE_APPROVED -> R.string.notices_topic_profile_approved
     NoticeTopic.PROFILE_REJECTED -> R.string.notices_topic_profile_rejected
+    NoticeTopic.CALL_CLIENT -> R.string.notices_topic_call_client
     NoticeTopic.OTHER -> R.string.notices_topic_other
 }
 
@@ -126,9 +131,11 @@ class TeloMessagingService : FirebaseMessagingService() {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(NotificationChannel(CHANNEL, getString(R.string.notices_channel),
             NotificationManager.IMPORTANCE_DEFAULT))
-        val open = PendingIntent.getActivity(this, 0,
-            Intent(this, MainActivity::class.java).putExtra(EXTRA_OPEN_NOTICES, true)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+        val target = Intent(this, MainActivity::class.java).putExtra(EXTRA_OPEN_NOTICES, true)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        pushDestination(data)?.let { target.putExtra(EXTRA_OPEN_CONVERSATION, it.id).putExtra(EXTRA_NOTICE_ID, data["notice_id"]) }
+        // One request code per notification: FLAG_UPDATE_CURRENT would otherwise rewrite the extras of earlier ones.
+        val open = PendingIntent.getActivity(this, (conversation ?: data["notice_id"]).hashCode(), target,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val notification = NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_notice)
