@@ -158,11 +158,10 @@ class MainActivity : AppCompatActivity() {
                             NoticesScreen(app.notices!!, app.push, connectedUser!!, app.applicationScope,
                                 askPermission = { ensureNotificationPermission() },
                                 onOpenConversation = { id ->
-                                    app.applicationScope.launch {
-                                        val conversation = try { app.chat?.conversations()?.find { it.id == id } }
-                                            catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { null }
-                                        if (conversation != null) nav = Navigation().open(Tab.CHATS).openConversation(conversation)
-                                    }
+                                    val conversation = try { app.chat?.conversations()?.find { it.id == id } }
+                                        catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { null }
+                                    if (conversation != null) nav = Navigation().open(Tab.CHATS).openConversation(conversation)
+                                    conversation != null
                                 },
                                 onOpenAccount = { nav = nav.open(Tab.ACCOUNT) },
                                 onBack = { nav = Navigation() })
@@ -180,7 +179,8 @@ class MainActivity : AppCompatActivity() {
                                         reviews = app.reviews)
                                 } },
                                 attachments = app.chatAttachments,
-                                evidence = app.incidents?.let { remember(it) { ChatEvidenceLink(it, app.applicationScope) } })
+                                evidence = app.incidents?.let { remember(it) { ChatEvidenceLink(it, app.applicationScope) } },
+                                onBrowse = { nav = nav.open(Tab.HOME) })
                         }
                         MainScreen.ACCESS, MainScreen.EMAIL_LINK -> AccessScreen(app.identity, changeLanguage,
                             onLeaveLink = {

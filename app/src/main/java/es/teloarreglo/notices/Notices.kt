@@ -60,6 +60,18 @@ fun topicOf(kind: String, event: String?): NoticeTopic = when (kind) {
 
 fun Notice.topic(): NoticeTopic = topicOf(kind, event)
 
+/** Where tapping a notice leads (#47): its conversation, the account for a profile review, or nowhere. */
+sealed interface NoticeDestination {
+    data class Conversation(val id: String) : NoticeDestination
+    data object Account : NoticeDestination
+}
+
+fun Notice.destination(): NoticeDestination? =
+    conversationId?.let { NoticeDestination.Conversation(it) } ?: if (kind == "profile_review") NoticeDestination.Account else null
+
+/** Unread notices that lead nowhere: seeing them on the list is reading them. */
+fun List<Notice>.readOnSight(): List<String> = filter { !it.read && it.destination() == null }.map { it.id }
+
 interface Notices {
     suspend fun list(): List<Notice>
     suspend fun markRead(ids: List<String>)

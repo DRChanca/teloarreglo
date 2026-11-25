@@ -59,4 +59,21 @@ class ConversationRowUiTest {
         compose.waitUntil(5_000) { read.isNotEmpty() }
         compose.onNodeWithText("Lucía Prueba").assertIsDisplayed()
     }
+
+    /** #47: an empty inbox offers the way to find a professional instead of a bare sentence. */
+    @Test fun emptyInboxOffersTheCatalogue() {
+        var browsed = false
+        val chat = object : Chat {
+            override suspend fun open(profileId: String) = conversation
+            override suspend fun conversations() = emptyList<Conversation>()
+            override suspend fun messages(conversationId: String) = emptyList<ChatMessage>()
+            override suspend fun send(conversationId: String, requestId: String, body: String) = error("unused")
+            override suspend fun markRead(conversationId: String) {}
+        }
+        compose.setContent { TeloTheme { ChatScreen(chat, "pro", null, {}, {}, onBrowse = { browsed = true }) } }
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("chat_empty_browse").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText(resources.getString(R.string.chat_empty)).assertIsDisplayed()
+        compose.onNodeWithTag("chat_empty_browse").performClick()
+        assert(browsed)
+    }
 }

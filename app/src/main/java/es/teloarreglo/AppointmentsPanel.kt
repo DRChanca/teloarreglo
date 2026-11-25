@@ -269,27 +269,13 @@ private fun AppointmentDetails(
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var failure by remember { mutableStateOf<AppointmentFailure?>(null) }
-    OutlinedCard(Modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("appointment_${appointment.id}")) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    // Order (#47): what it is, whose turn, the next action and its answer; then the details; history folded last.
+    OutlinedCard(Modifier.fillMaxWidth().padding(vertical = TeloTheme.spacing.small).testTag("appointment_${appointment.id}")) {
+        Column(Modifier.padding(TeloTheme.spacing.medium), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
             Text(appointment.problem, style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.appointment_requested_window,
-                format.format(appointment.requestedStart), format.format(appointment.requestedEnd)))
-            AppointmentLocationBlock(appointment, professional, mapsReady)
-            KeptPrices(appointment)
-            Text(noticeText(appointment, accountId), style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.testTag("appointment_notice_${appointment.id}"))
+            NoticeBanner(appointment, accountId)
             ReservationLine(appointment)
-            if (appointment.proposals.isNotEmpty()) {
-                Text(stringResource(R.string.appointment_history), style = MaterialTheme.typography.titleSmall)
-                appointment.proposals.asReversed().forEach { ProposalCard(it, format) }
-            }
             val pending = appointment.currentProposal
-            // Changes are open while confirmed and during the job (price, scope, duration only once started).
-            if (appointment.canProposeChange(accountId)) ChangeSection(appointment, accountId, appointments, scope, onChange, onCorrection, onChanged)
-            StartCancelSection(appointment, accountId, appointments, scope, onChanged)
-            CompletionSection(appointment, accountId, appointments, scope, onChanged)
-            IncidentSection(appointment, accountId, incidentTools, scope, onChanged, onChooseMessages)
-            ReviewSection(appointment, accountId, reviewState, reviews, scope, onChanged)
             if (professional && appointment.stage == AppointmentStage.PENDING) Button(onClick = onPropose, modifier = Modifier.testTag("appointment_propose")) {
                 Text(stringResource(if (appointment.proposals.isEmpty()) R.string.appointment_propose else R.string.appointment_propose_new))
             }
@@ -317,10 +303,24 @@ private fun AppointmentDetails(
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             if (error != null) Text(failureText(failure), color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.testTag("appointment_decision_error"))
+            // Changes are open while confirmed and during the job (price, scope, duration only once started).
+            if (appointment.canProposeChange(accountId)) ChangeSection(appointment, accountId, appointments, scope, onChange, onCorrection, onChanged)
+            StartCancelSection(appointment, accountId, appointments, scope, onChanged)
+            CompletionSection(appointment, accountId, appointments, scope, onChanged)
+            IncidentSection(appointment, accountId, incidentTools, scope, onChanged, onChooseMessages)
+            ReviewSection(appointment, accountId, reviewState, reviews, scope, onChanged)
+            Text(stringResource(R.string.appointment_requested_window,
+                format.format(appointment.requestedStart), format.format(appointment.requestedEnd)),
+                modifier = Modifier.testTag("appointment_window_${appointment.id}"))
+            AppointmentLocationBlock(appointment, professional, mapsReady)
+            appointment.proposalInForce?.let { ProposalCard(it, format) }
+            ProposalHistory(appointment, format)
+            KeptPrices(appointment)
         }
     }
     confirmAccept?.let { proposal ->
         AlertDialog(onDismissRequest = { confirmAccept = null },
+            title = { Text(stringResource(R.string.appointment_accept_title)) },
             text = { Text(stringResource(R.string.appointment_accept_confirm, proposal.version)) },
             dismissButton = { TextButton(onClick = { confirmAccept = null }) { Text(stringResource(R.string.cancel)) } },
             confirmButton = {
@@ -379,25 +379,63 @@ private fun AppointmentDetails(
             })
     }
     confirmReject?.let { proposal ->
-        AlertDialog(onDismissRequest = { confirmReject = null },
+        DestructiveConfirmDialog(
+            title = stringResource(R.string.appointment_reject_title),
             text = { Text(stringResource(R.string.appointment_reject_confirm, proposal.version)) },
-            dismissButton = { TextButton(onClick = { confirmReject = null }) { Text(stringResource(R.string.cancel)) } },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirmReject = null
-                    busy = true; error = null
-                    // Rejecting a given version is idempotent on the server: retrying is always safe.
-                    scope.launch {
-                        try { appointments.reject(proposal.id); onChanged() }
-                        catch (e: Exception) {
-                            if (e is CancellationException) throw e
-                            failure = (e as? AppointmentException)?.failure; error = e.message.orEmpty()
-                            if (failure == AppointmentFailure.STALE) onChanged()
-                        } finally { busy = false }
-                    }
-                }, modifier = Modifier.testTag("appointment_reject_confirm")) { Text(stringResource(R.string.appointment_reject)) }
-            })
+            confirmLabel = stringResource(R.string.appointment_reject),
+            onConfirm = {
+                confirmReject = null
+                busy = true; error = null
+                // Rejecting a given version is idempotent on the server: retrying is always safe.
+                scope.launch {
+                    try { appointments.reject(proposal.id); onChanged() }
+                    catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                        failure = (e as? AppointmentException)?.failure; error = e.message.orEmpty()
+                        if (failure == AppointmentFailure.STALE) onChanged()
+                    } finally { busy = false }
+                }
+            },
+            onDismiss = { confirmReject = null },
+            confirmTag = "appointment_reject_confirm", dismissTag = "appointment_reject_dismiss")
     }
+}
+
+/**
+ * Whose move the notice announces (#47): this account's turn stands out in the primary container,
+ * a wait in a neutral one; both say it in words so colour is never the only cue.
+ */
+@Composable
+private fun NoticeBanner(appointment: Appointment, accountId: String) {
+    val turn = appointment.notice(accountId).turn
+    val notice = noticeText(appointment, accountId)
+    val noticeTag = Modifier.testTag("appointment_notice_${appointment.id}")
+    if (turn == NoticeTurn.NONE) {
+        Text(notice, style = MaterialTheme.typography.bodyMedium, modifier = noticeTag)
+        return
+    }
+    val yours = turn == NoticeTurn.YOURS
+    Surface(color = if (yours) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(TeloTheme.spacing.medium), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
+            Text(stringResource(if (yours) R.string.appointment_turn_yours else R.string.appointment_turn_waiting),
+                style = MaterialTheme.typography.labelLarge, modifier = Modifier.testTag("appointment_turn_${appointment.id}"))
+            Text(notice, style = MaterialTheme.typography.bodyMedium, modifier = noticeTag)
+        }
+    }
+}
+
+/** Earlier proposals, newest first, behind «Ver historial (n)» (#47): kept, but out of the way of the decision. */
+@Composable
+private fun ProposalHistory(appointment: Appointment, format: DateTimeFormatter) {
+    val earlier = appointment.earlierProposals
+    if (earlier.isEmpty()) return
+    var open by rememberSaveable(appointment.id) { mutableStateOf(false) }
+    TextButton(onClick = { open = !open }, modifier = Modifier.testTag("appointment_history_toggle_${appointment.id}")) {
+        Text(if (open) stringResource(R.string.appointment_history_hide)
+            else stringResource(R.string.appointment_history_show, earlier.size))
+    }
+    if (open) earlier.forEach { ProposalCard(it, format) }
 }
 
 /**
@@ -407,7 +445,12 @@ private fun AppointmentDetails(
 @Composable
 private fun KeptPrices(appointment: Appointment) {
     if (appointment.referencePrices.isEmpty()) return
-    Column(Modifier.fillMaxWidth().testTag("kept_prices_${appointment.id}"), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    // Folded (#47): reference material, not the next step.
+    var open by rememberSaveable(appointment.id) { mutableStateOf(false) }
+    TextButton(onClick = { open = !open }, modifier = Modifier.testTag("kept_prices_toggle_${appointment.id}")) {
+        Text(stringResource(if (open) R.string.kept_prices_hide else R.string.kept_prices_show))
+    }
+    if (open) Column(Modifier.fillMaxWidth().testTag("kept_prices_${appointment.id}"), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(stringResource(R.string.kept_prices_title), style = MaterialTheme.typography.titleSmall)
         appointment.referencePrices.forEach { price ->
             Text(stringResource(R.string.kept_prices_item, price.service, priceText(price)), style = MaterialTheme.typography.bodySmall)
