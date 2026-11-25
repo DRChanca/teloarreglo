@@ -345,6 +345,9 @@
     <string name="contact_phone_invalid">Saisissez un numéro espagnol à 9 chiffres ou un numéro avec + et l\'indicatif de son pays.</string>
     <string name="contact_phone_access">Votre session a expiré. Reconnectez-vous.</string>
     <string name="contact_phone_network">Le téléphone n\'a pas pu être enregistré. Vérifiez la connexion et réessayez.</string>
+    <string name="contact_phone_change">Modifier le téléphone</string>
+    <string name="contact_phone_none">Vous n\'avez pas encore indiqué votre téléphone de contact.</string>
+    <string name="contact_phone_unknown">Le téléphone n\'a pas pu être chargé. Vous pouvez quand même le modifier.</string>
     <string name="payment_integrated">Payer %1$s et confirmer</string>
     <string name="payment_direct">Je paierai %1$s directement au professionnel</string>
     <string name="payment_retry">Réessayer la confirmation (%1$s)</string>
