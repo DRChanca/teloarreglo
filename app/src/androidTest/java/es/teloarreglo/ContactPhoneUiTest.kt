@@ -67,4 +67,25 @@ class ContactPhoneUiTest {
         compose.waitUntil(5000) { session.status.value == ContactPhoneStatus.Present("+34612345678") }
         assertEquals("saved: the mandatory step is over", false, session.required)
     }
+
+    @Test fun theAccountCardShowsThePhoneAndChangesIt() {
+        val phones = UiPhones("+34612345678")
+        val session = ContactPhoneSession(phones)
+        runBlocking { session.load("a") }
+        compose.setContent { ContactPhoneCard(session, rememberCoroutineScope()) }
+        compose.onNodeWithTag("contact_phone_current").assertTextContains("+34612345678")
+
+        compose.onNodeWithTag("contact_phone_change").performClick()
+        compose.onNodeWithTag("contact_phone").performTextClearance()
+        compose.onNodeWithTag("contact_phone").performTextInput("12")
+        compose.onNodeWithTag("contact_phone_save").performClick()
+        awaitTag("contact_phone_error")
+        assertEquals("a badly written number is never sent", 0, phones.sent)
+
+        compose.onNodeWithTag("contact_phone").performTextClearance()
+        compose.onNodeWithTag("contact_phone").performTextInput("699 11 22 33")
+        compose.onNodeWithTag("contact_phone_save").performClick()
+        awaitTag("contact_phone_current")
+        compose.onNodeWithTag("contact_phone_current").assertTextContains("+34699112233")
+    }
 }

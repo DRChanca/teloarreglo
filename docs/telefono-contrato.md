@@ -62,10 +62,13 @@ La misma regla está en el servidor (`private.normalize_contact_phone`) y en la 
     (`Navigation.screen` → `MainScreen.PHONE_STEP`), con el texto «Los profesionales con los que
     confirmes una cita usarán este número para contactarte». No se puede saltar; se puede cerrar
     sesión. Las cuentas anteriores lo ven al entrar.
+  - `ContactPhoneEditor` / `ContactPhoneCard` (#78): el teléfono en Ajustes › Cuenta, bajo el nombre.
+    Usa `saveContactPhone`, así que guardar actualiza la `ContactPhoneSession` y el paso obligatorio
+    no vuelve a pedirse.
 - Textos: `contact_phone_*` en ES, EN, FR y DE.
 
 ## Pruebas
 
 - pgTAP: `supabase/tests/contact_phones.test.sql`.
-- Kotlin: `ContactPhoneTest` (formato, RPC, sesión y orden de los pasos) y `ContactPhoneUiTest`
-  (pantalla del paso).
+- Kotlin: `ContactPhoneEditorTest` (edición en Ajustes, #78), `ContactPhoneTest` (formato, RPC, sesión y orden de los pasos) y `ContactPhoneUiTest`
+  (pantalla del paso y tarjeta de Ajustes).

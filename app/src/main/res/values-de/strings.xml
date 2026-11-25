@@ -345,6 +345,9 @@
     <string name="contact_phone_invalid">Gib eine 9-stellige spanische Nummer oder eine Nummer mit + und Landesvorwahl ein.</string>
     <string name="contact_phone_access">Deine Sitzung ist abgelaufen. Melde dich erneut an.</string>
     <string name="contact_phone_network">Das Telefon konnte nicht gespeichert werden. Prüfe die Verbindung und versuche es erneut.</string>
+    <string name="contact_phone_change">Telefon ändern</string>
+    <string name="contact_phone_none">Du hast dein Kontakttelefon noch nicht angegeben.</string>
+    <string name="contact_phone_unknown">Das Telefon konnte nicht geladen werden. Du kannst es trotzdem ändern.</string>
     <string name="payment_integrated">%1$s zahlen und bestätigen</string>
     <string name="payment_direct">Ich zahle %1$s direkt an die Fachkraft</string>
     <string name="payment_retry">Bestätigung erneut senden (%1$s)</string>

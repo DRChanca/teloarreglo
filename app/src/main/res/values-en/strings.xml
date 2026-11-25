@@ -345,6 +345,9 @@
     <string name="contact_phone_invalid">Enter a 9-digit Spanish number or a number with + and its country code.</string>
     <string name="contact_phone_access">Your session has expired. Sign in again.</string>
     <string name="contact_phone_network">The phone could not be saved. Check your connection and try again.</string>
+    <string name="contact_phone_change">Change phone</string>
+    <string name="contact_phone_none">You have not entered your contact phone yet.</string>
+    <string name="contact_phone_unknown">The phone could not be loaded. You can still change it.</string>
     <string name="payment_integrated">Pay %1$s and confirm</string>
     <string name="payment_direct">I will pay %1$s directly to the professional</string>
     <string name="payment_retry">Retry the confirmation (%1$s)</string>
