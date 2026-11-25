@@ -58,6 +58,15 @@ class MainActivity : AppCompatActivity() {
 
     /** Set when the activity is opened from a push notification. */
     private val openNotices = mutableStateOf(false)
+    /** Conversation and notice of a push that leads straight to an appointment (#77), until it is opened. */
+    private val openFromPushConversation = mutableStateOf<Pair<String, String?>?>(null)
+
+    private fun readPushTarget(intent: Intent?) {
+        if (intent?.getBooleanExtra(es.teloarreglo.notices.EXTRA_OPEN_NOTICES, false) != true) return
+        openNotices.value = true
+        openFromPushConversation.value = intent.getStringExtra(es.teloarreglo.notices.EXTRA_OPEN_CONVERSATION)
+            ?.let { it to intent.getStringExtra(es.teloarreglo.notices.EXTRA_NOTICE_ID) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Start splash with the woodpecker (#58); animated only on a cold start.
@@ -67,7 +76,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         // After a configuration change the link was already handled; codes are single use.
         if (savedInstanceState == null) handleAuthLink(intent)
-        if (intent?.getBooleanExtra(es.teloarreglo.notices.EXTRA_OPEN_NOTICES, false) == true) openNotices.value = true
+        readPushTarget(intent)
         // One theme for the whole app, following the system light/dark mode (#45).
         setContent { TeloTheme {
             // Selected tab and open subscreen (#46), kept across recreation.
@@ -103,6 +112,20 @@ class MainActivity : AppCompatActivity() {
             val openFromPush by openNotices
             LaunchedEffect(openFromPush) {
                 if (openFromPush) { nav = Navigation().open(Tab.NOTICES); openNotices.value = false }
+            }
+            // A push that leads to an appointment (#77) opens its conversation once the account is connected; if it
+            // cannot be found the notices list stays open, where the same notice leads there too.
+            val pushConversation by openFromPushConversation
+            LaunchedEffect(pushConversation, connectedUser) {
+                val (id, notice) = pushConversation ?: return@LaunchedEffect
+                if (connectedUser == null) return@LaunchedEffect
+                openFromPushConversation.value = null
+                notice?.let { app.applicationScope.launch {
+                    try { app.notices?.markRead(listOf(it)) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
+                } }
+                es.teloarreglo.notices.openNoticeConversation(id, { app.chat?.conversations() }, { it.id }) {
+                    nav = Navigation().openFromNotice(it)
+                }
             }
             LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
                 if (access.stage != AccessStage.CHECKING) homeSession?.load(connectedUser)
@@ -231,7 +254,7 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleAuthLink(intent)
-        if (intent.getBooleanExtra(es.teloarreglo.notices.EXTRA_OPEN_NOTICES, false)) openNotices.value = true
+        readPushTarget(intent)
     }
 
     override fun onStart() {

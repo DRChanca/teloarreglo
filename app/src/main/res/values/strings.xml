@@ -529,6 +529,7 @@
     <string name="notices_topic_cancelled">Cita cancelada</string>
     <string name="notices_topic_done">Trabajo marcado como realizado: confirma o comunica una incidencia</string>
     <string name="notices_topic_reminder">Recordatorio: confirma el trabajo realizado o comunica una incidencia</string>
+    <string name="notices_topic_call_client">Tu cita empieza pronto: llama al cliente</string>
     <string name="notices_topic_completed">Cita finalizada</string>
     <string name="notices_topic_incident">Novedad en una incidencia</string>
     <string name="notices_topic_appointment">Novedad en una cita</string>

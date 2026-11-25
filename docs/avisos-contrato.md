@@ -20,6 +20,7 @@ Migraciones:
 | `public.chat_messages` (texto, foto o vídeo) | `message` | el otro participante | `conversation_id` |
 | `public.appointment_events` de **cualquier** tipo | `appointment` | `recipient_id` del evento | `appointment_id`, `conversation_id`, `event` (= tipo del evento) |
 | Decisión sobre un perfil (#29, ya existente) | `profile_review` | propietario | `status`, `reason`, … |
+| Rutina `private.run_call_notices()` (#77, «Aviso para llamar») | `call_client` | profesional de la cita | `appointment_id`, `conversation_id` |
 
 Un productor nuevo solo inserta su evento en `appointment_events` con un tipo propio. Por ejemplo, `incident_opened`
 o `incident_evidence` de #26, o `reminder` del reloj de #27. Ese evento aparece como aviso y como push sin tocar
@@ -102,6 +103,38 @@ $$);
     repetido sustituye al anterior.
 - `NoticesScreen.kt` contiene la lista persistida y los ajustes de notificación del dispositivo. Se abre con
   «Avisos (n)» en el catálogo o al tocar una notificación.
+
+## Aviso para llamar — #77
+
+Migración `20261126071121_call_notices.sql`. Una hora antes del inicio de cada cita confirmada, el profesional recibe
+un aviso `call_client` para llamar al cliente. Llega como push aunque la app esté cerrada y aparece en Avisos.
+
+- `private.run_call_notices(p_limit integer default 200)` devuelve `{created}`. Crea el aviso para cada cita en
+  `confirmed` cuyo inicio vigente (`lower(during)` de su reserva en `agenda_reservations`, que mueve un cambio de
+  hora aceptado) cae en `(now(), now() + 60 min]`. Una cita confirmada con menos margen lo recibe en la siguiente
+  ejecución. Las citas pendientes, comenzadas, realizadas, finalizadas o canceladas no lo reciben.
+- Una sola vez por cita: el propio aviso es la marca (único por `kind`, `source_id` = cita, destinatario).
+- El aviso se inserta sin leer, así que el reparto push existente crea sus entregas. El `payload` lleva solo
+  identificadores; nunca el teléfono del cliente, que la acción «Llamar» (#81) pide en ese momento a la función
+  protegida (#79).
+- Solo la ejecutan `service_role` y el cron (rol `postgres`); `authenticated` y `anon` no.
+- Es independiente del reloj de cierre (#27, `private.run_completion_clock()`) y de «Ventana de llegada» (#72).
+- Android: tema `CALL_CLIENT` («Tu cita empieza pronto: llama al cliente»). En Avisos lleva a la conversación de la
+  cita, donde se muestra. Al tocar la notificación se abre directamente esa conversación (`pushDestination`) y el
+  aviso queda leído; el resto de notificaciones siguen abriendo Avisos.
+
+Programación cada minuto con Supabase Cron, paso manual por proyecto (como el reloj de #27):
+
+```sql
+create extension if not exists pg_cron;   -- o activar «Cron» en Integrations
+select cron.schedule('call-notices', '* * * * *', 'select private.run_call_notices()');
+-- Comprobación:
+select jobid, schedule, active from cron.job where jobname = 'call-notices';
+select status, return_message, start_time from cron.job_run_details
+ where jobid = (select jobid from cron.job where jobname = 'call-notices') order by start_time desc limit 5;
+-- Avisos creados:
+select created_at, recipient_id, payload from private.notices where kind = 'call_client' order by created_at desc limit 20;
+```
 
 ## Envío inmediato y primer plano
 
