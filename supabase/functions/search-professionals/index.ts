@@ -2,7 +2,8 @@
 // { "lat": 43.36, "lng": -5.85, "trade": "plumbing", "ine_code"?: "33044", "limit"?: 20 }
 // Public search (no sign-in needed). Never returns coordinates, cells or exact
 // distances: only profile IDs in order, a rounded distance band and whether the
-// result is «Destacado» (active simulated subscription, approved coverage of this concejo).
+// result is «Destacado» (active simulated subscription, approved coverage of this concejo), plus its
+// «Tiempo de respuesta» band as Postgres computed it (response_band, null without data).
 import { createClient } from "@supabase/supabase-js";
 import { distanceBand, rankByDistance, type ZoneCandidate } from "./search.ts";
 
@@ -86,6 +87,7 @@ Deno.serve(async (request) => {
       method: "distance",
       results: rankByDistance({ lat, lng }, all.data as ZoneCandidate[], limit).map((r) => ({
         profile_id: r.profile_id, distance_band_m: distanceBand(r.distance_m), featured: r.featured, in_zone: r.in_zone,
+        response_band: r.response_band,
       })),
     });
   } catch (error) {
