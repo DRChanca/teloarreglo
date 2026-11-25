@@ -60,6 +60,14 @@ class ProfessionalSearchTest {
         assertEquals(listOf("sub" to true, "a" to false, "b" to false), outcome.results.map { it.profileId to it.featured })
     }
 
+    @Test fun eachResultCarriesItsResponseTimeBandAndAnOlderServerWithoutItStillDecodes() = runTest {
+        val outcome = search(HttpStatusCode.OK, """{"status":"ok","concejo":{"ine_code":"33044","name":"Oviedo"},
+            "method":"distance","results":[{"profile_id":"a","distance_band_m":500,"response_band":"under_30m"},
+            {"profile_id":"b","distance_band_m":1000,"response_band":null},{"profile_id":"c","distance_band_m":1500}]}""")
+            .search(43.36, -5.84, null) as SearchOutcome.Found
+        assertEquals(listOf("a" to "under_30m", "b" to null, "c" to null), outcome.results.map { it.profileId to it.responseBand })
+    }
+
     @Test fun aBorderAsksToConfirmAndTheChoiceIsSent() = runTest {
         val api = search(HttpStatusCode.OK, """{"status":"confirm_concejo","options":[{"ine_code":"33044","name":"Oviedo"},
             {"ine_code":"33035","name":"Llanera"}],"results":[]}""")
