@@ -28,6 +28,23 @@ class TeloThemeTest {
         assertTrue("surface must be dark", luminance(dark.surface) < 0.05)
     }
 
+    @Test
+    fun theFeaturedBorderIsBrandGreenInLightAndPurpleInDark() {
+        assertEquals(Color(0xFF246451), teloColors(dark = false).extended.featuredBorder)
+        val border = teloColors(dark = true).extended.featuredBorder
+        assertTrue("dark featured border must be purple: $border", border.blue > border.green && border.red > border.green)
+    }
+
+    @Test
+    fun theFeaturedBorderStandsOutFromItsCardInBothThemes() {
+        for (dark in listOf(false, true)) {
+            val colors = teloColors(dark)
+            val ratio = contrast(colors.extended.featuredBorder, colors.scheme.secondaryContainer)
+            // WCAG non-text contrast (1.4.11): 3:1 against the adjacent colour.
+            assertTrue("featured border vs card ${if (dark) "dark" else "light"}: $ratio", ratio >= 3.0)
+        }
+    }
+
     private fun assertReadable(colors: TeloColors, theme: String) {
         val s = colors.scheme
         val x = colors.extended
