@@ -2,6 +2,8 @@ package es.teloarreglo
 
 import es.teloarreglo.notices.Notice
 import es.teloarreglo.notices.NoticeDestination
+import es.teloarreglo.notices.NoticeOpening
+import es.teloarreglo.notices.openNoticeConversation
 import es.teloarreglo.notices.NoticeTopic
 import es.teloarreglo.notices.destination
 import es.teloarreglo.notices.readOnSight
@@ -186,5 +188,16 @@ class NoticesTest {
             notice("n5", "other", """{}"""),
         )
         assertEquals(listOf("n2", "n5"), list.readOnSight())
+    }
+
+    @Test fun openingANoticesConversationTellsAMissingOneFromAnUnreachableService() = runTest {
+        val opened = mutableListOf<String>()
+        assertEquals(NoticeOpening.OPENED, openNoticeConversation("c1", { listOf("c0", "c1") }, { it }) { opened += it })
+        assertEquals(listOf("c1"), opened)
+        assertEquals(NoticeOpening.NOT_FOUND, openNoticeConversation("c9", { listOf("c0", "c1") }, { it }) { opened += it })
+        assertEquals(NoticeOpening.UNREACHABLE,
+            openNoticeConversation<String>("c1", { throw java.io.IOException("offline") }, { it }) { opened += it })
+        assertEquals(NoticeOpening.UNREACHABLE, openNoticeConversation<String>("c1", { null }, { it }) { opened += it })
+        assertEquals(listOf("c1"), opened)
     }
 }

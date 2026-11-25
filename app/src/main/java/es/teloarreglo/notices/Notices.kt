@@ -69,6 +69,23 @@ sealed interface NoticeDestination {
 fun Notice.destination(): NoticeDestination? =
     conversationId?.let { NoticeDestination.Conversation(it) } ?: if (kind == "profile_review") NoticeDestination.Account else null
 
+/** What came of opening a notice's conversation (#47): a missing conversation and an unreachable service read differently. */
+enum class NoticeOpening { OPENED, NOT_FOUND, UNREACHABLE }
+
+/**
+ * Looks the notice's conversation up among the account's conversations and opens it. [load] returns null when there
+ * is no chat service; a failure to load is a connection problem, not a missing conversation.
+ */
+suspend fun <T> openNoticeConversation(
+    id: String, load: suspend () -> List<T>?, idOf: (T) -> String, open: (T) -> Unit,
+): NoticeOpening {
+    val conversations = try { load() } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { null }
+        ?: return NoticeOpening.UNREACHABLE
+    val conversation = conversations.find { idOf(it) == id } ?: return NoticeOpening.NOT_FOUND
+    open(conversation)
+    return NoticeOpening.OPENED
+}
+
 /** Unread notices that lead nowhere: seeing them on the list is reading them. */
 fun List<Notice>.readOnSight(): List<String> = filter { !it.read && it.destination() == null }.map { it.id }
 

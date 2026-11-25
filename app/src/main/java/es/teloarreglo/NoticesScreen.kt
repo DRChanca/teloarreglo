@@ -48,6 +48,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.teloarreglo.notices.Notice
 import es.teloarreglo.notices.NoticeDestination
+import es.teloarreglo.notices.NoticeOpening
 import es.teloarreglo.notices.destination
 import es.teloarreglo.notices.readOnSight
 import es.teloarreglo.notices.NoticeTopic
@@ -80,14 +82,14 @@ import java.time.format.FormatStyle
 fun NoticesScreen(
     notices: Notices, push: PushRegistration?, accountId: String, operationScope: CoroutineScope,
     askPermission: suspend () -> Unit,
-    onOpenConversation: suspend (String) -> Boolean, onOpenAccount: () -> Unit, onBack: () -> Unit,
+    onOpenConversation: suspend (String) -> NoticeOpening, onOpenAccount: () -> Unit, onBack: () -> Unit,
 ) {
     BackHandler(onBack = onBack)
     var attempt by remember { mutableIntStateOf(0) }
     var items by remember(accountId) { mutableStateOf<List<Notice>?>(null) }
     var failed by remember { mutableStateOf(false) }
-    // The conversation of a tapped notice was not found: say so instead of doing nothing (#47).
-    var missing by remember { mutableStateOf(false) }
+    // The conversation of a tapped notice could not be opened: say why instead of doing nothing (#47).
+    var opening by remember { mutableStateOf<NoticeOpening?>(null) }
     val scope = rememberCoroutineScope()
     LaunchedEffect(accountId, attempt) {
         failed = false
@@ -105,29 +107,36 @@ fun NoticesScreen(
     Surface(Modifier.fillMaxSize()) {
         Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = TeloTheme.spacing.screen)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.notices_title), Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.notices_title), Modifier.weight(1f).semantics { heading() },
+                    style = MaterialTheme.typography.headlineSmall)
                 TextButton(onClick = { attempt++ }, Modifier.testTag("notices_refresh")) {
                     Text(stringResource(R.string.notices_refresh))
                 }
             }
             PushCard(push, operationScope, askPermission)
-            Spacer(Modifier.size(12.dp))
+            Spacer(Modifier.size(TeloTheme.spacing.medium))
             val current = items
             when {
                 failed && current == null -> Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
                     Text(stringResource(R.string.notices_error))
                     Button(onClick = { attempt++ }) { Text(stringResource(R.string.retry)) }
                 }
-                current == null -> Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                current == null -> Box(Modifier.fillMaxWidth().padding(TeloTheme.spacing.extraLarge), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
-                current.isEmpty() -> Text(stringResource(R.string.notices_empty), Modifier.padding(vertical = 24.dp))
+                current.isEmpty() -> Text(stringResource(R.string.notices_empty), Modifier.padding(vertical = TeloTheme.spacing.extraLarge))
                 else -> LazyColumn(Modifier.testTag("notices_list")) {
                     if (failed) item { Text(stringResource(R.string.notices_error), color = MaterialTheme.colorScheme.error) }
-                    if (missing) item {
-                        Text(stringResource(R.string.notices_conversation_missing), color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.testTag("notices_conversation_missing").semantics { liveRegion = LiveRegionMode.Polite })
+                    when (opening) {
+                        NoticeOpening.NOT_FOUND -> item {
+                            Text(stringResource(R.string.notices_conversation_missing), color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.testTag("notices_conversation_missing").semantics { liveRegion = LiveRegionMode.Polite })
+                        }
+                        NoticeOpening.UNREACHABLE -> item {
+                            Text(stringResource(R.string.notices_conversation_unreachable), color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.testTag("notices_conversation_unreachable").semantics { liveRegion = LiveRegionMode.Polite })
+                        }
+                        else -> Unit
                     }
                     items(current, key = { it.id }) { notice ->
                         val destination = notice.destination()
@@ -138,8 +147,8 @@ fun NoticesScreen(
                             }
                             when (target) {
                                 is NoticeDestination.Conversation -> scope.launch {
-                                    missing = false
-                                    if (!onOpenConversation(target.id)) missing = true
+                                    opening = null
+                                    opening = onOpenConversation(target.id)
                                 }
                                 NoticeDestination.Account -> onOpenAccount()
                             }
@@ -167,10 +176,10 @@ private fun NoticeRow(notice: Notice, destination: NoticeDestination?, onClick: 
         null -> null
     }
     val tappable = if (onClick != null) Modifier.clickable(onClickLabel = action, role = Role.Button, onClick = onClick) else Modifier
-    Row(Modifier.fillMaxWidth().then(tappable).padding(vertical = 12.dp).testTag("notice_${notice.id}"),
+    Row(Modifier.fillMaxWidth().then(tappable).padding(vertical = TeloTheme.spacing.medium).testTag("notice_${notice.id}"),
         verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(10.dp).background(if (notice.read) Color.Transparent else MaterialTheme.colorScheme.primary, CircleShape))
-        Spacer(Modifier.width(12.dp))
+        Box(Modifier.size(8.dp).background(if (notice.read) Color.Transparent else MaterialTheme.colorScheme.primary, CircleShape))
+        Spacer(Modifier.width(TeloTheme.spacing.medium))
         Column(Modifier.weight(1f)) {
             Text(stringResource(topicText(notice.topic())),
                 fontWeight = if (notice.read) FontWeight.Normal else FontWeight.SemiBold)
@@ -201,8 +210,8 @@ private fun PushCard(push: PushRegistration?, operationScope: CoroutineScope, as
     }
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer), shape = MaterialTheme.shapes.large,
         modifier = Modifier.fillMaxWidth().testTag("notices_push")) {
-        Column(Modifier.padding(16.dp).semantics { liveRegion = LiveRegionMode.Polite },
-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.padding(TeloTheme.spacing.large).semantics { liveRegion = LiveRegionMode.Polite },
+            verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
             Text(stringResource(when (status) {
                 PushStatus.ACTIVE -> R.string.notices_push_active
                 PushStatus.OFF -> R.string.notices_push_off

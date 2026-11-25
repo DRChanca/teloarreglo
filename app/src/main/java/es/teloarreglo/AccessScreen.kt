@@ -25,7 +25,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
@@ -164,7 +163,7 @@ fun AccessScreen(
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()
-                .verticalScroll(rememberScrollState()).padding(24.dp),
+                .verticalScroll(rememberScrollState()).padding(TeloTheme.spacing.extraLarge),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(Modifier.fillMaxWidth().widthIn(max = 480.dp)) {
@@ -248,7 +247,7 @@ fun AccessScreen(
                     colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card),
                     shape = MaterialTheme.shapes.extraLarge,
                 ) {
-                    Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(TeloTheme.spacing.extraLarge), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.large)) {
                         @Composable
                         fun EmailField() = Column(verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
                             OutlinedTextField(
@@ -314,7 +313,7 @@ fun AccessScreen(
                                 Text(stringResource(R.string.new_password_hint, state.account?.email.orEmpty()))
                                 PasswordField(R.string.new_password, "newPassword")
                                 Text(stringResource(R.string.password_rule), style = MaterialTheme.typography.bodySmall)
-                                PrimaryButton(state.busy, R.string.save_password, "savePassword") {
+                                BusyButton(state.busy, R.string.save_password, "savePassword") {
                                     submit(identity::setNewPassword)
                                 }
                                 TextButton(
@@ -329,7 +328,7 @@ fun AccessScreen(
                                     Text(stringResource(R.string.sign_in_hint))
                                     EmailField()
                                     PasswordField(R.string.password, "password")
-                                    PrimaryButton(state.busy, R.string.sign_in, "signIn") {
+                                    BusyButton(state.busy, R.string.sign_in, "signIn") {
                                         submit { identity.signIn(email.trim(), it) }
                                     }
                                     if (state.error == AccessError.UNVERIFIED && state.pendingEmail != null) {
@@ -367,7 +366,7 @@ fun AccessScreen(
                                     EmailField()
                                     PasswordField(R.string.password, "password")
                                     Text(stringResource(R.string.password_rule), style = MaterialTheme.typography.bodySmall)
-                                    PrimaryButton(state.busy, R.string.create_account, "signUp") {
+                                    BusyButton(state.busy, R.string.create_account, "signUp") {
                                         submit { identity.signUp(email.trim(), it, name) }
                                     }
                                     if (google != null) {
@@ -386,7 +385,7 @@ fun AccessScreen(
                                     Text(stringResource(R.string.reset_title), style = MaterialTheme.typography.headlineSmall)
                                     Text(stringResource(R.string.reset_hint))
                                     EmailField()
-                                    PrimaryButton(state.busy, R.string.send_link, "sendReset") {
+                                    BusyButton(state.busy, R.string.send_link, "sendReset") {
                                         keyboard?.hide()
                                         scope.launch { identity.requestPasswordReset(email.trim()) }
                                     }
@@ -417,7 +416,7 @@ fun AccessScreen(
                     modifier = Modifier.fillMaxWidth().testTag("signOut"),
                 ) { Text(stringResource(if (state.busy) R.string.working else R.string.sign_out)) }
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(TeloTheme.spacing.extraLarge))
             Text(
                 stringResource(if (BuildConfig.FLAVOR == "pruebas") R.string.environment_test else R.string.environment_presentation),
                 style = MaterialTheme.typography.labelMedium,
@@ -435,13 +434,6 @@ private fun AccountSection(title: Int, tag: String, content: @Composable ColumnS
     }
 }
 
-@Composable
-private fun PrimaryButton(busy: Boolean, label: Int, tag: String, onClick: () -> Unit) {
-    Button(enabled = !busy, onClick = onClick, modifier = Modifier.fillMaxWidth().testTag(tag)) {
-        if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = LocalContentColor.current)
-        else Text(stringResource(label))
-    }
-}
 
 @Composable
 private fun ColumnScope.FormLinks(vararg links: Pair<Int, String>, enabled: Boolean, onClick: (String) -> Unit) {

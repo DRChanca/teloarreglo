@@ -86,8 +86,8 @@ fun AgendaCard(agenda: Agenda, scope: CoroutineScope) {
             } finally { busy = false }
         }
     }
-    Card(Modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("agenda_card")) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Card(Modifier.fillMaxWidth().padding(vertical = TeloTheme.spacing.small).testTag("agenda_card")) {
+        Column(Modifier.padding(TeloTheme.spacing.large), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
             Text(stringResource(R.string.agenda_title), style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.semantics { heading() })
             Text(stringResource(R.string.agenda_hint), style = MaterialTheme.typography.bodySmall)
@@ -105,7 +105,7 @@ fun AgendaCard(agenda: Agenda, scope: CoroutineScope) {
                 } else null,
                 label = { Text(stringResource(R.string.agenda_duration)) }, modifier = Modifier.fillMaxWidth().testTag("agenda_duration"))
             rows.forEachIndexed { index, row ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
                     Checkbox(row.open, { open -> rows = rows.toMutableList().also { it[index] = row.copy(open = open) } },
                         enabled = editable, modifier = Modifier.testTag("agenda_day_${index + 1}"))
                     Text(DayOfWeek.of(index + 1).getDisplayName(TextStyle.SHORT, locale), Modifier.width(48.dp))
@@ -177,11 +177,11 @@ private fun BlockForm(agenda: Agenda, enabled: Boolean, submit: (suspend () -> U
     var key by rememberSaveable { mutableStateOf<String?>(null) }
     var invalid by remember { mutableStateOf(false) }
     val badFrom = invalid && !clock.matches(from)
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
         Text(stringResource(R.string.appointment_date))
         DateField(LocalDate.parse(dateText), enabled && key == null) { dateText = it.toString() }
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
         OutlinedTextField(from, { from = it.take(5) }, enabled = enabled && key == null, singleLine = true, isError = badFrom,
             label = { Text(stringResource(R.string.appointment_from)) }, modifier = Modifier.weight(1f).testTag("agenda_block_from"))
         OutlinedTextField(to, { to = it.take(5) }, enabled = enabled && key == null, singleLine = true, isError = invalid && !badFrom,

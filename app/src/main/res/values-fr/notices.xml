@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notices_conversation_unreachable">Impossible d’ouvrir la conversation. Vérifiez votre connexion et réessayez.</string>
+</resources>

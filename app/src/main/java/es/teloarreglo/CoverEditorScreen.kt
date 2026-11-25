@@ -16,11 +16,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import es.teloarreglo.catalogue.*
-import androidx.compose.ui.unit.Dp
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -92,13 +92,14 @@ internal fun CoverEditorScreen(
     }
     Surface(Modifier.fillMaxSize()) {
         Column(
-            Modifier.windowInsetsPadding(WindowInsets.safeDrawing).verticalScroll(rememberScrollState()).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            Modifier.windowInsetsPadding(WindowInsets.safeDrawing).verticalScroll(rememberScrollState()).padding(TeloTheme.spacing.screen),
+            verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.large),
         ) {
             TextButton(onClick = goBack, modifier = Modifier.testTag("cover_back")) {
                 Text(stringResource(R.string.catalogue_back))
             }
-            Text(stringResource(R.string.cover_edit), style = MaterialTheme.typography.headlineMedium)
+            Text(stringResource(R.string.cover_edit), style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.semantics { heading() })
             Text(profile.name, style = MaterialTheme.typography.titleLarge)
             // The same crops the catalogue uses, so what is previewed is what visitors will see (#47, historia 16).
             val trade = profile.trades.firstOrNull().orEmpty()
@@ -113,7 +114,7 @@ internal fun CoverEditorScreen(
             Text(stringResource(R.string.cover_review_hint))
             Text(stringResource(R.string.cover_limits), style = MaterialTheme.typography.bodySmall)
             if ((!loaded && !failed) || busy || preparing) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.medium)) {
                     CircularProgressIndicator(Modifier.size(24.dp))
                     Text(stringResource(if (preparing) R.string.cover_preparing else R.string.working))
                 }
@@ -122,7 +123,7 @@ internal fun CoverEditorScreen(
                 .semantics { liveRegion = LiveRegionMode.Polite })
             if (request != null && loaded && !unsent) {
                 Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) {
-                    Column(Modifier.fillMaxWidth().padding(16.dp).testTag("cover_state")
+                    Column(Modifier.fillMaxWidth().padding(TeloTheme.spacing.large).testTag("cover_state")
                         .semantics { liveRegion = LiveRegionMode.Polite }) {
                         Text(stringResource(when (request?.status) {
                             CoverStatus.PUBLISHED -> R.string.cover_published
@@ -200,11 +201,4 @@ internal fun CoverEditorScreen(
             dismissButton = { TextButton(onClick = { leave = false }) { Text(stringResource(R.string.cover_stay)) } },
         )
     }
-}
-
-/** Sizes at which the catalogue shows a cover: the profile page and the list card (CatalogueScreen). */
-internal object CoverCrop {
-    val DETAIL_HEIGHT: Dp = 180.dp
-    val LIST_WIDTH: Dp = 100.dp
-    val LIST_HEIGHT: Dp = 120.dp
 }

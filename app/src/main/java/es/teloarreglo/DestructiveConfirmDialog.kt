@@ -27,6 +27,7 @@ fun DestructiveConfirmDialog(
     confirmTag: String = "destructive_confirm",
     dismissTag: String = "destructive_dismiss",
     busy: Boolean = false,
+    confirmEnabled: Boolean = true,
 ) {
     AlertDialog(
         onDismissRequest = { if (!busy) onDismiss() },
@@ -34,7 +35,7 @@ fun DestructiveConfirmDialog(
         title = { Text(title) },
         text = text,
         confirmButton = {
-            TextButton(onClick = onConfirm, enabled = !busy, modifier = Modifier.testTag(confirmTag),
+            TextButton(onClick = onConfirm, enabled = !busy && confirmEnabled, modifier = Modifier.testTag(confirmTag),
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
                 Text(confirmLabel)
             }

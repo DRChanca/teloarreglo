@@ -158,10 +158,9 @@ class MainActivity : AppCompatActivity() {
                             NoticesScreen(app.notices!!, app.push, connectedUser!!, app.applicationScope,
                                 askPermission = { ensureNotificationPermission() },
                                 onOpenConversation = { id ->
-                                    val conversation = try { app.chat?.conversations()?.find { it.id == id } }
-                                        catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { null }
-                                    if (conversation != null) nav = Navigation().open(Tab.CHATS).openConversation(conversation)
-                                    conversation != null
+                                    es.teloarreglo.notices.openNoticeConversation(id, { app.chat?.conversations() }, { it.id }) {
+                                        nav = Navigation().open(Tab.CHATS).openConversation(it)
+                                    }
                                 },
                                 onOpenAccount = { nav = nav.open(Tab.ACCOUNT) },
                                 onBack = { nav = Navigation() })

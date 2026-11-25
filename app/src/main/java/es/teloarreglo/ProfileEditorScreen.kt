@@ -15,12 +15,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import es.teloarreglo.appointments.Agenda
 import es.teloarreglo.appointments.parseEuroCents
 import es.teloarreglo.catalogue.AgendaDay
@@ -160,12 +160,12 @@ fun ProfileEditorScreen(
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()
-                .verticalScroll(rememberScrollState()).padding(16.dp).testTag("profile_editor"),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .verticalScroll(rememberScrollState()).padding(TeloTheme.spacing.large).testTag("profile_editor"),
+            verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.medium),
         ) {
             TextButton(onClick = onBack, Modifier.testTag("profile_edit_back")) { Text(stringResource(R.string.catalogue_back)) }
             Text(stringResource(R.string.profile_edit_title), style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
+                modifier = Modifier.semantics { heading() })
             when {
                 loadFailed -> {
                     Text(stringResource(R.string.profile_edit_load_error), color = MaterialTheme.colorScheme.error)
@@ -277,7 +277,7 @@ private fun AgendaSection(
             Text(java.time.DayOfWeek.of(index + 1).getDisplayName(java.time.format.TextStyle.FULL, locale)
                 .replaceFirstChar { it.titlecase(locale) }, Modifier.weight(1f))
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
             OutlinedTextField(day.from, { change(day.copy(from = it.take(5))) }, enabled = enabled && day.open, singleLine = true,
                 label = { Text(stringResource(R.string.appointment_from)) }, placeholder = { Text("09:00") },
                 modifier = Modifier.weight(1f).testTag("profile_agenda_from_${index + 1}"))
@@ -311,7 +311,7 @@ private fun StartProfile(busy: Boolean, onStart: () -> Unit) {
 private fun ReviewState(own: OwnProfile, missing: List<String>) {
     val summary = own.review.summary()
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer), modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.padding(TeloTheme.spacing.medium), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
             Text(stringResource(reviewMessage(summary)), modifier = Modifier.testTag("profile_edit_review"))
             if (summary == ReviewSummary.REJECTED_FIRST || summary == ReviewSummary.REJECTED_CHANGE) {
                 // The administrator's reason is content: shown as written, never translated.
@@ -345,14 +345,15 @@ private fun ContentForm(
     val missing = if (showMissing) draft.missingFields() else emptySet()
     OutlinedTextField(draft.name, { v -> edit { it.copy(name = v.take(120)) } }, enabled = enabled, singleLine = true,
         isError = ProfileField.NAME in missing, label = { Text(stringResource(R.string.profile_edit_name)) },
-        supportingText = fieldError(ProfileField.NAME, missing),
-        modifier = Modifier.fillMaxWidth().bringIntoViewRequester(inView.getValue(ProfileField.NAME)).testTag("profile_edit_name"))
+        modifier = Modifier.fillMaxWidth().bringIntoViewRequester(inView.getValue(ProfileField.NAME)).testTag("profile_edit_name")
+            .fieldError(ProfileField.NAME, missing))
+    ErrorUnder(ProfileField.NAME, missing)
     OutlinedTextField(draft.description, { v -> edit { it.copy(description = v.take(4000)) } }, enabled = enabled,
         minLines = 3, label = { Text(stringResource(R.string.profile_edit_description)) },
         modifier = Modifier.fillMaxWidth().testTag("profile_edit_description"))
 
     Label(R.string.profile_edit_trades, ProfileField.TRADES, missing, inView)
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
         TRADES.forEach { key ->
             FilterChip(selected = key in draft.trades, enabled = enabled, modifier = Modifier.testTag("profile_edit_trade_$key"),
                 onClick = { edit { it.copy(trades = if (key in it.trades) it.trades - key else it.trades + key) } },
@@ -363,7 +364,7 @@ private fun ContentForm(
     CoveragePicker(draft.coverage, enabled, concejos) { coverage -> edit { it.copy(coverage = coverage) } }
 
     Label(R.string.profile_edit_languages, ProfileField.LANGUAGES, missing, inView)
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
         (LANGUAGES + draft.languages.filter { it !in LANGUAGES }).forEach { code ->
             val name = Locale.forLanguageTag(code).let { it.getDisplayLanguage(it) }.replaceFirstChar { it.titlecase() }
             FilterChip(selected = code in draft.languages, enabled = enabled, modifier = Modifier.testTag("profile_edit_language_$code"),
@@ -374,8 +375,10 @@ private fun ContentForm(
     OutlinedTextField(draft.phone, { v -> edit { it.copy(phone = v.filter { c -> c.isDigit() || c == ' ' || c == '+' }.take(20)) } },
         enabled = enabled, singleLine = true, isError = ProfileField.PHONE in missing,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-        label = { Text(stringResource(R.string.profile_edit_phone)) }, supportingText = fieldError(ProfileField.PHONE, missing),
-        modifier = Modifier.fillMaxWidth().bringIntoViewRequester(inView.getValue(ProfileField.PHONE)).testTag("profile_edit_phone"))
+        label = { Text(stringResource(R.string.profile_edit_phone)) },
+        modifier = Modifier.fillMaxWidth().bringIntoViewRequester(inView.getValue(ProfileField.PHONE)).testTag("profile_edit_phone")
+            .fieldError(ProfileField.PHONE, missing))
+    ErrorUnder(ProfileField.PHONE, missing)
 
     // Privacy: a business address is published only if the owner chooses to.
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -403,8 +406,21 @@ private fun Label(text: Int, field: ProfileField, missing: Set<ProfileField>, in
     }
 }
 
-private fun fieldError(field: ProfileField, missing: Set<ProfileField>): (@Composable () -> Unit)? =
-    if (field in missing) { { Text(stringResource(fieldErrorText(field)), Modifier.testTag(fieldErrorTag(field))) } } else null
+/** The missing field's problem in words, right under the field, as AccessScreen places its errors (#47). */
+@Composable
+private fun ErrorUnder(field: ProfileField, missing: Set<ProfileField>) {
+    if (field !in missing) return
+    Text(stringResource(fieldErrorText(field)), Modifier.padding(start = TeloTheme.spacing.large).testTag(fieldErrorTag(field)),
+        color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+}
+
+/** Tells assistive technology which message belongs to a missing field. */
+@Composable
+private fun Modifier.fieldError(field: ProfileField, missing: Set<ProfileField>): Modifier {
+    if (field !in missing) return this
+    val message = stringResource(fieldErrorText(field))
+    return semantics { error(message) }
+}
 
 private fun fieldErrorTag(field: ProfileField) = "profile_edit_${field.name.lowercase()}_error"
 
@@ -446,7 +462,7 @@ private fun CoveragePicker(selected: List<Coverage>, enabled: Boolean, concejos:
         try { anchors = concejos?.anchors()?.sortedBy { it.name }; failed = concejos == null }
         catch (e: CancellationException) { throw e } catch (_: Exception) { failed = true }
     }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
         selected.forEach { zone ->
             InputChip(selected = true, enabled = enabled, onClick = { onChange(selected - zone) }, label = { Text(zone.name) },
                 trailingIcon = { Text("×") }, modifier = Modifier.testTag("profile_edit_zone_${zone.code}"))
@@ -491,7 +507,7 @@ private fun OfferSection(
     prices.forEachIndexed { index, price ->
         fun change(update: (PriceDraft) -> PriceDraft) = onPrices(prices.toMutableList().also { it[index] = update(price) })
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer), modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(12.dp).testTag("profile_offer_price_$index"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.padding(TeloTheme.spacing.medium).testTag("profile_offer_price_$index"), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
                 Text(stringResource(R.string.profile_offer_price, index + 1), style = MaterialTheme.typography.titleSmall)
                 OutlinedTextField(price.service, { v -> change { it.copy(service = v.take(120)) } }, enabled = enabled,
                     singleLine = true, isError = showInvalid && price.service.isBlank(),
@@ -504,7 +520,7 @@ private fun OfferSection(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     label = { Text(stringResource(R.string.profile_offer_amount)) },
                     modifier = Modifier.fillMaxWidth().testTag("profile_offer_amount_$index"))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
                     PRICE_UNITS.forEach { unit ->
                         FilterChip(selected = price.unit == unit, enabled = enabled, onClick = { change { it.copy(unit = unit) } },
                             label = { Text(stringResource(unitLabel(unit))) }, modifier = Modifier.testTag("profile_offer_unit_${index}_$unit"))

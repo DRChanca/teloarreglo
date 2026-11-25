@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notices_conversation_unreachable">Die Unterhaltung konnte nicht geöffnet werden. Prüfe deine Verbindung und versuche es erneut.</string>
+</resources>

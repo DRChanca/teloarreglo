@@ -8,15 +8,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -35,9 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import es.teloarreglo.identity.ACCOUNT_NAME_MAX
@@ -94,24 +91,17 @@ fun AccountNameScreen(session: AccountNameSession, scope: CoroutineScope, onSign
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding()
-                .verticalScroll(rememberScrollState()).padding(24.dp),
+                .verticalScroll(rememberScrollState()).padding(TeloTheme.spacing.extraLarge),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(Modifier.widthIn(max = 480.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(Modifier.widthIn(max = 480.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.large)) {
                 Text(stringResource(R.string.account_name_title), style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold)
+                    modifier = Modifier.semantics { heading() })
                 Text(stringResource(R.string.account_name_intro))
                 AccountNameField(typed, { typed = it; error = null }, enabled = !busy)
-                Button(
-                    enabled = !busy && cleanAccountName(typed) != null,
-                    onClick = {
-                        busy = true
-                        scope.launch { try { error = saveName(session, typed) } finally { busy = false } }
-                    },
-                    modifier = Modifier.fillMaxWidth().testTag("account_name_save"),
-                ) {
-                    if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
-                    else Text(stringResource(R.string.account_name_save))
+                BusyButton(busy, R.string.account_name_save, "account_name_save", enabled = cleanAccountName(typed) != null) {
+                    busy = true
+                    scope.launch { try { error = saveName(session, typed) } finally { busy = false } }
                 }
                 error?.let { NameError(it) }
                 TextButton(onClick = onSignOut, enabled = !busy, modifier = Modifier.testTag("account_name_sign_out")) {
@@ -132,21 +122,17 @@ fun AccountNameCard(session: AccountNameSession, scope: CoroutineScope) {
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<Int?>(null) }
     Card(Modifier.fillMaxWidth().testTag("account_name_card")) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.padding(TeloTheme.spacing.large), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
             Text(stringResource(R.string.account_name_label), style = MaterialTheme.typography.titleMedium)
             if (editing) {
                 AccountNameField(typed, { typed = it; error = null }, enabled = !busy)
                 error?.let { NameError(it) } // Under the field it refers to (#47).
-                Button(
-                    enabled = !busy && cleanAccountName(typed) != null,
-                    onClick = {
-                        busy = true
-                        scope.launch {
-                            try { error = saveName(session, typed); if (error == null) editing = false } finally { busy = false }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().testTag("account_name_save"),
-                ) { Text(stringResource(if (busy) R.string.working else R.string.account_name_save)) }
+                BusyButton(busy, R.string.account_name_save, "account_name_save", enabled = cleanAccountName(typed) != null) {
+                    busy = true
+                    scope.launch {
+                        try { error = saveName(session, typed); if (error == null) editing = false } finally { busy = false }
+                    }
+                }
                 TextButton(onClick = { editing = false; error = null }, enabled = !busy) { Text(stringResource(R.string.cancel)) }
             } else {
                 Text(

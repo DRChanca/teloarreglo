@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import es.teloarreglo.catalogue.Catalogue
 import es.teloarreglo.catalogue.PublicProfile
@@ -239,7 +240,7 @@ private fun ProfileDetail(
                     ProfileSection.COVER -> item {
                         SectionBlock {
                             ProfileCover(profile.trades.firstOrNull().orEmpty(), profile.coverPath, covers,
-                                Modifier.fillMaxWidth().height(180.dp))
+                                Modifier.fillMaxWidth().height(CoverCrop.DETAIL_HEIGHT))
                             if (onEdit != null) OutlinedButton(onClick = onEdit,
                                 modifier = Modifier.fillMaxWidth().testTag("edit_cover")) {
                                 Text(stringResource(R.string.cover_edit))
@@ -344,7 +345,7 @@ private fun SelectionContainerCompat(text: String) {
 
 @Composable
 private fun Section(label: Int, modifier: Modifier = Modifier) {
-    Text(stringResource(label), modifier, style = MaterialTheme.typography.titleLarge)
+    Text(stringResource(label), modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
 }
 
 @Composable

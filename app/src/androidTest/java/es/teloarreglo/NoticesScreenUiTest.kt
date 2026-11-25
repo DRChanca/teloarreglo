@@ -9,6 +9,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import es.teloarreglo.notices.Notice
+import es.teloarreglo.notices.NoticeOpening
 import es.teloarreglo.notices.Notices
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,10 +39,10 @@ class NoticesScreenUiTest {
         notice("other", "other", """{}"""),
     )
 
-    private fun show(notices: Notices, findConversation: Boolean, opened: MutableList<String>) {
+    private fun show(notices: Notices, opening: NoticeOpening, opened: MutableList<String>) {
         compose.setContent {
             NoticesScreen(notices, push = null, accountId = "user-a", operationScope = CoroutineScope(Dispatchers.Main),
-                askPermission = {}, onOpenConversation = { opened += it; findConversation },
+                askPermission = {}, onOpenConversation = { opened += it; opening },
                 onOpenAccount = { opened += "account" }, onBack = {})
         }
         compose.waitUntil(5_000) { compose.onAllNodes(hasTestTag("notices_list")).fetchSemanticsNodes().isNotEmpty() }
@@ -49,7 +50,7 @@ class NoticesScreenUiTest {
 
     @Test fun rowsSayWhereTheyLeadAndRowsWithoutDestinationAreNotTappable() {
         val notices = FakeNotices(list)
-        show(notices, findConversation = true, opened = mutableListOf())
+        show(notices, opening = NoticeOpening.OPENED, opened = mutableListOf())
         compose.onNodeWithTag("notice_action_chat", useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithTag("notice_action_review", useUnmergedTree = true).assertIsDisplayed()
         assertTrue(compose.onAllNodes(hasTestTag("notice_action_other"), useUnmergedTree = true).fetchSemanticsNodes().isEmpty())
@@ -61,7 +62,7 @@ class NoticesScreenUiTest {
 
     @Test fun aConversationThatIsNotFoundIsReported() {
         val opened = mutableListOf<String>()
-        show(FakeNotices(list), findConversation = false, opened = opened)
+        show(FakeNotices(list), opening = NoticeOpening.NOT_FOUND, opened = opened)
         compose.onNodeWithTag("notice_chat").performClick()
         compose.waitUntil(5_000) {
             compose.onAllNodes(hasTestTag("notices_conversation_missing")).fetchSemanticsNodes().isNotEmpty()
@@ -69,9 +70,20 @@ class NoticesScreenUiTest {
         assertEquals(listOf("c1"), opened)
     }
 
+    @Test fun aConversationThatCannotBeReachedIsReportedAsAConnectionProblem() {
+        val opened = mutableListOf<String>()
+        show(FakeNotices(list), opening = NoticeOpening.UNREACHABLE, opened = opened)
+        compose.onNodeWithTag("notice_chat").performClick()
+        compose.waitUntil(5_000) {
+            compose.onAllNodes(hasTestTag("notices_conversation_unreachable")).fetchSemanticsNodes().isNotEmpty()
+        }
+        assertTrue(compose.onAllNodes(hasTestTag("notices_conversation_missing")).fetchSemanticsNodes().isEmpty())
+        assertEquals(listOf("c1"), opened)
+    }
+
     @Test fun aProfileReviewOpensTheAccount() {
         val opened = mutableListOf<String>()
-        show(FakeNotices(list), findConversation = true, opened = opened)
+        show(FakeNotices(list), opening = NoticeOpening.OPENED, opened = opened)
         compose.onNodeWithTag("notice_review").performClick()
         assertEquals(listOf("account"), opened)
     }

@@ -106,13 +106,13 @@ internal fun incidentFailureText(failure: IncidentFailure?) = stringResource(whe
 @Composable
 internal fun VisibilityNotice(accepted: Boolean, onAccepted: (Boolean) -> Unit) {
     Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.small) {
-        Column(Modifier.padding(8.dp)) {
+        Column(Modifier.padding(TeloTheme.spacing.small)) {
             Text(stringResource(R.string.incident_visibility), style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.testTag("incident_visibility"))
             Row(verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.selectable(accepted, role = Role.Checkbox, onClick = { onAccepted(!accepted) })) {
                 Checkbox(accepted, onCheckedChange = null, modifier = Modifier.testTag("incident_visibility_accept"))
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(TeloTheme.spacing.small))
                 Text(stringResource(R.string.incident_visibility_accept), style = MaterialTheme.typography.bodySmall)
             }
         }
@@ -133,16 +133,35 @@ private fun OpenIncidentDialog(
     var failed by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<IncidentFailure?>(null) }
     val chosen = kind
-    AlertDialog(onDismissRequest = { if (!busy) onDismiss() },
-        title = { Text(stringResource(R.string.incident_open_title)) },
+    DestructiveConfirmDialog(
+        title = stringResource(R.string.incident_open_title),
+        confirmLabel = stringResource(if (key != null) R.string.incident_retry else R.string.incident_open_send),
+        onConfirm = {
+            val sent = key ?: UUID.randomUUID().toString().also { key = it }
+            busy = true; failed = false
+            scope.launch {
+                try { incidents.open(appointment.id, sent, chosen!!, description.trim()); onDone() }
+                catch (e: Exception) {
+                    if (e is CancellationException) throw e
+                    failure = (e as? IncidentException)?.failure; failed = true
+                    // A definitive answer frees the key; uncertainty keeps it so a retry cannot open twice.
+                    if (failure != null) key = null
+                } finally { busy = false }
+            }
+        },
+        onDismiss = onDismiss,
+        confirmTag = "incident_open_confirm",
+        dismissTag = "incident_open_cancel",
+        busy = busy,
+        confirmEnabled = accepted && chosen != null && description.isNotBlank(),
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
                 kinds.forEach { option ->
                     Row(verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()
                         .selectable(chosen == option, enabled = key == null, role = Role.RadioButton, onClick = { kind = option })
                         .testTag("incident_kind_${option.name.lowercase()}")) {
                         RadioButton(chosen == option, onClick = null, enabled = key == null)
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(TeloTheme.spacing.small))
                         Column {
                             Text(kindText(option), style = MaterialTheme.typography.bodyMedium)
                             Text(kindExplain(option), style = MaterialTheme.typography.bodySmall)
@@ -161,24 +180,7 @@ private fun OpenIncidentDialog(
                     modifier = Modifier.testTag("incident_error"))
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text(stringResource(R.string.cancel)) } },
-        confirmButton = {
-            TextButton(enabled = !busy && accepted && chosen != null && description.isNotBlank(), onClick = {
-                val sent = key ?: UUID.randomUUID().toString().also { key = it }
-                busy = true; failed = false
-                scope.launch {
-                    try { incidents.open(appointment.id, sent, chosen!!, description.trim()); onDone() }
-                    catch (e: Exception) {
-                        if (e is CancellationException) throw e
-                        failure = (e as? IncidentException)?.failure; failed = true
-                        // A definitive answer frees the key; uncertainty keeps it so a retry cannot open twice.
-                        if (failure != null) key = null
-                    } finally { busy = false }
-                }
-            }, modifier = Modifier.testTag("incident_open_confirm")) {
-                Text(stringResource(if (key != null) R.string.incident_retry else R.string.incident_open_send))
-            }
-        })
+    )
 }
 
 @Composable
@@ -188,8 +190,8 @@ private fun IncidentCard(
 ) {
     val format = dateTimeFormat()
     var writing by rememberSaveable(incident.id) { mutableStateOf(false) }
-    OutlinedCard(Modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("incident_${incident.id}")) {
-        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    OutlinedCard(Modifier.fillMaxWidth().padding(vertical = TeloTheme.spacing.extraSmall).testTag("incident_${incident.id}")) {
+        Column(Modifier.padding(TeloTheme.spacing.small), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
             Text(kindText(incident.kind), style = MaterialTheme.typography.titleSmall)
             Text(stringResource(if (incident.isOpen) R.string.incident_status_open else R.string.incident_status_resolved),
                 style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
@@ -229,8 +231,8 @@ private fun IncidentCard(
 private fun EvidenceRow(evidence: IncidentEvidence, accountId: String, attachments: ChatAttachments?,
                         format: java.time.format.DateTimeFormatter) {
     val message = evidence.kind == EvidenceKind.MESSAGE
-    Column(Modifier.fillMaxWidth().padding(start = 8.dp, top = 4.dp).testTag("evidence_${evidence.id}"),
-        verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(Modifier.fillMaxWidth().padding(start = TeloTheme.spacing.small, top = TeloTheme.spacing.extraSmall).testTag("evidence_${evidence.id}"),
+        verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.extraSmall)) {
         Text(stringResource(if (message) R.string.incident_evidence_kind_message else R.string.incident_evidence_kind_note),
             style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.testTag("evidence_kind_${evidence.id}"))
@@ -243,7 +245,7 @@ private fun EvidenceRow(evidence: IncidentEvidence, accountId: String, attachmen
         Row(Modifier.height(IntrinsicSize.Min)) {
             // A quote bar, as in messaging apps: what follows is the content exactly as it was contributed.
             Box(Modifier.width(3.dp).fillMaxHeight().background(MaterialTheme.colorScheme.outlineVariant))
-            Column(Modifier.padding(start = 8.dp)) {
+            Column(Modifier.padding(start = TeloTheme.spacing.small)) {
                 when {
                     evidence.note != null -> Text(evidence.note)
                     evidence.attachmentPath != null && attachments != null ->
@@ -274,7 +276,7 @@ private fun NoteDialog(
     AlertDialog(onDismissRequest = { if (!busy) onDismiss() },
         title = { Text(stringResource(R.string.incident_evidence_add_note)) },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
                 OutlinedTextField(note, { if (it.length <= 2000) note = it }, enabled = key == null,
                     label = { Text(stringResource(R.string.incident_evidence_note)) }, minLines = 2,
                     modifier = Modifier.fillMaxWidth().testTag("evidence_note"))

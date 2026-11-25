@@ -11,10 +11,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import es.teloarreglo.home.AddressAutocomplete
@@ -128,13 +128,14 @@ fun HomeAddressScreen(
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             Modifier.windowInsetsPadding(WindowInsets.safeDrawing).imePadding().verticalScroll(rememberScrollState())
-                .padding(24.dp).testTag("home_screen"),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(TeloTheme.spacing.extraLarge).testTag("home_screen"),
+            verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.medium),
         ) {
             if (!required) TextButton(onClick = onDone, enabled = !busy, modifier = Modifier.testTag("home_back")) {
                 Text(stringResource(R.string.catalogue_back))
             }
-            Text(stringResource(R.string.home_title), style = MaterialTheme.typography.headlineMedium)
+            Text(stringResource(R.string.home_title), style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.semantics { heading() })
             Text(stringResource(R.string.home_intro))
             Text(stringResource(R.string.home_privacy), style = MaterialTheme.typography.bodySmall)
 
@@ -148,7 +149,7 @@ fun HomeAddressScreen(
                 } else s.items.forEach { item ->
                     Card(onClick = { choose(item) }, enabled = !resolving,
                         modifier = Modifier.fillMaxWidth().testTag("home_suggestion_${item.placeId}")) {
-                        Column(Modifier.padding(12.dp)) {
+                        Column(Modifier.padding(TeloTheme.spacing.medium)) {
                             Text(item.primary, fontWeight = FontWeight.Bold)
                             if (item.secondary.isNotBlank()) Text(item.secondary, style = MaterialTheme.typography.bodySmall)
                         }
@@ -161,15 +162,15 @@ fun HomeAddressScreen(
                 .semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodyMedium)
 
             // Usual Spanish fields after the street (#41), two per row so labels fit with large text (#47).
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
                 Detail(number, { number = it }, R.string.home_number, "home_number")
                 Detail(block, { block = it }, R.string.home_block, "home_block")
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
                 Detail(portal, { portal = it }, R.string.home_portal, "home_portal")
                 Detail(staircase, { staircase = it }, R.string.home_staircase, "home_staircase")
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
                 Detail(floor, { floor = it }, R.string.home_floor, "home_floor")
                 Detail(door, { door = it }, R.string.home_door, "home_door")
             }
@@ -180,7 +181,7 @@ fun HomeAddressScreen(
             // Only a missing point is worth a line; its source is not shown (David 2026-11-24).
             if (point == null) Text(stringResource(R.string.home_point_missing),
                 Modifier.testTag("home_point"), style = MaterialTheme.typography.bodyMedium)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
                 OutlinedButton(onClick = {
                     locating = true; noLocation = false
                     scope.launch {
@@ -252,11 +253,11 @@ private fun HomePinDialog(initial: GeoPoint?, onDismiss: () -> Unit, onPick: (Ge
     var pin by remember { mutableStateOf(initial) }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxSize()) {
-            Column(Modifier.safeDrawingPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.safeDrawingPadding().padding(TeloTheme.spacing.large), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.medium)) {
                 Text(stringResource(R.string.home_pick_on_map), style = MaterialTheme.typography.titleLarge)
                 Text(stringResource(R.string.home_pin_hint), style = MaterialTheme.typography.bodySmall)
                 MapPointPicker(initial ?: ASTURIAS_CENTER, pin, onPin = { pin = it })
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
                     Button(onClick = { pin?.let(onPick) }, enabled = pin != null,
                         modifier = Modifier.testTag("home_pin_confirm")) { Text(stringResource(R.string.map_pick_confirm)) }
                     TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
@@ -271,7 +272,7 @@ private fun HomePinDialog(initial: GeoPoint?, onDismiss: () -> Unit, onPick: (Ge
 fun HomeSummaryCard(session: HomeSession, onChange: () -> Unit) {
     val status by session.status.collectAsState()
     Card(Modifier.fillMaxWidth().testTag("home_summary")) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.padding(TeloTheme.spacing.large), verticalArrangement = Arrangement.spacedBy(TeloTheme.spacing.small)) {
             Text(stringResource(R.string.home_account_title), style = MaterialTheme.typography.titleMedium)
             when (val s = status) {
                 is HomeStatus.Present -> {
