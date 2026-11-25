@@ -7,7 +7,8 @@ profesional que trabaja en su zona de Asturias.
 
 **Búsqueda**:
 La única forma de encontrar profesionales: perfiles aprobados filtrados por
-oficio y texto, ordenados por cercanía al punto de búsqueda.
+oficio y texto, con los destacados de la zona primero y el resto por cercanía
+al punto de búsqueda.
 _Evitar_: Cerca de mí, búsqueda por proximidad, catálogo (como pantalla distinta)
 
 **Punto de búsqueda**:
@@ -23,24 +24,19 @@ _Evitar_: domicilio (reservado al del profesional), dirección de trabajo
 Municipio asturiano oficial (código INE) que contiene el punto de búsqueda.
 _Evitar_: municipio, zona, ciudad
 
-**Cobertura**:
-Conjunto de concejos en los que un profesional acepta trabajar.
-_Evitar_: área de servicio, radio
+**Zona de trabajo**:
+Concejos en los que un profesional trabaja habitualmente. Informa, no
+restringe: se puede acordar un trabajo fuera de ella.
+_Evitar_: cobertura, área de servicio, radio
 
-**En tu concejo**:
-Profesionales cuya cobertura incluye el concejo del punto de búsqueda; se
-muestran primero.
-_Evitar_: cercanos, disponibles
-
-**Fuera de tu concejo**:
-Profesionales que no cubren el concejo del punto de búsqueda; se muestran
-después, aparte. Se puede conversar con ellos, pero no concertar una cita en esa
-dirección.
-_Evitar_: lejanos, otros
+**Fuera de su zona**:
+Profesional cuya zona de trabajo no incluye el concejo del punto de búsqueda o
+de la cita. Aparece igualmente por distancia, con un aviso, y se puede contratar.
+_Evitar_: fuera de cobertura, lejano
 
 **Destacado**:
-Perfil con suscripción simulada activa; solo tiene prioridad dentro de
-«En tu concejo».
+Perfil con suscripción simulada activa; solo va primero si su zona de trabajo
+incluye el concejo del punto de búsqueda.
 _Evitar_: patrocinado, premium
 
 **Tramo de distancia**:
