@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Suchfilter (#52). -->
+<resources>
+    <string name="filters_button">Filter</string>
+    <string name="filters_button_active">Filter · %1$d</string>
+    <string name="filters_trade">Handwerk</string>
+    <string name="filters_distance">Maximale Entfernung</string>
+    <string name="filters_distance_none">Ohne Grenze</string>
+    <string name="filters_distance_km">%1$d km</string>
+    <string name="filters_distance_needs_point">Wähle einen Punkt, um nach Entfernung zu filtern</string>
+    <string name="filters_rating">Mindestbewertung</string>
+    <string name="filters_rating_any">Beliebig</string>
+    <string name="filters_rating_min">%1$d★ oder mehr</string>
+    <string name="filters_reset">Zurücksetzen</string>
+    <plurals name="filters_apply">
+        <item quantity="one">%d Fachkraft ansehen</item>
+        <item quantity="other">%d Fachkräfte ansehen</item>
+    </plurals>
+    <string name="filters_apply_unknown">Fachkräfte ansehen</string>
+    <string name="filters_empty">Keine Fachkraft erfüllt diese Filter</string>
+    <string name="filters_empty_reset">Filter zurücksetzen</string>
+    <string name="filters_empty_artwork">Illustration einer Lupe über einer leeren Karte</string>
+</resources>

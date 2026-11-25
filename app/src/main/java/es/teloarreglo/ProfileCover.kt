@@ -1,5 +1,11 @@
 package es.teloarreglo
 
+import android.provider.Settings
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -12,6 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -46,17 +55,39 @@ internal fun ProfileCover(
             SubcomposeAsyncImage(
                 model = preview ?: url, contentDescription = stringResource(R.string.cover_photo_description),
                 modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
-                loading = { TradeArtwork(trade, Modifier.fillMaxSize()) },
+                loading = { CoverSkeleton(Modifier.fillMaxSize()) },
                 error = {
                     TradeArtwork(trade, Modifier.fillMaxSize())
                     UnavailableLabel(Modifier.align(Alignment.BottomStart))
                 },
             )
+        } else if (path != null && covers != null && !unavailable) {
+            CoverSkeleton(Modifier.fillMaxSize())
         } else {
             TradeArtwork(trade, Modifier.fillMaxSize())
             if (unavailable) UnavailableLabel(Modifier.align(Alignment.BottomStart))
         }
     }
+}
+
+/**
+ * Takes the place of a Foto de portada while its link is resolved and the image downloads (#51): a soft opacity
+ * pulse of our own, still when the person has turned animations off.
+ */
+@Composable
+private fun CoverSkeleton(modifier: Modifier) {
+    val context = LocalContext.current
+    val animate = remember {
+        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
+    }
+    val alpha = if (animate) {
+        rememberInfiniteTransition(label = "cover_skeleton").animateFloat(
+            initialValue = 1f, targetValue = .55f, label = "cover_skeleton_alpha",
+            animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        ).value
+    } else 1f
+    Box(modifier.testTag("cover_skeleton").graphicsLayer { this.alpha = alpha }
+        .background(MaterialTheme.colorScheme.surfaceVariant))
 }
 
 /** Original category illustrations. No network dependency, third-party identity or claim of completed work. */

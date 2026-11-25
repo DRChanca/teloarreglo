@@ -34,6 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -208,16 +209,16 @@ internal fun ProximityHeader(p: Proximity, showMap: Boolean, onShowMap: (Boolean
     }
 }
 
-/** Map of the same rows as the list (#17): only profiles with a public location get a marker. */
+/** Map of the same [rows] as the list (#17), filters included (#52): only profiles with a public location get a marker. */
 @Composable
-internal fun ProximityMap(p: Proximity, results: NearbyState.Results, onOpenProfile: (String) -> Unit) {
-    val located = results.rows.mapNotNull { row -> row.bandM?.let { row.profile to it } }
+internal fun ProximityMap(p: Proximity, results: NearbyState.Results, rows: List<SearchRow>, onOpenProfile: (String) -> Unit) {
+    val located = rows.mapNotNull { row -> row.bandM?.let { row.profile to it } }
     val view = mapView(located, results.featured)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (p.source.map == MapAvailability.READY) ResultsMap(view, results.from, onOpenProfile) else MapUnavailableNotice(p.source.map)
         Text(
             if (view.markers.isEmpty()) stringResource(R.string.map_none_public)
-            else stringResource(R.string.map_list_only, view.listOnly, results.rows.size),
+            else stringResource(R.string.map_list_only, view.listOnly, rows.size),
             Modifier.testTag("map_coverage"), style = MaterialTheme.typography.bodySmall,
         )
     }
@@ -298,7 +299,7 @@ private fun AwayBanner(meters: Double, onSearchHere: () -> Unit, onDismiss: () -
 @Composable
 internal fun SkeletonCard() {
     val block = MaterialTheme.colorScheme.surfaceVariant
-    Card(Modifier.fillMaxWidth().testTag("search_skeleton"), shape = RoundedCornerShape(20.dp),
+    Card(Modifier.fillMaxWidth().testTag("search_skeleton"), shape = RectangleShape,
         colors = CardDefaults.cardColors(containerColor = TeloTheme.extended.card)) {
         Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Box(Modifier.width(CoverCrop.LIST_WIDTH).height(CoverCrop.LIST_HEIGHT).background(block, RoundedCornerShape(12.dp)))

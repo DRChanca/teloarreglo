@@ -125,8 +125,6 @@ internal fun ChatAttachmentControls(
                     videoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
                 }) { Text(stringResource(R.string.video_attach)) }
             }
-            Text(stringResource(R.string.photo_limits), style = MaterialTheme.typography.bodySmall)
-            Text(stringResource(R.string.video_limits), style = MaterialTheme.typography.bodySmall)
         }
     }
 }

@@ -28,7 +28,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -208,6 +207,8 @@ private fun PushCard(push: PushRegistration?, operationScope: CoroutineScope, as
         busy = true
         operationScope.launch { try { action() } finally { busy = false } }
     }
+    // Active notifications need no card: they are turned off in Android settings, which brings it back (#51).
+    if (status == PushStatus.ACTIVE) return
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer), shape = MaterialTheme.shapes.large,
         modifier = Modifier.fillMaxWidth().testTag("notices_push")) {
         Column(Modifier.padding(TeloTheme.spacing.large).semantics { liveRegion = LiveRegionMode.Polite },
@@ -221,9 +222,6 @@ private fun PushCard(push: PushRegistration?, operationScope: CoroutineScope, as
                 PushStatus.SIGNED_OUT -> R.string.notices_push_checking
             }), fontWeight = FontWeight.SemiBold)
             if (push != null && !busy) when (status) {
-                PushStatus.ACTIVE -> OutlinedButton(onClick = { run { push.setEnabled(false) } }) {
-                    Text(stringResource(R.string.notices_push_disable))
-                }
                 PushStatus.OFF -> Button(onClick = { run { askPermission(); push.setEnabled(true) } }) {
                     Text(stringResource(R.string.notices_push_enable))
                 }

@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -66,6 +67,9 @@ fun CatalogueScreen(
     var loading by remember { mutableStateOf(true) }
     var failed by remember { mutableStateOf(false) }
     var search by rememberSaveable { mutableStateOf("") }
+    // Search filters (#52): kept for the app session, applied on the device over the ordered list.
+    var filters by rememberSaveable(stateSaver = SearchFiltersSaver) { mutableStateOf(SearchFilters()) }
+    var filtersOpen by rememberSaveable { mutableStateOf(false) }
     var editing by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val tradeScroll = rememberScrollState()
@@ -105,9 +109,24 @@ fun CatalogueScreen(
     val ranked = proximity?.results
     // The single search (ADR 0001): the distance order when there is one, the catalogue order otherwise.
     val rows = ranked?.rows ?: profiles.map { SearchRow(it, null, true) }
-    val visible = rows.filter { row ->
-        searchable(row.profile.name + " " + row.profile.services.joinToString(" ")).contains(searchable(search.trim()))
+    val hasPoint = ranked != null
+    // Filters first, then the text (#52); both only remove rows from the ordered list.
+    val matching: (List<SearchRow>, SearchFilters) -> List<SearchRow> = { candidates, appliedFilters ->
+        candidates.filteredBy(appliedFilters, hasPoint).filter { row ->
+            searchable(row.profile.name + " " + row.profile.services.joinToString(" ")).contains(searchable(search.trim()))
+        }
     }
+    val visible = matching(rows, filters)
+    // «Ver N profesionales»: another trade is only countable here when the list holds every trade.
+    val countFor: (String?, SearchFilters) -> Int? = { draftTrade, draftFilters ->
+        when {
+            draftTrade == trade -> matching(rows, draftFilters).size
+            trade == null -> matching(rows.filter { draftTrade in it.profile.trades }, draftFilters).size
+            else -> null
+        }
+    }
+    // As the sheet's «Restablecer»: trade, distance and rating go back to their defaults; the text stays.
+    val resetFilters: () -> Unit = { trade = null; filters = SearchFilters() }
     val catalogueWaiting = loading || completedRequest != request
     // The concejo the search is about, for «No suele trabajar en …» on the profile.
     val searchConcejo = ranked?.concejo?.let { Coverage(it.ineCode, it.name) }
@@ -152,6 +171,7 @@ fun CatalogueScreen(
                     Modifier.horizontalScroll(tradeScroll).padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    FiltersButton(filters.activeCount(trade, hasPoint)) { filtersOpen = true }
                     FilterChip(selected = trade == null, onClick = { trade = null },
                         label = { Text(stringResource(R.string.trade_all)) })
                     catalogueTrades.forEach { key ->
@@ -159,6 +179,8 @@ fun CatalogueScreen(
                             modifier = Modifier.testTag("trade_$key"), label = { Text(stringResource(tradeLabel(key))) })
                     }
                 }
+                if (filtersOpen) FiltersSheet(trade, filters, hasPoint, countFor,
+                    onApply = { newTrade, newFilters -> trade = newTrade; filters = newFilters; filtersOpen = false }, onDismiss = { filtersOpen = false })
                 LazyColumn(
                     state = listState, modifier = Modifier.testTag("catalogue_list"),
                     contentPadding = PaddingValues(TeloTheme.spacing.screen),
@@ -173,6 +195,10 @@ fun CatalogueScreen(
                                 Text(stringResource(R.string.catalogue_error), Modifier.testTag("catalogue_error"))
                                 Button(onClick = { retry++ }, Modifier.testTag("catalogue_retry")) { Text(stringResource(R.string.retry)) }
                             }
+                        }
+                        // Never an empty list that looks like there are no professionals (#52).
+                        visible.isEmpty() && filters.activeCount(null, hasPoint) > 0 -> item(key = "filters_empty") {
+                            FiltersEmpty(onReset = resetFilters)
                         }
                         visible.isEmpty() -> item {
                             Column(Modifier.padding(8.dp)) {
@@ -190,7 +216,7 @@ fun CatalogueScreen(
                                 Text(pluralStringResource(R.plurals.catalogue_results, visible.size, visible.size),
                                     style = MaterialTheme.typography.labelLarge)
                             }
-                            if (showMap && ranked != null) item(key = "map") { ProximityMap(proximity, ranked) { selected = it } }
+                            if (showMap && ranked != null) item(key = "map") { ProximityMap(proximity, ranked, visible) { selected = it } }
                             items(visible, key = { it.profile.id }) { row ->
                                 val highlighted = if (ranked != null) row.profile.id in ranked.featured else row.profile.featured
                                 ProfileCard(row, highlighted, ranked?.concejo?.name, covers) { selected = row.profile.id }
@@ -222,7 +248,8 @@ fun CatalogueScreen(
 
 /**
  * One result: «Perfil destacado» (2026-11-24) stands out with the theme's secondary container and primary
- * outline and always says why; only a «Destacado» of the searched concejo's zone is [highlighted] (ADR 0001).
+ * outline, rounded corners, and always says why; other cards are square (#51). Only a «Destacado» of the
+ * searched concejo's zone is [highlighted] (ADR 0001).
  * With a distance order the card shows the rounded band and, out of zone, «No suele trabajar en …».
  */
 @Composable
@@ -233,7 +260,7 @@ private fun ProfileCard(row: SearchRow, highlighted: Boolean, concejo: String?, 
         colors = CardDefaults.cardColors(containerColor =
             if (highlighted) MaterialTheme.colorScheme.secondaryContainer else TeloTheme.extended.card),
         border = if (highlighted) BorderStroke(1.5.dp, TeloTheme.extended.featuredBorder) else null,
-        shape = MaterialTheme.shapes.large,
+        shape = if (highlighted) MaterialTheme.shapes.large else RectangleShape,
     ) {
         Row(Modifier.fillMaxWidth().padding(TeloTheme.spacing.medium), horizontalArrangement = Arrangement.spacedBy(TeloTheme.spacing.medium)) {
             ProfileCover(profile.trades.firstOrNull().orEmpty(), profile.coverPath, covers,
@@ -260,7 +287,7 @@ private fun ProfileCard(row: SearchRow, highlighted: Boolean, concejo: String?, 
                     Text(stringResource(R.string.catalogue_reference, priceText(price)),
                         color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
                 }
-                Rating(profile)
+                ProfileRating(profile.rating, profile.reviewCount, compact = true, Modifier.testTag("rating_${profile.id}"))
             }
         }
     }
@@ -306,7 +333,7 @@ private fun ProfileDetail(
                             Text(profile.name, style = MaterialTheme.typography.headlineMedium)
                             Text(profile.trades.map { stringResource(tradeLabel(it)) }.joinToString(),
                                 color = MaterialTheme.colorScheme.primary)
-                            Rating(profile)
+                            ProfileRating(profile.rating, profile.reviewCount, compact = false, Modifier.testTag("profile_rating"))
                             outsideZoneOf?.let { concejo ->
                                 Text(stringResource(R.string.profile_out_of_zone, concejo.name),
                                     Modifier.testTag("profile_out_of_zone"), style = MaterialTheme.typography.bodyMedium,
@@ -404,13 +431,6 @@ private fun SelectionContainerCompat(text: String) {
 @Composable
 private fun Section(label: Int, modifier: Modifier = Modifier) {
     Text(stringResource(label), modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
-}
-
-@Composable
-private fun Rating(profile: PublicProfile) {
-    Text(if (profile.rating == null) stringResource(R.string.catalogue_no_reviews)
-        else pluralStringResource(R.plurals.catalogue_rating, profile.reviewCount, profile.rating, profile.reviewCount),
-        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable
