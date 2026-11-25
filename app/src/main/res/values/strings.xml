@@ -342,7 +342,7 @@
     <string name="contact_phone_intro">Los profesionales con los que confirmes una cita usarán este número para contactarte.</string>
     <string name="contact_phone_hint">9 dígitos si es español, o con + y el prefijo de tu país</string>
     <string name="contact_phone_save">Guardar teléfono</string>
-    <string name="contact_phone_invalid">Escribe un móvil español de 9 dígitos o un número con + y el prefijo de su país.</string>
+    <string name="contact_phone_invalid">Escribe un número español de 9 dígitos o un número con + y el prefijo de su país.</string>
     <string name="contact_phone_access">Tu sesión ha caducado. Vuelve a entrar.</string>
     <string name="contact_phone_network">No se pudo guardar el teléfono. Comprueba la conexión y vuelve a intentarlo.</string>
     <string name="contact_phone_change">Cambiar teléfono</string>
