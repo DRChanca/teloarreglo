@@ -39,6 +39,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsOff
 import es.teloarreglo.identity.AccessStage
 import es.teloarreglo.identity.AccessState
 import es.teloarreglo.identity.Account
@@ -69,12 +72,23 @@ class SearchUiTest {
 
     private fun show(
         search: ProfessionalSearch, granted: Boolean = true, located: Located = oviedo,
-        home: HomeAddress? = null, askIfAway: (GeoPoint) -> Boolean = { false },
+        home: HomeAddress? = null, askIfAway: (GeoPoint) -> Boolean = { false }, showMap: Boolean = false,
     ) {
         compose.setContent {
-            CatalogueScreen(catalogue, proximitySource = ProximitySource(search,
+            CatalogueScreen(catalogue, showMap = showMap, proximitySource = ProximitySource(search,
                 ensurePermission = { permissionAsks++; granted }, locate = { located },
                 concejos = concejos, map = MapAvailability.NO_KEY, home = home, askIfAway = askIfAway))
+        }
+    }
+
+    private var mapChosen by mutableStateOf(false)
+
+    /** The search part of Ajustes (#61), on its own: where the search starts and the map option. */
+    private fun showSettings(search: ProfessionalSearch, home: HomeAddress? = null) {
+        compose.setContent {
+            val source = ProximitySource(search, ensurePermission = { permissionAsks++; true }, locate = { oviedo },
+                concejos = concejos, map = MapAvailability.NO_KEY, home = home)
+            rememberProximity(source, catalogue, null)?.let { SearchSettings(it, mapChosen) { on -> mapChosen = on } }
         }
     }
 
@@ -101,7 +115,9 @@ class SearchUiTest {
     @Test fun withAHomeTheListIsOrderedByDistanceWithoutAskingForGps() {
         show(FakeSearch(SearchOutcome.Found(oviedoConcejo, listOf(NearbyResult("near", 500), NearbyResult("far", 12500)))), home = home)
         waitFor("nearby_distance_near")
-        compose.onNodeWithTag("nearby_origin_text").assertTextContains("Oviedo", substring = true)
+        // Where the search starts is shown and changed in Ajustes (#61), not above the results.
+        none("nearby_origin_text")
+        none("map_toggle_map")
         scrollTo("profile_far")
         compose.onNodeWithTag("nearby_distance_far", useUnmergedTree = true).assertIsDisplayed()
         assertEquals(0, permissionAsks)
@@ -226,9 +242,9 @@ class SearchUiTest {
     }
 
     @Test fun mapViewWithoutAMapExplainsItAndKeepsTheSameList() {
-        show(FakeSearch(SearchOutcome.Found(oviedoConcejo, listOf(NearbyResult("near", 500), NearbyResult("far", 12500)))), home = home)
-        waitFor("map_toggle_map")
-        compose.onNodeWithTag("map_toggle_map").performClick()
+        show(FakeSearch(SearchOutcome.Found(oviedoConcejo, listOf(NearbyResult("near", 500), NearbyResult("far", 12500)))),
+            home = home, showMap = true)
+        waitFor("nearby_distance_near")
         scrollTo("map_unavailable")
         compose.onNodeWithTag("map_unavailable").assertIsDisplayed()
         scrollTo("map_coverage")
@@ -295,13 +311,23 @@ class SearchUiTest {
         none("search_away")
     }
 
-    @Test fun otherWaysAreFoldedUntilTheUserAsksToChange() {
-        show(FakeSearch(SearchOutcome.Found(oviedoConcejo, listOf(NearbyResult("near", 500)))), home = home)
-        waitFor("nearby_distance_near")
+    @Test fun ajustesSaysWhereTheSearchStartsAndFoldsTheOtherWaysUntilAsked() {
+        showSettings(FakeSearch(SearchOutcome.Found(oviedoConcejo, listOf(NearbyResult("near", 500)))), home = home)
+        compose.waitUntil(5_000) {
+            compose.onAllNodes(hasTestTag("nearby_origin_text") and hasText("Oviedo", substring = true))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
         none("nearby_locate")
         compose.onNodeWithTag("nearby_other_ways").performClick()
-        scrollTo("nearby_locate")
         compose.onNodeWithTag("nearby_locate").assertIsDisplayed()
+        assertEquals(0, permissionAsks)
+    }
+
+    @Test fun ajustesTurnsTheMapOnAndOff() {
+        showSettings(FakeSearch(SearchOutcome.Found(oviedoConcejo, listOf(NearbyResult("near", 500)))), home = home)
+        compose.onNodeWithTag("search_show_map").assertIsOff().performClick()
+        compose.runOnIdle { assertEquals(true, mapChosen) }
+        compose.onNodeWithTag("search_show_map").assertIsOn()
     }
 
     /** The app's coroutines in these tests (#59); cancelled after each test. */

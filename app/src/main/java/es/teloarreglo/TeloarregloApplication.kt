@@ -139,6 +139,9 @@ class TeloarregloApplication : Application() {
     /** The search of the app (#59), preloaded from home at start; null without configuration. */
     val searchSession: AppSearchSession? by lazy { search?.let { AppSearchSession(it, catalogue, applicationScope) } }
 
+    /** Search options from Ajustes (#61), such as showing the map with the results. */
+    val searchPreferences: SearchPreferences by lazy { SearchPreferences(getSharedPreferences("search", MODE_PRIVATE)) }
+
     /** The person's own name (#40), asked once if the account has none; null without configuration. */
     val accountNameSession: es.teloarreglo.identity.AccountNameSession? by lazy {
         client?.let { es.teloarreglo.identity.AccountNameSession(es.teloarreglo.identity.SupabaseAccountNames(it)) }

@@ -173,8 +173,6 @@
     <string name="subscription_load_error">Impossible de consulter l’abonnement. Vérifiez la connexion.</string>
     <string name="subscription_error_access">Vous n’avez pas l’autorisation ou votre session a expiré. Rien n’a changé.</string>
     <string name="subscription_error_unconfirmed">Le changement n’a pas pu être confirmé. Le dernier état confirmé reste affiché ; réessayez.</string>
-    <string name="map_toggle_list">Liste</string>
-    <string name="map_toggle_map">Carte</string>
     <string name="map_unavailable_key">La carte n\'est pas configurée dans cette version. Utilisez la liste : la recherche et le choix manuel fonctionnent pareil.</string>
     <string name="map_unavailable_services">Cet appareil ne peut pas afficher Google Maps. Utilisez la liste : la recherche et le choix manuel fonctionnent pareil.</string>
     <string name="map_not_loaded">La carte ne se charge pas. La liste reste disponible.</string>
@@ -586,4 +584,6 @@
     <string name="chat_search_none">Aucun résultat</string>
     <string name="chat_search_previous">Résultat précédent</string>
     <string name="chat_search_next">Résultat suivant</string>
+    <string name="search_settings_title">Recherche</string>
+    <string name="search_show_map">Afficher la carte avec les résultats</string>
 </resources>

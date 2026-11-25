@@ -173,8 +173,6 @@
     <string name="subscription_load_error">No se pudo consultar la suscripción. Comprueba la conexión.</string>
     <string name="subscription_error_access">No tienes permiso o tu sesión ha caducado. No ha cambiado nada.</string>
     <string name="subscription_error_unconfirmed">No se pudo confirmar el cambio. Sigue mostrándose el último estado confirmado; reintenta.</string>
-    <string name="map_toggle_list">Lista</string>
-    <string name="map_toggle_map">Mapa</string>
     <string name="map_unavailable_key">El mapa no está configurado en esta versión. Usa la lista: la búsqueda y la elección manual funcionan igual.</string>
     <string name="map_unavailable_services">Este dispositivo no puede mostrar Google Maps. Usa la lista: la búsqueda y la elección manual funcionan igual.</string>
     <string name="map_not_loaded">El mapa no termina de cargar. La lista sigue disponible.</string>
@@ -586,4 +584,6 @@
     <string name="chat_search_none">Sin resultados</string>
     <string name="chat_search_previous">Coincidencia anterior</string>
     <string name="chat_search_next">Coincidencia siguiente</string>
+    <string name="search_settings_title">Búsqueda</string>
+    <string name="search_show_map">Mostrar el mapa con los resultados</string>
 </resources>

@@ -173,8 +173,6 @@
     <string name="subscription_load_error">Das Abo konnte nicht abgerufen werden. Prüfen Sie die Verbindung.</string>
     <string name="subscription_error_access">Keine Berechtigung oder Ihre Sitzung ist abgelaufen. Es hat sich nichts geändert.</string>
     <string name="subscription_error_unconfirmed">Die Änderung konnte nicht bestätigt werden. Der zuletzt bestätigte Stand wird weiter angezeigt; erneut versuchen.</string>
-    <string name="map_toggle_list">Liste</string>
-    <string name="map_toggle_map">Karte</string>
     <string name="map_unavailable_key">Die Karte ist in dieser Version nicht eingerichtet. Nutze die Liste: Suche und manuelle Auswahl funktionieren genauso.</string>
     <string name="map_unavailable_services">Dieses Gerät kann Google Maps nicht anzeigen. Nutze die Liste: Suche und manuelle Auswahl funktionieren genauso.</string>
     <string name="map_not_loaded">Die Karte lädt nicht. Die Liste ist weiterhin verfügbar.</string>
@@ -585,4 +583,6 @@
     <string name="chat_search_none">Keine Ergebnisse</string>
     <string name="chat_search_previous">Vorheriger Treffer</string>
     <string name="chat_search_next">Nächster Treffer</string>
+    <string name="search_settings_title">Suche</string>
+    <string name="search_show_map">Karte bei den Ergebnissen anzeigen</string>
 </resources>

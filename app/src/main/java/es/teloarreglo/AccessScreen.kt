@@ -27,6 +27,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -88,6 +89,8 @@ fun AccessScreen(
     homeSlot: (@Composable () -> Unit)? = null,
     /** The person's name and its change action (#40), shown to a connected account. */
     nameSlot: (@Composable () -> Unit)? = null,
+    /** Where the search starts and the list/map view (#61), among the preferences. */
+    searchSlot: (@Composable () -> Unit)? = null,
     onEditProfile: (() -> Unit)? = null,
 ) {
     val state by identity.state.collectAsStateWithLifecycle()
@@ -405,6 +408,10 @@ fun AccessScreen(
                         Text(stringResource(R.string.preferences_title), style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.semantics { heading() })
                         LanguageMenu(onLanguageChange)
+                        searchSlot?.let { slot ->
+                            HorizontalDivider(Modifier.padding(vertical = TeloTheme.spacing.small))
+                            slot()
+                        }
                     }
                 }
                 // Signing out closes the account, after everything else it holds (#47).
