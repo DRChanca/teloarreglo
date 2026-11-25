@@ -36,6 +36,11 @@ const val EXTRA_OPEN_NOTICES = "es.teloarreglo.OPEN_NOTICES"
 const val EXTRA_OPEN_CONVERSATION = "es.teloarreglo.OPEN_CONVERSATION"
 /** Intent extra with the notice of that push, marked read when it is opened. */
 const val EXTRA_NOTICE_ID = "es.teloarreglo.NOTICE_ID"
+/**
+ * Intent extra with the appointment whose client «Llamar» (#81) calls. Only identifiers travel: the number is read
+ * when the action is handled, never put in the notice or the intent.
+ */
+const val EXTRA_CALL_APPOINTMENT = "es.teloarreglo.CALL_APPOINTMENT"
 private const val CHANNEL = "notices"
 
 /**
@@ -137,14 +142,21 @@ class TeloMessagingService : FirebaseMessagingService() {
         // One request code per notification: FLAG_UPDATE_CURRENT would otherwise rewrite the extras of earlier ones.
         val open = PendingIntent.getActivity(this, (conversation ?: data["notice_id"]).hashCode(), target,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        val notification = NotificationCompat.Builder(this, CHANNEL)
+        val builder = NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_notice)
             .setContentTitle(getString(topicText(topicOf(data["kind"].orEmpty(), data["event"]?.ifEmpty { null }))))
             .setContentText(getString(R.string.notices_open_app))
             .setAutoCancel(true)
             .setContentIntent(open)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-            .build()
+        // «Llamar» (#81): opens the app, which reads the number now and opens the dialer, or the appointment without one.
+        pushCall(data)?.let { call ->
+            val dial = Intent(target).putExtra(EXTRA_CALL_APPOINTMENT, call.appointmentId)
+            val action = PendingIntent.getActivity(this, ("call:" + call.appointmentId).hashCode(), dial,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            builder.addAction(android.R.drawable.sym_action_call, getString(R.string.call_button), action)
+        }
+        val notification = builder.build()
         // Tag = conversation or notice: a retried push replaces the same notification instead of adding another.
         val tag = conversation ?: data["notice_id"]
         try { manager.notify(tag, 0, notification) } catch (_: SecurityException) { }

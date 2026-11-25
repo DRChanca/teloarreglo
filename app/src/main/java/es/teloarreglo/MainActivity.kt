@@ -61,12 +61,17 @@ class MainActivity : AppCompatActivity() {
     private val openNotices = mutableStateOf(false)
     /** Conversation and notice of a push that leads straight to an appointment (#77), until it is opened. */
     private val openFromPushConversation = mutableStateOf<Pair<String, String?>?>(null)
+    /** Appointment whose client «Llamar» of the call notice (#81) calls, handled with [openFromPushConversation]. */
+    private val callFromPush = mutableStateOf<String?>(null)
 
     private fun readPushTarget(intent: Intent?) {
         if (intent?.getBooleanExtra(es.teloarreglo.notices.EXTRA_OPEN_NOTICES, false) != true) return
         openNotices.value = true
         openFromPushConversation.value = intent.getStringExtra(es.teloarreglo.notices.EXTRA_OPEN_CONVERSATION)
             ?.let { it to intent.getStringExtra(es.teloarreglo.notices.EXTRA_NOTICE_ID) }
+        callFromPush.value = intent.getStringExtra(es.teloarreglo.notices.EXTRA_CALL_APPOINTMENT)
+        // Handled once: recreating the activity must not open the dialer again.
+        intent.removeExtra(es.teloarreglo.notices.EXTRA_CALL_APPOINTMENT)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -121,11 +126,21 @@ class MainActivity : AppCompatActivity() {
                 val (id, notice) = pushConversation ?: return@LaunchedEffect
                 if (connectedUser == null) return@LaunchedEffect
                 openFromPushConversation.value = null
+                val call = callFromPush.value
+                callFromPush.value = null
                 notice?.let { app.applicationScope.launch {
                     try { app.notices?.markRead(listOf(it)) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
                 } }
+                // «Llamar» does not cancel the notification by itself (only tapping its body does).
+                if (call != null) getSystemService(android.app.NotificationManager::class.java).cancel(notice, 0)
                 es.teloarreglo.notices.openNoticeConversation(id, { app.chat?.conversations() }, { it.id }) {
                     nav = Navigation().openFromNotice(it)
+                }
+                // «Llamar» (#81): the number is read now; with it the dialer opens over the appointment, without it
+                // the appointment stays open.
+                if (call != null) {
+                    val action = es.teloarreglo.notices.callNoticeAction(id, call) { c, a -> app.appointments?.contactPhone(c, a) }
+                    if (action is es.teloarreglo.notices.CallNoticeAction.Dial) openDialUri(this@MainActivity, action.uri)
                 }
             }
             LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
