@@ -68,7 +68,7 @@ select is((select description || ' ' || (coverage->0->>'code') from public.catal
 -- Administration keeps the trail.
 select is(jsonb_array_length(public.admin_work_zone_changes((select value#>>'{}' from t47 where name='profile')::uuid)),2,
  'one entry per added or removed concejo');
-select is(public.admin_work_zone_changes((select value#>>'{}' from t47 where name='profile')::uuid)->0
+select is((public.admin_work_zone_changes((select value#>>'{}' from t47 where name='profile')::uuid)->0)
  - 'changed_at','{"ine_code":"33991","name":"Zona Uno","added":false}'::jsonb,'latest first: Zona Uno removed');
 select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000004701","role":"authenticated"}',true);
 select throws_ok($$select public.admin_work_zone_changes((select value#>>'{}' from t47 where name='profile')::uuid)$$,
