@@ -23,6 +23,7 @@ import es.teloarreglo.appointments.*
 import es.teloarreglo.catalogue.Coverage
 import es.teloarreglo.catalogue.WorkZones
 import es.teloarreglo.chat.Conversation
+import es.teloarreglo.chat.counterpartName
 import es.teloarreglo.search.Located
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -62,6 +63,8 @@ fun AppointmentsPanel(
     reviews: Reviews? = null,
     /** Work zone notices (ADR 0001): informative only; null hides them. */
     zones: WorkZones? = null,
+    /** Ventana de llegada on the client's confirmed appointment (#84); null hides it. */
+    arrivals: es.teloarreglo.appointments.Arrivals? = null,
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var list by remember(conversation.id) { mutableStateOf<List<Appointment>?>(null) }
@@ -151,7 +154,9 @@ fun AppointmentsPanel(
                                 onChange = { sheet = "change:${appointment.id}" },
                                 onCorrection = { sheet = "correction:${appointment.id}" }, incidentTools = incidentTools,
                                 reviews = reviews, reviewState = reviewStates[appointment.id],
-                                onChooseMessages = chooseMessages, zoneNotice = zoneNotice)
+                                onChooseMessages = chooseMessages, zoneNotice = zoneNotice,
+                                arrivalWindow = arrivals?.let { a -> { ArrivalWindowSection(it, it.professionalId == accountId, a, pins.mapsReady) } },
+                                clientName = conversation.counterpartName(accountId))
                         }
                     }
                 }
@@ -269,6 +274,9 @@ private fun AppointmentDetails(
     reviews: Reviews? = null, reviewState: AppointmentReviewState? = null,
     onChooseMessages: ((String) -> Unit)? = null,
     zoneNotice: (@Composable (Appointment) -> Unit)? = null,
+    arrivalWindow: (@Composable (Appointment) -> Unit)? = null,
+    /** For the professional's «Compartir mi ubicación» (#85). */
+    clientName: String? = null,
 ) {
     val format = dateTimeFormat()
     val professional = appointment.professionalId == accountId
@@ -292,6 +300,7 @@ private fun AppointmentDetails(
             NoticeBanner(appointment, accountId)
             zoneNotice?.invoke(appointment)
             ReservationLine(appointment)
+            arrivalWindow?.invoke(appointment)
             val pending = appointment.currentProposal
             if (professional && appointment.stage == AppointmentStage.PENDING) Button(onClick = onPropose, modifier = Modifier.testTag("appointment_propose")) {
                 Text(stringResource(if (appointment.proposals.isEmpty()) R.string.appointment_propose else R.string.appointment_propose_new))
@@ -323,6 +332,7 @@ private fun AppointmentDetails(
             // Changes are open while confirmed and during the job (price, scope, duration only once started).
             if (appointment.canProposeChange(accountId)) ChangeSection(appointment, accountId, appointments, scope, onChange, onCorrection, onChanged)
             StartCancelSection(appointment, accountId, appointments, scope, onChanged)
+            ArrivalSharingSection(appointment, accountId, clientName)
             CompletionSection(appointment, accountId, appointments, scope, onChanged)
             IncidentSection(appointment, accountId, incidentTools, scope, onChanged, onChooseMessages)
             ReviewSection(appointment, accountId, reviewState, reviews, scope, onChanged)
@@ -769,6 +779,7 @@ private fun AppointmentLocationBlock(appointment: Appointment, professional: Boo
         null -> Text(stringResource(R.string.area_loading), style = MaterialTheme.typography.bodySmall)
         is AppointmentLocation.Exact -> {
             Text(stringResource(R.string.appointment_address_label, location.address), style = MaterialTheme.typography.bodySmall)
+            appointment.callPhone(professional)?.let { CallButton(it) }
             if (!professional && appointment.stage == AppointmentStage.PENDING) Text(
                 stringResource(R.string.area_client_notice, appointment.place?.areaRadiusMeters ?: 400),
                 style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("area_client_notice"))

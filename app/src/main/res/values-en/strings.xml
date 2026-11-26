@@ -200,6 +200,9 @@
     <string name="map_directions">Directions with Google Maps</string>
     <string name="map_open_appointment">Get directions</string>
     <string name="map_no_app">No app can open Google Maps. Install Google Maps or a browser.</string>
+    <string name="call_button">Call</string>
+    <string name="call_description">Call %1$s</string>
+    <string name="call_no_app">No phone app is available to make the call.</string>
     <string name="map_pick_on_map">Choose the point on the map</string>
     <string name="map_pick_confirm">Use this point</string>
     <string name="map_pin_not_address">The point does not replace the address: type the street and number.</string>
@@ -334,6 +337,17 @@
     <string name="account_name_invalid">Enter your name, 1 to 80 characters.</string>
     <string name="account_name_access">Your session has expired. Sign in again.</string>
     <string name="account_name_network">The name could not be saved. Check your connection and try again.</string>
+    <string name="contact_phone_label">Contact phone</string>
+    <string name="contact_phone_title">What number can we call you on?</string>
+    <string name="contact_phone_intro">The professionals you confirm an appointment with will use this number to contact you.</string>
+    <string name="contact_phone_hint">9 digits if Spanish, or with + and your country code</string>
+    <string name="contact_phone_save">Save phone</string>
+    <string name="contact_phone_invalid">Enter a 9-digit Spanish number or a number with + and its country code.</string>
+    <string name="contact_phone_access">Your session has expired. Sign in again.</string>
+    <string name="contact_phone_network">The phone could not be saved. Check your connection and try again.</string>
+    <string name="contact_phone_change">Change phone</string>
+    <string name="contact_phone_none">You have not entered your contact phone yet.</string>
+    <string name="contact_phone_unknown">The phone could not be loaded. You can still change it.</string>
     <string name="payment_integrated">Pay %1$s and confirm</string>
     <string name="payment_direct">I will pay %1$s directly to the professional</string>
     <string name="payment_retry">Retry the confirmation (%1$s)</string>
@@ -525,10 +539,12 @@
     <string name="notices_topic_confirmed">Appointment confirmed</string>
     <string name="notices_topic_change">Appointment change awaiting your answer</string>
     <string name="notices_topic_change_decided">Answer to an appointment change</string>
+    <string name="notices_topic_professional_near">Your professional is nearby</string>
     <string name="notices_topic_started">Work started</string>
     <string name="notices_topic_cancelled">Appointment cancelled</string>
     <string name="notices_topic_done">Work marked as done: confirm it or report a problem</string>
     <string name="notices_topic_reminder">Reminder: confirm the work was done or report a problem</string>
+    <string name="notices_topic_call_client">Your appointment starts soon: call the client</string>
     <string name="notices_topic_completed">Appointment completed</string>
     <string name="notices_topic_incident">Update on a problem report</string>
     <string name="notices_topic_appointment">Appointment update</string>
@@ -585,4 +601,19 @@
     <string name="chat_search_next">Next match</string>
     <string name="search_settings_title">Search</string>
     <string name="search_show_map">Show the map with the results</string>
+    <!-- Ventana de llegada: el profesional comparte su ubicación (#85). -->
+    <string name="arrival_channel">Arrival location</string>
+    <string name="arrival_sharing_with">Sharing your location with %1$s</string>
+    <string name="arrival_will_share">You will share your location with %1$s during the arrival window</string>
+    <string name="arrival_notification_text">Only during the appointment\'s arrival window</string>
+    <string name="arrival_stop">Stop sharing</string>
+    <string name="arrival_client_fallback">your client</string>
+    <string name="arrival_offer">You can share your location with your client during the hour before the appointment. It is optional.</string>
+    <string name="arrival_share">Share my location</string>
+    <string name="arrival_explain_title">Share your location?</string>
+    <string name="arrival_explain">Your client will see where you are coming from only during the hour before the appointment (half an hour if you have another appointment started). Meanwhile you will see a fixed notification and can stop sharing at any time. For it to start even with the app closed, choose “Allow all the time” for location.</string>
+    <string name="arrival_not_now">Not now</string>
+    <string name="arrival_continue">Continue</string>
+    <string name="arrival_denied">Without location permission nothing is shared. The appointment stays the same.</string>
+    <string name="arrival_no_background">Without “Allow all the time” location, it is only shared if you open this appointment during the arrival window.</string>
 </resources>

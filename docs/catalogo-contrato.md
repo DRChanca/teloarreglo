@@ -49,6 +49,28 @@ explica. No requiere almacenamiento externo, licencias de terceros ni URLs
 privadas. `rating=null, review_count=0` significa sin valoraciones; no se
 inventan reseñas para rellenar el catálogo.
 
+### Tiempo de respuesta (`response_band`, #76)
+
+Cada fila de `catalogue(...)` lleva `response_band`, el **tiempo de respuesta**
+del profesional como tramo: `instant` (≤ 5 min), `under_30m` (≤ 30 min),
+`under_1h` (≤ 1 h), `under_3h` (≤ 3 h), `same_day` (≤ 24 h) u `over_day`; o
+`null` sin dato. Lo ven igual visitantes sin sesión, cuentas y el propietario.
+
+Lo calcula Postgres (`private.response_band`, única regla; la búsqueda la
+reutiliza) con las horas de servidor del chat. Cuentan solo las conversaciones
+del perfil cuyo primer mensaje es del cliente; la espera va de ese mensaje al
+primer mensaje del profesional, con tope de 24 h (una respuesta de 30 h cuenta
+como 24 h y da `same_day`). Sin respuesta, la conversación no cuenta hasta que
+su primer mensaje tiene 24 h; desde entonces pesa justo por encima del tope, así
+que una mediana que cae en conversaciones sin respuesta da `over_day`. Se toman
+las diez más recientes con dato y se resume con la mediana; los tramos están
+cerrados por arriba (5 min exactos es `instant`).
+
+La respuesta solo contiene el tramo, nunca horas de mensajes ni identidades de
+clientes. La app lo lee como campo opcional (un servidor sin él sigue
+funcionando) y muestra su texto junto a la valoración; un valor nulo o
+desconocido no muestra nada.
+
 ## Preparación explícita, sin reinicios
 
 **Primero revisar la migración y coordinarla con los tickets consumidores**

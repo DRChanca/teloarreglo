@@ -200,6 +200,9 @@
     <string name="map_directions">Cómo llegar con Google Maps</string>
     <string name="map_open_appointment">Cómo llegar</string>
     <string name="map_no_app">No hay ninguna aplicación para abrir Google Maps. Instala Google Maps o un navegador.</string>
+    <string name="call_button">Llamar</string>
+    <string name="call_description">Llamar al %1$s</string>
+    <string name="call_no_app">No hay ninguna aplicación de teléfono para llamar.</string>
     <string name="map_pick_on_map">Elegir el punto en el mapa</string>
     <string name="map_pick_confirm">Usar este punto</string>
     <string name="map_pin_not_address">El punto no sustituye la dirección: escribe la calle y el número.</string>
@@ -334,6 +337,17 @@
     <string name="account_name_invalid">Escribe tu nombre, de 1 a 80 caracteres.</string>
     <string name="account_name_access">Tu sesión ha caducado. Vuelve a entrar.</string>
     <string name="account_name_network">No se pudo guardar el nombre. Comprueba la conexión y vuelve a intentarlo.</string>
+    <string name="contact_phone_label">Teléfono de contacto</string>
+    <string name="contact_phone_title">¿En qué número podemos llamarte?</string>
+    <string name="contact_phone_intro">Los profesionales con los que confirmes una cita usarán este número para contactarte.</string>
+    <string name="contact_phone_hint">9 dígitos si es español, o con + y el prefijo de tu país</string>
+    <string name="contact_phone_save">Guardar teléfono</string>
+    <string name="contact_phone_invalid">Escribe un número español de 9 dígitos o un número con + y el prefijo de su país.</string>
+    <string name="contact_phone_access">Tu sesión ha caducado. Vuelve a entrar.</string>
+    <string name="contact_phone_network">No se pudo guardar el teléfono. Comprueba la conexión y vuelve a intentarlo.</string>
+    <string name="contact_phone_change">Cambiar teléfono</string>
+    <string name="contact_phone_none">Aún no has dado tu teléfono de contacto.</string>
+    <string name="contact_phone_unknown">No se pudo cargar el teléfono. Puedes cambiarlo igualmente.</string>
     <string name="payment_integrated">Pagar %1$s y confirmar</string>
     <string name="payment_direct">Pagaré %1$s directamente al profesional</string>
     <string name="payment_retry">Reintentar la confirmación (%1$s)</string>
@@ -525,10 +539,12 @@
     <string name="notices_topic_confirmed">Cita confirmada</string>
     <string name="notices_topic_change">Cambio de cita pendiente de tu respuesta</string>
     <string name="notices_topic_change_decided">Respuesta a un cambio de cita</string>
+    <string name="notices_topic_professional_near">Tu profesional está cerca</string>
     <string name="notices_topic_started">Trabajo comenzado</string>
     <string name="notices_topic_cancelled">Cita cancelada</string>
     <string name="notices_topic_done">Trabajo marcado como realizado: confirma o comunica una incidencia</string>
     <string name="notices_topic_reminder">Recordatorio: confirma el trabajo realizado o comunica una incidencia</string>
+    <string name="notices_topic_call_client">Tu cita empieza pronto: llama al cliente</string>
     <string name="notices_topic_completed">Cita finalizada</string>
     <string name="notices_topic_incident">Novedad en una incidencia</string>
     <string name="notices_topic_appointment">Novedad en una cita</string>
@@ -586,4 +602,19 @@
     <string name="chat_search_next">Coincidencia siguiente</string>
     <string name="search_settings_title">Búsqueda</string>
     <string name="search_show_map">Mostrar el mapa con los resultados</string>
+    <!-- Ventana de llegada: el profesional comparte su ubicación (#85). -->
+    <string name="arrival_channel">Ubicación de llegada</string>
+    <string name="arrival_sharing_with">Compartiendo tu ubicación con %1$s</string>
+    <string name="arrival_will_share">Compartirás tu ubicación con %1$s durante la ventana de llegada</string>
+    <string name="arrival_notification_text">Solo durante la ventana de llegada de la cita</string>
+    <string name="arrival_stop">Dejar de compartir</string>
+    <string name="arrival_client_fallback">tu cliente</string>
+    <string name="arrival_offer">Puedes compartir tu ubicación con tu cliente durante la hora previa a la cita. Es voluntario.</string>
+    <string name="arrival_share">Compartir mi ubicación</string>
+    <string name="arrival_explain_title">¿Compartir tu ubicación?</string>
+    <string name="arrival_explain">Tu cliente verá por dónde vienes solo durante la hora previa a la cita (media hora si tienes otra cita comenzada). Mientras, verás una notificación fija y podrás dejar de compartir cuando quieras. Para que empiece aunque la app esté cerrada, elige «Permitir todo el tiempo» en la ubicación.</string>
+    <string name="arrival_not_now">Ahora no</string>
+    <string name="arrival_continue">Continuar</string>
+    <string name="arrival_denied">Sin permiso de ubicación no se comparte nada. La cita sigue igual.</string>
+    <string name="arrival_no_background">Sin la ubicación «Permitir todo el tiempo», solo se comparte si abres esta cita durante la ventana de llegada.</string>
 </resources>

@@ -17,7 +17,7 @@ el contrato vigente; la versión con cobertura y anillos H3 se conserva en «His
 | `public.concejos(ine_code, name, boundary)` | visitantes leen `ine_code` y `name` | Límites oficiales del IGN. La geometría no es legible directamente. |
 | `resolve_concejo(p_lat, p_lng, p_tolerance_m = 250)` | visitantes y cuentas | Concejos que contienen o rozan el punto, `distance_m` 0 = dentro. Más de uno = frontera o posición incierta: confirmar. |
 | `private.professional_locations(profile_id, location, h3_cell)` | nadie fuera del servidor | Punto registrado del profesional y su celda H3 (resolución 6; la búsqueda ya no la usa). |
-| `search_all_candidates(p_ine_code, p_trade)` | solo `service_role` | Todos los perfiles aprobados del oficio (`null` = cualquiera) con ubicación registrada: ubicación exacta, `in_zone` (su zona incluye el concejo) y `featured`. |
+| `search_all_candidates(p_ine_code, p_trade)` | solo `service_role` | Todos los perfiles aprobados del oficio (`null` = cualquiera) con ubicación registrada: ubicación exacta, `in_zone` (su zona incluye el concejo), `featured` y `response_band` (mismo valor que `catalogue`, #80). |
 | Edge Function `search-professionals` | app (clave publicable) | Búsqueda completa; respuesta sin coordenadas ni distancias exactas. |
 
 `search_candidates` / `count_candidates` / `featured_candidates` (filtradas por cobertura) siguen en la base,
@@ -30,7 +30,7 @@ POST /functions/v1/search-professionals
 { lat, lng, trade?, ine_code?, limit? (1–50, def. 20; la app pide 50) }
 
 200 { status: "ok", concejo: {ine_code, name}, method: "distance",
-      results: [{ profile_id, distance_band_m, featured, in_zone }] }
+      results: [{ profile_id, distance_band_m, featured, in_zone, response_band }] }
 200 { status: "confirm_concejo", options: [{ine_code, name}], results: [] }
 200 { status: "outside_area", results: [] }
 400 { error: "invalid_input" | "unknown_concejo" }
@@ -40,6 +40,11 @@ POST /functions/v1/search-professionals
 - `lat, lng` = punto de búsqueda: la casa por defecto; el GPS (una vez) o un concejo/chincheta solo si la persona lo elige.
 - `ine_code` en la petición = concejo confirmado por el usuario o elegido a mano (pin manual).
 - `featured` solo es `true` si además `in_zone` es `true`.
+- `response_band` (#80, migración `20261125000300_search_response_band.sql`): **tiempo de respuesta** del
+  perfil como tramo (`instant`, `under_30m`, `under_1h`, `under_3h`, `same_day`, `over_day`) o `null` sin dato.
+  Lo calcula `private.response_band`, la misma regla que `catalogue` (ver `catalogo-contrato.md`); la Edge
+  Function lo pasa tal cual, nulo incluido, y nunca ordena por él. Una app antigua lo ignora; una app nueva
+  con un servidor antiguo lo lee como nulo.
 - Los perfiles se piden después con `catalogue(null, profile_id)`, que ya existe.
 
 ## Reglas
@@ -64,6 +69,9 @@ POST /functions/v1/search-professionals
   ordenar por cercanía · Reintentar».
 - Visitante sin sesión: orden del catálogo con «Ordenar por cercanía» (GPS o concejo a elección).
 - Los perfiles del catálogo sin ubicación registrada se añaden al final, sin distancia.
+- La tarjeta muestra el tiempo de respuesta bajo la valoración (#80), en la lista y con el mapa visible: el
+  `response_band` del resultado de la búsqueda y, si falta (perfil sin ubicación, listado sin punto de búsqueda
+  o servidor antiguo), el del perfil público. Sin dato, nada.
 - El filtro de texto se aplica en el dispositivo sobre la lista ordenada; el mapa opcional muestra la misma lista.
 - Lejos de casa (> 5 km): comprobación en segundo plano y banner no bloqueante una vez por sesión.
 

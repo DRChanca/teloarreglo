@@ -64,7 +64,7 @@ fun openExternalMaps(context: Context, destination: GeoPoint): Boolean {
     }
 }
 
-private fun GeoPoint.latLng() = LatLng(lat, lng)
+internal fun GeoPoint.latLng() = LatLng(lat, lng)
 
 /** Text shown instead of the map, so the list never looks like a broken map. */
 @Composable
@@ -79,7 +79,7 @@ fun MapUnavailableNotice(availability: MapAvailability, modifier: Modifier = Mod
 
 /** Warns (without hiding the list) when tiles never load: bad key, no network, blocked API. */
 @Composable
-private fun LoadWatch(loaded: Boolean) {
+internal fun LoadWatch(loaded: Boolean) {
     var late by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { delay(12_000); late = true }
     if (late && !loaded) Surface(color = MaterialTheme.colorScheme.errorContainer, modifier = Modifier.padding(8.dp)) {
@@ -169,5 +169,5 @@ fun ApproximateAreaMap(center: GeoPoint, radiusMeters: Int, modifier: Modifier =
 
 /** The map follows the active theme (#45): a dark map inside dark screens, never a white rectangle. */
 @Composable
-private fun mapColorScheme(): ComposeMapColorScheme =
+internal fun mapColorScheme(): ComposeMapColorScheme =
     if (MaterialTheme.colorScheme.background.luminance() < .5f) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT

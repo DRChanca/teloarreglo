@@ -6,6 +6,7 @@ import es.teloarreglo.notices.NoticeOpening
 import es.teloarreglo.notices.openNoticeConversation
 import es.teloarreglo.notices.NoticeTopic
 import es.teloarreglo.notices.destination
+import es.teloarreglo.notices.pushDestination
 import es.teloarreglo.notices.readOnSight
 import kotlinx.serialization.json.jsonObject
 import es.teloarreglo.notices.PushDevices
@@ -86,9 +87,23 @@ class NoticesTest {
         assertEquals(NoticeTopic.COMPLETED, t("appointment", "completed"))
         assertEquals(NoticeTopic.INCIDENT, t("appointment", "incident_reported"))
         assertEquals(NoticeTopic.REVIEW, t("appointment", "review_published"))
+        assertEquals(NoticeTopic.PROFESSIONAL_NEAR, t("appointment", "professional_near"))
         assertEquals(NoticeTopic.APPOINTMENT_OTHER, t("appointment", "something_new"))
         assertEquals(NoticeTopic.PROFILE_APPROVED, t("profile_review", "approved"))
         assertEquals(NoticeTopic.OTHER, t("future_kind", null))
+    }
+
+    @Test fun theProximityNoticeSaysTheProfessionalIsNearInEveryLanguageAndOpensTheConversation() {
+        val notice = Notice("n", "appointment", kotlinx.serialization.json.Json.parseToJsonElement(
+            """{"appointment_id":"a1","conversation_id":"c1","event":"professional_near"}""").jsonObject, "2026-11-25T10:00:00Z")
+        assertEquals(NoticeTopic.PROFESSIONAL_NEAR, notice.topic())
+        assertEquals(NoticeDestination.Conversation("c1"), notice.destination())
+        val texts = mapOf("values" to "Tu profesional está cerca", "values-en" to "Your professional is nearby",
+            "values-fr" to "Votre professionnel est tout près", "values-de" to "Deine Fachkraft ist in der Nähe")
+        texts.forEach { (folder, text) ->
+            val xml = java.io.File("src/main/res/$folder/strings.xml").readText()
+            assertTrue("$folder: $text", xml.contains("""<string name="notices_topic_professional_near">$text</string>"""))
+        }
     }
 
     private class FakeDevices : PushDevices {
@@ -177,6 +192,23 @@ class NoticesTest {
             notice("n2", "appointment", """{"conversation_id":"c1","event":"done"}""").destination())
         assertEquals(NoticeDestination.Account, notice("n3", "profile_review", """{"status":"approved"}""").destination())
         assertNull(notice("n4", "appointment", """{"event":"reminder"}""").destination())
+    }
+
+    @Test fun theCallNoticeHasItsOwnTopicAndOpensItsAppointment() {
+        val call = notice("n5", "call_client", """{"appointment_id":"a1","conversation_id":"c1"}""")
+        assertEquals(NoticeTopic.CALL_CLIENT, call.topic())
+        assertEquals(NoticeTopic.CALL_CLIENT, es.teloarreglo.notices.topicOf("call_client", ""))
+        // The appointment is shown in its conversation: that is where tapping the notice leads.
+        assertEquals(NoticeDestination.Conversation("c1"), call.destination())
+    }
+
+    @Test fun tappingACallPushOpensItsAppointmentWhileOtherPushesOpenTheNotices() {
+        val open = ::pushDestination
+        assertEquals(NoticeDestination.Conversation("c1"),
+            open(mapOf("kind" to "call_client", "event" to "", "appointment_id" to "a1", "conversation_id" to "c1")))
+        assertNull(open(mapOf("kind" to "call_client", "event" to "", "appointment_id" to "a1", "conversation_id" to "")))
+        assertNull(open(mapOf("kind" to "appointment", "event" to "done", "conversation_id" to "c1")))
+        assertNull(open(mapOf("kind" to "message", "conversation_id" to "c1")))
     }
 
     @Test fun unreadNoticesWithoutDestinationAreReadOnSight() {

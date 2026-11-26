@@ -22,7 +22,8 @@ data class Concejo(@SerialName("ine_code") val ineCode: String, val name: String
  * Never a coordinate or exact distance: the server returns a rounded band in metres. [featured] marks a
  * «Destacado» (#33) whose work zone includes this concejo, placed first by the server. [inZone] is false
  * for a professional listed by distance although this concejo is outside their work zone (ADR 0001);
- * an older server only returns professionals in zone, hence the default.
+ * an older server only returns professionals in zone, hence the default. [responseBand] is the profile's
+ * «Tiempo de respuesta» band (#80), null without data or from an older server.
  */
 @Serializable
 data class NearbyResult(
@@ -30,6 +31,7 @@ data class NearbyResult(
     @SerialName("distance_band_m") val distanceBandM: Int,
     val featured: Boolean = false,
     @SerialName("in_zone") val inZone: Boolean = true,
+    @SerialName("response_band") val responseBand: String? = null,
 )
 
 sealed interface SearchOutcome {

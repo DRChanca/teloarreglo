@@ -85,8 +85,13 @@ class TeloarregloApplication : Application() {
     }
 
     val identity: Identity by lazy {
-        client?.let { c -> SupabaseIdentity(c, applicationScope, authLink).let { inner -> push?.let { PushAwareIdentity(inner, it) } ?: inner } }
-            ?: MissingConfiguration()
+        client?.let { c ->
+            SignOutAwareIdentity(SupabaseIdentity(c, applicationScope, authLink)) {
+                // While the session still works: the arrival sharing of this phone stops (#72), then push leaves.
+                es.teloarreglo.arrival.ArrivalSharing.stopAll(this)
+                push?.beforeSignOut()
+            }
+        } ?: MissingConfiguration()
     }
 
     /** Persisted notices of the signed-in account (#32); null without configuration. */
@@ -112,6 +117,16 @@ class TeloarregloApplication : Application() {
     val reviews: es.teloarreglo.appointments.Reviews? by lazy { client?.let { es.teloarreglo.appointments.SupabaseReviews(it) } }
     /** The professional's single agenda (#21); confirmations reserve through it on the server. */
     val agenda: es.teloarreglo.appointments.Agenda? by lazy { client?.let { es.teloarreglo.appointments.SupabaseAgenda(it) } }
+    /** The professional's choice to share their position in the ventana de llegada (#85), kept on this phone. */
+    val arrivalChoices: es.teloarreglo.appointments.ArrivalChoices by lazy { es.teloarreglo.arrival.SharedArrivalChoices(this) }
+    /** One round of «informar posición» (#85); null without configuration. */
+    val arrivalRound: es.teloarreglo.appointments.ArrivalRound? by lazy {
+        client?.let { c ->
+            es.teloarreglo.appointments.ArrivalRound(es.teloarreglo.appointments.SupabaseArrivalPositions(c), arrivalChoices) {
+                es.teloarreglo.arrival.arrivalFix(this)
+            }
+        }
+    }
     val chatAttachments: ChatAttachments? by lazy { client?.let(::SupabaseChatAttachments) }
     /** Owner's profile review result decided in the private panel (#29). */
     val profileReviews: ProfileReviews? by lazy { client?.let(::SupabaseProfileReviews) }
@@ -121,6 +136,8 @@ class TeloarregloApplication : Application() {
     }
     /** Work zone notices and changes without review (ADR 0001). */
     val workZones: es.teloarreglo.catalogue.WorkZones? by lazy { client?.let { es.teloarreglo.catalogue.SupabaseWorkZones(it) } }
+    /** «Leer llegada» for the client's confirmed appointment (#84, ADR 0002). */
+    val arrivals: es.teloarreglo.appointments.Arrivals? by lazy { client?.let { es.teloarreglo.appointments.SupabaseArrivals(it) } }
     /** Simulated optional subscription (#33); never charges. */
     val subscriptions: es.teloarreglo.subscription.Subscriptions? by lazy { client?.let { es.teloarreglo.subscription.SupabaseSubscriptions(it) } }
     /** Nearby search through the public Edge Function; null without configuration. */
@@ -147,6 +164,11 @@ class TeloarregloApplication : Application() {
         client?.let { es.teloarreglo.identity.AccountNameSession(es.teloarreglo.identity.SupabaseAccountNames(it)) }
     }
 
+    /** Private contact phone (#74), asked after the name and the home if missing; null without configuration. */
+    val contactPhoneSession: es.teloarreglo.identity.ContactPhoneSession? by lazy {
+        client?.let { es.teloarreglo.identity.ContactPhoneSession(es.teloarreglo.identity.SupabaseContactPhones(it)) }
+    }
+
     /** Google Places (New) autocomplete with the Maps key; null without key (pin/GPS fallback). */
     val addressAutocomplete: es.teloarreglo.home.AddressAutocomplete? by lazy {
         es.teloarreglo.home.GooglePlacesAutocomplete.create(this, BuildConfig.MAPS_API_KEY)
@@ -158,10 +180,11 @@ class TeloarregloApplication : Application() {
 }
 
 /** Unregisters this device for push before the session ends, so the next account never sees these pushes. */
-private class PushAwareIdentity(private val inner: Identity, private val push: es.teloarreglo.notices.PushRegistration) :
+/** Runs [beforeSignOut] (stop sharing the arrival, unregister push) while the session can still reach the server. */
+private class SignOutAwareIdentity(private val inner: Identity, private val beforeSignOut: suspend () -> Unit) :
     Identity by inner {
     override suspend fun signOut() {
-        push.beforeSignOut()
+        beforeSignOut()
         inner.signOut()
     }
 }
