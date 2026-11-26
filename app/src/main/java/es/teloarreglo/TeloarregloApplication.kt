@@ -85,8 +85,13 @@ class TeloarregloApplication : Application() {
     }
 
     val identity: Identity by lazy {
-        client?.let { c -> SupabaseIdentity(c, applicationScope, authLink).let { inner -> push?.let { PushAwareIdentity(inner, it) } ?: inner } }
-            ?: MissingConfiguration()
+        client?.let { c ->
+            SignOutAwareIdentity(SupabaseIdentity(c, applicationScope, authLink)) {
+                // While the session still works: the arrival sharing of this phone stops (#72), then push leaves.
+                es.teloarreglo.arrival.ArrivalSharing.stopAll(this)
+                push?.beforeSignOut()
+            }
+        } ?: MissingConfiguration()
     }
 
     /** Persisted notices of the signed-in account (#32); null without configuration. */
@@ -175,10 +180,11 @@ class TeloarregloApplication : Application() {
 }
 
 /** Unregisters this device for push before the session ends, so the next account never sees these pushes. */
-private class PushAwareIdentity(private val inner: Identity, private val push: es.teloarreglo.notices.PushRegistration) :
+/** Runs [beforeSignOut] (stop sharing the arrival, unregister push) while the session can still reach the server. */
+private class SignOutAwareIdentity(private val inner: Identity, private val beforeSignOut: suspend () -> Unit) :
     Identity by inner {
     override suspend fun signOut() {
-        push.beforeSignOut()
+        beforeSignOut()
         inner.signOut()
     }
 }

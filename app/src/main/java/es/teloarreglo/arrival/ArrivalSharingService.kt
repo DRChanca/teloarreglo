@@ -23,10 +23,12 @@ import es.teloarreglo.appointments.ArrivalChoices
 import es.teloarreglo.appointments.ArrivalFix
 import es.teloarreglo.appointments.ArrivalRound
 import es.teloarreglo.appointments.ArrivalStep
+import es.teloarreglo.appointments.decodeArrivalChoice
+import es.teloarreglo.appointments.encodeArrivalChoice
 import es.teloarreglo.appointments.firstArrivalStep
 import es.teloarreglo.identity.AccessStage
 import es.teloarreglo.search.Located
-import es.teloarreglo.search.currentLocation
+import es.teloarreglo.search.arrivalLocation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +39,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.time.Duration
 import java.time.Instant
 
@@ -44,14 +47,11 @@ import java.time.Instant
 class SharedArrivalChoices(context: Context) : ArrivalChoices {
     private val store = context.getSharedPreferences("arrival", Context.MODE_PRIVATE)
     override fun all() = store.all.keys.mapNotNull(::get)
-    override fun get(appointmentId: String): ArrivalChoice? {
-        val raw = store.getString(appointmentId, null) ?: return null
-        val start = raw.substringBefore('|').toLongOrNull() ?: return null
-        return ArrivalChoice(appointmentId, raw.substringAfter('|'), Instant.ofEpochSecond(start))
-    }
+    override fun get(appointmentId: String): ArrivalChoice? =
+        store.getString(appointmentId, null)?.let { decodeArrivalChoice(appointmentId, it) }
     // Written synchronously: a service woken right after must already see the change.
     override fun save(choice: ArrivalChoice) {
-        store.edit().putString(choice.appointmentId, "${choice.start.epochSecond}|${choice.clientName}").commit()
+        store.edit().putString(choice.appointmentId, encodeArrivalChoice(choice)).commit()
     }
     override fun forget(appointmentId: String) { store.edit().remove(appointmentId).commit() }
 }
@@ -65,6 +65,11 @@ object ArrivalSharing {
     private const val ACTION_START = "es.teloarreglo.arrival.START"
     private const val ACTION_STOP = "es.teloarreglo.arrival.STOP"
     internal const val EXTRA_APPOINTMENT = "appointment_id"
+    /**
+     * The window is asked before starting the service, within the few seconds an exact alarm allows an app to start a
+     * foreground service from the background; without an answer by then the service starts and asks itself.
+     */
+    private const val CHECK_BEFORE_START_MS = 5_000L
 
     internal val running = MutableStateFlow<Set<String>>(emptySet())
     /** Appointments whose position this phone is sending right now (the service is in the foreground). */
@@ -72,21 +77,75 @@ object ArrivalSharing {
 
     private fun app(context: Context) = context.applicationContext as TeloarregloApplication
 
-    /** The professional accepted: keep the choice and start now or wait for the opening. */
+    /**
+     * «Compartir mi ubicación» chosen (once the location permission is granted): a new choice, which the first round
+     * tells the server before any position (it clears a previous «Dejar de compartir»); then start now or wait.
+     */
     fun choose(context: Context, choice: ArrivalChoice) {
-        app(context).arrivalChoices.save(choice)
+        app(context).arrivalChoices.save(choice.copy(announced = false))
         resume(context, choice.appointmentId)
     }
 
-    /** Applies a kept choice again (card shown, alarm fired); does nothing without one. */
-    fun resume(context: Context, appointmentId: String) {
+    /** The card shows a kept choice: the name and the start (moved by an accepted change) are updated and it is applied again. */
+    fun keep(context: Context, appointmentId: String, clientName: String, start: Instant) {
+        val choices = app(context).arrivalChoices
+        val kept = choices.get(appointmentId) ?: return
+        if (kept.clientName != clientName || kept.start != start) choices.save(kept.copy(clientName = clientName, start = start))
+        resume(context, appointmentId)
+    }
+
+    /** Applies a kept choice again (card shown, alarm fired, phone restarted); does nothing without one. [done] runs at the end. */
+    fun resume(context: Context, appointmentId: String, done: () -> Unit = {}) {
         val application = app(context)
-        val choice = application.arrivalChoices.get(appointmentId) ?: return
-        if (appointmentId in running.value) return
+        val choice = application.arrivalChoices.get(appointmentId)
+        if (choice == null || appointmentId in running.value) return done()
         when (val step = firstArrivalStep(choice.start, Instant.now())) {
-            is ArrivalStep.WaitUntil -> ArrivalAlarms.schedule(context, appointmentId, step.at)
-            is ArrivalStep.SendAt -> startService(context, appointmentId)
-            ArrivalStep.Stop -> application.arrivalChoices.forget(appointmentId)
+            is ArrivalStep.WaitUntil -> { ArrivalAlarms.schedule(context, appointmentId, step.at); done() }
+            is ArrivalStep.SendAt -> startWhenOpen(context, appointmentId, done)
+            ArrivalStep.Stop -> { application.arrivalChoices.forget(appointmentId); done() }
+        }
+    }
+
+    /**
+     * Inside the possible window: asks the server first (no position), so the fixed notification only appears when
+     * there is something to send. «Aún no abierta» (another appointment started) waits for its opening with an alarm.
+     */
+    private fun startWhenOpen(context: Context, appointmentId: String, done: () -> Unit) {
+        val application = app(context)
+        val round = application.arrivalRound ?: return done()
+        application.applicationScope.launch {
+            try {
+                val step = withTimeoutOrNull(CHECK_BEFORE_START_MS) {
+                    ensureSession(application)
+                    round.check(appointmentId, Instant.now())
+                } ?: ArrivalStep.SendAt(Instant.now())
+                when (step) {
+                    is ArrivalStep.WaitUntil -> ArrivalAlarms.schedule(context, appointmentId, step.at)
+                    is ArrivalStep.SendAt -> if (appointmentId !in running.value) startService(context, appointmentId)
+                    ArrivalStep.Stop -> ArrivalAlarms.cancel(context, appointmentId)
+                }
+            } finally { done() }
+        }
+    }
+
+    /**
+     * Brings kept choices up to date with the server and applies them again ([ids], or all of them): a start moved by
+     * an accepted change re-schedules the alarm, a closed window or a stop from elsewhere forgets the choice. Called
+     * when the app comes to the foreground, when a push about one of these appointments arrives and after a restart.
+     * Without an answer the kept start is used as it is.
+     */
+    suspend fun sync(context: Context, ids: Collection<String>? = null) {
+        val application = app(context)
+        val round = application.arrivalRound ?: return
+        for (choice in application.arrivalChoices.all()) {
+            val id = choice.appointmentId
+            if (ids != null && id !in ids) continue
+            if (id in running.value) continue // Its rounds ask the server every ~30 s.
+            val step = withTimeoutOrNull(CHECK_BEFORE_START_MS) {
+                ensureSession(application)
+                round.check(id, Instant.now())
+            }
+            if (step == ArrivalStep.Stop) ArrivalAlarms.cancel(context, id) else resume(context, id)
         }
     }
 
@@ -101,6 +160,29 @@ object ArrivalSharing {
             val round = application.arrivalRound ?: return application.arrivalChoices.forget(appointmentId)
             application.applicationScope.launch { round.stopSharing(appointmentId) }
         }
+    }
+
+    /**
+     * Before signing out: every choice of this phone is stopped on the server (while the session still works),
+     * forgotten, its alarm cancelled and the service ended, so nothing is sent for the account that leaves.
+     */
+    suspend fun stopAll(context: Context) {
+        val application = app(context)
+        val ids = (application.arrivalChoices.all().map { it.appointmentId } + running.value).distinct()
+        for (id in ids) {
+            ArrivalAlarms.cancel(context, id)
+            application.arrivalChoices.forget(id)
+            application.arrivalRound?.let { round -> withTimeoutOrNull(CHECK_BEFORE_START_MS) { round.stopSharing(id) } }
+        }
+        if (running.value.isNotEmpty()) {
+            context.startService(Intent(context, ArrivalSharingService::class.java).setAction(ACTION_STOP))
+        }
+    }
+
+    /** Woken by an alarm, a push or a restart the app may have no session in memory yet; the stored one is restored. */
+    internal suspend fun ensureSession(application: TeloarregloApplication) {
+        try { if (application.identity.state.value.stage != AccessStage.CONNECTED) application.identity.restore() }
+        catch (error: Exception) { if (error is CancellationException) throw error }
     }
 
     internal fun startService(context: Context, appointmentId: String) {
@@ -150,7 +232,21 @@ object ArrivalAlarms {
 
 class ArrivalAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        intent.getStringExtra(ArrivalSharing.EXTRA_APPOINTMENT)?.let { ArrivalSharing.resume(context, it) }
+        val appointmentId = intent.getStringExtra(ArrivalSharing.EXTRA_APPOINTMENT) ?: return
+        // Kept alive while the window is asked (a few seconds at most) before starting the service.
+        val pending = goAsync()
+        ArrivalSharing.resume(context, appointmentId) { pending.finish() }
+    }
+}
+
+/** Alarms do not survive a restart (or an update of the app): every kept choice is brought up to date and re-scheduled. */
+class ArrivalBootReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != Intent.ACTION_BOOT_COMPLETED && intent.action != Intent.ACTION_MY_PACKAGE_REPLACED) return
+        val app = context.applicationContext as TeloarregloApplication
+        if (app.arrivalChoices.all().isEmpty()) return
+        val pending = goAsync()
+        app.applicationScope.launch { try { ArrivalSharing.sync(context) } finally { pending.finish() } }
     }
 }
 
@@ -177,8 +273,10 @@ class ArrivalSharingService : Service() {
     }
 
     private fun start(appointmentId: String) {
-        // Shown before anything is sent: the professional always sees when the client can see them. Also called
-        // first when there turns out to be nothing to send, since a started foreground service must show it.
+        // Shown before anything is sent: the professional always sees when the client can see them. Android requires
+        // it within seconds of startForegroundService, before the server could be asked, which is why the window is
+        // asked before starting the service ([ArrivalSharing.resume]); it only shows briefly here if the window
+        // changed in between or that answer did not arrive in time.
         val shown = try {
             ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(names(appointmentId)),
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else 0)
@@ -194,7 +292,7 @@ class ArrivalSharingService : Service() {
     }
 
     private suspend fun share(appointmentId: String, round: ArrivalRound) {
-        ensureSession()
+        ArrivalSharing.ensureSession(app)
         while (true) {
             when (val step = round.run(appointmentId, Instant.now())) {
                 is ArrivalStep.SendAt -> delay(Duration.between(Instant.now(), step.at).toMillis().coerceAtLeast(0))
@@ -204,13 +302,10 @@ class ArrivalSharingService : Service() {
         }
     }
 
-    /** Woken by the alarm the app may have no session in memory yet; the stored one is restored. */
-    private suspend fun ensureSession() {
-        try { if (app.identity.state.value.stage != AccessStage.CONNECTED) app.identity.restore() }
-        catch (error: Exception) { if (error is CancellationException) throw error }
-    }
-
-    /** Stops [appointmentId], or every appointment from the notification. The job ends before the server is told. */
+    /**
+     * Stops [appointmentId], or every appointment from the notification. A report already on its way may still reach
+     * the server after «dejar de compartir»: the server refuses it (stop mark), so the client never sees it.
+     */
     private fun stop(appointmentId: String?) {
         val ids = appointmentId?.let(::listOf) ?: jobs.keys.toList()
         val round = app.arrivalRound
@@ -268,7 +363,7 @@ class ArrivalSharingService : Service() {
 
 /** One fix for the round; null when there is no permission, no provider or no fix in time. */
 internal suspend fun arrivalFix(context: Context): ArrivalFix? =
-    when (val located = currentLocation(context, timeoutMs = 20_000)) {
+    when (val located = arrivalLocation(context, timeoutMs = 20_000)) {
         is Located.Position -> ArrivalFix(located.lat, located.lng, located.accuracyM?.toDouble())
         Located.Unavailable -> null
     }

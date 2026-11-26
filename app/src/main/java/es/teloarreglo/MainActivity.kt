@@ -57,6 +57,11 @@ class MainActivity : AppCompatActivity() {
             .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName))
     }
 
+    /**
+     * Times the app came back to the foreground and re-checked the session. A connected account stays connected
+     * through that check (so the open screen is kept), and the reads that used to follow it run again on this key.
+     */
+    private val returns = mutableIntStateOf(0)
     /** Set when the activity is opened from a push notification. */
     private val openNotices = mutableStateOf(false)
     /** Conversation and notice of a push that leads straight to an appointment (#77), until it is opened. */
@@ -104,10 +109,11 @@ class MainActivity : AppCompatActivity() {
                 .collectAsStateWithLifecycle()
             val connectedUser = access.account?.userId?.takeIf { access.stage == AccessStage.CONNECTED }
             // Notices (#32): this device follows the signed-in account; the unread count is read from the server.
-            LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
+            val returned by returns
+            LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser, returned) {
                 if (access.stage != AccessStage.CHECKING) app.push?.sync(connectedUser)
             }
-            LaunchedEffect(connectedUser, nav.tab, nav.conversation?.id) {
+            LaunchedEffect(connectedUser, nav.tab, nav.conversation?.id, returned) {
                 // The app is open on this account: its conversations reached this device (senders' second tick).
                 if (connectedUser != null) try { app.chat?.markAllDelivered() }
                     catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) { }
@@ -143,14 +149,14 @@ class MainActivity : AppCompatActivity() {
                     if (action is es.teloarreglo.notices.CallNoticeAction.Dial) openDialUri(this@MainActivity, action.uri)
                 }
             }
-            LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
+            LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser, returned) {
                 if (access.stage != AccessStage.CHECKING) homeSession?.load(connectedUser)
             }
             // Person's name (#40): asked once, before the home step, when the server confirms it is missing.
             val nameSession = app.accountNameSession
             val nameStatus by (nameSession?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(AccountNameStatus.Unknown) })
                 .collectAsStateWithLifecycle()
-            LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
+            LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser, returned) {
                 if (access.stage != AccessStage.CHECKING) nameSession?.load(connectedUser)
             }
             val mustGiveName = nameSession != null && connectedUser != null && nameStatus == AccountNameStatus.Missing &&
@@ -164,7 +170,7 @@ class MainActivity : AppCompatActivity() {
             val phoneSession = app.contactPhoneSession
             val phoneStatus by (phoneSession?.status ?: remember { kotlinx.coroutines.flow.MutableStateFlow(ContactPhoneStatus.Unknown) })
                 .collectAsStateWithLifecycle()
-            LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser) {
+            LaunchedEffect(access.stage == AccessStage.CHECKING, connectedUser, returned) {
                 if (access.stage != AccessStage.CHECKING) phoneSession?.load(connectedUser)
             }
             val mustGivePhone = phoneSession != null && connectedUser != null && phoneStatus == ContactPhoneStatus.Missing &&
@@ -292,6 +298,9 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
         app.applicationScope.launch {
             app.identity.restore()
+            returns.intValue++
+            // Kept arrival choices follow the server: a start brought forward by an accepted change moves the alarm (#72).
+            if (app.identity.state.value.stage == AccessStage.CONNECTED) es.teloarreglo.arrival.ArrivalSharing.sync(this@MainActivity)
             // A home check that failed for lack of network is retried when the app comes back.
             app.homeSession?.takeIf { it.status.value == HomeStatus.Failed }
                 ?.load(app.identity.state.value.account?.userId)

@@ -71,7 +71,10 @@ class SupabaseIdentity(
         if (mutableState.value.stage == AccessStage.AWAITING_VERIFICATION) return@withLock
         // An invalid email link handled just before must stay visible after the restore.
         val linkError = mutableState.value.error.takeIf { it == AccessError.LINK_INVALID }
-        mutableState.value = AccessState(AccessStage.CHECKING)
+        // Coming back to the app (onStart) re-checks a connected account without leaving it: the open screen, its
+        // sheets and pending permission requests stay (#72). Only a definitive answer changes the state.
+        val connected = mutableState.value.takeIf { it.stage == AccessStage.CONNECTED }
+        if (connected == null) mutableState.value = AccessState(AccessStage.CHECKING)
         try {
             client.auth.awaitInitialization()
             val found = client.auth.currentSessionOrNull() != null || client.auth.loadFromStorage(autoRefresh = false)
@@ -84,6 +87,14 @@ class SupabaseIdentity(
                 client.auth.startAutoRefreshForCurrentSession()
             }
         } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            // Without network or service the session already verified stays usable; the SDK's refresh reports a real
+            // loss (RefreshFailure) and each screen shows its own connection errors.
+            if (connected != null && classify(error).let { it == AccessError.NETWORK || it == AccessError.SERVICE } &&
+                error !is GeneralSecurityException && error !is SerializationException) {
+                mutableState.value = connected
+                return@withLock
+            }
             handleFailure(error, restoring = true)
         }
     }

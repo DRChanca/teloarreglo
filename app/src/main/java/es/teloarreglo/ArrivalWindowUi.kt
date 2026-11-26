@@ -1,5 +1,6 @@
 package es.teloarreglo
 
+import android.os.SystemClock
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,7 +49,7 @@ import es.teloarreglo.appointments.arrivalView
 import es.teloarreglo.search.GeoPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
-import java.time.Instant
+import java.time.Duration
 
 /** How often the open card asks «leer llegada» again (the professional reports every ~30 s). */
 private const val ARRIVAL_POLL_MS = 30_000L
@@ -62,19 +64,21 @@ internal fun ArrivalWindowSection(appointment: Appointment, professional: Boolea
     if (professional || appointment.stage != AppointmentStage.CONFIRMED) return
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var reading by remember(appointment.id) { mutableStateOf<ArrivalReading>(ArrivalReading.Closed) }
-    var now by remember { mutableStateOf(Instant.now()) }
+    // Monotonic times (elapsedRealtime) of the last answer and of now: the phone's wall clock never counts (#72).
+    var readAt by remember(appointment.id) { mutableLongStateOf(SystemClock.elapsedRealtime()) }
+    var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     LaunchedEffect(arrivals, appointment.id) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (true) {
-                try { reading = arrivals.read(appointment.id) }
+                try { reading = arrivals.read(appointment.id); readAt = SystemClock.elapsedRealtime() }
                 catch (e: CancellationException) { throw e } catch (_: Exception) { /* keep the last answer: arrivalView turns it into «sin compartir» after 2 min */ }
-                now = Instant.now()
+                now = SystemClock.elapsedRealtime()
                 delay(ARRIVAL_POLL_MS)
             }
         }
     }
     val home = (appointment.location as? AppointmentLocation.Exact)?.point
-    when (val view = arrivalView(reading, home, now)) {
+    when (val view = arrivalView(reading, home, Duration.ofMillis(now - readAt))) {
         ArrivalView.Hidden -> Unit
         ArrivalView.NotSharing -> Text(stringResource(R.string.arrival_not_sharing), style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.testTag("arrival_not_sharing_${appointment.id}").semantics { liveRegion = LiveRegionMode.Polite })

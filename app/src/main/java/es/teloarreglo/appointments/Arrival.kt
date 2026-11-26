@@ -29,7 +29,8 @@ sealed interface ArrivalReading {
     data object Closed : ArrivalReading
     /** Open window, but no recent position: the professional does not share it. */
     data object NotSharing : ArrivalReading
-    data class Sharing(val marker: ArrivalMarker, val updatedAt: Instant) : ArrivalReading
+    /** [age]: how old the position was when the server answered, by the server's clock (never the phone's). */
+    data class Sharing(val marker: ArrivalMarker, val age: Duration) : ArrivalReading
 }
 
 @Serializable
@@ -41,29 +42,35 @@ private data class ArrivalResponse(
     @SerialName("radius_m") val radiusMeters: Int? = null,
     @SerialName("accuracy_m") val accuracyMeters: Double? = null,
     @SerialName("updated_at") @Serializable(ServerInstant::class) val updatedAt: Instant? = null,
+    @SerialName("age_s") val ageSeconds: Double? = null,
 )
 
 private val arrivalJson = Json { ignoreUnknownKeys = true }
 
-/** Decodes the jsonb of `appointment_arrival`. An incomplete or unknown answer reads as closed. */
-fun parseArrival(json: String): ArrivalReading {
+/**
+ * Decodes the jsonb of `appointment_arrival`. An incomplete or unknown answer reads as closed. The age of the position
+ * is the server's `age_s`; only an answer without it (an older server) falls back to `updated_at` against [phoneNow].
+ */
+fun parseArrival(json: String, phoneNow: Instant = Instant.now()): ArrivalReading {
     val response = arrivalJson.decodeFromString<ArrivalResponse>(json)
     return when (response.state) {
         "not_sharing" -> ArrivalReading.NotSharing
-        "sharing" -> response.sharing() ?: ArrivalReading.Closed
+        "sharing" -> response.sharing(phoneNow) ?: ArrivalReading.Closed
         else -> ArrivalReading.Closed
     }
 }
 
-private fun ArrivalResponse.sharing(): ArrivalReading? {
+private fun ArrivalResponse.sharing(phoneNow: Instant): ArrivalReading? {
     val point = GeoPoint(latitude ?: return null, longitude ?: return null)
-    val updated = updatedAt ?: return null
+    val age = ageSeconds?.takeIf { it.isFinite() }?.let { Duration.ofMillis((it * 1000).toLong()) }
+        ?: Duration.between(updatedAt ?: return null, phoneNow)
+    val positionAge = if (age.isNegative) Duration.ZERO else age
     val marker = when (precision) {
         "area" -> ArrivalMarker.Area(point, radiusMeters ?: return null)
         "exact" -> ArrivalMarker.Exact(point, accuracyMeters)
         else -> return null
     }
-    return ArrivalReading.Sharing(marker, updated)
+    return ArrivalReading.Sharing(marker, positionAge)
 }
 
 /** How far the professional is, in words (the only thing shown when there is no map). */
@@ -91,15 +98,15 @@ sealed interface ArrivalView {
 val ARRIVAL_STALE_AFTER: Duration = Duration.ofMinutes(2)
 
 /**
- * [now] is the phone's clock. A reading kept while reads fail turns into «sin compartir» once its position is more
- * than [ARRIVAL_STALE_AFTER] old, so an old position is never shown as current. A clock behind the server's counts
- * as «just now».
+ * [sinceRead] is the time elapsed since the server answered [reading], measured with a monotonic clock, so the
+ * phone's wall clock (ahead, behind or changed) never matters. A reading kept while reads fail turns into «sin
+ * compartir» once its position is more than [ARRIVAL_STALE_AFTER] old, so an old position is never shown as current.
  */
-fun arrivalView(reading: ArrivalReading, home: GeoPoint?, now: Instant): ArrivalView = when (reading) {
+fun arrivalView(reading: ArrivalReading, home: GeoPoint?, sinceRead: Duration): ArrivalView = when (reading) {
     ArrivalReading.Closed -> ArrivalView.Hidden
     ArrivalReading.NotSharing -> ArrivalView.NotSharing
     is ArrivalReading.Sharing -> {
-        val age = Duration.between(reading.updatedAt, now).let { if (it.isNegative) Duration.ZERO else it }
+        val age = reading.age.plus(if (sinceRead.isNegative) Duration.ZERO else sinceRead)
         if (age > ARRIVAL_STALE_AFTER) ArrivalView.NotSharing
         else ArrivalView.Sharing(reading.marker, home, distanceOf(reading.marker, home), age.toMinutes())
     }

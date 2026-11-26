@@ -1,6 +1,7 @@
 package es.teloarreglo
 
 import es.teloarreglo.appointments.*
+import kotlinx.coroutines.launch
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.Instant
@@ -59,7 +60,9 @@ class ArrivalSharingTest {
 /** One round of the professional's phone (#85): position, server answer, next step, and the choice kept or forgotten. */
 class ArrivalRoundTest {
     private val now = Instant.parse("2030-01-15T10:00:00Z")
-    private val choice = ArrivalChoice("a1", "Lucía", now.plusSeconds(1800))
+    /** A choice the server already knows of (a kept one); [fresh] is one just made on this phone. */
+    private val choice = ArrivalChoice("a1", "Lucía", now.plusSeconds(1800), announced = true)
+    private val fresh = choice.copy(announced = false)
     private val open = ArrivalReport(ArrivalWindow.OPEN, accepted = true, opensAt = now.minusSeconds(1800), closesAt = now.plusSeconds(5400))
 
     private class FakePositions(var answer: () -> ArrivalReport) : ArrivalPositions {
@@ -72,8 +75,11 @@ class ArrivalRoundTest {
             reported += Triple(appointmentId, fix.latitude, fix.longitude); return answer()
         }
         override suspend fun stopSharing(appointmentId: String): ArrivalReport {
-            stopped += appointmentId; return ArrivalReport(ArrivalWindow.OPEN, accepted = false)
+            stopped += appointmentId; calls += "stop"; return ArrivalReport(ArrivalWindow.OPEN, accepted = false, stopped = true)
         }
+        val calls = mutableListOf<String>()
+        var start: suspend () -> ArrivalReport = { window() }
+        override suspend fun startSharing(appointmentId: String): ArrivalReport { calls += "start"; return start() }
     }
     private class MemoryChoices : ArrivalChoices {
         val saved = mutableMapOf<String, ArrivalChoice>()
@@ -171,5 +177,79 @@ class ArrivalRoundTest {
         ArrivalRound(offline, choices) { fix }.stopSharing("a1")
         // The server stops showing it on its own after 2 min without positions.
         assertEquals(null, choices.get("a1"))
+    }
+    @Test fun aNewChoiceIsToldToTheServerBeforeAnyPosition() = kotlinx.coroutines.test.runTest {
+        choices.save(fresh)
+        assertEquals(ArrivalStep.SendAt(now.plusSeconds(30)), round.run("a1", now))
+        assertEquals(listOf("start"), positions.calls)
+        assertEquals(1, positions.reported.size)
+        assertEquals(choice, choices.get("a1"))
+        // Later rounds only ask the window.
+        round.run("a1", now)
+        assertEquals(listOf("start"), positions.calls)
+    }
+
+    @Test fun aNewChoiceThatCannotReachTheServerSendsNothingAndTriesAgain() = kotlinx.coroutines.test.runTest {
+        choices.save(fresh)
+        positions.start = { throw java.io.IOException("offline") }
+        assertEquals(ArrivalStep.SendAt(now.plusSeconds(30)), round.run("a1", now))
+        assertEquals(emptyList<Any>(), positions.reported)
+        assertEquals(fresh, choices.get("a1"))
+    }
+
+    @Test fun aStopOnTheServerEndsAKeptChoiceWithoutSending() = kotlinx.coroutines.test.runTest {
+        // «Dejar de compartir» from another phone, or before signing out: the stop mark holds.
+        positions.window = { open.copy(accepted = false, stopped = true) }
+        assertEquals(ArrivalStep.Stop, round.run("a1", now))
+        assertEquals(emptyList<Any>(), positions.reported)
+        assertEquals(null, choices.get("a1"))
+    }
+
+    @Test fun aReportRefusedBecauseOfAStopEnds() = kotlinx.coroutines.test.runTest {
+        positions.answer = { open.copy(accepted = false, stopped = true) }
+        positions.window = { open.copy(accepted = false) }
+        assertEquals(ArrivalStep.Stop, round.run("a1", now))
+        assertEquals(null, choices.get("a1"))
+    }
+
+    @Test fun stopAndShareAgainReachTheServerInThatOrder() = kotlinx.coroutines.test.runTest {
+        val startReached = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val release = kotlinx.coroutines.CompletableDeferred<Unit>()
+        choices.save(fresh)
+        positions.start = { startReached.complete(Unit); release.await(); open.copy(accepted = false) }
+        val sharing = launch { round.run("a1", now) }
+        startReached.await()
+        // A stop while «volver a compartir» is on its way waits for it, so the server ends stopped.
+        val stopping = launch { round.stopSharing("a1") }
+        testScheduler.runCurrent()
+        assertEquals(listOf("start"), positions.calls)
+        release.complete(Unit)
+        sharing.join(); stopping.join()
+        assertEquals(listOf("start", "stop"), positions.calls)
+        assertEquals(null, choices.get("a1"))
+    }
+
+    @Test fun anAcceptedChangeMovesTheKeptStart() = kotlinx.coroutines.test.runTest {
+        val earlier = now.plusSeconds(600)
+        positions.window = { ArrivalReport(ArrivalWindow.OPEN, startAt = earlier) }
+        round.check("a1", now)
+        assertEquals(earlier, choices.get("a1")?.start)
+    }
+
+    @Test fun checkingNeverSendsAPosition() = kotlinx.coroutines.test.runTest {
+        assertEquals(ArrivalStep.SendAt(now), round.check("a1", now))
+        val opens = now.plusSeconds(600)
+        positions.window = { ArrivalReport(ArrivalWindow.NOT_YET_OPEN, opensAt = opens) }
+        assertEquals(ArrivalStep.WaitUntil(opens), round.check("a1", now))
+        positions.window = { ArrivalReport(ArrivalWindow.CLOSED) }
+        assertEquals(ArrivalStep.Stop, round.check("a1", now))
+        assertEquals(emptyList<Any>(), positions.reported)
+        assertEquals(null, choices.get("a1"))
+    }
+
+    @Test fun checkingWithoutAnAnswerStartsAndLetsTheRoundsAsk() = kotlinx.coroutines.test.runTest {
+        positions.window = { throw java.io.IOException("offline") }
+        assertEquals(ArrivalStep.SendAt(now), round.check("a1", now))
+        assertEquals(choice, choices.get("a1"))
     }
 }

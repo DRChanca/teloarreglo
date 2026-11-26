@@ -116,6 +116,76 @@ class IdentityTest {
         } finally { client.close() }
     }
 
+    /** A connected client whose service answers or fails as [online] says; the account is account-12. */
+    private fun switchableClient(online: () -> Boolean, revoked: () -> Boolean = { false }) =
+        createSupabaseClient("https://identity.example.org", "public-test-key") {
+            defaultLogLevel = LogLevel.NONE
+            httpEngine = MockEngine { request ->
+                if (!online()) throw IOException("network unavailable")
+                if (revoked() && request.url.parameters["grant_type"] == "refresh_token") {
+                    respond("""{"code":400,"error_code":"refresh_token_not_found","msg":"Invalid Refresh Token"}""",
+                        HttpStatusCode.BadRequest, headersOf(HttpHeaders.ContentType, "application/json"))
+                } else {
+                    val body = if (request.url.encodedPath == "/auth/v1/token") {
+                        """{"access_token":"access","refresh_token":"refresh","expires_in":3600,"token_type":"bearer",
+                           "user":{"aud":"authenticated","id":"account-12","email":"cliente@example.org"}}"""
+                    } else {
+                        """{"user_id":"account-12","email":"cliente@example.org","is_administrator":false}"""
+                    }
+                    respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                }
+            }
+            install(Auth) { minimalSettings(autoSaveToStorage = true, sessionManager = MemorySessionManager()) }
+            install(Postgrest)
+        }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Test fun comingBackToTheAppKeepsAConnectedAccountConnectedWhileItIsChecked() = runTest {
+        // #72: the re-check of onStart used to pass through CHECKING, which closed the open screen and its sheets.
+        val client = switchableClient(online = { true })
+        try {
+            val identity = SupabaseIdentity(client, backgroundScope)
+            identity.restore()
+            identity.signIn("cliente@example.org", "correct")
+            assertEquals(AccessStage.CONNECTED, identity.state.value.stage)
+            val seen = mutableListOf<AccessStage>()
+            val watching = backgroundScope.launch { identity.state.collect { seen += it.stage } }
+            runCurrent()
+            identity.restore()
+            runCurrent()
+            watching.cancel()
+            assertEquals(listOf(AccessStage.CONNECTED), seen.distinct())
+            assertEquals("account-12", identity.state.value.account?.userId)
+        } finally { client.close() }
+    }
+
+    @Test fun comingBackWithoutNetworkKeepsTheVerifiedSession() = runTest {
+        var online = true
+        val client = switchableClient(online = { online })
+        try {
+            val identity = SupabaseIdentity(client, backgroundScope)
+            identity.restore()
+            identity.signIn("cliente@example.org", "correct")
+            online = false
+            identity.restore()
+            assertEquals(AccessStage.CONNECTED, identity.state.value.stage)
+        } finally { client.close() }
+    }
+
+    @Test fun comingBackWithARevokedSessionStillSignsOut() = runTest {
+        var revoked = false
+        val client = switchableClient(online = { true }, revoked = { revoked })
+        try {
+            val identity = SupabaseIdentity(client, backgroundScope)
+            identity.restore()
+            identity.signIn("cliente@example.org", "correct")
+            revoked = true
+            identity.restore()
+            assertEquals(AccessStage.SIGNED_OUT, identity.state.value.stage)
+            assertEquals(AccessError.EXPIRED, identity.state.value.error)
+        } finally { client.close() }
+    }
+
     @Test fun connectionFailureDoesNotInventSuccessOrForgetTheSavedSession() = runTest {
         val saved = MemorySessionManager(
             UserSession("old-access", "valid-refresh", expiresIn = 3600, tokenType = "bearer",

@@ -14,6 +14,8 @@
     <!-- The opening of the window is an exact alarm, the only way to start the service from the background. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- Alarms are lost on restart: the kept choices are re-scheduled when the phone boots. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
         android:name=".TeloarregloApplication"
         android:allowBackup="false"
@@ -60,6 +62,14 @@
         <receiver
             android:name=".arrival.ArrivalAlarmReceiver"
             android:exported="false" />
+        <receiver
+            android:name=".arrival.ArrivalBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
             android:enabled="false"

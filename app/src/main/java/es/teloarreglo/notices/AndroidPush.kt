@@ -121,6 +121,11 @@ class TeloMessagingService : FirebaseMessagingService() {
         }
         // The message reached this phone: the sender sees two ticks. Runs on FCM's worker thread, bounded in time.
         if (conversation != null) runBlocking { withTimeoutOrNull(10_000) { markDelivered(conversation) } }
+        // News about an appointment whose arrival this phone shares (an accepted change may bring it forward, a
+        // cancellation closes the window): the kept choice follows the server and its alarm moves (#72).
+        data["appointment_id"]?.takeIf { data["kind"] == "appointment" && app.arrivalChoices.get(it) != null }?.let { id ->
+            runBlocking { withTimeoutOrNull(10_000) { es.teloarreglo.arrival.ArrivalSharing.sync(this@TeloMessagingService, listOf(id)) } }
+        }
     }
 
     private suspend fun markDelivered(conversation: String) {
