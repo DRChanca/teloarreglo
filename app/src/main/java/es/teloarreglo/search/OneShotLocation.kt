@@ -76,10 +76,19 @@ private suspend fun LocationManager.fix(context: Context, provider: String, time
         suspendCancellableCoroutine<android.location.Location?> { continuation ->
             val cancel = CancellationSignal()
             continuation.invokeOnCancellation { cancel.cancel() }
+            val deliver = { location: android.location.Location? -> if (continuation.isActive) continuation.resume(location) }
             try {
-                LocationManagerCompat.getCurrentLocation(
-                    this@fix, provider, cancel, ContextCompat.getMainExecutor(context),
-                ) { location -> if (continuation.isActive) continuation.resume(location) }
+                if (provider == FUSED_PROVIDER && android.os.Build.VERSION.SDK_INT >= 31) {
+                    // High accuracy: the fused provider then combines GPS with Wi-Fi and cells, instead of the
+                    // balanced default that may wait for the network alone.
+                    getCurrentLocation(provider, android.location.LocationRequest.Builder(0L)
+                        .setQuality(android.location.LocationRequest.QUALITY_HIGH_ACCURACY)
+                        .setDurationMillis(timeoutMs).build(), cancel, ContextCompat.getMainExecutor(context)) { deliver(it) }
+                } else {
+                    LocationManagerCompat.getCurrentLocation(
+                        this@fix, provider, cancel, ContextCompat.getMainExecutor(context),
+                    ) { deliver(it) }
+                }
             } catch (_: RuntimeException) {
                 // Unknown provider or permission withdrawn meanwhile: no fix from this one.
                 if (continuation.isActive) continuation.resume(null)

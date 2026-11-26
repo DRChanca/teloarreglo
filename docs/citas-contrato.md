@@ -1004,9 +1004,10 @@ cobertura de #20 y #23: la zona de trabajo informa, no restringe.
 ## Ventana de llegada en el servidor — #82
 
 Decisión en [ADR 0002](adr/0002-seguimiento-solo-en-ventana-de-llegada.md) y en `GLOSSARY.md` («Ventana de llegada»).
-Migración `20261125007200_arrival_window.sql`, con los ajustes de `20261125007400_arrival_privacy.sql` (centro del
-círculo conservado, «estado de la ventana» y precisión opcional); pgTAP `supabase/tests/arrival_window.test.sql`. No
-redefine ninguna función anterior a la ventana de llegada.
+Migración `20261125007200_arrival_window.sql`, con los ajustes de `20261125007400_arrival_privacy.sql` («estado de la
+ventana» y precisión opcional) y de `20261126080000_arrival_review_fixes.sql` (parada que se mantiene, centro del
+círculo por rejilla, `age_s`, `start_at` y «volver a compartir»); pgTAP `supabase/tests/arrival_window.test.sql` y
+`supabase/tests/arrival_review_fixes.test.sql`. No redefine ninguna función anterior a la ventana de llegada.
 
 ### La ventana
 
@@ -1030,10 +1031,13 @@ jsonb`. Devuelve la ventana sin recibir ni guardar ninguna posición, para que l
 abierta (fuera de ella nunca se envía nada):
 
 ```json
-{"window": "not_yet_open", "opens_at": "…", "closes_at": "…"}
+{"window": "not_yet_open", "opens_at": "…", "closes_at": "…", "start_at": "…"}
+{"window": "open", "opens_at": "…", "closes_at": "…", "start_at": "…", "stopped": true}
 ```
 
-`window`, `opens_at` y `closes_at` significan lo mismo que en «informar posición». Cualquier otra cuenta recibe
+`window`, `opens_at` y `closes_at` significan lo mismo que en «informar posición». `start_at` es el inicio acordado
+vigente (`null` con la ventana cerrada): si un cambio aceptado lo adelanta, la app mueve su alarma. `stopped: true`
+solo aparece mientras se mantiene un «dejar de compartir» (ver abajo). Cualquier otra cuenta recibe
 `42501 permission_denied`.
 
 **Informar posición** (profesional de la cita):
@@ -1054,10 +1058,20 @@ Fuera de la ventana no se guarda nada y la respuesta lo dice; no es un error. Re
   otra cita del profesional, así que la app vuelve a preguntar a esa hora.
 - `closed`: cerrada para siempre; detener el servicio.
 - `reported_at` es la hora de la última posición guardada de la cita, si existe.
+- `stopped: true` (solo aparece cuando es cierto): la posición se rechaza porque el profesional dejó de compartir y no
+  ha vuelto a elegir compartir. La app deja de enviar y olvida la elección.
 
 **Dejar de compartir** (profesional de la cita): `public.stop_sharing_arrival(p_appointment_id uuid) → jsonb`. Borra en
-el momento la posición de la cita, sea cual sea la ventana, y responde igual que «informar posición» con
-`accepted = false` y `reported_at = null`. Volver a compartir es volver a informar posición.
+el momento la posición de la cita, sea cual sea la ventana, deja una marca de parada (`private.arrival_stops`, sin
+posición) y responde igual que «informar posición» con `accepted = false`, `reported_at = null` y `stopped = true`.
+Mientras la marca exista, «informar posición» rechaza toda posición (`accepted = false`, `stopped = true`) sin
+guardarla ni generar el aviso de cercanía. Así, una posición que ya iba de camino cuando el profesional paró nunca
+vuelve a mostrarse al cliente, llegue en el orden que llegue.
+
+**Volver a compartir** (profesional de la cita): `public.start_sharing_arrival(p_appointment_id uuid) → jsonb`. La app
+la llama cuando el profesional elige «Compartir mi ubicación», antes de enviar ninguna posición. Borra la marca de
+parada; no recibe ni guarda ninguna posición y responde igual que «estado de la ventana». Cualquier otra cuenta recibe
+`42501 permission_denied`.
 
 **Leer llegada** (solo el cliente de la cita): `public.appointment_arrival(p_appointment_id uuid) → jsonb`.
 
@@ -1065,28 +1079,36 @@ el momento la posición de la cita, sea cual sea la ventana, y responde igual qu
 {"state": "closed"}
 {"state": "not_sharing", "closes_at": "…"}
 {"state": "sharing", "closes_at": "…", "precision": "area", "latitude": 43.1, "longitude": -5.9, "radius_m": 500,
- "updated_at": "…"}
+ "updated_at": "…", "age_s": 12.5}
 {"state": "sharing", "closes_at": "…", "precision": "exact", "latitude": 43.06, "longitude": -5.95, "accuracy_m": 15,
- "updated_at": "…"}
+ "updated_at": "…", "age_s": 12.5}
 ```
 
 - `closed`: fuera de la ventana (también «aún no abierta»).
 - `not_sharing` («El profesional no comparte su ubicación»): no hay posición, la última tiene más de 2 min o el
   profesional ha dejado de compartir.
 - `sharing` con `precision = area`: la posición está a más de 2 km de la dirección de la cita (`appointments.latitude/
-  longitude`). Se devuelve un círculo de 500 m cuyo centro se sortea en el servidor, uniforme en un disco de 375 m
-  alrededor de la posición (misma construcción que la zona aproximada de #38), así que siempre contiene la posición
-  real. El centro se conserva mientras las posiciones nuevas quedan a 375 m o menos de él, y solo se sortea otro
-  cuando una queda más lejos (`20261125007400_arrival_privacy.sql`). Así, ni repetir la lectura ni las posiciones
-  de un profesional parado (una cada ~30 s) dan centros distintos que promediar. La posición exacta y su precisión no
-  salen del servidor.
+  longitude`). Se devuelve un círculo de 500 m cuyo centro es el de la celda de una rejilla de 650 m que contiene la
+  posición (`20261126080000_arrival_review_fixes.sql`). Cada profesional tiene su rejilla, desplazada una fracción de
+  celda en cada eje según `sha256(secreto del servidor || profesional)`; el secreto está en
+  `private.arrival_grid_secret` y ninguna cuenta lo lee. El punto de una celda más alejado de su centro está a unos
+  462 m, así que el círculo siempre contiene la posición real. El mismo lugar da siempre el mismo centro: en otra cita,
+  tras dejar de compartir y volver a compartir y tras borrar la posición el reloj. Así, ni repetir la lectura, ni las
+  posiciones de un profesional parado, ni un cliente recurrente obtienen centros distintos que intersecar o promediar:
+  solo la celda. El centro en uso se conserva mientras las posiciones nuevas quedan a 450 m o menos de él, para que un
+  profesional parado cerca del borde de una celda no salte entre dos centros. Límite conocido: si al empezar a
+  compartir desde el mismo lugar el GPS lo sitúa unas veces en una celda y otras en la vecina, el cliente puede ver los
+  dos centros y deducir que está cerca de ese borde (en un eje, nunca más fino que la celda en el otro). La posición
+  exacta y su precisión no salen del servidor.
 - `sharing` con `precision = exact`: a 2 km o menos, la posición exacta y su precisión (`null` si no se envió).
 - `updated_at`: hora del servidor de la última posición.
+- `age_s`: antigüedad de esa posición en segundos según el reloj del servidor en el momento de la lectura. La app la
+  usa en lugar de comparar `updated_at` con el reloj del móvil, que puede ir adelantado o atrasado.
 
 ### Errores estables
 
 - `42501 permission_denied`: cita inexistente o la cuenta no es el profesional (estado de la ventana, informar,
-  dejar de compartir) o el cliente (leer llegada) de la cita. Un profesional no lee la llegada; un cliente no informa
+  dejar de compartir, volver a compartir) o el cliente (leer llegada) de la cita. Un profesional no lee la llegada; un cliente no informa
   posición.
 - `22023 invalid_position`: latitud o longitud ausentes, o latitud, longitud o precisión imposibles (precisión
   negativa o no numérica). La precisión ausente se acepta.
@@ -1096,7 +1118,8 @@ el momento la posición de la cita, sea cual sea la ventana, y responde igual qu
 `private.arrival_positions(appointment_id pk, latitude, longitude, accuracy_m, area_lat, area_lng, reported_at)` solo
 guarda la última posición de cada cita. Sin historial, sin recorridos y sin acceso de ninguna cuenta ni del panel de
 administración: solo se llega a ella por estas RPC. Se borra al dejar de compartir y, con la ventana cerrada, en la
-siguiente ejecución del reloj.
+siguiente ejecución del reloj. `private.arrival_stops(appointment_id pk, stopped_at)` solo guarda que el profesional
+paró (sin posición) y desaparece con la cita o al volver a compartir.
 
 ### Reloj de llegada (paso manual de David, por proyecto)
 
@@ -1117,4 +1140,5 @@ select jobid, schedule, active from cron.job where jobname = 'arrival-clock';
   aceptada está a 100 m o menos de la dirección de la cita; una vez por cita. La respuesta no cambia. Detalle en
   `docs/avisos-contrato.md`.
 - Mapa del cliente (#84) y servicio del profesional (#85): usan las respuestas de arriba tal cual. El servicio
-  pregunta primero «estado de la ventana» y solo con `open` informa la posición.
+  llama a «volver a compartir» con cada elección nueva, pregunta después «estado de la ventana» y solo con `open` y sin
+  `stopped` informa la posición. El mapa usa `age_s` más el tiempo transcurrido desde la lectura (reloj monotónico).
