@@ -154,7 +154,7 @@ reset role;
 select pg_temp.starts_in((select second from ids), 31);
 set local role authenticated;
 select pg_temp.as_user('02');
-select is((select r - 'opens_at' - 'closes_at' from public.arrival_sharing_window((select second from ids)) r),
+select is((select r - 'opens_at' - 'closes_at' - 'start_at' from public.arrival_sharing_window((select second from ids)) r),
  '{"window": "not_yet_open"}'::jsonb, 'the window state answers «aún no abierta» with nothing else');
 select is((select (r->>'opens_at')::timestamptz - now() from public.arrival_sharing_window((select second from ids)) r),
  interval '1 minute', 'and says when it opens (−30 min: main is started)');
@@ -165,7 +165,7 @@ select pg_temp.as_user('02');
 select is((select r->>'window' || '/' || ((r->>'closes_at')::timestamptz - now())
  from public.arrival_sharing_window((select second from ids)) r), 'open/01:30:00', 'open, with its closing');
 select is(public.arrival_sharing_window((select cancelled from ids)),
- '{"window": "closed", "opens_at": null, "closes_at": null}'::jsonb, 'a cancelled appointment reads closed');
+ '{"window": "closed", "opens_at": null, "closes_at": null, "start_at": null}'::jsonb, 'a cancelled appointment reads closed');
 select pg_temp.as_user('01');
 select throws_ok(format('select public.arrival_sharing_window(%L)', (select second from ids)), '42501', 'permission_denied',
  'the client cannot ask the professional''s window state');
@@ -207,15 +207,16 @@ select ok((select r::text !~ '43\.1[,}]|"accuracy' from far_read), 'the exact po
 select is((select (r->>'updated_at')::timestamptz from far_read), now(), 'the circle carries the time of the last update');
 select is(public.appointment_arrival((select second from ids)), (select r from far_read),
  'repeating the read does not move the centre');
-select ok((select bool_and(pg_temp.distance_m((a->>'latitude')::float8, (a->>'longitude')::float8, 43.10, -5.95) <= 375.001)
- from (select public.appointment_arrival((select second from ids)) as a) x), 'the centre lies within 375 m of the position');
+select ok((select bool_and(pg_temp.distance_m((a->>'latitude')::float8, (a->>'longitude')::float8, 43.10, -5.95) <= 465)
+ from (select public.appointment_arrival((select second from ids)) as a) x), 'the centre lies within 465 m of the position');
 -- Reporting again from the same place keeps the centre: many reports never average out to the position (#72).
 select pg_temp.as_user('02');
 select pg_temp.report((select second from ids), 43.10, -5.95) from generate_series(1, 5);
 select pg_temp.as_user('01');
 select is(public.appointment_arrival((select second from ids)) - 'updated_at', (select r - 'updated_at' from far_read),
  'repeated reports from the same position keep the centre');
--- The centre is kept while the new position stays within 375 m of it, and drawn again only beyond.
+-- The centre is kept while the new position stays within 450 m of it; beyond, it is the centre of the new cell
+-- (20261126080000_arrival_review_fixes.sql).
 reset role;
 update private.arrival_positions set area_lat = 43.1027, area_lng = -5.95 where appointment_id = (select second from ids);
 set local role authenticated;
@@ -226,18 +227,22 @@ select is((select (a->>'latitude')::float8 || '/' || (a->>'longitude')::float8
  from (select public.appointment_arrival((select second from ids)) as a) x), '43.1027/-5.95',
  'a nearby position (about 290 m from the centre) keeps the centre');
 select pg_temp.as_user('02');
-select pg_temp.report((select second from ids), 43.0990, -5.95);
+select pg_temp.report((select second from ids), 43.0985, -5.95);
 select pg_temp.as_user('01');
 create temp table moved_read on commit drop as select public.appointment_arrival((select second from ids)) as r;
-select isnt((select r->>'latitude' from moved_read), '43.1027', 'beyond 375 m of the centre a new centre is drawn');
-select ok((select pg_temp.distance_m((r->>'latitude')::float8, (r->>'longitude')::float8, 43.0990, -5.95) <= 375.001
+reset role;
+select is((select (r->>'latitude')::float8 || '/' || (r->>'longitude')::float8 from moved_read),
+ (select c.lat || '/' || c.lng from private.arrival_grid_center('00000000-0000-0000-0000-000000820102', 43.0985, -5.95) c),
+ 'beyond 450 m of the centre (about 470 m) the centre is that of the new cell');
+set local role authenticated;
+select ok((select pg_temp.distance_m((r->>'latitude')::float8, (r->>'longitude')::float8, 43.0985, -5.95) <= 465
  from moved_read), 'and the circle still contains the real position');
 select pg_temp.as_user('02');
 select pg_temp.report((select second from ids), 43.12, -5.95);
 select pg_temp.as_user('01');
 create temp table far_move on commit drop as select public.appointment_arrival((select second from ids)) as r;
 select ok((select r->>'precision' = 'area' and pg_temp.distance_m((r->>'latitude')::float8, (r->>'longitude')::float8,
- 43.12, -5.95) <= 375.001 from far_move), 'a far move redraws the centre around the new position');
+ 43.12, -5.95) <= 465 from far_move), 'a far move moves the centre to the cell of the new position');
 
 -- A fix without accuracy is accepted; when present the accuracy is still checked.
 select pg_temp.as_user('02');
@@ -245,7 +250,7 @@ select is((select r->>'window' || '/' || (r->>'accepted')
  from public.report_arrival_position((select second from ids), 43.0679, -5.95, null) r), 'open/true',
  'a position without accuracy is accepted');
 select pg_temp.as_user('01');
-select is(public.appointment_arrival((select second from ids)) - 'closes_at',
+select is(public.appointment_arrival((select second from ids)) - 'closes_at' - 'age_s',
  jsonb_build_object('state', 'sharing', 'precision', 'exact', 'latitude', 43.0679, 'longitude', -5.95, 'accuracy_m', null,
   'updated_at', now()), 'the exact position without accuracy reads with a null accuracy');
 select pg_temp.as_user('02');
@@ -258,7 +263,7 @@ select throws_ok(format('select public.report_arrival_position(%L, 43.0679, -5.9
 select pg_temp.as_user('02');
 select pg_temp.report((select second from ids), 43.0679, -5.95);
 select pg_temp.as_user('01');
-select is(public.appointment_arrival((select second from ids)) - 'closes_at',
+select is(public.appointment_arrival((select second from ids)) - 'closes_at' - 'age_s',
  jsonb_build_object('state', 'sharing', 'precision', 'exact', 'latitude', 43.0679, 'longitude', -5.95, 'accuracy_m', 15,
   'updated_at', now()), 'at 2 km or less the client receives the exact position and its time');
 
@@ -297,7 +302,8 @@ set local role authenticated;
 select pg_temp.as_user('02');
 select pg_temp.report((select second from ids), 43.0679, -5.95);
 select is(public.stop_sharing_arrival((select second from ids)) - 'opens_at' - 'closes_at',
- '{"window": "open", "accepted": false, "reported_at": null}'::jsonb, '«dejar de compartir» answers with the window');
+ '{"window": "open", "accepted": false, "reported_at": null, "stopped": true}'::jsonb,
+ '«dejar de compartir» answers with the window and the stop mark');
 select pg_temp.as_user('01');
 select is(public.appointment_arrival((select second from ids)) - 'closes_at', '{"state": "not_sharing"}'::jsonb,
  '«abierta sin compartir» after «dejar de compartir»');
@@ -308,6 +314,7 @@ select is((select count(*)::integer from private.arrival_positions where appoint
 -- The clock deletes the position of every closed window and keeps that of open ones.
 set local role authenticated;
 select pg_temp.as_user('02');
+select public.start_sharing_arrival((select second from ids));
 select pg_temp.report((select second from ids), 43.0679, -5.95);
 reset role;
 select is((select count(*)::integer from private.arrival_positions where appointment_id in
